@@ -1,0 +1,167 @@
+package org.prime.tally.ui.screen.auth
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.tally.ui.shared.TallyButton
+import org.prime.tally.ui.shared.TallyTextField
+
+object LoginScreen : Screen {
+    @Composable
+    override fun Content() {
+        val colors = MaterialTheme.colorScheme
+        val type = MaterialTheme.typography
+
+        var email by remember { mutableStateOf("") }
+        var password by remember { mutableStateOf("") }
+
+        val nav = LocalNavigator.currentOrThrow
+        val urlHandler = LocalUriHandler.current
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colors.background),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = colors.surfaceContainerHigh),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            ) {
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Default.Dashboard,
+                        contentDescription = "App icon",
+                        tint = colors.primary,
+                        modifier = Modifier.size(60.dp)
+                    )
+                    Spacer(Modifier.height(16.dp))
+
+                    Text(
+                        text = "Welcome Back",
+                        style = type.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = colors.onSurface
+                        )
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "Your finances, simplified — sign in to continue",
+                        style = type.bodyMedium.copy(color = colors.onSurfaceVariant)
+                    )
+
+                    Spacer(Modifier.height(32.dp))
+
+
+                    TallyTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        placeholder = "Enter your email",
+                        isPassword = false,
+                        isNumber = false,
+                        label = "Email",
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    TallyTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        placeholder = "Enter your password",
+                        isPassword = true,
+                        isNumber = false,
+                        label = "Password",
+                        imeAction = ImeAction.Done,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    TextButton(
+                        onClick = {
+                            nav.push(ForgotPasswordScreen)
+                        }, modifier = Modifier
+                            .align(Alignment.End)
+
+                    ) {
+                        Text(
+                            text = "Forgot password?",
+                            fontSize = 14.sp,
+                            color = colors.primary,
+
+                            )
+                    }
+
+
+                    //   Spacer(Modifier.height(16.dp))
+
+                    TallyButton(
+                        label = "Login",
+                        onClick = { /* TODO */ },
+                        backgroundColor = colors.primary,
+                        contentColor = colors.onPrimary,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    TallyButton(
+                        label = "Support Ticket",
+                        //TODO: add a real url
+                        onClick = { urlHandler.openUri("https://support.google.com/") },
+                        backgroundColor = Color.Transparent,
+                        contentColor = colors.primary,
+                        modifier = Modifier.fillMaxWidth(),
+
+                        )
+
+                }
+            }
+
+        }
+    }
+}
