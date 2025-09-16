@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.tally.ui.screen.startup.GoogleDriveDownloadScreen
 import org.prime.tally.ui.shared.TallyButton
 import org.prime.tally.ui.shared.TallyTextField
 
@@ -136,12 +137,11 @@ object LoginScreen : Screen {
                             )
                     }
 
-
-                    //   Spacer(Modifier.height(16.dp))
-
                     TallyButton(
                         label = "Login",
-                        onClick = { /* TODO */ },
+                        onClick = { /* TODO */
+                            nav.replaceAll(GoogleDriveDownloadScreen)
+                        },
                         backgroundColor = colors.primary,
                         contentColor = colors.onPrimary,
                         modifier = Modifier.fillMaxWidth()
@@ -156,9 +156,7 @@ object LoginScreen : Screen {
                         backgroundColor = Color.Transparent,
                         contentColor = colors.primary,
                         modifier = Modifier.fillMaxWidth(),
-
-                        )
-
+                    )
                 }
             }
 
