@@ -32,12 +32,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.tally.data.model.LoginRequest
 import org.prime.tally.ui.screen.startup.GoogleDriveDownloadScreen
 import org.prime.tally.ui.shared.TallyButton
+import org.prime.tally.ui.shared.TallyLoadingDialog
+import org.prime.tally.ui.shared.TallyResultDialog
 import org.prime.tally.ui.shared.TallyTextField
+import org.prime.tally.business.viewmodel.AuthViewModel
 
 object LoginScreen : Screen {
     @Composable
@@ -47,9 +52,24 @@ object LoginScreen : Screen {
 
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
+        val viewModel: AuthViewModel = viewModel { AuthViewModel() }
+        val state by viewModel.authState
 
         val nav = LocalNavigator.currentOrThrow
         val urlHandler = LocalUriHandler.current
+
+        if (state.isLoading) {
+            TallyLoadingDialog("Logging you in")
+        }
+
+        if (state.error != null) {
+            TallyResultDialog(
+                state.error ?: "Unexpected Error",
+                onDone = { viewModel.clearError() },
+                isSuccess = state.success,
+                confirmText = "Try Again"
+            )
+        }
 
         Box(
             modifier = Modifier
@@ -139,11 +159,19 @@ object LoginScreen : Screen {
 
                     TallyButton(
                         label = "Login",
-                        onClick = { /* TODO */
-                            nav.replaceAll(GoogleDriveDownloadScreen)
+                        onClick = {
+                            viewModel.userLogin(
+                                LoginRequest(
+                                    Username = email,
+                                    Password = password
+                                )
+                            ) {
+                                nav.replaceAll(GoogleDriveDownloadScreen)
+                            }
                         },
                         backgroundColor = colors.primary,
                         contentColor = colors.onPrimary,
+                        enabled = !(email.isEmpty() || password.isEmpty()),
                         modifier = Modifier.fillMaxWidth()
                     )
 

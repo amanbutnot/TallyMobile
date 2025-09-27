@@ -1,0 +1,12 @@
+-- ProductUnitMaster.sq
+
+CREATE TABLE ProductUnitMaster (
+    Code INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name TEXT,
+    UQCName TEXT,
+    AlterID INTEGER,
+    GUID TEXT UNIQUE
+);
+
+selectAll:
+SELECT * FROM ProductUnitMaster  ORDER BY Name;

@@ -1,0 +1,32 @@
+-- Products.sq
+
+CREATE TABLE Products (
+    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name TEXT,
+    Alias TEXT,
+    PrintName TEXT,
+    GroupName TEXT,
+    GroupCode REAL,
+    UnitName TEXT,
+    UnitCode REAL,
+    OpStk REAL,
+    OpStkValue REAL,
+    TaxCategory TEXT,
+    TaxCategoryCode REAL,
+    HSN TEXT,
+    SalesPrice REAL,
+    PurcPrice REAL,
+    MRP REAL,
+    MinSalesPrice REAL,
+    SelfValPrice REAL,
+    SaleDisc REAL,
+    PurcDisc REAL,
+    Vendor TEXT,
+    VendorCode REAL,
+    MaintainStock REAL,
+    ALTERID TEXT,
+    GUID TEXT UNIQUE
+);
+
+selectAll:
+SELECT * FROM Products ORDER BY Name;

@@ -1,0 +1,14 @@
+-- ProductGroupMaster.sq
+
+CREATE TABLE ProductGroupMaster (
+    Code INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name TEXT,
+    Alias TEXT,
+    GroupName TEXT,
+    GroupCode REAL,
+    AlterID INTEGER,
+    GUID TEXT UNIQUE
+);
+
+selectAll:
+SELECT * FROM ProductGroupMaster  ORDER BY Name;
