@@ -10,7 +10,6 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.launch
-import kotlin.time.Clock
 
 suspend fun uploadDemoTextToDrive(accessToken: String): String {
     val client = HttpClient()

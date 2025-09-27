@@ -18,10 +18,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.text.font.FontWeight
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
@@ -30,25 +34,28 @@ import org.prime.tally.ui.screen.home.tabs.HomeTab
 import org.prime.tally.ui.screen.home.tabs.MastersTab
 import org.prime.tally.ui.screen.home.tabs.ReportingTab
 import org.prime.tally.ui.screen.home.tabs.TransactionTab
+import org.prime.tally.ui.shared.TallyDivider
+import org.tally.TallyDatabase
 
 object Dashboard : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val colors = MaterialTheme.colorScheme
+        val nav = LocalNavigator.currentOrThrow
         TabNavigator(HomeTab) { tabNavigator ->
             Scaffold(
                 topBar = {
                     TopAppBar(
                         title = {
                             Text(
-                                "Dashboard",
+                                "Company Name",
                                 color = colors.onBackground,
-                                style = MaterialTheme.typography.titleLarge
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium)
                             )
                         },
                         actions = {
-                            IconButton(onClick = {}) {
+                            IconButton(onClick = { nav.push(SettingScreen) }) {
                                 Icon(
                                     Icons.Default.Settings,
                                     contentDescription = "Settings icon",
@@ -92,7 +99,6 @@ fun TabNavigationItem(tab: Tab, modifier: Modifier = Modifier) {
             MaterialTheme.colorScheme.onSurfaceVariant,
         label = "IconTint"
     )
-
 
 
     val iconScale by animateFloatAsState(
