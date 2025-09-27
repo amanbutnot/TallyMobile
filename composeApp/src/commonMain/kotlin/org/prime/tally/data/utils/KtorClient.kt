@@ -1,4 +1,4 @@
-package org.prime.tally.utils
+package org.prime.tally.data.utils
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation

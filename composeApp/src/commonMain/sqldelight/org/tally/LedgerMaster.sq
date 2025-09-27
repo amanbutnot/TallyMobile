@@ -1,0 +1,26 @@
+CREATE TABLE LedgerMaster (
+    Code INTEGER PRIMARY KEY,
+    Name TEXT,
+    Alias TEXT,
+    GroupName TEXT,
+    GroupCode REAL,
+    OpBal REAL,
+    Address1 TEXT,
+    Address2 TEXT,
+    Address3 TEXT,
+    Address4 TEXT,
+    Country TEXT,
+    State TEXT,
+    TypeOfDealer TEXT,
+    GSTIN TEXT,
+    Email TEXT,
+    MobileNo TEXT,
+    BankName TEXT,
+    AlterID INTEGER,
+    GUID TEXT UNIQUE,
+    PanNo TEXT
+);
+
+
+selectAll:
+SELECT * FROM LedgerMaster ORDER BY Name;

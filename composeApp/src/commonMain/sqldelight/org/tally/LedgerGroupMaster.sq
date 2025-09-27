@@ -1,0 +1,14 @@
+-- LedgerGroupMaster.sq
+
+CREATE TABLE LedgerGroupMaster (
+    Code INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name TEXT,
+    Alias TEXT,
+    GroupName TEXT,
+    GroupCode REAL,
+    AlterID INTEGER,
+    GUID TEXT UNIQUE
+);
+
+selectAll:
+SELECT * FROM LedgerGroupMaster ORDER BY Name;

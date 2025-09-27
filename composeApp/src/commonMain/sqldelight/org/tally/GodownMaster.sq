@@ -1,0 +1,13 @@
+-- GodownMaster.sq
+
+CREATE TABLE GodownMaster (
+    Code INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name TEXT,
+    Alias TEXT,
+    Parent TEXT,
+    AlterID INTEGER,
+    GUID TEXT UNIQUE
+);
+
+selectAll:
+SELECT * FROM GodownMaster ORDER BY Name;

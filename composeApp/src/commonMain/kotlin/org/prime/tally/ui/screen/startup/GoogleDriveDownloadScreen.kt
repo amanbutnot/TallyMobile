@@ -35,11 +35,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import kotlinx.coroutines.delay
+import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.expect.initializeDatabase
 import org.prime.tally.ui.screen.home.Dashboard
+import org.prime.tally.data.utils.SharedPrefs
+import org.prime.tally.business.viewmodel.GoogleDriveViewModel
 
 object GoogleDriveDownloadScreen : Screen {
     @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -48,12 +52,31 @@ object GoogleDriveDownloadScreen : Screen {
         val colors = MaterialTheme.colorScheme
         val type = MaterialTheme.typography
         val nav = LocalNavigator.currentOrThrow
+        val googleDriveViewModel: GoogleDriveViewModel = viewModel { GoogleDriveViewModel() }
+        val profileState by googleDriveViewModel.driveState
 
 
+//        LaunchedEffect(Unit) {
+//            googleDriveViewModel.getDriveToken() {
+//
+//            }
+//        }
         LaunchedEffect(Unit) {
-            delay(1000)
-            nav.replaceAll(Dashboard)
+            SharedPrefs.FileId.get()?.let {fileId->
+                googleDriveViewModel.getDriveToken {
+                    googleDriveViewModel.downloadDriveFile(
+                        fileId =fileId,
+                        accessToken = it
+                    ) {
+                        DatabaseHolder.init(byteArray = it)
+                       initializeDatabase(it)
+                        nav.replaceAll(Dashboard)
+                    }
+                }
+            }
         }
+
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -63,7 +86,8 @@ object GoogleDriveDownloadScreen : Screen {
                     )
                 )
                 .padding(24.dp),
-        ) {
+        )
+        {
             Column(
                 modifier = Modifier.fillMaxWidth().align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally,
