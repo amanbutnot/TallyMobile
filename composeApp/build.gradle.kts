@@ -72,6 +72,9 @@ kotlin {
 
             //Material Icons
             implementation(libs.material.icons.extended)
+
+            implementation("app.cash.sqldelight:coroutines-extensions:2.1.0")
+
         }
         nativeMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -113,3 +116,14 @@ dependencies {
     debugImplementation(compose.uiTooling)
 }
 
+
+sqldelight {
+    databases {
+
+        create("TallyDatabase") {
+            verifyMigrations.set(false)
+            deriveSchemaFromMigrations.set(false)
+            packageName.set("org.tally")
+        }
+    }
+}

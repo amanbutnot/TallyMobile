@@ -1,4 +1,4 @@
-package org.prime.tally.model
+package org.prime.tally.data.model
 
 import kotlinx.serialization.Serializable
 

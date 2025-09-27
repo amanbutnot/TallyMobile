@@ -1,16 +1,15 @@
-package org.prime.tally.repository
+package org.prime.tally.business.repository
 
 import io.ktor.client.call.body
-import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
-import org.prime.tally.model.ApiResponse
-import org.prime.tally.model.LoginRequest
-import org.prime.tally.model.LoginResponse
-import org.prime.tally.utils.BASE_URL
-import org.prime.tally.utils.KtorClient
+import org.prime.tally.data.model.ApiResponse
+import org.prime.tally.data.model.LoginRequest
+import org.prime.tally.data.model.LoginResponse
+import org.prime.tally.data.utils.BASE_URL
+import org.prime.tally.data.utils.KtorClient
 
 object AuthRepository {
     val client = KtorClient.client
