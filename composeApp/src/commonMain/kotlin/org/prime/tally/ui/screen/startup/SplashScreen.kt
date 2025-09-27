@@ -31,7 +31,10 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import kotlinx.coroutines.delay
+import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.expect.readFileBytes
 import org.prime.tally.ui.screen.auth.LoginScreen
+import org.prime.tally.ui.screen.home.Dashboard
 
 object SplashScreen : Screen {
     @Composable
@@ -46,7 +49,14 @@ object SplashScreen : Screen {
 
             //TODO: make it go to onBoardingScreen when it is completed
 //            nav.replaceAll(OnBoardingScreen)
-            nav.replaceAll(LoginScreen)
+            val fileBytes = readFileBytes()
+            if (fileBytes != null) {
+                DatabaseHolder.init(fileBytes)
+                nav.replaceAll(Dashboard)
+            } else {
+                nav.replaceAll(LoginScreen)
+            }
+
         }
         Box(modifier = Modifier.fillMaxSize().background(colors.background)) {
             Column(

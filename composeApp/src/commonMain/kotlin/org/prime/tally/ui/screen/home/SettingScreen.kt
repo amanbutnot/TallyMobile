@@ -37,7 +37,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,6 +46,8 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.internal.BackHandler
+import org.prime.tally.data.expect.deleteDbFile
+import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.screen.auth.LoginScreen
 import org.prime.tally.ui.shared.TallyDivider
 import org.prime.tally.ui.shared.TallyIconButton
@@ -194,6 +195,9 @@ object SettingScreen : Screen {
 
 
                 TallyIconButton("Sign Out", Icons.AutoMirrored.Filled.Logout) {
+                    SharedPrefs.Token.clear()
+                    SharedPrefs.FileId.clear()
+                    deleteDbFile()
                     //TODO: Log out
                     nav.replaceAll(LoginScreen)
                 }
@@ -211,7 +215,7 @@ private fun ProfileItem(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-      //  elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        //  elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
 
     ) {
