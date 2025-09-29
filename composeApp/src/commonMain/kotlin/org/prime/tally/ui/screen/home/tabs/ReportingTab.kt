@@ -1,17 +1,49 @@
 package org.prime.tally.ui.screen.home.tabs
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ListAlt
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Assessment
-import androidx.compose.material.icons.filled.Money
-import androidx.compose.material.icons.filled.Report
+import androidx.compose.material.icons.filled.AssignmentLate
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Scale
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.prime.tally.ui.screen.home.Dashboard
 
-object ReportingTab: Tab {
+object ReportingTab : Tab {
     override val options: TabOptions
         @Composable get() {
             val icon = rememberVectorPainter(Icons.Default.Assessment)
@@ -20,7 +52,114 @@ object ReportingTab: Tab {
 
     @Composable
     override fun Content() {
-        Text("Reporting tab", color = MaterialTheme.colorScheme.onBackground)
+        val colors = MaterialTheme.colorScheme
+        val nav = LocalNavigator.currentOrThrow
+        Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
+            Text(
+                text = "Reports",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Medium,
+                color = colors.onBackground,
+                modifier = Modifier.padding(20.dp).padding(bottom = 8.dp),
+            )
 
+            val reports = listOf(
+                Report.Ledger,
+                Report.Outstanding,
+                Report.TrialBalance,
+                Report.Registers,
+                Report.StockReport,
+                Report.PendingOrders,
+                Report.Quotations
+            )
+
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(reports) { report ->
+                    ReportButton(
+                        icon = report.icon,
+                        title = report.title,
+                        onClick = {
+                            //TODO: add appropriate screens
+                            when (report) {
+                                Report.Ledger -> nav.push(Dashboard)
+                                Report.Outstanding -> nav.push(Dashboard)
+                                Report.PendingOrders -> nav.push(Dashboard)
+                                Report.Quotations -> nav.push(Dashboard)
+                                Report.Registers -> nav.push(Dashboard)
+                                Report.StockReport -> nav.push(Dashboard)
+                                Report.TrialBalance -> nav.push(Dashboard)
+                            }
+                        }
+                    )
+                }
+            }
+
+        }
     }
+}
+
+
+@Composable
+fun ReportButton(
+    icon: ImageVector,
+    title: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier.height(140.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 8.dp
+        ),
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+        ),
+        onClick = { onClick() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(40.dp)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Medium, overflow = TextOverflow.Ellipsis, maxLines = 1
+            )
+        }
+    }
+}
+
+sealed class Report(val title: String, val icon: ImageVector) {
+    object Ledger : Report("Ledger", Icons.Default.AccountBalance)
+    object Outstanding : Report("Outstanding", Icons.Default.AssignmentLate)
+    object TrialBalance : Report("Trial Balance", Icons.Default.Scale)
+    object Registers : Report("Registers", Icons.AutoMirrored.Default.ListAlt)
+    object StockReport : Report("Stock Report", Icons.Default.Inventory)
+    object PendingOrders : Report("Pending Orders", Icons.Default.ShoppingCart)
+    object Quotations : Report("Quotations", Icons.Default.Description)
 }
