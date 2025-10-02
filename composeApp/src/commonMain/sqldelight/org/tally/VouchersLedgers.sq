@@ -1,0 +1,26 @@
+CREATE TABLE Vouchers_Ledgers (
+    GUID TEXT UNIQUE,
+    VCH_GUID TEXT,
+    VchType TEXT,
+    VchName TEXT,
+    DATE TEXT,
+    VOUCHERNUMBER TEXT,
+    SRNO INTEGER,
+    CM1 TEXT,
+    CM2 TEXT,
+    D1 REAL,
+    D2 REAL,
+    D3 REAL,
+    E1 TEXT,
+    E2 TEXT,
+    E3 TEXT
+);
+
+
+trialBalanceList:
+SELECT
+    CM1,
+    SUM(D1) AS ClsnBal
+FROM Vouchers_Ledgers
+GROUP BY CM1
+ORDER BY CM1;

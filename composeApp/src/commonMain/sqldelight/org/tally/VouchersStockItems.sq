@@ -1,0 +1,39 @@
+CREATE TABLE IF NOT EXISTS Vouchers_StockItems (
+    GUID TEXT UNIQUE,
+    VCH_GUID TEXT,
+    VchType TEXT,
+    VchName TEXT,
+    DATE TEXT,
+    VOUCHERNUMBER TEXT,
+    SRNO INTEGER,
+    CM1 TEXT,
+    CM2 TEXT,
+    CM3 TEXT,
+    CM4 TEXT,
+    CM5 TEXT,
+    D1 REAL,
+    D2 REAL,
+    D3 REAL,
+    D4 REAL,
+    D5 REAL,
+    E1 TEXT,
+    E2 TEXT,
+    E3 TEXT,
+    E4 TEXT,
+    E5 TEXT,
+    E6 TEXT,
+    E7 TEXT,
+    E8 TEXT,
+    E9 TEXT,
+    E10 TEXT
+);
+
+stockReportList:
+SELECT
+    CM1 AS Item_Name,
+    CM3 AS Item_Unit,
+    SUM(D1) AS Item_Qty,
+    SUM(D3) AS Item_Amt
+FROM Vouchers_StockItems
+GROUP BY CM1, CM3
+ORDER BY CM1;
