@@ -42,6 +42,7 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.prime.tally.ui.screen.home.Dashboard
+import org.prime.tally.ui.screen.reports.TrialBalanceScreen
 
 object ReportingTab : Tab {
     override val options: TabOptions
@@ -53,7 +54,7 @@ object ReportingTab : Tab {
     @Composable
     override fun Content() {
         val colors = MaterialTheme.colorScheme
-        val nav = LocalNavigator.currentOrThrow
+        val nav = LocalNavigator.currentOrThrow.parent
         Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
             Text(
                 text = "Reports",
@@ -87,13 +88,13 @@ object ReportingTab : Tab {
                         onClick = {
                             //TODO: add appropriate screens
                             when (report) {
-                                Report.Ledger -> nav.push(Dashboard)
-                                Report.Outstanding -> nav.push(Dashboard)
-                                Report.PendingOrders -> nav.push(Dashboard)
-                                Report.Quotations -> nav.push(Dashboard)
-                                Report.Registers -> nav.push(Dashboard)
-                                Report.StockReport -> nav.push(Dashboard)
-                                Report.TrialBalance -> nav.push(Dashboard)
+                                Report.Ledger -> nav?.push(Dashboard)
+                                Report.Outstanding -> nav?.push(Dashboard)
+                                Report.PendingOrders -> nav?.push(Dashboard)
+                                Report.Quotations -> nav?.push(Dashboard)
+                                Report.Registers -> nav?.push(Dashboard)
+                                Report.StockReport -> nav?.push(Dashboard)
+                                Report.TrialBalance -> nav?.push(TrialBalanceScreen)
                             }
                         }
                     )

@@ -63,147 +63,147 @@ object SettingScreen : Screen {
         }
 
         val colors = MaterialTheme.colorScheme
-        TallyScaffold("Profile") { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(colors.surfaceContainerLowest)
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = colors.primary
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        TallyScaffold("Profile", content = {innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colors.surfaceContainerLowest)
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = colors.primary
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = colors.onPrimary.copy(alpha = 0.1f),
+                            modifier = Modifier.size(56.dp)
                         ) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = colors.onPrimary.copy(alpha = 0.1f),
-                                modifier = Modifier.size(56.dp)
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
                             ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    Text(
-                                        "P",
-                                        color = colors.onBackground,
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 28.sp),
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
                                 Text(
-                                    text = "Prime Tally Solutions",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    color = colors.onPrimary
-                                )
-                                Text(
-                                    text = "Business Account",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = colors.onPrimary.copy(alpha = 0.8f)
+                                    "P",
+                                    color = colors.onBackground,
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 28.sp),
                                 )
                             }
                         }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = "Prime Tally Solutions",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = colors.onPrimary
+                            )
+                            Text(
+                                text = "Business Account",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = colors.onPrimary.copy(alpha = 0.8f)
+                            )
+                        }
                     }
+                }
 
-                    Spacer(modifier = Modifier.height(24.dp))
-                    TallyDivider()
+                Spacer(modifier = Modifier.height(24.dp))
+                TallyDivider()
 
-                    Text(
-                        text = "Account Information",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = colors.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                Text(
+                    text = "Account Information",
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = colors.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ProfileItem(Icons.Default.Email, "Email Address", "user@example.com")
+                    ProfileItem(Icons.Default.Business, "Company Name", "Prime Tally Solutions")
+                    ProfileItem(
+                        Icons.Default.LocationOn,
+                        "Business Address",
+                        "123 Business Street, Mumbai"
                     )
-
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ProfileItem(Icons.Default.Email, "Email Address", "user@example.com")
-                        ProfileItem(Icons.Default.Business, "Company Name", "Prime Tally Solutions")
-                        ProfileItem(
-                            Icons.Default.LocationOn,
-                            "Business Address",
-                            "123 Business Street, Mumbai"
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-                    TallyDivider()
-
-                    Text(
-                        text = "Business Details",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = colors.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-                    )
-
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ProfileItem(Icons.Default.DateRange, "Financial Year", "2024-2025")
-
-                        ProfileItem(Icons.Default.Receipt, "GST Number", "22ABCDE1234F1Z5")
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-                    TallyDivider()
-
-                    Text(
-                        text = "Format & Display Settings",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = colors.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-                    )
-
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ProfileItem(
-                            Icons.Default.CurrencyRupee,
-                            "Currency Symbol",
-                            "₹ (Indian Rupee)"
-                        )
-                        ProfileItem(Icons.Default.AccountBalance, "Paisa Symbol", "P (Paisa)")
-                        ProfileItem(Icons.Default.Numbers, "Quantity Decimal", "2 decimal places")
-                        ProfileItem(
-                            Icons.Default.MonetizationOn,
-                            "Amount Decimal",
-                            "2 decimal places"
-                        )
-                        ProfileItem(Icons.Default.CalendarToday, "Date Format", "DD/MM/YYYY")
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
+                TallyDivider()
 
+                Text(
+                    text = "Business Details",
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = colors.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                )
 
-                TallyIconButton("Sign Out", Icons.AutoMirrored.Filled.Logout) {
-                    SharedPrefs.Token.clear()
-                    SharedPrefs.FileId.clear()
-                    deleteDbFile()
-                    //TODO: Log out
-                    nav.replaceAll(LoginScreen)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ProfileItem(Icons.Default.DateRange, "Financial Year", "2024-2025")
+
+                    ProfileItem(Icons.Default.Receipt, "GST Number", "22ABCDE1234F1Z5")
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+                TallyDivider()
+
+                Text(
+                    text = "Format & Display Settings",
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = colors.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ProfileItem(
+                        Icons.Default.CurrencyRupee,
+                        "Currency Symbol",
+                        "₹ (Indian Rupee)"
+                    )
+                    ProfileItem(Icons.Default.AccountBalance, "Paisa Symbol", "P (Paisa)")
+                    ProfileItem(Icons.Default.Numbers, "Quantity Decimal", "2 decimal places")
+                    ProfileItem(
+                        Icons.Default.MonetizationOn,
+                        "Amount Decimal",
+                        "2 decimal places"
+                    )
+                    ProfileItem(Icons.Default.CalendarToday, "Date Format", "DD/MM/YYYY")
                 }
             }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+
+            TallyIconButton("Sign Out", Icons.AutoMirrored.Filled.Logout) {
+                SharedPrefs.Token.clear()
+                SharedPrefs.FileId.clear()
+                deleteDbFile()
+                //TODO: Log out
+                nav.replaceAll(LoginScreen)
+            }
         }
-    }
+    })
+}
 }
 
 @Composable
