@@ -24,3 +24,20 @@ SELECT
 FROM Vouchers_Ledgers
 GROUP BY CM1
 ORDER BY CM1;
+
+
+ledgerReportList:
+SELECT
+  VL.*,
+  (
+    SELECT Tb1.CM1
+    FROM Vouchers_Ledgers AS Tb1
+    WHERE Tb1.VCH_GUID = VL.VCH_GUID
+      AND Tb1.SRNO != VL.SRNO
+    LIMIT 1
+  ) AS AccountName
+FROM Vouchers_Ledgers AS VL
+WHERE VL.CM1 = ?
+  AND VL.DATE >= ?
+  AND VL.DATE <= ?
+ORDER BY VL.DATE, VL.VOUCHERNUMBER;
