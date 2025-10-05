@@ -77,6 +77,9 @@ kotlin {
 
             implementation("app.cash.sqldelight:coroutines-extensions:2.1.0")
 
+            // kotlinx date time
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
+
         }
         nativeMain.dependencies {
             implementation(libs.ktor.client.darwin)
