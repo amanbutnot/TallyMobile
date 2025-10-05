@@ -1,5 +1,6 @@
-package org.prime.tally.ui.screen.reports
+package org.prime.tally.ui.screen.reports.trialBalance
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,10 +30,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import currentDate
 import org.prime.tally.data.expect.DatabaseHolder
-import org.prime.tally.ui.shared.SearchBar
+import org.prime.tally.ui.screen.reports.ledger.LedgerReportScreen
 import org.prime.tally.ui.shared.TallyCircularLoader
 import org.prime.tally.ui.shared.TallyReportScaffold
+import org.prime.tally.ui.shared.TallySearchBar
 import org.prime.tally.ui.shared.reportsShared.TableCell
 import org.tally.TrialBalanceList
 import kotlin.math.absoluteValue
@@ -48,6 +53,7 @@ object TrialBalanceScreen : Screen {
         var showSearchBar by remember { mutableStateOf(false) }
         var searchQuery by remember { mutableStateOf("") }
         val focusRequester = remember { FocusRequester() }
+        val nav = LocalNavigator.currentOrThrow
 
 
         val column1Weight = 0.6f
@@ -60,7 +66,6 @@ object TrialBalanceScreen : Screen {
         val totalCredit = list.sumOf { item ->
             if ((item.ClsnBal ?: 0.0) > 0.0) item.ClsnBal ?: 0.0 else 0.0
         }
-        val totalRows = list.count()
 
 
         LaunchedEffect(Unit) {
@@ -73,50 +78,54 @@ object TrialBalanceScreen : Screen {
                 focusRequester.requestFocus()
             }
         }
-
+        val filteredList = if (searchQuery.isEmpty()) {
+            list
+        } else {
+            list.filter { it.CM1?.contains(searchQuery, ignoreCase = true) == true }
+        }
         TallyReportScaffold(
             "Trial Balance", showBottomBar = true,
             showSearchAction = true,
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.Companion.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer
                     ),
                 )
                 {
                     Row(
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.Companion.fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.Companion.CenterVertically
                     ) {
                         Text(
                             text =
                                 buildAnnotatedString {
                                     append("Rows: ")
-                                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                        append("$totalRows")
+                                    withStyle(SpanStyle(fontWeight = FontWeight.Companion.Bold)) {
+                                        append("${filteredList.count()}")
                                     }
                                 },
-                            modifier = Modifier.weight(column1Weight),
+                            modifier = Modifier.Companion.weight(column1Weight),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
                             text = totalDebit.absoluteValue.toString(),
-                            modifier = Modifier.weight(column2Weight),
+                            modifier = Modifier.Companion.weight(column2Weight),
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.End,
+                            fontWeight = FontWeight.Companion.Medium,
+                            textAlign = TextAlign.Companion.End,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
                             text = totalCredit.absoluteValue.toString(),
-                            modifier = Modifier.weight(column3Weight),
+                            modifier = Modifier.Companion.weight(column3Weight),
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.End,
+                            fontWeight = FontWeight.Companion.Medium,
+                            textAlign = TextAlign.Companion.End,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
@@ -124,60 +133,59 @@ object TrialBalanceScreen : Screen {
             },
             content = { paddingValues ->
                 if (isLoading) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Box(
+                        Modifier.Companion.fillMaxSize(),
+                        contentAlignment = Alignment.Companion.Center
+                    ) {
                         TallyCircularLoader()
                     }
                 } else {
-                    Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                    Column(modifier = Modifier.Companion.fillMaxSize().padding(paddingValues)) {
                         if (showSearchBar) {
-                            SearchBar(
+                            TallySearchBar(
                                 searchQuery = searchQuery,
                                 onQueryChange = { searchQuery = it },
-                                modifier = Modifier.focusRequester(focusRequester)
+                                modifier = Modifier.Companion.focusRequester(focusRequester)
                             )
                         }
                         Card(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.Companion.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant
                             ),
                         )
                         {
                             Row(
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.Companion.fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 12.dp)
                             ) {
                                 TableCell(
                                     text = "Account Name",
                                     weight = column1Weight,
-                                    textAlign = TextAlign.Start,
+                                    textAlign = TextAlign.Companion.Start,
                                     isHeader = true
                                 )
                                 TableCell(
                                     text = "Debit",
                                     weight = column2Weight,
-                                    textAlign = TextAlign.End,
+                                    textAlign = TextAlign.Companion.End,
                                     isHeader = true
                                 )
                                 TableCell(
                                     text = "Credit",
                                     weight = column3Weight,
-                                    textAlign = TextAlign.End,
+                                    textAlign = TextAlign.Companion.End,
                                     isHeader = true
                                 )
                             }
                         }
 
 
-                        val filteredList = if (searchQuery.isEmpty()) {
-                            list
-                        } else {
-                            list.filter { it.CM1?.contains(searchQuery, ignoreCase = true) == true }
-                        }
+
 
 
                         LazyColumn(
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.Companion.fillMaxSize()
                         ) {
                             items(filteredList) { item ->
                                 val debitAmount =
@@ -188,7 +196,13 @@ object TrialBalanceScreen : Screen {
                                         ?: 0.0 else 0.0
 
                                 Card(
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.Companion.fillMaxWidth().clickable {
+                                        nav.push(LedgerReportScreen(
+                                            accountName = item.CM1.toString(),
+                                            startDate = "2020-01-01",
+                                            endDate = currentDate()
+                                        ))
+                                    }
                                         .padding(horizontal = 0.dp, vertical = 4.dp),
                                     colors = CardDefaults.cardColors(
                                         containerColor = MaterialTheme.colorScheme.surface
@@ -196,9 +210,9 @@ object TrialBalanceScreen : Screen {
                                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                                 ) {
                                     Row(
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.Companion.fillMaxWidth()
                                             .padding(horizontal = 16.dp, vertical = 12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                        verticalAlignment = Alignment.Companion.CenterVertically
                                     ) {
                                         TableCell(
                                             text = item.CM1 ?: "",
@@ -209,13 +223,13 @@ object TrialBalanceScreen : Screen {
                                         TableCell(
                                             text = if (debitAmount < 0) debitAmount.absoluteValue.toString() else "-",
                                             weight = column2Weight,
-                                            textAlign = TextAlign.End,
+                                            textAlign = TextAlign.Companion.End,
                                             isHeader = false
                                         )
                                         TableCell(
                                             text = if (creditAmount > 0) creditAmount.absoluteValue.toString() else "-",
                                             weight = column3Weight,
-                                            textAlign = TextAlign.End,
+                                            textAlign = TextAlign.Companion.End,
                                             isHeader = false
                                         )
                                     }
