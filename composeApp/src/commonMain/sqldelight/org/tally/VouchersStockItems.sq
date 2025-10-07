@@ -67,3 +67,6 @@ FROM Vouchers_StockItems
 WHERE CM2 = ?
 GROUP BY CM1, CM3
 ORDER BY CM1;
+
+ledgerStockItemList:
+SELECT SRNO,CM1 AS Item_Name,D1 AS Qty,CM3 AS Unit,D2 AS Rate,D1*D2 AS Amt FROM Vouchers_StockItems WHERE VCH_GUID=? ORDER BY SRNO;

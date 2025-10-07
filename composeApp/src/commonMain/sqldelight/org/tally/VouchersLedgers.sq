@@ -41,3 +41,13 @@ WHERE VL.CM1 = ?
   AND VL.DATE >= ?
   AND VL.DATE <= ?
 ORDER BY VL.DATE, VL.VOUCHERNUMBER;
+
+
+ledgerOpeningBalance:
+SELECT Sum(D1) AS OpeningBal  FROM Vouchers_Ledgers WHERE CM1=? AND DATE<?;
+
+ledgerReportItemList:
+SELECT SRNO,CM1 AS LedgerName, D2 AS CreditAmt,D3 AS DebitAmt FROM Vouchers_Ledgers WHERE VCH_GUID  =? ORDER BY SRNO;
+
+registerReportList:
+SELECT DATE,CM1,VchName,VOUCHERNUMBER,D1,VCH_GUID FROM Vouchers_Ledgers   WHERE VchType=? AND SRNO=1 AND DATE>=? AND DATE<=? ORDER BY DATE;
