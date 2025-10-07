@@ -1,4 +1,4 @@
-package org.prime.tally.ui.shared
+package org.prime.tally.ui.shared.composables
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

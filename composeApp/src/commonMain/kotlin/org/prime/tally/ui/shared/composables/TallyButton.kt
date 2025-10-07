@@ -1,5 +1,6 @@
-package org.prime.tally.ui.shared
+package org.prime.tally.ui.shared.composables
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -63,7 +64,7 @@ fun TallyIconButton(title: String, icon: ImageVector, onClick: () -> Unit) {
         colors = CardDefaults.cardColors(
             containerColor = colors.errorContainer.copy(alpha = 0.1f)
         ),
-        border = androidx.compose.foundation.BorderStroke(
+        border = BorderStroke(
             1.dp,
             colors.error.copy(alpha = 0.3f)
         )

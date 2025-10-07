@@ -1,4 +1,4 @@
-package org.prime.tally.ui.shared
+package org.prime.tally.ui.shared.composables
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -22,6 +22,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,7 +48,7 @@ fun TallyScaffold(
                     ) {
                         Text(
                             text = title,
-                            style = MaterialTheme.typography.headlineMedium,
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Medium),
                             color = MaterialTheme.colorScheme.onBackground,
                             textAlign = TextAlign.Center,
                             maxLines = 1,

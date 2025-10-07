@@ -1,4 +1,4 @@
-package org.prime.tally.ui.shared
+package org.prime.tally.ui.shared.composables
 
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.shape.RoundedCornerShape
