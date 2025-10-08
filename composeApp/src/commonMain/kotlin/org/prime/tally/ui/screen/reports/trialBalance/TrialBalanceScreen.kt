@@ -34,11 +34,16 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import currentDate
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.ui.screen.reports.godown.GodownClosingStockItemListScreen
 import org.prime.tally.ui.screen.reports.ledger.LedgerReportScreen
-import org.prime.tally.ui.shared.TallyCircularLoader
-import org.prime.tally.ui.shared.TallyReportScaffold
-import org.prime.tally.ui.shared.TallySearchBar
+import org.prime.tally.ui.shared.composables.TallyCircularLoader
+import org.prime.tally.ui.shared.composables.TallyReportScaffold
+import org.prime.tally.ui.shared.composables.TallySearchBar
+import org.prime.tally.ui.shared.reportsShared.ReportColumn
 import org.prime.tally.ui.shared.reportsShared.TableCell
+import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
+import org.prime.tally.ui.shared.reportsShared.TallyReportHeaderCard
+import org.prime.tally.ui.shared.reportsShared.TallyReportLazyList
 import org.tally.TrialBalanceList
 import kotlin.math.absoluteValue
 
@@ -88,48 +93,25 @@ object TrialBalanceScreen : Screen {
             showSearchAction = true,
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
-                Card(
-                    modifier = Modifier.Companion.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                TallyReportBottomBar(
+                    columns = listOf(
+                        ReportColumn(
+                            "Rows: ${filteredList.count()}",
+                            column1Weight,
+                            TextAlign.Start
+                        ),
+                        ReportColumn(
+                            totalDebit.absoluteValue.toString(),
+                            column2Weight,
+                            TextAlign.End
+                        ),
+                        ReportColumn(
+                            totalCredit.absoluteValue.toString(),
+                            column3Weight,
+                            TextAlign.End
+                        )
                     ),
                 )
-                {
-                    Row(
-                        modifier = Modifier.Companion.fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.Companion.CenterVertically
-                    ) {
-                        Text(
-                            text =
-                                buildAnnotatedString {
-                                    append("Rows: ")
-                                    withStyle(SpanStyle(fontWeight = FontWeight.Companion.Bold)) {
-                                        append("${filteredList.count()}")
-                                    }
-                                },
-                            modifier = Modifier.Companion.weight(column1Weight),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Text(
-                            text = totalDebit.absoluteValue.toString(),
-                            modifier = Modifier.Companion.weight(column2Weight),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Companion.Medium,
-                            textAlign = TextAlign.Companion.End,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Text(
-                            text = totalCredit.absoluteValue.toString(),
-                            modifier = Modifier.Companion.weight(column3Weight),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Companion.Medium,
-                            textAlign = TextAlign.Companion.End,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
             },
             content = { paddingValues ->
                 if (isLoading) {
@@ -148,46 +130,35 @@ object TrialBalanceScreen : Screen {
                                 modifier = Modifier.Companion.focusRequester(focusRequester)
                             )
                         }
-                        Card(
-                            modifier = Modifier.Companion.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            ),
+                        TallyReportHeaderCard(
+                            columns = listOf(
+                                ReportColumn(
+                                    "Account Name",
+                                    column1Weight,
+                                    TextAlign.Start
+                                ),
+                                ReportColumn(
+                                    "Debit",
+                                    column2Weight,
+                                    TextAlign.End
+                                ),
+                                ReportColumn(
+                                    "Credit",
+                                    column3Weight,
+                                    TextAlign.End
+                                )
+                            )
                         )
-                        {
-                            Row(
-                                modifier = Modifier.Companion.fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                            ) {
-                                TableCell(
-                                    text = "Account Name",
-                                    weight = column1Weight,
-                                    textAlign = TextAlign.Companion.Start,
-                                    isHeader = true
-                                )
-                                TableCell(
-                                    text = "Debit",
-                                    weight = column2Weight,
-                                    textAlign = TextAlign.Companion.End,
-                                    isHeader = true
-                                )
-                                TableCell(
-                                    text = "Credit",
-                                    weight = column3Weight,
-                                    textAlign = TextAlign.Companion.End,
-                                    isHeader = true
-                                )
-                            }
-                        }
-
-
-
-
-
-                        LazyColumn(
-                            modifier = Modifier.Companion.fillMaxSize()
-                        ) {
-                            items(filteredList) { item ->
+                        TallyReportLazyList(
+                            items = filteredList,
+                            onItemClick = { item ->
+                                nav.push(LedgerReportScreen(
+                                    accountName = item.CM1.toString(),
+                                    startDate = "2020-01-01",
+                                    endDate = currentDate()
+                                ))
+                            },
+                            content = { item ->
                                 val debitAmount =
                                     if ((item.ClsnBal ?: 0.0) < 0.0) item.ClsnBal
                                         ?: 0.0 else 0.0
@@ -195,47 +166,26 @@ object TrialBalanceScreen : Screen {
                                     if ((item.ClsnBal ?: 0.0) > 0.0) item.ClsnBal
                                         ?: 0.0 else 0.0
 
-                                Card(
-                                    modifier = Modifier.Companion.fillMaxWidth().clickable {
-                                        nav.push(LedgerReportScreen(
-                                            accountName = item.CM1.toString(),
-                                            startDate = "2020-01-01",
-                                            endDate = currentDate()
-                                        ))
-                                    }
-                                        .padding(horizontal = 0.dp, vertical = 4.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surface
-                                    ),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.Companion.fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                                        verticalAlignment = Alignment.Companion.CenterVertically
-                                    ) {
-                                        TableCell(
-                                            text = item.CM1 ?: "",
-                                            weight = column1Weight,
-                                            isHeader = false
-                                        )
+                                TableCell(
+                                    text = item.CM1 ?: "",
+                                    weight = column1Weight,
+                                    isHeader = false
+                                )
 
-                                        TableCell(
-                                            text = if (debitAmount < 0) debitAmount.absoluteValue.toString() else "-",
-                                            weight = column2Weight,
-                                            textAlign = TextAlign.Companion.End,
-                                            isHeader = false
-                                        )
-                                        TableCell(
-                                            text = if (creditAmount > 0) creditAmount.absoluteValue.toString() else "-",
-                                            weight = column3Weight,
-                                            textAlign = TextAlign.Companion.End,
-                                            isHeader = false
-                                        )
-                                    }
-                                }
+                                TableCell(
+                                    text = if (debitAmount < 0) debitAmount.absoluteValue.toString() else "-",
+                                    weight = column2Weight,
+                                    textAlign = TextAlign.Companion.End,
+                                    isHeader = false
+                                )
+                                TableCell(
+                                    text = if (creditAmount > 0) creditAmount.absoluteValue.toString() else "-",
+                                    weight = column3Weight,
+                                    textAlign = TextAlign.Companion.End,
+                                    isHeader = false
+                                )
                             }
-                        }
+                        )
                     }
                 }
             })
