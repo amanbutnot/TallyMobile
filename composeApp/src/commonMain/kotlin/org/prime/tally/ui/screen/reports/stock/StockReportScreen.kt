@@ -1,18 +1,9 @@
 package org.prime.tally.ui.screen.reports.stock
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -23,21 +14,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.tally.data.expect.DatabaseHolder
-import org.prime.tally.ui.shared.SearchBar
-import org.prime.tally.ui.shared.TallyCircularLoader
-import org.prime.tally.ui.shared.TallyReportScaffold
+import org.prime.tally.ui.shared.composables.TallyCircularLoader
+import org.prime.tally.ui.shared.composables.TallyReportScaffold
+import org.prime.tally.ui.shared.composables.TallySearchBar
+import org.prime.tally.ui.shared.reportsShared.ReportColumn
 import org.prime.tally.ui.shared.reportsShared.TableCell
+import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
+import org.prime.tally.ui.shared.reportsShared.TallyReportHeaderCard
+import org.prime.tally.ui.shared.reportsShared.TallyReportLazyList
 import org.tally.StockReportList
+import kotlin.math.absoluteValue
 
 object StockReportScreen : Screen {
     @Composable
@@ -58,8 +49,6 @@ object StockReportScreen : Screen {
         val column3Weight = 0.2f
         val column4Weight = 0.3f
 
-
-        val totalRows = list.count()
         val totalQty = list.sumOf { it.Item_Qty ?: 0.0 }
         val totalAmt = list.sumOf { it.Item_Amt ?: 0.0 }
 
@@ -74,54 +63,40 @@ object StockReportScreen : Screen {
                 focusRequester.requestFocus()
             }
         }
-
+        val filteredList = if (searchQuery.isEmpty()) {
+            list
+        } else {
+            list.filter {
+                it.Item_Name?.contains(
+                    searchQuery,
+                    ignoreCase = true
+                ) == true
+            }
+        }
         TallyReportScaffold(
             "Stock Report", showBottomBar = true,
             showSearchAction = true,
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
-                Card(
-                    modifier = Modifier.Companion.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                TallyReportBottomBar(
+                    columns = listOf(
+                        ReportColumn(
+                            "Rows: ${filteredList.count()}",
+                            column1Weight,
+                            TextAlign.Start
+                        ),
+                        ReportColumn(
+                            totalQty.absoluteValue.toString(),
+                            column2Weight,
+                            TextAlign.End
+                        ),
+                        ReportColumn(
+                            totalAmt.absoluteValue.toString(),
+                            column3Weight,
+                            TextAlign.End
+                        )
                     ),
                 )
-                {
-                    Row(
-                        modifier = Modifier.Companion.fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.Companion.CenterVertically
-                    ) {
-                        Text(
-                            text =
-                                buildAnnotatedString {
-                                    append("Rows: ")
-                                    withStyle(SpanStyle(fontWeight = FontWeight.Companion.Bold)) {
-                                        append("$totalRows")
-                                    }
-                                },
-                            modifier = Modifier.Companion.weight(column1Weight + column2Weight),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Text(
-                            text = totalQty.toString(),
-                            modifier = Modifier.Companion.weight(column3Weight),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Companion.Medium,
-                            textAlign = TextAlign.Companion.End,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Text(
-                            text = totalAmt.toString(),
-                            modifier = Modifier.Companion.weight(column4Weight),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Companion.Medium,
-                            textAlign = TextAlign.Companion.End,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
             },
             content = { paddingValues ->
                 if (isLoading) {
@@ -134,111 +109,70 @@ object StockReportScreen : Screen {
                 } else {
                     Column(modifier = Modifier.Companion.fillMaxSize().padding(paddingValues)) {
                         if (showSearchBar) {
-                            SearchBar(
+                            TallySearchBar(
                                 searchQuery = searchQuery,
                                 onQueryChange = { searchQuery = it },
                                 modifier = Modifier.Companion.focusRequester(focusRequester)
                             )
                         }
-                        Card(
-                            modifier = Modifier.Companion.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            ),
+                        TallyReportHeaderCard(
+                            columns = listOf(
+                                ReportColumn(
+                                    "Item Name",
+                                    column1Weight,
+                                    TextAlign.Start
+                                ),
+                                ReportColumn(
+                                    "Unit",
+                                    column2Weight,
+                                    TextAlign.End
+                                ),
+                                ReportColumn(
+                                    "Qty",
+                                    column3Weight,
+                                    TextAlign.End
+                                ),
+                                ReportColumn(
+                                    "Amount",
+                                    column4Weight,
+                                    TextAlign.End
+                                )
+                            )
                         )
-                        {
-                            Row(
-                                modifier = Modifier.Companion.fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                            ) {
+                        TallyReportLazyList(
+                            items = filteredList,
+                            onItemClick = { item ->
+                                nav.push(StockItemReportScreen(item.Item_Name))
+
+                            },
+                            content = { item ->
                                 TableCell(
-                                    text = "Item Name",
+                                    text = item.Item_Name ?: "",
                                     weight = column1Weight,
                                     textAlign = TextAlign.Companion.Start,
-                                    isHeader = true
+                                    isHeader = false
                                 )
+
                                 TableCell(
-                                    text = "Unit",
+                                    text = item.Item_Unit.toString(),
                                     weight = column2Weight,
                                     textAlign = TextAlign.Companion.End,
-                                    isHeader = true
+                                    isHeader = false
                                 )
                                 TableCell(
-                                    text = "Qty",
+                                    text = item.Item_Qty.toString(),
+                                    weight = column2Weight,
+                                    textAlign = TextAlign.Companion.End,
+                                    isHeader = false
+                                )
+                                TableCell(
+                                    text = item.Item_Amt.toString(),
                                     weight = column3Weight,
                                     textAlign = TextAlign.Companion.End,
-                                    isHeader = true
-                                )
-                                TableCell(
-                                    text = "Amount",
-                                    weight = column4Weight,
-                                    textAlign = TextAlign.Companion.End,
-                                    isHeader = true
+                                    isHeader = false
                                 )
                             }
-                        }
-
-                        val filteredList = if (searchQuery.isEmpty()) {
-                            list
-                        } else {
-                            list.filter {
-                                it.Item_Name?.contains(
-                                    searchQuery,
-                                    ignoreCase = true
-                                ) == true
-                            }
-                        }
-
-
-                        LazyColumn(
-                            modifier = Modifier.Companion.fillMaxSize()
-                        ) {
-                            items(filteredList) { item ->
-
-                                Card(
-                                    modifier = Modifier.Companion.fillMaxWidth()
-                                        .padding(horizontal = 0.dp, vertical = 4.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surface
-                                    ),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.Companion.fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                                            .clickable {
-                                                nav.push(StockItemReportScreen(item.Item_Name))
-                                            },
-                                        verticalAlignment = Alignment.Companion.CenterVertically
-                                    ) {
-                                        TableCell(
-                                            text = item.Item_Name ?: "",
-                                            weight = column1Weight,
-                                            isHeader = false
-                                        )
-
-                                        TableCell(
-                                            text = item.Item_Unit ?: "",
-                                            weight = column2Weight,
-                                            textAlign = TextAlign.Companion.End,
-                                            isHeader = false
-                                        )
-                                        TableCell(
-                                            text = item.Item_Qty.toString(),
-                                            weight = column3Weight,
-                                            textAlign = TextAlign.Companion.End,
-                                            isHeader = false
-                                        )
-                                        TableCell(
-                                            text = item.Item_Amt.toString(),
-                                            weight = column4Weight,
-                                            textAlign = TextAlign.Companion.End,
-                                            isHeader = false
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        )
                     }
                 }
             })
