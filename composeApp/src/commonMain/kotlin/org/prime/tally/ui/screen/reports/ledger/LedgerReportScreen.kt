@@ -1,5 +1,6 @@
 package org.prime.tally.ui.screen.reports.ledger
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,12 +36,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.tally.data.expect.DatabaseHolder
-import org.prime.tally.ui.shared.TallyCircularLoader
-import org.prime.tally.ui.shared.TallyReportScaffold
-import org.prime.tally.ui.shared.TallySearchBar
+import org.prime.tally.ui.shared.composables.TallyCircularLoader
+import org.prime.tally.ui.shared.composables.TallyReportScaffold
+import org.prime.tally.ui.shared.composables.TallySearchBar
+import org.prime.tally.ui.shared.globalShared.Tdate
+import org.prime.tally.ui.shared.reportsShared.ReportColumn
 import org.prime.tally.ui.shared.reportsShared.TableCell
+import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
+import org.tally.LedgerOpeningBalance
 import org.tally.LedgerReportList
+import kotlin.math.absoluteValue
 
 data class LedgerReportScreen(val accountName: String, val startDate: String, val endDate: String) :
     Screen {
@@ -55,8 +63,10 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
         val focusRequester = remember { FocusRequester() }
         var expanded by remember { mutableStateOf(false) }
         var selectedOption by remember { mutableStateOf("Name") }
-        var bal = 0.0
-        bal = list.sumOf { it.D2!!+it.D3!! + bal }
+        var openingBalance by remember { mutableStateOf<LedgerOpeningBalance?>(null) }
+        val nav = LocalNavigator.currentOrThrow
+        var closingBalance = 0.0
+        closingBalance = list.sumOf { it.D2!! + it.D3!! + closingBalance }
 
 
         val columnSmallWeight = 2.5f
@@ -69,6 +79,8 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                 DATE = startDate,
                 DATE_ = endDate
             ).executeAsList()
+            openingBalance = db.vouchersLedgersQueries.ledgerOpeningBalance(accountName, startDate)
+                .executeAsOne()
             isLoading = false
         }
         LaunchedEffect(showSearchBar) {
@@ -89,55 +101,20 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
             showSearchAction = true,
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Closing Balance: ",
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            text = bal.toString(),
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                TallyReportBottomBar(
+                    columns = listOf(
+                        ReportColumn(
+                            "Rows: ${filteredList.count()}",
+                            columnSmallWeight,
+                            TextAlign.Start
                         ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = buildAnnotatedString {
-                                    append("Rows: ")
-                                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                        append("${filteredList.count()}")
-                                    }
-                                },
-                                modifier = Modifier.weight(1f),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                }
+                        ReportColumn(
+                            "Closing Balance: $closingBalance",
+                            columnBigWeight,
+                            TextAlign.End
+                        ),
+                    ),
+                )
             },
             content = { paddingValues ->
                 if (isLoading) {
@@ -152,7 +129,7 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(paddingValues)
-                            .padding(horizontal = 4.dp)
+                            .padding(horizontal = 8.dp)
                     ) {
 
 
@@ -161,8 +138,6 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-
-
                                 Box(
                                     modifier = Modifier.weight(0.8f).padding(horizontal = 4.dp),
                                     contentAlignment = Alignment.Center
@@ -218,7 +193,7 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                         )
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            "From $startDate  →  To $endDate",
+                            "From ${Tdate(startDate)}  →  To ${Tdate(endDate)}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -293,7 +268,7 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                             horizontalArrangement = Arrangement.End
                         ) {
                             Text(
-                                "Opening Balance: ",
+                                "Opening Balance: ${openingBalance?.OpeningBal ?: 0.0}",
                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.onBackground
                             )
@@ -305,27 +280,37 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                             modifier = Modifier.fillMaxSize()
                         ) {
                             if (filteredList.isEmpty()) {
-                              item{
-                                  Box(
-                                      modifier = Modifier.fillMaxSize(),
-                                      contentAlignment = Alignment.Center
-                                  ) {
-                                      Text(
-                                          "No result found",
-                                          style = MaterialTheme.typography.bodyMedium,
-                                          color = MaterialTheme.colorScheme.onPrimaryContainer
-                                      )
-                                  }
-                              }
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            "No result found",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
+                                }
 
                             } else {
+                                var bal = 0.0
                                 items(filteredList) { item ->
-
+                                    bal = item.D2!! + item.D3!! + bal
 
                                     Card(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(vertical = 4.dp),
+                                            .padding(vertical = 4.dp).clickable {
+                                                nav.push(
+                                                    LedgerReportItemScreen(
+                                                        vchNo = item.VOUCHERNUMBER.toString(),
+                                                        date = item.DATE.toString(),
+                                                        vchType = item.VchType.toString(),
+                                                        guid = item.VCH_GUID.toString()
+                                                    )
+                                                )
+                                            },
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.surface
                                         ),
@@ -342,7 +327,7 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 TableCell(
-                                                    item.DATE ?: "",
+                                                    Tdate(item.DATE?:""),
                                                     columnSmallWeight,
                                                     textAlign = TextAlign.Start,
                                                     isHeader = false
