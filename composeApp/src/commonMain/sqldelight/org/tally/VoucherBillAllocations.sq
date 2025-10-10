@@ -1,0 +1,66 @@
+CREATE TABLE Vouchers_BILLALLOCATIONS (
+    GUID TEXT NOT NULL UNIQUE,
+    VCH_GUID TEXT,
+    VCHTYPE TEXT,
+    DATE TEXT,
+    DUEDATE TEXT,
+    BILLNUMBER TEXT,
+    SRNO INTEGER,
+    CM1 TEXT,
+    CM2 TEXT,
+    CM3 TEXT,
+    BILLID REAL,
+    D1 REAL,
+    D2 REAL,
+    E1 TEXT,
+    E2 TEXT,
+    PRIMARY KEY(GUID)
+);
+
+
+billReceivableList:
+SELECT
+    V.VCH_GUID,
+    V.DATE AS date,
+    V.VCHTYPE AS vchType,
+    V.BILLNUMBER AS billNumber,
+    V.CM1 AS cm1,
+    V.DUEDATE AS dueDate,
+    V.D1 AS d1,
+    Adj.AdjustmentAmount AS adjustmentAmount
+FROM Vouchers_BILLALLOCATIONS AS V
+INNER JOIN (
+    SELECT BILLID, SUM(D1) AS AdjustmentAmount
+    FROM Vouchers_BILLALLOCATIONS
+    GROUP BY BILLID
+) AS Adj
+ON V.BILLID = Adj.BILLID
+WHERE V.CM2 IN ('New Ref', 'Advance')
+  AND V.D1 < 0
+  AND  V.DATE>=? AND V.DATE<=?
+  AND Adj.AdjustmentAmount < 0
+ORDER BY V.DATE, V.CM1;
+
+
+billPayableList:
+SELECT
+    V.VCH_GUID,
+    V.DATE AS date,
+    V.VCHTYPE AS vchType,
+    V.BILLNUMBER AS billNumber,
+    V.CM1 AS cm1,
+    V.DUEDATE AS dueDate,
+    V.D1 AS d1,
+    Adj.AdjustmentAmount AS adjustmentAmount
+FROM Vouchers_BILLALLOCATIONS AS V
+INNER JOIN (
+    SELECT BILLID, SUM(D1) AS AdjustmentAmount
+    FROM Vouchers_BILLALLOCATIONS
+    GROUP BY BILLID
+) AS Adj
+ON V.BILLID = Adj.BILLID
+WHERE V.CM2 IN ('New Ref', 'Advance')
+  AND V.D1 > 0
+  AND  V.DATE>=? AND V.DATE<=?
+  AND Adj.AdjustmentAmount > 0
+ORDER BY V.DATE, V.CM1;
