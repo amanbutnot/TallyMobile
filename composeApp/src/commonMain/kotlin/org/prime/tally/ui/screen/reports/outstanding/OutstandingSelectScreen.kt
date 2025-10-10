@@ -69,14 +69,9 @@ object OutstandingSelectScreen : Screen {
                             icon = report.icon,
                             title = report.title,
                             onClick = {
-                                //TODO: add appropriate screens
-//                                when (report) {
-//                                    Outstanding.Receivable -> nav.push(
-//
-//                                    )
-//
-//                                    Outstanding.Payable -> nav.push()
-//                                }
+                                nav.push(
+                                    OutstandingFilterScreen(report.title)
+                                )
                             }
                         )
                     }
