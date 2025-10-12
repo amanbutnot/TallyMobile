@@ -37,6 +37,11 @@ kotlin {
 
             //SqlDelight
             implementation(libs.android.driver)
+
+            //html to pdf
+            implementation("com.itextpdf:html2pdf:6.2.1")
+
+
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -61,9 +66,6 @@ kotlin {
             implementation(libs.bundles.ktor)
             implementation(libs.runtime)
 
-            //ViewModel
-//            implementation(libs.lifecycle.viewmodel.compose)
-
             //Calender and Date and Time
             implementation(libs.kmp.date.time.picker)
             implementation(libs.kotlinx.datetime)
@@ -71,14 +73,21 @@ kotlin {
             //For base64 and byte conversion
             implementation(libs.okio) // or latest
 
-
             //Material Icons
             implementation(libs.material.icons.extended)
 
-            implementation("app.cash.sqldelight:coroutines-extensions:2.1.0")
+            implementation(libs.coroutines.extensions)
 
             // kotlinx date time
-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
+            implementation(libs.kotlinx.datetime)
+
+            //Handle Files
+            implementation("io.github.vinceglb:filekit-core:0.12.0")
+            // Enables FileKit dialogs without Compose dependencies
+            implementation("io.github.vinceglb:filekit-dialogs:0.12.0")
+
+// Enables FileKit dialogs with Composable utilities
+            implementation("io.github.vinceglb:filekit-dialogs-compose:0.12.0")
 
         }
         nativeMain.dependencies {
