@@ -55,3 +55,9 @@ CREATE TABLE CompanyInformation (
 
 selectAll:
 SELECT * FROM CompanyInformation;
+
+startDateQuery:
+SELECT T2 FROM CompanyInformation;
+
+companyNameQuery:
+SELECT T1 FROM CompanyInformation;
