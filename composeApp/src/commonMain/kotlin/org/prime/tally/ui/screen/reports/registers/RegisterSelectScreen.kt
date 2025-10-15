@@ -1,4 +1,4 @@
-package org.prime.tally.ui.screen.reports.receipts
+package org.prime.tally.ui.screen.reports.registers
 
 
 import androidx.compose.foundation.background
@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import org.prime.tally.ui.screen.home.Dashboard
 import org.prime.tally.ui.screen.home.tabs.ReportButton
 import org.prime.tally.ui.shared.composables.TallyScaffold
 
@@ -57,6 +56,8 @@ object RegisterSelectScreen : Screen {
                     Registers.Purchase,
                     Registers.Receipt,
                     Registers.Payment,
+                  //  Registers.SaleReturn,
+                  //  Registers.PurchaseReturn
                 )
 
                 LazyVerticalGrid(
@@ -77,6 +78,12 @@ object RegisterSelectScreen : Screen {
                                     Registers.Purchase -> nav.push(RegisterFilterScreen(Registers.Purchase.title))
                                     Registers.Receipt -> nav.push(RegisterFilterScreen(Registers.Receipt.title))
                                     Registers.Payment -> nav.push(RegisterFilterScreen(Registers.Payment.title))
+                                    Registers.SaleReturn -> nav.push(RegisterFilterScreen(Registers.SaleReturn.title))
+                                    Registers.PurchaseReturn -> nav.push(
+                                        RegisterFilterScreen(
+                                            Registers.PurchaseReturn.title
+                                        )
+                                    )
                                 }
                             }
                         )
@@ -96,5 +103,7 @@ sealed class Registers(val title: String, val icon: ImageVector) {
     object Purchase : Registers("Purchase", Icons.Default.AssignmentLate)
     object Receipt : Registers("Receipt", Icons.Default.Scale)
     object Payment : Registers("Payment", Icons.AutoMirrored.Default.ListAlt)
+    object SaleReturn : Registers("Sale Return", Icons.AutoMirrored.Default.ListAlt)
+    object PurchaseReturn : Registers("Purchase Return", Icons.AutoMirrored.Default.ListAlt)
 
 }

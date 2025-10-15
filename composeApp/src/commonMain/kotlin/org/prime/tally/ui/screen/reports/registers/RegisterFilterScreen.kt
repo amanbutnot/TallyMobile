@@ -1,10 +1,9 @@
-package org.prime.tally.ui.screen.reports.receipts
+package org.prime.tally.ui.screen.reports.registers
 
 import androidx.compose.runtime.Composable
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import org.prime.tally.ui.screen.reports.ledger.LedgerReportScreen
 import org.prime.tally.ui.shared.reportsShared.ReportFilterScreen
 
 data class RegisterFilterScreen(val name: String) : Screen {

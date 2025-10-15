@@ -1,14 +1,18 @@
-package org.prime.tally.ui.screen.reports.receipts
+package org.prime.tally.ui.screen.reports.registers
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,18 +22,25 @@ import androidx.compose.ui.text.style.TextAlign
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.launch
 import org.prime.tally.data.expect.DatabaseHolder
-import org.prime.tally.ui.screen.reports.stock.StockItemReportScreen
+import org.prime.tally.ui.printing.Quadruple
+import org.prime.tally.ui.printing.fourHeaderHtml
+import org.prime.tally.ui.screen.reports.ledger.LedgerReportItemScreen
+import org.prime.tally.ui.shared.composables.MenuItemData
 import org.prime.tally.ui.shared.composables.TallyCircularLoader
+import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.composables.TallySearchBar
+import org.prime.tally.ui.shared.globalShared.Tdate
+import org.prime.tally.ui.shared.reportsShared.PdfAction
 import org.prime.tally.ui.shared.reportsShared.ReportColumn
 import org.prime.tally.ui.shared.reportsShared.TableCell
 import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.tally.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.tally.ui.shared.reportsShared.TallyReportLazyList
+import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.RegisterReportList
-import org.tally.StockReportList
 import kotlin.math.absoluteValue
 
 data class RegisterReportScreen(val name: String, val startDate: String, val endDate: String) :
@@ -44,15 +55,16 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
         var searchQuery by remember { mutableStateOf("") }
         val focusRequester = remember { FocusRequester() }
         val nav = LocalNavigator.currentOrThrow
+        var shareLoading by remember { mutableStateOf(false) }
+        val scope = rememberCoroutineScope()
 
 
-        val column1Weight = 0.6f
-        val column2Weight = 0.2f
+        val column1Weight = 0.3f
+        val column2Weight = 0.5f
         val column3Weight = 0.2f
         val column4Weight = 0.3f
-//
-//        val totalQty = list.sumOf { it.Item_Qty ?: 0.0 }
-//        val totalAmt = list.sumOf { it.Item_Amt ?: 0.0 }
+
+        val totalAmt = list.sumOf { it.D1 ?: 0.0 }
 
 
         LaunchedEffect(Unit) {
@@ -73,29 +85,91 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
             list
         } else {
             list.filter {
-                it.CM1?.contains(
+                it.CM1?.startsWith(
                     searchQuery,
                     ignoreCase = true
                 ) == true
             }
         }
+
+        val rows: List<Quadruple<String, String, String, String>> = filteredList.map { item ->
+            Quadruple(
+                item.DATE ?: "",
+                item.CM1 ?: "",
+                item.VOUCHERNUMBER?.trim() ?: "",
+                item.D1?.absoluteValue?.toString() ?: ""
+            )
+        }
+
+
+        val menuItems = listOf(
+            MenuItemData(
+                title = "Download",
+                icon = Icons.Default.Download,
+                onClick = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = name,
+                            htmlContent = fourHeaderHtml(
+                                title = name,
+                                headers = Quadruple("Date", "Name", "Vch No", "Amount"),
+                                rows = rows,
+                                total1 = totalAmt.toString(),
+                                startDate = startDate,
+                                endDate = endDate,
+                            ),
+                            action = PdfAction.Download,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }
+            ),
+            MenuItemData(
+                title = "Share",
+                icon = Icons.Default.Share,
+                onClick = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = name,
+                            htmlContent = fourHeaderHtml(
+                                title = name,
+                                headers = Quadruple("Date", "Name", "Vch No", "Amount"),
+                                rows = rows,
+                                total1 = totalAmt.toString(),
+                                startDate = startDate,
+                                endDate = endDate,
+                            ),
+                            action = PdfAction.Share,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }
+            )
+        )
+        if (shareLoading) {
+            TallyLoadingDialog("Generating Report")
+        }
+
+
         TallyReportScaffold(
             "$name Report", showBottomBar = true,
             showSearchAction = true,
+            showBurgerMenu = true,
             onSearchClick = { showSearchBar = !showSearchBar },
+            menuItems = menuItems,
             bottomBarContent = {
                 TallyReportBottomBar(
                     columns = listOf(
                         ReportColumn(
                             "Rows: ${filteredList.count()}",
-                            column1Weight,
+                            column1Weight + column2Weight + column3Weight,
                             TextAlign.Start
                         ),
-//                        ReportColumn(
-//                            totalQty.absoluteValue.toString(),
-//                            column2Weight,
-//                            TextAlign.End
-//                        ),
+                        ReportColumn(
+                            totalAmt.absoluteValue.toString(),
+                            column4Weight,
+                            TextAlign.End
+                        ),
 //                        ReportColumn(
 //                            totalAmt.absoluteValue.toString(),
 //                            column3Weight,
@@ -124,19 +198,19 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                         TallyReportHeaderCard(
                             columns = listOf(
                                 ReportColumn(
-                                    "Item Name",
+                                    "Date",
                                     column1Weight,
                                     TextAlign.Start
                                 ),
                                 ReportColumn(
-                                    "Unit",
+                                    "Name",
                                     column2Weight,
-                                    TextAlign.End
+                                    TextAlign.Start
                                 ),
                                 ReportColumn(
-                                    "Qty",
+                                    "Vch No",
                                     column3Weight,
-                                    TextAlign.End
+                                    TextAlign.Start
                                 ),
                                 ReportColumn(
                                     "Amount",
@@ -148,31 +222,38 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                         TallyReportLazyList(
                             items = filteredList,
                             onItemClick = { item ->
-                             //   nav.push(StockItemReportScreen(item.Item_Name))
+                                nav.push(
+                                    LedgerReportItemScreen(
+                                        date = startDate,
+                                        vchType = item.VchName.toString(),
+                                        guid = item.VCH_GUID.toString(),
+                                        vchNo = item.VOUCHERNUMBER.toString()
+                                    )
+                                )
 
                             },
                             content = { item ->
                                 TableCell(
-                                    text = item.CM1 ?: "",
+                                    text = Tdate(item.DATE ?: ""),
                                     weight = column1Weight,
                                     textAlign = TextAlign.Companion.Start,
                                     isHeader = false
                                 )
 
                                 TableCell(
-                                    text = item.VchName.toString(),
+                                    text = item.CM1.toString(),
                                     weight = column2Weight,
-                                    textAlign = TextAlign.Companion.End,
+                                    textAlign = TextAlign.Companion.Start,
                                     isHeader = false
                                 )
                                 TableCell(
-                                    text = item.DATE.toString(),
-                                    weight = column2Weight,
-                                    textAlign = TextAlign.Companion.End,
+                                    text = item.VOUCHERNUMBER.toString().trim(),
+                                    weight = column3Weight,
+                                    textAlign = TextAlign.Companion.Start,
                                     isHeader = false
                                 )
                                 TableCell(
-                                    text = item.D1.toString(),
+                                    text = item.D1?.absoluteValue.toString(),
                                     weight = column3Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false
