@@ -4,11 +4,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,15 +22,29 @@ import androidx.compose.ui.text.style.TextAlign
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.expect.formatToAmtDec
+import org.prime.tally.data.expect.formatToQtyDec
+import org.prime.tally.ui.printing.Quadruple
+import org.prime.tally.ui.printing.fourHeaderHtml
+import org.prime.tally.ui.shared.composables.MenuItemData
 import org.prime.tally.ui.shared.composables.TallyCircularLoader
+import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.composables.TallySearchBar
+import org.prime.tally.ui.shared.globalShared.getAmtDecimal
+import org.prime.tally.ui.shared.globalShared.getQtyDecimal
+import org.prime.tally.ui.shared.reportsShared.PdfAction
 import org.prime.tally.ui.shared.reportsShared.ReportColumn
 import org.prime.tally.ui.shared.reportsShared.TableCell
 import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.tally.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.tally.ui.shared.reportsShared.TallyReportLazyList
+import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.StockReportList
 import kotlin.math.absoluteValue
 
@@ -42,12 +60,14 @@ object StockReportScreen : Screen {
         var searchQuery by remember { mutableStateOf("") }
         val focusRequester = remember { FocusRequester() }
         val nav = LocalNavigator.currentOrThrow
+        var shareLoading by remember { mutableStateOf(false) }
+        val scope = rememberCoroutineScope()
 
 
-        val column1Weight = 0.6f
+        val column1Weight = 0.5f
         val column2Weight = 0.2f
         val column3Weight = 0.2f
-        val column4Weight = 0.3f
+        val column4Weight = 0.4f
 
         val totalQty = list.sumOf { it.Item_Qty ?: 0.0 }
         val totalAmt = list.sumOf { it.Item_Amt ?: 0.0 }
@@ -55,7 +75,12 @@ object StockReportScreen : Screen {
 
         LaunchedEffect(Unit) {
             isLoading = true
-            list = db.vouchersStockItemsQueries.stockReportList().executeAsList()
+            withContext(Dispatchers.IO) {
+                list = db.vouchersStockItemsQueries.stockReportList().executeAsList()
+                withContext(Dispatchers.Main) {
+                    isLoading = false
+                }
+            }
             isLoading = false
         }
         LaunchedEffect(showSearchBar) {
@@ -67,15 +92,75 @@ object StockReportScreen : Screen {
             list
         } else {
             list.filter {
-                it.Item_Name?.contains(
+                it.Item_Name?.startsWith(
                     searchQuery,
                     ignoreCase = true
                 ) == true
             }
         }
+
+        val rows: List<Quadruple<String, String, String, String>> = filteredList.map { item ->
+            Quadruple(
+                item.Item_Name ?: "",
+                item.Item_Unit ?: "",
+                item.Item_Qty?.formatToQtyDec() ?: "-",
+                item.Item_Amt?.formatToAmtDec() ?: ""
+            )
+        }
+
+        val menuItems = listOf(
+            MenuItemData(
+                title = "Download",
+                icon = Icons.Default.Download,
+                onClick = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = "Stock",
+                            htmlContent = fourHeaderHtml(
+                                title = "Stock",
+                                headers = Quadruple("Item Name", "Unit", "Qty", "Amount"),
+                                rows = rows,
+                                total1 = totalQty.formatToQtyDec(),
+                                total2 = totalAmt.formatToAmtDec()
+                            ),
+                            action = PdfAction.Download,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }
+            ),
+            MenuItemData(
+                title = "Share",
+                icon = Icons.Default.Share,
+                onClick = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = "Stock",
+                            htmlContent = fourHeaderHtml(
+                                title = "Stock",
+                                headers = Quadruple("Item Name", "Unit", "Qty", "Amount"),
+                                rows = rows,
+                                total1 = totalQty.formatToQtyDec(),
+                                total2 = totalAmt.formatToAmtDec()
+
+                                ),
+                            action = PdfAction.Share,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }
+            )
+        )
+        if (shareLoading) {
+            TallyLoadingDialog("Generating Report")
+        }
+
+
         TallyReportScaffold(
             "Stock Report", showBottomBar = true,
             showSearchAction = true,
+            showBurgerMenu = true,
+            menuItems = menuItems,
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
                 TallyReportBottomBar(
@@ -86,12 +171,12 @@ object StockReportScreen : Screen {
                             TextAlign.Start
                         ),
                         ReportColumn(
-                            totalQty.absoluteValue.toString(),
+                            totalQty.absoluteValue.formatToQtyDec(),
                             column2Weight,
                             TextAlign.End
                         ),
                         ReportColumn(
-                            totalAmt.absoluteValue.toString(),
+                            totalAmt.absoluteValue.formatToAmtDec(),
                             column3Weight,
                             TextAlign.End
                         )
@@ -160,14 +245,14 @@ object StockReportScreen : Screen {
                                     isHeader = false
                                 )
                                 TableCell(
-                                    text = item.Item_Qty.toString(),
-                                    weight = column2Weight,
+                                    text = item.Item_Qty?.formatToQtyDec()?:"-",
+                                    weight = column3Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false
                                 )
                                 TableCell(
-                                    text = item.Item_Amt.toString(),
-                                    weight = column3Weight,
+                                    text = item.Item_Amt?.formatToAmtDec()?:"-",
+                                    weight = column4Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false
                                 )
