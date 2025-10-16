@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -23,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,15 +35,29 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.expect.formatToAmtDec
+import org.prime.tally.ui.printing.OutstandingRow
+import org.prime.tally.ui.printing.outstandingHtml
+import org.prime.tally.ui.screen.reports.ledger.LedgerReportItemScreen
+import org.prime.tally.ui.shared.composables.MenuItemData
 import org.prime.tally.ui.shared.composables.TallyCircularLoader
+import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.composables.TallySearchBar
 import org.prime.tally.ui.shared.globalShared.Tdate
 import org.prime.tally.ui.shared.reportsShared.DueDays
+import org.prime.tally.ui.shared.reportsShared.PdfAction
 import org.prime.tally.ui.shared.reportsShared.ReportColumn
 import org.prime.tally.ui.shared.reportsShared.TableCell
 import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
+import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.BillPayableList
 import org.tally.BillReceivableList
 import kotlin.math.absoluteValue
@@ -50,47 +68,55 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
     override fun Content() {
         val db = DatabaseHolder.instance
 
-
         var receivableList by remember { mutableStateOf<List<BillReceivableList>>(emptyList()) }
         var payableList by remember { mutableStateOf<List<BillPayableList>>(emptyList()) }
         var isLoading by remember { mutableStateOf(true) }
         var showSearchBar by remember { mutableStateOf(false) }
+        var shareLoading by remember { mutableStateOf(false) }
+        val scope = rememberCoroutineScope()
         var searchQuery by remember { mutableStateOf("") }
         val focusRequester = remember { FocusRequester() }
         var expanded by remember { mutableStateOf(false) }
         var selectedOption by remember { mutableStateOf("Name") }
-
+        val nav = LocalNavigator.currentOrThrow
 
         val columnSmallWeight = 2.5f
         val columnBigWeight = 7.5f
 
         LaunchedEffect(Unit) {
             isLoading = true
-            if (name == "Bill Receivable") {
-                receivableList = db.voucherBillAllocationsQueries.billReceivableList(
-                    DATE = startDate,
-                    DATE_ = endDate
-                ).executeAsList()
-            }
-            if (name == "Bill Payable") {
-                payableList = db.voucherBillAllocationsQueries.billPayableList(
-                    DATE = startDate,
-                    DATE_ = endDate
-                ).executeAsList()
+            withContext(Dispatchers.IO) {
+                if (name == "Bill Receivable") {
+                    receivableList = db.voucherBillAllocationsQueries.billReceivableList(
+                        DATE = startDate,
+                        DATE_ = endDate
+                    ).executeAsList()
+                }
+                if (name == "Bill Payable") {
+                    payableList = db.voucherBillAllocationsQueries.billPayableList(
+                        DATE = startDate,
+                        DATE_ = endDate
+                    ).executeAsList()
+                }
+                withContext(Dispatchers.Main) {
+                    isLoading = false
+                }
             }
             isLoading = false
         }
+
         LaunchedEffect(showSearchBar) {
             if (showSearchBar) focusRequester.requestFocus()
         }
+
         val filteredReceivableList = if (searchQuery.isEmpty()) {
             receivableList
         } else {
             if (selectedOption == "Name") {
-                receivableList.filter { it.cm1?.contains(searchQuery, ignoreCase = true) == true }
+                receivableList.filter { it.cm1?.startsWith(searchQuery, ignoreCase = true) == true }
             } else {
                 receivableList.filter {
-                    it.billNumber?.contains(
+                    it.billNumber?.startsWith(
                         searchQuery,
                         ignoreCase = true
                     ) == true
@@ -113,10 +139,157 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
             }
         }
 
+        // Calculate totals
+        val totalRefAmt = if (name == "Bill Receivable") {
+            receivableList.sumOf { it.d1?.absoluteValue ?: 0.0 }
+        } else {
+            payableList.sumOf { it.d1?.absoluteValue ?: 0.0 }
+        }
 
+        val totalPendingAmt = if (name == "Bill Receivable") {
+            receivableList.sumOf { it.adjustmentAmount?.absoluteValue ?: 0.0 }
+        } else {
+            payableList.sumOf { it.adjustmentAmount?.absoluteValue ?: 0.0 }
+        }
+
+        // Ledger balance type
+        val ledgerBalType = if (name == "Bill Receivable") "Dr" else "Cr"
+
+        // Group bills by account for PDF generation
+        fun generateOutstandingRowsByAccount(): Map<String, List<OutstandingRow>> {
+            return if (name == "Bill Receivable") {
+                receivableList.groupBy { it.cm1 ?: "Unknown" }.mapValues { (_, items) ->
+                    items.map { item ->
+                        OutstandingRow(
+                            date = item.date ?: "",
+                            vchType = item.vchType ?: "",
+                            refNo = item.billNumber ?: "",
+                            refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
+                            pendingAmount = item.adjustmentAmount?.absoluteValue?.formatToAmtDec()
+                                ?.toDouble() ?: 0.0,
+                            due = "Y",
+                            dueDate = item.dueDate ?: "",
+                            dueDays = ""
+                        )
+                    }
+                }
+            } else {
+                payableList.groupBy { it.cm1 ?: "Unknown" }.mapValues { (_, items) ->
+                    items.map { item ->
+                        OutstandingRow(
+                            date = item.date ?: "",
+                            vchType = item.vchType ?: "",
+                            refNo = item.billNumber ?: "",
+                            refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
+                            pendingAmount = item.adjustmentAmount?.absoluteValue?.formatToAmtDec()
+                                ?.toDouble() ?: 0.0,
+                            due = "Y",
+                            dueDate = item.dueDate ?: "",
+                            dueDays = ""
+                        )
+                    }
+                }
+            }
+        }
+
+        // Generate HTML for all accounts (for now showing first account or combined)
+        fun generateOutstandingHtml(): String {
+            val allRows = if (name == "Bill Receivable") {
+                receivableList.map { item ->
+                    OutstandingRow(
+                        date = item.date ?: "",
+                        vchType = item.vchType ?: "",
+                        refNo = item.billNumber ?: "",
+                        refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
+                        pendingAmount = item.adjustmentAmount?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
+                        due = "Y",
+                        dueDate = item.dueDate ?: "",
+                        dueDays = DueDays(
+                            endDate,
+                            item.dueDate.toString()
+                        )
+                    )
+                }
+            } else {
+                payableList.map { item ->
+                    OutstandingRow(
+                        date = item.date ?: "",
+                        vchType = item.vchType ?: "",
+                        refNo = item.billNumber ?: "",
+                        refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
+                        pendingAmount = item.adjustmentAmount?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
+                        due = "Y",
+                        dueDate = item.dueDate ?: "",
+                        dueDays = DueDays(
+                            endDate,
+                            item.dueDate.toString()
+                        )
+                    )
+                }
+            }
+
+            // Get the first account name or use "All Accounts"
+            val accountName = if (name == "Bill Receivable") {
+                receivableList.firstOrNull()?.cm1 ?: "All Accounts"
+            } else {
+                payableList.firstOrNull()?.cm1 ?: "All Accounts"
+            }
+
+            return outstandingHtml(
+                title = if (name == "Bill Receivable") "Bills Receivable" else "Bills Payable",
+                accountName = accountName,
+                onBasis = "Due Date",
+                startDate = startDate,
+                endDate = endDate,
+                billStatusDate = endDate,
+                rows = allRows,
+                totalRefAmt = totalRefAmt,
+                totalPendingAmt = totalPendingAmt,
+                onAcc = 0.0,
+                ledgerBal = totalPendingAmt,
+                ledgerBalType = ledgerBalType
+            )
+        }
+
+        val menuItems = listOf(
+            MenuItemData(
+                title = "Download",
+                icon = Icons.Default.Download,
+                onClick = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = "${name.replace(" ", "_")}_Report",
+                            htmlContent = generateOutstandingHtml(),
+                            action = PdfAction.Download,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }
+            ),
+            MenuItemData(
+                title = "Share",
+                icon = Icons.Default.Share,
+                onClick = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = "${name.replace(" ", "_")}_Report",
+                            htmlContent = generateOutstandingHtml(),
+                            action = PdfAction.Share,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }
+            )
+        )
+
+        if (shareLoading) {
+            TallyLoadingDialog("Generating Report")
+        }
 
         TallyReportScaffold(
             title = "$name Report",
+            showBurgerMenu = true,
+            menuItems = menuItems,
             showBottomBar = true,
             showSearchAction = true,
             onSearchClick = { showSearchBar = !showSearchBar },
@@ -135,8 +308,8 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
                         ReportColumn(
                             "Vch Amt: ${
                                 if (name == "Bill Receivable") {
-                                    filteredReceivableList.sumOf { it.d1 ?: 0.0 }.absoluteValue
-                                } else filteredPayableList.sumOf { it.d1 ?: 0.0 }.absoluteValue
+                                    filteredReceivableList.sumOf { it.d1 ?: 0.0 }.absoluteValue.formatToAmtDec()
+                                } else filteredPayableList.sumOf { it.d1 ?: 0.0 }.absoluteValue.formatToAmtDec()
                             }",
                             1f,
                             TextAlign.End
@@ -144,8 +317,8 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
                         ReportColumn(
                             "Pen Amt: ${
                                 if (name == "Bill Receivable") {
-                                    filteredReceivableList.sumOf { it.adjustmentAmount ?: 0.0 }.absoluteValue
-                                } else filteredPayableList.sumOf { it.adjustmentAmount ?: 0.0 }.absoluteValue
+                                    filteredReceivableList.sumOf { it.adjustmentAmount ?: 0.0 }.absoluteValue.formatToAmtDec()
+                                } else filteredPayableList.sumOf { it.adjustmentAmount ?: 0.0 }.absoluteValue.formatToAmtDec()
                             }",
                             1f,
                             TextAlign.End
@@ -168,8 +341,6 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
                             .padding(paddingValues)
                             .padding(horizontal = 8.dp)
                     ) {
-
-
                         if (showSearchBar) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -207,10 +378,8 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
                                             )
                                         }
                                     }
-
                                 }
 
-                                // --- Search Field ---
                                 TallySearchBar(
                                     searchQuery = searchQuery,
                                     onQueryChange = { searchQuery = it },
@@ -233,7 +402,6 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
                         LazyColumn(
                             modifier = Modifier.fillMaxSize()
                         ) {
-
                             if (name == "Bill Receivable") {
                                 if (filteredReceivableList.isEmpty()) {
                                     item {
@@ -250,20 +418,18 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
                                     }
                                 } else {
                                     items(filteredReceivableList) { item ->
-                                        // bal = item.D2!! + item.D3!! + bal
-
                                         Card(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(vertical = 4.dp).clickable {
-//                                                nav.push(
-//                                                    LedgerReportItemScreen(
-//                                                        vchNo = item.VOUCHERNUMBER.toString(),
-//                                                        date = item.DATE.toString(),
-//                                                        vchType = item.VchType.toString(),
-//                                                        guid = item.VCH_GUID.toString()
-//                                                    )
-//                                                )
+                                                    nav.push(
+                                                        LedgerReportItemScreen(
+                                                            vchNo = item.billNumber.toString(),
+                                                            date = item.date.toString(),
+                                                            vchType = item.vchType.toString(),
+                                                            guid = item.VCH_GUID.toString()
+                                                        )
+                                                    )
                                                 },
                                             colors = CardDefaults.cardColors(
                                                 containerColor = MaterialTheme.colorScheme.surface
@@ -311,13 +477,13 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     TableCell(
-                                                        "Bill: ${item.d1?.absoluteValue}",
+                                                        "Bill: ${item.d1?.absoluteValue?.formatToAmtDec()}",
                                                         1f,
                                                         textAlign = TextAlign.Start,
                                                         isHeader = false
                                                     )
                                                     TableCell(
-                                                        "Pending: ${item.adjustmentAmount?.absoluteValue}",
+                                                        "Pending: ${item.adjustmentAmount?.absoluteValue?.formatToAmtDec()}",
                                                         1f,
                                                         textAlign = TextAlign.End,
                                                         isHeader = false
@@ -341,7 +507,6 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
                                         }
                                     }
                                 }
-
                             } else {
                                 if (filteredPayableList.isEmpty()) {
                                     item {
@@ -358,20 +523,18 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
                                     }
                                 } else {
                                     items(filteredPayableList) { item ->
-                                        // bal = item.D2!! + item.D3!! + bal
-
                                         Card(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(vertical = 4.dp).clickable {
-//                                                nav.push(
-//                                                    LedgerReportItemScreen(
-//                                                        vchNo = item.VOUCHERNUMBER.toString(),
-//                                                        date = item.DATE.toString(),
-//                                                        vchType = item.VchType.toString(),
-//                                                        guid = item.VCH_GUID.toString()
-//                                                    )
-//                                                )
+                                                    nav.push(
+                                                        LedgerReportItemScreen(
+                                                            vchNo = item.billNumber.toString(),
+                                                            date = item.date.toString(),
+                                                            vchType = item.vchType.toString(),
+                                                            guid = item.VCH_GUID.toString()
+                                                        )
+                                                    )
                                                 },
                                             colors = CardDefaults.cardColors(
                                                 containerColor = MaterialTheme.colorScheme.surface
@@ -419,13 +582,13 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     TableCell(
-                                                        "Bill: ${item.d1?.absoluteValue}",
+                                                        "Bill: ${item.d1?.absoluteValue?.formatToAmtDec()}",
                                                         1f,
                                                         textAlign = TextAlign.Start,
                                                         isHeader = false
                                                     )
                                                     TableCell(
-                                                        "Pending: ${item.adjustmentAmount?.absoluteValue}",
+                                                        "Pending: ${item.adjustmentAmount?.absoluteValue?.formatToAmtDec()}",
                                                         1f,
                                                         textAlign = TextAlign.End,
                                                         isHeader = false
