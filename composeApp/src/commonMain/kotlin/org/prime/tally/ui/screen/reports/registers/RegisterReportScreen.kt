@@ -22,8 +22,12 @@ import androidx.compose.ui.text.style.TextAlign
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.expect.formatToAmtDec
 import org.prime.tally.ui.printing.Quadruple
 import org.prime.tally.ui.printing.fourHeaderHtml
 import org.prime.tally.ui.screen.reports.ledger.LedgerReportItemScreen
@@ -69,11 +73,16 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
 
         LaunchedEffect(Unit) {
             isLoading = true
-            list = db.vouchersLedgersQueries.registerReportList(
-                VchType = name,
-                DATE = startDate,
-                DATE_ = endDate
-            ).executeAsList()
+            withContext(Dispatchers.IO) {
+                list = db.vouchersLedgersQueries.registerReportList(
+                    VchType = name,
+                    DATE = startDate,
+                    DATE_ = endDate
+                ).executeAsList()
+                withContext(Dispatchers.Main) {
+                    isLoading = false
+                }
+            }
             isLoading = false
         }
         LaunchedEffect(showSearchBar) {
@@ -97,7 +106,7 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                 item.DATE ?: "",
                 item.CM1 ?: "",
                 item.VOUCHERNUMBER?.trim() ?: "",
-                item.D1?.absoluteValue?.toString() ?: ""
+                item.D1?.absoluteValue?.formatToAmtDec() ?: ""
             )
         }
 
@@ -114,7 +123,7 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                                 title = name,
                                 headers = Quadruple("Date", "Name", "Vch No", "Amount"),
                                 rows = rows,
-                                total1 = totalAmt.toString(),
+                                total1 = totalAmt.formatToAmtDec(),
                                 startDate = startDate,
                                 endDate = endDate,
                             ),
@@ -135,7 +144,7 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                                 title = name,
                                 headers = Quadruple("Date", "Name", "Vch No", "Amount"),
                                 rows = rows,
-                                total1 = totalAmt.toString(),
+                                total1 = totalAmt.formatToAmtDec(),
                                 startDate = startDate,
                                 endDate = endDate,
                             ),
@@ -166,7 +175,7 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                             TextAlign.Start
                         ),
                         ReportColumn(
-                            totalAmt.absoluteValue.toString(),
+                            totalAmt.absoluteValue.formatToAmtDec(),
                             column4Weight,
                             TextAlign.End
                         ),
@@ -253,7 +262,7 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                                     isHeader = false
                                 )
                                 TableCell(
-                                    text = item.D1?.absoluteValue.toString(),
+                                    text = item.D1?.absoluteValue?.formatToAmtDec() ?: "-",
                                     weight = column3Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false

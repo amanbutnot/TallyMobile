@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,11 +36,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import currentDate
+import CurrentDate
 import org.prime.tally.data.expect.DatabaseHolder
-import org.prime.tally.ui.screen.reports.ledger.LedgerReportScreen
 import org.prime.tally.ui.shared.composables.TallyButton
 import org.prime.tally.ui.shared.composables.TallyScaffold
+import org.prime.tally.ui.shared.globalShared.StartDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,8 +53,8 @@ fun ReportFilterScreen(
 ) {
     val nav = LocalNavigator.currentOrThrow
     TallyScaffold(title, onBack = { nav.pop() }) { paddingValues ->
-        var startDate by rememberSaveable { mutableStateOf(currentDate()) }
-        var endDate by rememberSaveable { mutableStateOf(currentDate()) }
+        var startDate by rememberSaveable { mutableStateOf(StartDate()) }
+        var endDate by rememberSaveable { mutableStateOf(CurrentDate()) }
         var selectedAccount by rememberSaveable { mutableStateOf("") }
         var showBottomSheet by remember { mutableStateOf(false) }
         val db = DatabaseHolder.instance
@@ -158,7 +157,7 @@ fun ReportFilterScreen(
                             label = "Start Date",
                             selectedDate = startDate,
                             onDateSelected = { startDate = it },
-                            defaultDate = currentDate()
+                            defaultDate = CurrentDate()
 
                         )
 
@@ -175,7 +174,7 @@ fun ReportFilterScreen(
                         TallyDatePickerRow(
                             label = "End Date",
                             selectedDate = endDate,
-                            defaultDate = currentDate(),
+                            defaultDate = CurrentDate(),
                             onDateSelected = { endDate = it }
                         )
 
@@ -195,13 +194,6 @@ fun ReportFilterScreen(
 
                 }
             }
-            Button(onClick = {
-
-            }) {
-                Text("Demo")
-            }
-
-
             Spacer(modifier = Modifier.weight(1f))
 
             TallyButton(
