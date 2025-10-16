@@ -1,49 +1,49 @@
 package org.prime.tally.ui.screen.reports.trialBalance
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import currentDate
+import CurrentDate
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
-import org.prime.tally.ui.screen.reports.godown.GodownClosingStockItemListScreen
+import org.prime.tally.data.expect.formatToAmtDec
+import org.prime.tally.ui.printing.threeHeaderHtml
 import org.prime.tally.ui.screen.reports.ledger.LedgerReportScreen
+import org.prime.tally.ui.shared.composables.MenuItemData
 import org.prime.tally.ui.shared.composables.TallyCircularLoader
+import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.composables.TallySearchBar
+import org.prime.tally.ui.shared.globalShared.StartDate
+import org.prime.tally.ui.shared.reportsShared.PdfAction
 import org.prime.tally.ui.shared.reportsShared.ReportColumn
 import org.prime.tally.ui.shared.reportsShared.TableCell
 import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.tally.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.tally.ui.shared.reportsShared.TallyReportLazyList
+import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.TrialBalanceList
 import kotlin.math.absoluteValue
 
@@ -55,11 +55,12 @@ object TrialBalanceScreen : Screen {
 
         var list by remember { mutableStateOf<List<TrialBalanceList>>(emptyList()) }
         var isLoading by remember { mutableStateOf(true) }
+        var shareLoading by remember { mutableStateOf(false) }
+        val scope = rememberCoroutineScope()
         var showSearchBar by remember { mutableStateOf(false) }
         var searchQuery by remember { mutableStateOf("") }
         val focusRequester = remember { FocusRequester() }
         val nav = LocalNavigator.currentOrThrow
-
 
         val column1Weight = 0.6f
         val column2Weight = 0.3f
@@ -71,11 +72,72 @@ object TrialBalanceScreen : Screen {
         val totalCredit = list.sumOf { item ->
             if ((item.ClsnBal ?: 0.0) > 0.0) item.ClsnBal ?: 0.0 else 0.0
         }
+        val rows = list.map { item ->
+            val debit = if ((item.ClsnBal ?: 0.0) < 0.0)
+                (item.ClsnBal ?: 0.0).absoluteValue.formatToAmtDec()
+            else ""
 
+            val credit = if ((item.ClsnBal ?: 0.0) > 0.0)
+                (item.ClsnBal ?: 0.0).absoluteValue.formatToAmtDec()
+            else ""
 
+            Triple(item.CM1 ?: "", debit, credit)
+        }
+
+        val menuItems = listOf(
+            MenuItemData(
+                title = "Download",
+                icon = Icons.Default.Download,
+                onClick = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = "Trial Balance",
+                            htmlContent = threeHeaderHtml(
+                                title = "Trial Balance",
+                                headers = Triple("Account Name", "Debit", "Credit"),
+                                rows = rows,
+                                totalDebit = totalDebit.formatToAmtDec().toDouble(),
+                                totalCredit = totalCredit.formatToAmtDec().toDouble(), date = StartDate()
+                            ),
+                            action = PdfAction.Download,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }
+            ),
+            MenuItemData(
+                title = "Share",
+                icon = Icons.Default.Share,
+                onClick = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = "Trial Balance",
+                            htmlContent = threeHeaderHtml(
+                                title = "Trial Balance",
+                                headers = Triple("Account Name", "Debit", "Credit"),
+                                rows = rows,
+                                totalDebit = totalDebit,
+                                totalCredit = totalCredit, date = StartDate()
+                            ),
+                            action = PdfAction.Share,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }
+            )
+        )
+        if (shareLoading) {
+            TallyLoadingDialog("Generating Report")
+        }
         LaunchedEffect(Unit) {
+
             isLoading = true
+            withContext(Dispatchers.IO) {
             list = db.vouchersLedgersQueries.trialBalanceList().executeAsList()
+                withContext(Dispatchers.Main) {
+                    isLoading = false
+                }
+            }
             isLoading = false
         }
         LaunchedEffect(showSearchBar) {
@@ -86,11 +148,15 @@ object TrialBalanceScreen : Screen {
         val filteredList = if (searchQuery.isEmpty()) {
             list
         } else {
-            list.filter { it.CM1?.contains(searchQuery, ignoreCase = true) == true }
+            list.filter { it.CM1?.startsWith(searchQuery, ignoreCase = true) == true }
         }
+
+
         TallyReportScaffold(
             "Trial Balance", showBottomBar = true,
             showSearchAction = true,
+            showBurgerMenu = true,
+            menuItems = menuItems,
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
                 TallyReportBottomBar(
@@ -101,12 +167,12 @@ object TrialBalanceScreen : Screen {
                             TextAlign.Start
                         ),
                         ReportColumn(
-                            totalDebit.absoluteValue.toString(),
+                            totalDebit.absoluteValue.formatToAmtDec(),
                             column2Weight,
                             TextAlign.End
                         ),
                         ReportColumn(
-                            totalCredit.absoluteValue.toString(),
+                            totalCredit.absoluteValue.formatToAmtDec(),
                             column3Weight,
                             TextAlign.End
                         )
@@ -152,11 +218,13 @@ object TrialBalanceScreen : Screen {
                         TallyReportLazyList(
                             items = filteredList,
                             onItemClick = { item ->
-                                nav.push(LedgerReportScreen(
-                                    accountName = item.CM1.toString(),
-                                    startDate = "2020-01-01",
-                                    endDate = currentDate()
-                                ))
+                                nav.push(
+                                    LedgerReportScreen(
+                                        accountName = item.CM1.toString(),
+                                        startDate = StartDate(),
+                                        endDate = CurrentDate()
+                                    )
+                                )
                             },
                             content = { item ->
                                 val debitAmount =
@@ -173,13 +241,13 @@ object TrialBalanceScreen : Screen {
                                 )
 
                                 TableCell(
-                                    text = if (debitAmount < 0) debitAmount.absoluteValue.toString() else "-",
+                                    text = if (debitAmount < 0) debitAmount.absoluteValue.formatToAmtDec() else "-",
                                     weight = column2Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false
                                 )
                                 TableCell(
-                                    text = if (creditAmount > 0) creditAmount.absoluteValue.toString() else "-",
+                                    text = if (creditAmount > 0) creditAmount.absoluteValue.formatToAmtDec() else "-",
                                     weight = column3Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false
@@ -191,3 +259,4 @@ object TrialBalanceScreen : Screen {
             })
     }
 }
+
