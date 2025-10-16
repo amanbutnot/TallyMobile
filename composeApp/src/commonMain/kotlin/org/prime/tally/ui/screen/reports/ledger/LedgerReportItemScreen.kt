@@ -1,6 +1,7 @@
 package org.prime.tally.ui.screen.reports.ledger
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,15 +17,22 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.toLocalDate
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.ui.shared.composables.TallyCircularLoader
 import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.globalShared.Tdate
 import org.prime.tally.ui.shared.reportsShared.ReportColumn
@@ -45,6 +53,17 @@ data class LedgerReportItemScreen(
             db.vouchersStockItemsQueries.ledgerStockItemList(guid).executeAsList()
         val ledgerReportItemList =
             db.vouchersLedgersQueries.ledgerReportItemList(guid).executeAsList()
+        var isLoading by remember { mutableStateOf(false) }
+
+        LaunchedEffect(Unit) {
+            isLoading = true
+            withContext(Dispatchers.IO) {
+                withContext(Dispatchers.Main) {
+                    isLoading = false
+                }
+            }
+        }
+
 
         val stockColumn1Weight = 0.4f
         val stockColumn2Weight = 0.8f
@@ -57,277 +76,284 @@ data class LedgerReportItemScreen(
             showBottomBar = false,
             showSearchAction = false, content = { paddingValues ->
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        // .navigationBarsPadding()
-                        .padding(horizontal = 8.dp)
-                ) {
-
-                    Spacer(Modifier.height(8.dp))
-
-                    // Top info row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Date: ${Tdate(date)}",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            "Vch No.: $vchNo",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
+                if (isLoading) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        TallyCircularLoader()
                     }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                            // .navigationBarsPadding()
+                            .padding(horizontal = 8.dp)
+                    )
+                    {
 
-                    Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(8.dp))
 
-                    // ----------------------- STOCK ITEM DETAILS -----------------------
-                    val amtTotal = ledgerStockItemList.sumOf { it.Amt ?: 0.0 }
-                    if (ledgerStockItemList.isNotEmpty()) {
-                        Text(
-                            "Stock Item Details:",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Spacer(Modifier.height(4.dp))
-
-                        // Header
-                        Card(
+                        // Top info row
+                        Row(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 8.dp, vertical = 8.dp)
-                            ) {
-                                TableCell(
-                                    "S No.",
-                                    stockColumn1Weight,
-                                    textAlign = TextAlign.Start,
-                                    isHeader = true
-                                )
-                                TableCell(
-                                    "Item Name",
-                                    stockColumn2Weight,
-                                    textAlign = TextAlign.Start,
-                                    isHeader = true
-                                )
-                                TableCell(
-                                    "Qty",
-                                    stockColumn3Weight,
-                                    textAlign = TextAlign.End,
-                                    isHeader = true
-                                )
-                                TableCell(
-                                    "Rate",
-                                    stockColumn4Weight,
-                                    textAlign = TextAlign.End,
-                                    isHeader = true
-                                )
-                                TableCell(
-                                    "Amount",
-                                    stockColumn5Weight,
-                                    textAlign = TextAlign.End,
-                                    isHeader = true
-                                )
-                            }
+                            Text(
+                                "Date: ${Tdate(date)}",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                "Vch No.: $vchNo",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
                         }
 
+                        Spacer(Modifier.height(12.dp))
 
-                        // Scrollable list of stock items
-                        LazyColumn(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth()
-                        ) {
-                            itemsIndexed(ledgerStockItemList) { index, item ->
-                                Card(
+                        // ----------------------- STOCK ITEM DETAILS -----------------------
+                        val amtTotal = ledgerStockItemList.sumOf { it.Amt ?: 0.0 }
+                        if (ledgerStockItemList.isNotEmpty()) {
+                            Text(
+                                "Stock Item Details:",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Spacer(Modifier.height(4.dp))
+
+                            // Header
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                            ) {
+                                Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surface
-                                    ),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                                        .padding(horizontal = 8.dp, vertical = 8.dp)
                                 ) {
-                                    Row(
+                                    TableCell(
+                                        "S No.",
+                                        stockColumn1Weight,
+                                        textAlign = TextAlign.Start,
+                                        isHeader = true
+                                    )
+                                    TableCell(
+                                        "Item Name",
+                                        stockColumn2Weight,
+                                        textAlign = TextAlign.Start,
+                                        isHeader = true
+                                    )
+                                    TableCell(
+                                        "Qty",
+                                        stockColumn3Weight,
+                                        textAlign = TextAlign.End,
+                                        isHeader = true
+                                    )
+                                    TableCell(
+                                        "Rate",
+                                        stockColumn4Weight,
+                                        textAlign = TextAlign.End,
+                                        isHeader = true
+                                    )
+                                    TableCell(
+                                        "Amount",
+                                        stockColumn5Weight,
+                                        textAlign = TextAlign.End,
+                                        isHeader = true
+                                    )
+                                }
+                            }
+
+
+                            // Scrollable list of stock items
+                            LazyColumn(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                            ) {
+                                itemsIndexed(ledgerStockItemList) { index, item ->
+                                    Card(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                            .padding(vertical = 4.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surface
+                                        ),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                                     ) {
-                                        TableCell((index + 1).toString(), stockColumn1Weight)
-                                        TableCell(item.Item_Name ?: "", stockColumn2Weight)
-                                        TableCell(
-                                            item.Qty.toString(),
-                                            stockColumn3Weight,
-                                            textAlign = TextAlign.End
-                                        )
-                                        TableCell(
-                                            item.Rate.toString(),
-                                            stockColumn4Weight,
-                                            textAlign = TextAlign.End
-                                        )
-                                        TableCell(
-                                            item.Amt.toString(),
-                                            stockColumn5Weight,
-                                            textAlign = TextAlign.End
-                                        )
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            TableCell((index + 1).toString(), stockColumn1Weight)
+                                            TableCell(item.Item_Name ?: "", stockColumn2Weight)
+                                            TableCell(
+                                                item.Qty.toString(),
+                                                stockColumn3Weight,
+                                                textAlign = TextAlign.End
+                                            )
+                                            TableCell(
+                                                item.Rate.toString(),
+                                                stockColumn4Weight,
+                                                textAlign = TextAlign.End
+                                            )
+                                            TableCell(
+                                                item.Amt.toString(),
+                                                stockColumn5Weight,
+                                                textAlign = TextAlign.End
+                                            )
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(4.dp))
 
-                        // Stock total
+                            // Stock total
 
 
-                        // Total row - stays visible
-                        TallyReportBottomBar(
-                            columns = listOf(
-                                ReportColumn(
-                                    "Total:",
-                                    (stockColumn1Weight + stockColumn2Weight + stockColumn3Weight + stockColumn4Weight),
-                                    TextAlign.End
-                                ),
-                                ReportColumn(
-                                    text = amtTotal.toString(),
-                                    stockColumn5Weight,
-                                    TextAlign.End
+                            // Total row - stays visible
+                            TallyReportBottomBar(
+                                columns = listOf(
+                                    ReportColumn(
+                                        "Total:",
+                                        (stockColumn1Weight + stockColumn2Weight + stockColumn3Weight + stockColumn4Weight),
+                                        TextAlign.End
+                                    ),
+                                    ReportColumn(
+                                        text = amtTotal.toString(),
+                                        stockColumn5Weight,
+                                        TextAlign.End
+                                    )
                                 )
                             )
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    }
-                    val indexedLedgerList =
-                        if (ledgerStockItemList.isNotEmpty()) ledgerReportItemList.drop(2) else ledgerReportItemList
-
-
-                    // ----------------------- LEDGER DETAILS -----------------------
-                    if (ledgerReportItemList.isNotEmpty()) {
-                        val totalDebit = ledgerReportItemList.sumOf { it.DebitAmt ?: 0.0 }
-                        val totalCredit = ledgerReportItemList.sumOf { it.CreditAmt ?: 0.0 }
-
-                        Text(
-                            "Ledger Details:",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        // Header
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 8.dp, vertical = 8.dp)
-                            ) {
-                                TableCell(
-                                    "S No.",
-                                    stockColumn1Weight,
-                                    textAlign = TextAlign.Start,
-                                    isHeader = true
-                                )
-                                TableCell(
-                                    "Account",
-                                    stockColumn2Weight + stockColumn3Weight,
-                                    textAlign = TextAlign.Start,
-                                    isHeader = true
-                                )
-                                TableCell(
-                                    "Debit Amt",
-                                    stockColumn5Weight,
-                                    textAlign = TextAlign.End,
-                                    isHeader = true
-                                )
-                                TableCell(
-                                    "Credit Amt",
-                                    stockColumn5Weight,
-                                    textAlign = TextAlign.End,
-                                    isHeader = true
-                                )
-                            }
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         }
+                        val indexedLedgerList =
+                            if (ledgerStockItemList.isNotEmpty()) ledgerReportItemList.drop(2) else ledgerReportItemList
 
-                        // Scrollable list of ledger items
-                        LazyColumn(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth()
-                        ) {
-                            itemsIndexed(indexedLedgerList) { index, item ->
-                                Card(
+
+                        // ----------------------- LEDGER DETAILS -----------------------
+                        if (ledgerReportItemList.isNotEmpty()) {
+                            val totalDebit = ledgerReportItemList.sumOf { it.DebitAmt ?: 0.0 }
+                            val totalCredit = ledgerReportItemList.sumOf { it.CreditAmt ?: 0.0 }
+
+                            Text(
+                                "Ledger Details:",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            // Header
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                            ) {
+                                Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surface
-                                    ),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                                        .padding(horizontal = 8.dp, vertical = 8.dp)
                                 ) {
-                                    Row(
+                                    TableCell(
+                                        "S No.",
+                                        stockColumn1Weight,
+                                        textAlign = TextAlign.Start,
+                                        isHeader = true
+                                    )
+                                    TableCell(
+                                        "Account",
+                                        stockColumn2Weight + stockColumn3Weight,
+                                        textAlign = TextAlign.Start,
+                                        isHeader = true
+                                    )
+//                                TableCell(
+//                                    "Debit Amt",
+//                                    stockColumn5Weight,
+//                                    textAlign = TextAlign.End,
+//                                    isHeader = true
+//                                )
+                                    TableCell(
+                                        "Amount",
+                                        stockColumn5Weight,
+                                        textAlign = TextAlign.End,
+                                        isHeader = true
+                                    )
+                                }
+                            }
+
+                            // Scrollable list of ledger items
+                            LazyColumn(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                            ) {
+                                itemsIndexed(indexedLedgerList) { index, item ->
+                                    Card(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                            .padding(vertical = 4.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surface
+                                        ),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                                     ) {
-                                        TableCell((index + 1).toString(), stockColumn1Weight)
-                                        TableCell(
-                                            item.LedgerName ?: "",
-                                            stockColumn2Weight + stockColumn3Weight
-                                        )
-                                        TableCell(
-                                            item.DebitAmt.toString(),
-                                            stockColumn5Weight,
-                                            textAlign = TextAlign.End
-                                        )
-                                        TableCell(
-                                            item.CreditAmt.toString(),
-                                            stockColumn5Weight,
-                                            textAlign = TextAlign.End
-                                        )
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            TableCell((index + 1).toString(), stockColumn1Weight)
+                                            TableCell(
+                                                item.LedgerName ?: "",
+                                                stockColumn2Weight + stockColumn3Weight
+                                            )
+//                                        TableCell(
+//                                            item.DebitAmt.toString(),
+//                                            stockColumn5Weight,
+//                                            textAlign = TextAlign.End
+//                                        )
+                                            TableCell(
+                                                item.CreditAmt.toString(),
+                                                stockColumn5Weight,
+                                                textAlign = TextAlign.End
+                                            )
+                                        }
                                     }
                                 }
                             }
+
+                            // Total row - stays visible
+                            TallyReportBottomBar(
+                                columns = listOf(
+                                    ReportColumn(
+                                        "Total:",
+                                        (stockColumn1Weight + stockColumn2Weight + stockColumn3Weight + stockColumn4Weight),
+                                        TextAlign.End
+                                    ),
+//                                ReportColumn(
+//                                    text = totalDebit.toString(),
+//                                    stockColumn5Weight,
+//                                    TextAlign.End
+//                                ),
+                                    ReportColumn(
+                                        text = totalCredit.toString(),
+                                        stockColumn5Weight,
+                                        TextAlign.End
+                                    ),
+
+                                    )
+                            )
                         }
-
-                        // Total row - stays visible
-                        TallyReportBottomBar(
-                            columns = listOf(
-                                ReportColumn(
-                                    "Total:",
-                                    (stockColumn1Weight + stockColumn2Weight + stockColumn3Weight + stockColumn4Weight),
-                                    TextAlign.End
-                                ),
-                                ReportColumn(
-                                    text = totalDebit.toString(),
-                                    stockColumn5Weight,
-                                    TextAlign.End
-                                ),
-                                ReportColumn(
-                                    text = totalCredit.toString(),
-                                    stockColumn5Weight,
-                                    TextAlign.End
-                                ),
-
-                                )
-                        )
                     }
                 }
             }
