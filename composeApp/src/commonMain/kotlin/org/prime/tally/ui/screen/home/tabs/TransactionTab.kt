@@ -6,6 +6,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import cafe.adriel.voyager.core.annotation.InternalVoyagerApi
+import cafe.adriel.voyager.navigator.internal.BackHandler
+import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 
@@ -16,8 +19,13 @@ object TransactionTab : Tab {
             return TabOptions(index = 1u, title = "Transaction", icon = icon)
         }
 
+    @OptIn(InternalVoyagerApi::class)
     @Composable
     override fun Content() {
+        val tabNav = LocalTabNavigator.current
+        BackHandler(true){
+            tabNav.current = HomeTab
+        }
         Text("Transaction tab", color = MaterialTheme.colorScheme.onBackground)
 
     }
