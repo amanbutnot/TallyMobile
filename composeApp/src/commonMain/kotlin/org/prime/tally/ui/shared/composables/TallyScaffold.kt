@@ -2,11 +2,16 @@ package org.prime.tally.ui.shared.composables
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -15,9 +20,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 
@@ -34,7 +45,7 @@ fun TallyScaffold(
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
-                Box(modifier = Modifier.navigationBarsPadding()){
+                Box(modifier = Modifier.navigationBarsPadding()) {
                     bottomBarContent()
                 }
             }
@@ -73,7 +84,6 @@ fun TallyScaffold(
 }
 
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TallyReportScaffold(
@@ -82,10 +92,14 @@ fun TallyReportScaffold(
     showBottomBar: Boolean = false,
     bottomBarContent: @Composable () -> Unit = {},
     showSearchAction: Boolean = false,
+    showBurgerMenu: Boolean = false,
     onSearchClick: (() -> Unit)? = null,
+    menuItems: List<MenuItemData> = emptyList()
 ) {
     val nav = LocalNavigator.currentOrThrow
     val colors = MaterialTheme.colorScheme
+    var expanded by remember { mutableStateOf(false) }
+
 
     Scaffold(
         bottomBar = {
@@ -115,13 +129,52 @@ fun TallyReportScaffold(
                     }
                 },
                 actions = {
-                    if (showSearchAction) {
-                        IconButton(onClick = { onSearchClick?.invoke() }) {
-                            Icon(
-                                Icons.Default.Search,
-                                contentDescription = "Search",
-                                tint = colors.onSurface
-                            )
+                    Row {
+                        if (showSearchAction) {
+                            IconButton(onClick = { onSearchClick?.invoke() }) {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = "Search",
+                                    tint = colors.onSurface
+                                )
+                            }
+                        }
+                        if (showBurgerMenu) {
+                            IconButton(onClick = {
+                                expanded = true
+                            }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "Menu Icon")
+                            }
+                        }
+                    }
+
+                    if (expanded) {
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }) {
+                            menuItems.forEach { item ->
+                                DropdownMenuItem(
+                                    modifier = Modifier.padding(4.dp),
+                                    text = {
+                                        Text(
+                                            text = item.title,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = item.icon,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    onClick = {
+                                        item.onClick()
+                                        expanded = false
+                                    }
+                                )
+                            }
                         }
                     }
                 },
@@ -138,3 +191,9 @@ fun TallyReportScaffold(
         content(innerPadding)
     }
 }
+
+data class MenuItemData(
+    val icon: ImageVector,
+    val title: String,
+    val onClick: () -> Unit
+)
