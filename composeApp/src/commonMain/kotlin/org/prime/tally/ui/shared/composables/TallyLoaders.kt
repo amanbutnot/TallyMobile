@@ -25,12 +25,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -157,5 +159,54 @@ fun TallyResultDialog(
             }
         }
     }
+}
+
+
+@Composable
+fun TallyAlertBox(
+    title: String,
+    message: String = "",
+    confirmButtonText: String = "Confirm",
+    cancelButtonText: String = "Cancel",
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+    onDismiss: () -> Unit = onCancel,
+    content: (@Composable () -> Unit)? = null
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss, title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }, text = {
+            if (content != null) {
+                content()
+            } else {
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }, confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(
+                    text = confirmButtonText,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }, dismissButton = {
+            TextButton(onClick = onCancel) {
+                Text(
+                    text = cancelButtonText,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            }
+        }, containerColor = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp)
+    )
 }
 
