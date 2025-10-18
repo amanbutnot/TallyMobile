@@ -3,7 +3,7 @@ package org.prime.tally.ui.shared.globalShared
 fun Tdate(date: String): String {
     val (yy, mm, dd) = date.split("-")
     //pass the saved date format in this
-    val dateFormat = "dd-mm-yyyy"
+    val dateFormat = getDateFormat()
     return when (dateFormat) {
         "dd-mm-yyyy" -> {
             "$dd-$mm-$yy"
