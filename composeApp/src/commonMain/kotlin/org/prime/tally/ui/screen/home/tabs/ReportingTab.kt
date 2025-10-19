@@ -34,15 +34,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.annotation.InternalVoyagerApi
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.navigator.internal.BackHandler
+import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.prime.tally.ui.screen.home.Dashboard
-import org.prime.tally.ui.screen.reports.TrialBalanceScreen
+import org.prime.tally.ui.screen.reports.godown.GodownClosingStockListScreen
+import org.prime.tally.ui.screen.reports.ledger.LedgerReportFilterScreen
+import org.prime.tally.ui.screen.reports.outstanding.OutstandingSelectScreen
+import org.prime.tally.ui.screen.reports.registers.RegisterSelectScreen
+import org.prime.tally.ui.screen.reports.stock.StockReportScreen
+import org.prime.tally.ui.screen.reports.trialBalance.TrialBalanceScreen
 
 object ReportingTab : Tab {
     override val options: TabOptions
@@ -51,8 +59,15 @@ object ReportingTab : Tab {
             return TabOptions(index = 2u, title = "Reporting", icon = icon)
         }
 
+    @OptIn(InternalVoyagerApi::class)
     @Composable
     override fun Content() {
+
+        val tabNav = LocalTabNavigator.current
+        BackHandler(true){
+            tabNav.current = HomeTab
+        }
+
         val colors = MaterialTheme.colorScheme
         val nav = LocalNavigator.currentOrThrow.parent
         Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
@@ -70,8 +85,9 @@ object ReportingTab : Tab {
                 Report.TrialBalance,
                 Report.Registers,
                 Report.StockReport,
-                Report.PendingOrders,
-                Report.Quotations
+//                Report.PendingOrders,
+//                Report.Quotations,
+                Report.GoDownWiseClosingStock
             )
 
             LazyVerticalGrid(
@@ -88,13 +104,16 @@ object ReportingTab : Tab {
                         onClick = {
                             //TODO: add appropriate screens
                             when (report) {
-                                Report.Ledger -> nav?.push(Dashboard)
-                                Report.Outstanding -> nav?.push(Dashboard)
+                                Report.Ledger -> nav?.push(LedgerReportFilterScreen)
+                                Report.Outstanding -> nav?.push(OutstandingSelectScreen)
                                 Report.PendingOrders -> nav?.push(Dashboard)
                                 Report.Quotations -> nav?.push(Dashboard)
-                                Report.Registers -> nav?.push(Dashboard)
-                                Report.StockReport -> nav?.push(Dashboard)
+                                Report.Registers -> nav?.push(RegisterSelectScreen)
+                                Report.StockReport -> nav?.push(StockReportScreen)
                                 Report.TrialBalance -> nav?.push(TrialBalanceScreen)
+                                Report.GoDownWiseClosingStock -> nav?.push(
+                                    GodownClosingStockListScreen
+                                )
                             }
                         }
                     )
@@ -149,7 +168,8 @@ fun ReportButton(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Medium, overflow = TextOverflow.Ellipsis, maxLines = 1
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Medium, overflow = TextOverflow.Ellipsis, maxLines = 2
             )
         }
     }
@@ -163,4 +183,5 @@ sealed class Report(val title: String, val icon: ImageVector) {
     object StockReport : Report("Stock Report", Icons.Default.Inventory)
     object PendingOrders : Report("Pending Orders", Icons.Default.ShoppingCart)
     object Quotations : Report("Quotations", Icons.Default.Description)
+    object GoDownWiseClosingStock : Report("Godown Wise Closeing Stock", Icons.Default.Description)
 }
