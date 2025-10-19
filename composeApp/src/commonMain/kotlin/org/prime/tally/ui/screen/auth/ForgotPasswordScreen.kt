@@ -31,9 +31,9 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import org.prime.tally.ui.shared.TallyButton
-import org.prime.tally.ui.shared.TallyScaffold
-import org.prime.tally.ui.shared.TallyTextField
+import org.prime.tally.ui.shared.composables.TallyButton
+import org.prime.tally.ui.shared.composables.TallyScaffold
+import org.prime.tally.ui.shared.composables.TallyTextField
 
 object ForgotPasswordScreen : Screen {
     @Composable

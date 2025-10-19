@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
+import org.prime.tally.ui.shared.globalShared.Tdate
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -37,6 +38,7 @@ fun TallyDatePickerRow(
     label: String,
     selectedDate: String,
     onDateSelected: (String) -> Unit,
+    defaultDate: String,
     modifier: Modifier = Modifier
 ) {
     var showPicker by remember { mutableStateOf(false) }
@@ -67,7 +69,7 @@ fun TallyDatePickerRow(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = selectedDate.ifEmpty { "Select date" },
+                text = Tdate(selectedDate).ifEmpty { Tdate(defaultDate) },
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (selectedDate.isEmpty())
                     MaterialTheme.colorScheme.onSurfaceVariant
@@ -146,7 +148,7 @@ fun formatEpochMillisToDate(millis: Long?): String {
 }
 
 @OptIn(ExperimentalTime::class)
-fun currentDate(): String {
+fun CurrentDate(): String {
     val now = Clock.System.now()
     val today = now.toLocalDateTime(TimeZone.currentSystemDefault()).date
     return today.toString()

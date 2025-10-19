@@ -7,43 +7,38 @@ import org.tally.TallyDatabase
 import platform.Foundation.*
 import kotlinx.cinterop.*
 
-actual class DriverFactory {
-    @OptIn(ExperimentalForeignApi::class)
-    actual fun createDriver(bytes: ByteArray): SqlDriver {
-        val fileManager = NSFileManager.defaultManager
 
-        // Get path to Documents directory
-        val urls = fileManager.URLsForDirectory(
-            directory = NSDocumentDirectory,
-            inDomains = NSUserDomainMask
-        )
-        val documentsDirectory = urls.firstOrNull() as? NSURL
-            ?: error("Unable to access Documents directory")
+    actual class DriverFactory {
+        @OptIn(ExperimentalForeignApi::class)
+        actual fun createDriver(bytes: ByteArray): SqlDriver {
+            val fileManager = NSFileManager.defaultManager
+            val appSupportURL = fileManager.URLsForDirectory(NSApplicationSupportDirectory, NSUserDomainMask)
+                .firstOrNull() as? NSURL ?: error("Cannot access Application Support")
 
-        // Full path to database file
-        val dbUrl = documentsDirectory.URLByAppendingPathComponent(DB_FILE_NAME)
-            ?: error("Unable to create DB URL")
+            val dbFileURL = appSupportURL.URLByAppendingPathComponent(DB_FILE_NAME)!!
+            val dbPath = dbFileURL.path!!
 
-        val dbPath = dbUrl.path ?: error("Unable to resolve DB path")
+            // Delete old file if it exists
+            if (fileManager.fileExistsAtPath(dbPath)) {
+                fileManager.removeItemAtPath(dbPath, null)
+            }
 
-        // Remove old DB if exists
-        if (fileManager.fileExistsAtPath(dbPath)) {
-            fileManager.removeItemAtPath(dbPath, null)
+            // Write prepopulated database
+            val nsData = bytes.toNSData()
+            nsData.writeToFile(dbPath, atomically = true)
+
+            println("Database file written to: $dbPath")
+            println("File exists? ${fileManager.fileExistsAtPath(dbPath)}")
+
+            return NativeSqliteDriver(
+                schema = TallyDatabase.Schema,
+                name = dbPath
+            )
         }
 
-        // Write new DB file
-        val nsData = bytes.toNSData()
-        nsData.writeToFile(dbPath, atomically = true)
-
-        // Create SQLDelight driver with the file path
-        return NativeSqliteDriver(
-            schema = TallyDatabase.Schema,
-            name = dbPath
-        )
-    }
 }
 
-// Helper: convert ByteArray -> NSData safely
+// Helper: convert ByteArray -> NSData
 @OptIn(ExperimentalForeignApi::class)
 private fun ByteArray.toNSData(): NSData = memScoped {
     NSData.create(
