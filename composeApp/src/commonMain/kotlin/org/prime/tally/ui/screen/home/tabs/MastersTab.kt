@@ -29,14 +29,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.annotation.InternalVoyagerApi
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.navigator.internal.BackHandler
+import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.prime.tally.data.enums.MasterEnums
@@ -49,10 +53,15 @@ object MastersTab : Tab {
             return TabOptions(index = 0u, title = "Masters", icon = icon)
         }
 
+    @OptIn(InternalVoyagerApi::class)
     @Composable
     override fun Content() {
         val colors = MaterialTheme.colorScheme
         val nav = LocalNavigator.currentOrThrow.parent
+        val tabNav = LocalTabNavigator.current
+        BackHandler(true){
+            tabNav.current = HomeTab
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
