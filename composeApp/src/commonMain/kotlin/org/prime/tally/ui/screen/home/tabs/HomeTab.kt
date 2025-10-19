@@ -44,7 +44,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,13 +57,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
+import CurrentDate
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.items
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.ui.screen.reports.outstanding.OutstandingReportScreen
+import org.prime.tally.ui.screen.reports.registers.RegisterReportScreen
+import org.prime.tally.ui.shared.globalShared.CompanyName
+import org.prime.tally.ui.shared.globalShared.StartDate
+import org.prime.tally.ui.shared.globalShared.Tdate
 
 object HomeTab : Tab {
     override val options: TabOptions
@@ -78,8 +83,23 @@ object HomeTab : Tab {
 
         val db = DatabaseHolder.instance
         val queries = db.companyInformationQueries
-        val list by queries.selectAll().asFlow().mapToList(Dispatchers.IO)
-            .collectAsState(initial = emptyList())
+        val compInfo = queries.getCompanyInformation().executeAsOne()
+        val nav = LocalNavigator.currentOrThrow.parent
+
+        val reportList = queries.dashboardReportData(StartDate(), CurrentDate()).executeAsList()
+
+        val filteredReportList = reportList.map { report ->
+            val newRepType = when (report.RecType) {
+                1L -> "Pending Receivables"
+                2L -> "Pending Payables"
+                3L -> "Sales Summary"
+                4L -> "Purchase Overview"
+                5L -> "Customer Receipts"
+                6L -> "Vendor Payments"
+                else -> report.RepType
+            }
+            report.copy(RepType = newRepType)
+        }
 
 
         Column(
@@ -90,33 +110,82 @@ object HomeTab : Tab {
         ) {
             HeadingTitle("Details")
             CompanyInfoCard(
-                companyName = "Demo Company",
-                address = "44 Arjun Nagar Ambala Cantt",
-                financialYear = "2025-2026",
-                gstNo = "PMW37XNZKK1Z", modifier = Modifier.clickable {
-                    print(list)
-                }
+                companyName = CompanyName(),
+                address = compInfo.T3.toString(),
+                financialYear = Tdate(StartDate()),
+                gstNo = compInfo.T4.toString()
             )
 
             Spacer(Modifier.height(8.dp))
-            HeadingTitle("Cards")
-            LazyRow(
+            HeadingTitle("Data")
+            Column(
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                items(5) { columnIndex ->
-                    Column(
+                filteredReportList.chunked(3).take(2).forEach { rowItems ->
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 8.dp),
                     ) {
-                        DashboardCard(
-                            name = "Paisa ${columnIndex + 1}",
-                            amount = ((columnIndex + 1) * 1000).toString()
-                        )
-                        DashboardCard(
-                            name = "Rupee ${columnIndex + 6}",
-                            amount = ((columnIndex + 6) * 1000).toString()
-                        )
+                        items(rowItems) { item ->
+                            DashboardCard(
+                                name = item.RepType,
+                                amount = if (item.PenAmt != null) item.PenAmt.toString() else "-",
+                                onClick = {
+                                    when (item.RecType) {
+                                        1L -> nav?.push(
+                                            OutstandingReportScreen(
+                                                name = "Bill Receivable",
+                                                startDate = StartDate(),
+                                                endDate = CurrentDate()
+                                            )
+                                        )
+
+                                        2L -> nav?.push(
+                                            OutstandingReportScreen(
+                                                name = "Bill Payable",
+                                                startDate = StartDate(),
+                                                endDate = CurrentDate()
+                                            )
+                                        )
+
+                                        3L -> nav?.push(
+                                            RegisterReportScreen(
+                                                name = "Sales",
+                                                startDate = StartDate(),
+                                                endDate = CurrentDate()
+                                            )
+                                        )
+
+                                        4L -> nav?.push(
+                                            RegisterReportScreen(
+                                                name = "Purchase",
+                                                startDate = StartDate(),
+                                                endDate = CurrentDate()
+                                            )
+                                        )
+
+                                        5L -> nav?.push(
+                                            RegisterReportScreen(
+                                                name = "Receipt",
+                                                startDate = StartDate(),
+                                                endDate = CurrentDate()
+                                            )
+                                        )
+
+                                        6L -> nav?.push(
+                                            RegisterReportScreen(
+                                                name = "Payment",
+                                                startDate = StartDate(),
+                                                endDate = CurrentDate()
+                                            )
+                                        )
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
-            Spacer(Modifier.height(8.dp))
+            //     Spacer(Modifier.height(8.dp))
 
             HeadingTitle("Create")
             ExpandableGrid()
@@ -193,12 +262,13 @@ private fun HeadingTitle(title: String) {
 fun DashboardCard(
     name: String,
     amount: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier, onClick: () -> Unit,
 ) {
     Card(
         modifier = modifier
-            .width(140.dp).wrapContentHeight()
-            .padding(horizontal = 4.dp, vertical = 4.dp),
+            .width(140.dp)
+            .height(100.dp) // increased height for 2-line names
+            .padding(4.dp).clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
@@ -209,36 +279,43 @@ fun DashboardCard(
             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
         )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalAlignment = Alignment.Start
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center // centers both vertically and horizontally
         ) {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.titleSmall.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.15.sp
-                ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.15.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center, // ensures multi-line is centered
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
 
-            //TODO: make a function that changes the currency
-            Text(
-                text = "₹$amount",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = (-0.25).sp
-                ),
-                color = MaterialTheme.colorScheme.primary
-            )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = amount,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = (-0.25).sp
+                    ),
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
+
 
 @Composable
 fun CreateCard(
