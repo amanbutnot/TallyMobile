@@ -1,6 +1,7 @@
 package org.prime.tally.ui.screen
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,16 +45,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode.Companion.Color
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import org.prime.tally.data.enums.MasterEnums
 import org.prime.tally.data.expect.DatabaseHolder
-import org.prime.tally.ui.shared.TallyScaffold
+import org.prime.tally.ui.shared.composables.TallyScaffold
 import org.tally.GodownMaster
 import org.tally.LedgerGroupMaster
 import org.tally.LedgerMaster
@@ -132,14 +141,22 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
                     )
 
                     val filteredItems = remember(allItems.value, searchQuery) {
-                        if (searchQuery.isEmpty()) allItems.value
-                        else allItems.value.filter {
-                            getMasterItemData(it).first?.contains(
-                                searchQuery,
-                                true
-                            ) == true
+                        if (searchQuery.isEmpty()) {
+                            allItems.value
+                        } else {
+                            val startsWith = allItems.value.filter {
+                                val name = getMasterItemData(it).first
+                                name?.startsWith(searchQuery, ignoreCase = true) == true
+                            }
+                            val contains = allItems.value.filter {
+                                val name = getMasterItemData(it).first
+                                name?.contains(searchQuery, ignoreCase = true) == true &&
+                                        name?.startsWith(searchQuery, ignoreCase = true) == false
+                            }
+                            startsWith + contains
                         }
                     }
+
 
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -160,7 +177,7 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
                 }
                 if (showBottomSheet.value) {
                     val bottomState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-                    LaunchedEffect(Unit){
+                    LaunchedEffect(Unit) {
                         bottomState.expand()
                     }
 
@@ -245,7 +262,6 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
             }
         }
     }
-
 
 
 }
