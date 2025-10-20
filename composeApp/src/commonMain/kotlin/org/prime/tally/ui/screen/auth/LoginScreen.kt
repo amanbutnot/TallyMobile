@@ -38,10 +38,10 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.tally.data.model.LoginRequest
 import org.prime.tally.ui.screen.startup.GoogleDriveDownloadScreen
-import org.prime.tally.ui.shared.TallyButton
-import org.prime.tally.ui.shared.TallyLoadingDialog
-import org.prime.tally.ui.shared.TallyResultDialog
-import org.prime.tally.ui.shared.TallyTextField
+import org.prime.tally.ui.shared.composables.TallyButton
+import org.prime.tally.ui.shared.composables.TallyLoadingDialog
+import org.prime.tally.ui.shared.composables.TallyResultDialog
+import org.prime.tally.ui.shared.composables.TallyTextField
 import org.prime.tally.business.viewmodel.AuthViewModel
 
 object LoginScreen : Screen {
