@@ -34,7 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import org.prime.tally.ui.shared.TallySearchBar
+import org.prime.tally.ui.shared.composables.TallySearchBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,11 +54,17 @@ fun <T> BottomSheetItem(
         if (query.isBlank()) {
             list
         } else {
-            list.filter { item ->
-                item.toString().contains(query, ignoreCase = true)
+            val startsWith = list.filter { item ->
+                item.toString().startsWith(query, ignoreCase = true)
             }
+            val contains = list.filter { item ->
+                !item.toString().startsWith(query, ignoreCase = true) &&
+                        item.toString().contains(query, ignoreCase = true)
+            }
+            startsWith + contains
         }
     }
+
 
     if (showBottomSheet) {
         ModalBottomSheet(
