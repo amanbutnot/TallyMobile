@@ -84,11 +84,13 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
+                println("DB Started")
                 val reportList = db.vouchersLedgersQueries.ledgerReportList(
                     CM1 = accountName,
                     DATE = startDate,
                     DATE_ = endDate
                 ).executeAsList()
+                println("DB Ended")
 
                 val opening = db.vouchersLedgersQueries
                     .ledgerOpeningBalance(accountName, startDate)
