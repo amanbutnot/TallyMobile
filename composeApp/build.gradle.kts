@@ -42,6 +42,7 @@ kotlin {
             implementation("com.itextpdf:html2pdf:6.2.1")
 
 
+
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -51,7 +52,7 @@ kotlin {
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
+         //   implementation(libs.androidx.lifecycle.runtimeCompose)
 
             //Navigation
             implementation(libs.voyager.navigator)
@@ -68,7 +69,6 @@ kotlin {
 
             //Calender and Date and Time
             implementation(libs.kmp.date.time.picker)
-            implementation(libs.kotlinx.datetime)
 
             //For base64 and byte conversion
             implementation(libs.okio) // or latest
@@ -88,6 +88,19 @@ kotlin {
 
 // Enables FileKit dialogs with Composable utilities
             implementation("io.github.vinceglb:filekit-dialogs-compose:0.12.0")
+
+            //Coil Image loading
+            implementation("io.coil-kt.coil3:coil-compose:3.2.0")
+            implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
+
+            implementation(libs.compass.geocoder)
+            implementation(libs.compass.geocoder.mobile)
+
+            // Geolocation
+            implementation(libs.compass.geolocation)
+            implementation(libs.compass.geolocation.mobile)
+
+
 
         }
         nativeMain.dependencies {
