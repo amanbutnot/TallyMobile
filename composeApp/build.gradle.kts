@@ -40,6 +40,7 @@ kotlin {
 
             //html to pdf
             implementation("com.itextpdf:html2pdf:6.2.1")
+            implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
 
 
 
@@ -91,7 +92,7 @@ kotlin {
 
             //Coil Image loading
             implementation("io.coil-kt.coil3:coil-compose:3.2.0")
-            implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
+
 
             implementation(libs.compass.geocoder)
             implementation(libs.compass.geocoder.mobile)
