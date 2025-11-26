@@ -10,6 +10,8 @@ import io.ktor.http.contentType
 import org.prime.tally.data.model.ApiResponse
 import org.prime.tally.data.model.LoginRequest
 import org.prime.tally.data.model.LoginResponse
+import org.prime.tally.data.model.attendance.AttendanceListRequest
+import org.prime.tally.data.model.attendance.AttendanceListResponse
 import org.prime.tally.data.model.attendance.AttendanceRequest
 import org.prime.tally.data.model.attendance.AttendanceResponse
 import org.prime.tally.data.utils.BASE_URL
@@ -23,6 +25,22 @@ object AttendanceRepository {
         val token = SharedPrefs.Token.get()
         return try {
             val response = client.post("${BASE_URL}/Locations/InsertLocations.php") {
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $token")
+
+                setBody(attendanceRequest)
+            }
+            println(response.bodyAsText())
+            response.body()
+        } catch (e: Exception) {
+            print("Error Occurred: ${e.message}")
+            null
+        }
+    }
+    suspend fun getAttendanceList(attendanceRequest: AttendanceListRequest): ApiResponse<AttendanceListResponse>? {
+        val token = SharedPrefs.Token.get()
+        return try {
+            val response = client.post("${BASE_URL}/Locations/ViewLocations.php") {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
 

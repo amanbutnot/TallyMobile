@@ -159,6 +159,7 @@ data class AttendanceScreen(
                         onSelected = {
                             it.let {
                                 selectedAccount = it.first
+                                println("Selected Account: ${it.first} and selected GUID is ${it.second}")
                             }
                         },
                         onDismiss = { showBottomSheet = false },
