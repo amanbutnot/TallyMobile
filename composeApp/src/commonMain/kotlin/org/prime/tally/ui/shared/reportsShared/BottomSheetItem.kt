@@ -15,7 +15,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,7 +51,7 @@ fun <T> BottomSheetItem(
 ) {
     var query by remember { mutableStateOf("") }
 
-    // Simple filtering based on toString()
+
     val filteredList = remember(list, query) {
         if (query.isBlank()) {
             list
@@ -74,7 +76,7 @@ fun <T> BottomSheetItem(
             sheetGesturesEnabled = false,
             containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp,
-            modifier = Modifier.fillMaxHeight(0.85f)
+            modifier = Modifier.fillMaxHeight(0.9f)
         ) {
             Column(
                 modifier = Modifier
@@ -108,16 +110,16 @@ fun <T> BottomSheetItem(
                     }
                 }
 
-                Divider(
-                    modifier = Modifier.padding(bottom = 12.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                HorizontalDivider(
+                    Modifier.padding(bottom = 12.dp),
+                    DividerDefaults.Thickness, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
 
                 // Fixed Search bar
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .padding(  vertical = 8.dp)
                 ) {
                     TallySearchBar(
                         searchQuery = query,

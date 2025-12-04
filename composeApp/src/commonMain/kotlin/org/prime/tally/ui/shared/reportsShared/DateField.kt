@@ -1,3 +1,4 @@
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -6,14 +7,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -24,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
@@ -43,48 +48,70 @@ fun TallyDatePickerRow(
 ) {
     var showPicker by remember { mutableStateOf(false) }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp)
+            fontWeight = FontWeight.Medium
         )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceContainerLow,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .clickable { showPicker = true }
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            border = BorderStroke(
+                width = 1.dp,
+                color = if (selectedDate.isNotEmpty())
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                else
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+            ),
+            onClick = { showPicker = true }
         ) {
-            Text(
-                text = Tdate(selectedDate).ifEmpty { Tdate(defaultDate) },
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (selectedDate.isEmpty())
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                else
-                    MaterialTheme.colorScheme.onSurface
-            )
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DateRange,
+                        contentDescription = "Select date",
+                        tint = if (selectedDate.isEmpty())
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        else
+                            MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
 
-            Icon(
-                imageVector = Icons.Default.DateRange,
-                contentDescription = "Select date",
-                tint = if (selectedDate.isEmpty())
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                else
-                    MaterialTheme.colorScheme.primary
-            )
+                    Text(
+                        text = Tdate(selectedDate).ifEmpty { Tdate(defaultDate) },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (selectedDate.isEmpty())
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        else
+                            MaterialTheme.colorScheme.onSurface,
+                        fontWeight = if (selectedDate.isEmpty())
+                            FontWeight.Normal
+                        else
+                            FontWeight.Medium
+                    )
+                }
+
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
     }
 
@@ -113,10 +140,13 @@ fun TallyDatePicker(
         confirmButton = {
             TextButton(
                 onClick = {
-                    onDateSelected(formatEpochMillisToDate(datePickerState.selectedDateMillis))
-                    onDismiss()
+                    if(datePickerState.selectedDateMillis ==null){
+                        onDismiss()
+                    }else{
+                        onDateSelected(formatEpochMillisToDate(datePickerState.selectedDateMillis))
+                        onDismiss()
+                    }
                 },
-                enabled = datePickerState.selectedDateMillis != null
             ) {
                 Text("OK")
             }

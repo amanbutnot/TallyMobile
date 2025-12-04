@@ -1,26 +1,32 @@
 package org.prime.tally.data.expect
 
 import android.os.Environment
+import com.itextpdf.html2pdf.ConverterProperties
 import com.itextpdf.html2pdf.HtmlConverter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.prime.tally.AppContextHolder
 import java.io.File
 import java.io.FileOutputStream
 
-actual fun createPdfFromHtml(html: String,fileName:String): String {
+actual suspend fun createPdfFromHtml(html: String, fileName: String): String {
+    return withContext(Dispatchers.IO) {
+        val appContext = AppContextHolder.appContext
+        val fileNameWithTime = "$fileName${System.currentTimeMillis()}.pdf"
 
-    val appContext = AppContextHolder.appContext
+        val dir = appContext.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+        if (dir != null && !dir.exists()) dir.mkdirs()
 
-    val fileName = "$fileName${System.currentTimeMillis()}.pdf"
+        val file = File(dir, fileNameWithTime)
+        val props = ConverterProperties().apply {
+            baseUri = null
+            isImmediateFlush = true
+        }
 
-    val dir = appContext.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
-    if (dir != null && !dir.exists()) dir.mkdirs()
+        FileOutputStream(file).use { output ->
+            HtmlConverter.convertToPdf(html.byteInputStream(), output, props)
+        }
 
-    val file = File(dir, fileName)
-
-    FileOutputStream(file).use { output ->
-        HtmlConverter.convertToPdf(html, output)
+        file.absolutePath
     }
-
-    return file.absolutePath
-
 }

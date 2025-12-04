@@ -1,3 +1,3 @@
 package org.prime.tally.data.expect
 
-expect fun createPdfFromHtml(html: String, fileName: String): String
+expect suspend fun createPdfFromHtml(html: String, fileName: String): String
