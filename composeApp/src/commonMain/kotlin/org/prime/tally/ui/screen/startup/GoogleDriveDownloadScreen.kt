@@ -39,6 +39,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.runBlocking
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.expect.initializeDatabase
 import org.prime.tally.ui.screen.home.Dashboard
@@ -68,8 +69,11 @@ object GoogleDriveDownloadScreen : Screen {
                         fileId =fileId,
                         accessToken = it
                     ) {
-                        DatabaseHolder.init(byteArray = it)
-                       initializeDatabase(it)
+                        runBlocking {
+                              DatabaseHolder.init(byteArray = it)
+
+                        }
+                     // initializeDatabase(it)
                         nav.replaceAll(Dashboard)
                     }
                 }

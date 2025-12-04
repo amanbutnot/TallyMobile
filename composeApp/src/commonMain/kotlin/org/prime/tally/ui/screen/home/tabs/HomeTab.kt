@@ -1,5 +1,6 @@
 package org.prime.tally.ui.screen.home.tabs
 
+import CurrentDate
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -7,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +22,7 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,15 +31,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.Cases
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -47,6 +54,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,16 +65,29 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cafe.adriel.voyager.navigator.tab.Tab
-import cafe.adriel.voyager.navigator.tab.TabOptions
-import CurrentDate
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.lazy.items
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.navigator.tab.Tab
+import cafe.adriel.voyager.navigator.tab.TabOptions
+import dev.jordond.compass.Priority
+import dev.jordond.compass.geolocation.Geolocator
+import dev.jordond.compass.geolocation.GeolocatorResult
+import dev.jordond.compass.geolocation.Locator
+import dev.jordond.compass.geolocation.mobile.mobile
+import kotlinx.coroutines.launch
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.utils.SharedPrefs
+import org.prime.tally.ui.screen.attendance.AttendanceScreen
+import org.prime.tally.ui.screen.attendance.formatAddress
+import org.prime.tally.ui.screen.attendance.getPlaceFromCoordinates
+import org.prime.tally.ui.screen.home.isAdmin
+import org.prime.tally.ui.screen.reports.ledger.LedgerReportFilterScreen
+import org.prime.tally.ui.screen.reports.outstanding.OutstandingDisFilterScreen
 import org.prime.tally.ui.screen.reports.outstanding.OutstandingReportScreen
 import org.prime.tally.ui.screen.reports.registers.RegisterReportScreen
+import org.prime.tally.ui.screen.transactions.SingleEntryReceipt
+import org.prime.tally.ui.screen.transactions.sale.SaleScreen
+import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.globalShared.CompanyName
 import org.prime.tally.ui.shared.globalShared.StartDate
 import org.prime.tally.ui.shared.globalShared.Tdate
@@ -108,7 +129,12 @@ object HomeTab : Tab {
                 .padding(8.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            HeadingTitle("Details")
+            if (isAdmin()) {
+
+                HeadingTitle("Details")
+            } else {
+                HeadingTitle("Hi, ${SharedPrefs.DistributorData.get()?.UserName ?: "User"}")
+            }
             CompanyInfoCard(
                 companyName = CompanyName(),
                 address = compInfo.T3.toString(),
@@ -116,79 +142,107 @@ object HomeTab : Tab {
                 gstNo = compInfo.T4.toString()
             )
 
-            Spacer(Modifier.height(8.dp))
-            HeadingTitle("Data")
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                filteredReportList.chunked(3).take(2).forEach { rowItems ->
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 8.dp),
-                    ) {
-                        items(rowItems) { item ->
-                            DashboardCard(
-                                name = item.RepType,
-                                amount = if (item.PenAmt != null) item.PenAmt.toString() else "-",
-                                onClick = {
-                                    when (item.RecType) {
-                                        1L -> nav?.push(
-                                            OutstandingReportScreen(
-                                                name = "Bill Receivable",
-                                                startDate = StartDate(),
-                                                endDate = CurrentDate()
+            if (isAdmin()) {
+                Spacer(Modifier.height(8.dp))
+                HeadingTitle("Data")
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                {
+                    filteredReportList.chunked(3).take(2).forEach { rowItems ->
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 8.dp),
+                        ) {
+                            items(rowItems) { item ->
+                                DashboardCard(
+                                    name = item.RepType,
+                                    amount = if (item.PenAmt != null) item.PenAmt.toString() else "-",
+                                    onClick = {
+                                        when (item.RecType) {
+                                            1L -> nav?.push(
+                                                OutstandingReportScreen(
+                                                    name = "Bill Receivable",
+                                                    startDate = StartDate(),
+                                                    endDate = CurrentDate()
+                                                )
                                             )
-                                        )
 
-                                        2L -> nav?.push(
-                                            OutstandingReportScreen(
-                                                name = "Bill Payable",
-                                                startDate = StartDate(),
-                                                endDate = CurrentDate()
+                                            2L -> nav?.push(
+                                                OutstandingReportScreen(
+                                                    name = "Bill Payable",
+                                                    startDate = StartDate(),
+                                                    endDate = CurrentDate()
+                                                )
                                             )
-                                        )
 
-                                        3L -> nav?.push(
-                                            RegisterReportScreen(
-                                                name = "Sales",
-                                                startDate = StartDate(),
-                                                endDate = CurrentDate()
+                                            3L -> nav?.push(
+                                                RegisterReportScreen(
+                                                    name = "Sales",
+                                                    startDate = StartDate(),
+                                                    endDate = CurrentDate()
+                                                )
                                             )
-                                        )
 
-                                        4L -> nav?.push(
-                                            RegisterReportScreen(
-                                                name = "Purchase",
-                                                startDate = StartDate(),
-                                                endDate = CurrentDate()
+                                            4L -> nav?.push(
+                                                RegisterReportScreen(
+                                                    name = "Purchase",
+                                                    startDate = StartDate(),
+                                                    endDate = CurrentDate()
+                                                )
                                             )
-                                        )
 
-                                        5L -> nav?.push(
-                                            RegisterReportScreen(
-                                                name = "Receipt",
-                                                startDate = StartDate(),
-                                                endDate = CurrentDate()
+                                            5L -> nav?.push(
+                                                RegisterReportScreen(
+                                                    name = "Receipt",
+                                                    startDate = StartDate(),
+                                                    endDate = CurrentDate()
+                                                )
                                             )
-                                        )
 
-                                        6L -> nav?.push(
-                                            RegisterReportScreen(
-                                                name = "Payment",
-                                                startDate = StartDate(),
-                                                endDate = CurrentDate()
+                                            6L -> nav?.push(
+                                                RegisterReportScreen(
+                                                    name = "Payment",
+                                                    startDate = StartDate(),
+                                                    endDate = CurrentDate()
+                                                )
                                             )
-                                        )
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }
-            }
-            //     Spacer(Modifier.height(8.dp))
 
-            HeadingTitle("Create")
-            ExpandableGrid()
+                HeadingTitle("Create")
+                ExpandableGrid()
+            } else {
+                HeadingTitle("Reports")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    MasterButton(
+                        icon = Icons.Default.Receipt, modifier = Modifier.weight(1f),
+                        title = "Bill Receivable",
+                        onClick = {
+                            nav?.push(
+                                OutstandingDisFilterScreen
+                            )
+                        }
+                    )
+                    MasterButton(
+                        icon = Icons.Default.Cases, modifier = Modifier.weight(1f),
+                        title = "Ledger",
+                        onClick = {
+                            nav?.push(LedgerReportFilterScreen(showAccount = false))
+                        }
+                    )
+                }
+            }
+
+
         }
     }
 }
@@ -197,19 +251,45 @@ object HomeTab : Tab {
 @Composable
 fun ExpandableGrid() {
     var expanded by remember { mutableStateOf(false) }
+    val nav = LocalNavigator.currentOrThrow.parent
+    val scope = rememberCoroutineScope()
+    var showLocationPopup by remember { mutableStateOf(false) }
+    var showLoading by remember { mutableStateOf(false) }
+
+    if (showLocationPopup) {
+        AlertDialog(
+            onDismissRequest = { showLocationPopup = false },
+            title = { Text("Location is Off") },
+            text = { Text("Please enable location to continue.") },
+            confirmButton = {
+                Button(onClick = { showLocationPopup = false }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    if (showLoading) {
+        TallyLoadingDialog("Getting Location")
+    }
+
 
     val cardList = listOf(
-        "Order" to Icons.Default.AddShoppingCart,
-        "Sale Invoice" to Icons.Default.Description,
-        "Sale return" to Icons.Default.ShoppingCart,
         "Receipt" to Icons.Default.Receipt,
         "Payment" to Icons.Default.Payment,
-        "Order" to Icons.Default.AddShoppingCart,
-        "Sale Invoice" to Icons.Default.Description,
+        "Journal" to Icons.Default.AddShoppingCart,
+        "Sale Order" to Icons.Default.Description,
+        "Sale Invoice" to Icons.Default.ShoppingCart,
+
+        "Check In/Out" to Icons.Default.LocationCity,
+        "Attendance" to Icons.Default.LocationOn,
+
         "Sale return" to Icons.Default.ShoppingCart,
-        "Receipt" to Icons.Default.Receipt,
-        "Payment" to Icons.Default.Payment,
-        "Payment" to Icons.Default.Payment
+        "Purchase Order" to Icons.Default.AddShoppingCart,
+        "Purchase Invoice" to Icons.Default.ShoppingCart,
+        "Purchase Return" to Icons.Default.Receipt,
+        "Stock Transfer" to Icons.Default.Payment,
+        "Contra" to Icons.Default.Payment
     )
 
     val displayList = if (expanded) {
@@ -235,10 +315,88 @@ fun ExpandableGrid() {
                 name = name.first,
                 icon = name.second,
                 modifier = Modifier.clickable {
-                    if (name.first == "Show More") {
-                        expanded = true
-                    } else if (name.first == "Show Less") {
-                        expanded = false
+                    when (name.first) {
+                        "Show More" -> expanded = true
+                        "Show Less" -> expanded = false
+
+                        "Receipt" -> nav?.push(SingleEntryReceipt(name.first, vchType = 14))
+                        "Payment" -> nav?.push(SingleEntryReceipt(name.first, vchType = 19))
+                        "Journal" -> nav?.push(SingleEntryReceipt(name.first, vchType = 16))
+//                        "Sale Order" -> nav?.push(SingleEntryReceipt(name.first, vchType = 15))
+//                        "Sale Return" -> nav?.push(SingleEntryReceipt(name.first, vchType = 21))
+                        "Sale Invoice" -> nav?.push(SaleScreen("Sales"))
+                        "Check In/Out" -> scope.launch {
+                            showLoading = true
+                            try {
+                                val locator = Locator.mobile()
+                                val geolocator = Geolocator(locator)
+
+                                when (val result =
+                                    geolocator.current(Priority.HighAccuracy)) {
+                                    is GeolocatorResult.Success -> {
+                                        val c = result.data.coordinates
+                                        val lat = c.latitude
+                                        val lon = c.longitude
+                                        val place =
+                                            getPlaceFromCoordinates(lat, lon)
+                                        val address =
+                                            place?.let { formatAddress(it) }
+                                                ?: "Address not found"
+                                        nav?.push(
+                                            AttendanceScreen(
+                                                lat, lon, address,
+                                                isAttendance = false
+                                            )
+                                        )
+                                    }
+
+                                    is GeolocatorResult.Error -> {
+                                        showLocationPopup = true
+                                    }
+                                }
+                            } finally {
+                                showLoading = false
+                            }
+                        }
+
+                        "Attendance" -> scope.launch {
+                            showLoading = true
+                            try {
+                                val locator = Locator.mobile()
+                                val geolocator = Geolocator(locator)
+
+                                when (val result =
+                                    geolocator.current(Priority.HighAccuracy)) {
+                                    is GeolocatorResult.Success -> {
+                                        val c = result.data.coordinates
+                                        val lat = c.latitude
+                                        val lon = c.longitude
+                                        val place =
+                                            getPlaceFromCoordinates(lat, lon)
+                                        val address =
+                                            place?.let { formatAddress(it) }
+                                                ?: "Address not found"
+                                        nav?.push(
+                                            AttendanceScreen(
+                                                lat, lon, address,
+                                                isAttendance = true
+                                            )
+                                        )
+                                    }
+
+                                    is GeolocatorResult.Error -> {
+                                        showLocationPopup = true
+                                    }
+                                }
+                            } finally {
+                                showLoading = false
+                            }
+                        }
+//                        "Purchase Order" -> nav?.push(SingleEntryReceipt(name.first, vchType = 22))
+//                        "Purchase Invoice" -> nav?.push(SingleEntryReceipt(name.first, vchType = 23))
+//                        "Purchase Return" -> nav?.push(SingleEntryReceipt(name.first, vchType = 24))
+//                        "Stock Transfer" -> nav?.push(SingleEntryReceipt(name.first, vchType = 25))
+                        "Contra" -> nav?.push(SingleEntryReceipt(name.first, vchType = 15))
                     }
                 }
             )

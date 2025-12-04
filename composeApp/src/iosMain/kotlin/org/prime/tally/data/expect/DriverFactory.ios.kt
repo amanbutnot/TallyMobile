@@ -2,47 +2,87 @@ package org.prime.tally.data.expect
 
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.refTo
 import org.prime.tally.data.utils.DB_FILE_NAME
 import org.tally.TallyDatabase
-import platform.Foundation.*
-import kotlinx.cinterop.*
+import platform.Foundation.NSApplicationSupportDirectory
+import platform.Foundation.NSBundle
+import platform.Foundation.NSData
+import platform.Foundation.NSFileManager
+import platform.Foundation.NSSearchPathForDirectoriesInDomains
+import platform.Foundation.NSUserDomainMask
+import platform.Foundation.create
+import platform.Foundation.writeToFile
 
+actual class DriverFactory {
 
-    actual class DriverFactory {
-        @OptIn(ExperimentalForeignApi::class)
-        actual fun createDriver(bytes: ByteArray): SqlDriver {
-            val fileManager = NSFileManager.defaultManager
-            val appSupportURL = fileManager.URLsForDirectory(NSApplicationSupportDirectory, NSUserDomainMask)
-                .firstOrNull() as? NSURL ?: error("Cannot access Application Support")
+    @OptIn(ExperimentalForeignApi::class)
+    actual fun createDriver(bytes: ByteArray): SqlDriver {
 
-            val dbFileURL = appSupportURL.URLByAppendingPathComponent(DB_FILE_NAME)!!
-            val dbPath = dbFileURL.path!!
+        println("🔍 createDriver() called")
 
-            // Delete old file if it exists
-            if (fileManager.fileExistsAtPath(dbPath)) {
-                fileManager.removeItemAtPath(dbPath, null)
-            }
+        val appSupport = NSSearchPathForDirectoriesInDomains(
+            NSApplicationSupportDirectory,
+            NSUserDomainMask,
+            true
+        ).first() as String
 
-            // Write prepopulated database
-            val nsData = bytes.toNSData()
-            nsData.writeToFile(dbPath, atomically = true)
+        val bundleId = NSBundle.mainBundle.bundleIdentifier ?: "default"
+        val sqliterDir = "$appSupport/$bundleId"
+        val sqliterDbPath = "$sqliterDir/$DB_FILE_NAME"
 
-            println("Database file written to: $dbPath")
-            println("File exists? ${fileManager.fileExistsAtPath(dbPath)}")
+        val fm = NSFileManager.defaultManager
 
-            return NativeSqliteDriver(
-                schema = TallyDatabase.Schema,
-                name = dbPath
+        println("📁 App Support: $appSupport")
+        println("📁 SQLiter Dir: $sqliterDir")
+        println("📄 Target DB Path: $sqliterDbPath")
+
+        if (!fm.fileExistsAtPath(sqliterDir)) {
+            println("📌 Directory doesn't exist → creating")
+            fm.createDirectoryAtPath(
+                sqliterDir,
+                withIntermediateDirectories = true,
+                attributes = null,
+                error = null
             )
+        } else {
+            println("✔️ Directory exists already")
         }
 
+        // ❗ Copy BEFORE opening the driver!
+        println("📥 Writing database file BEFORE creating driver")
+        val wrote = bytes.toNSData().writeToFile(sqliterDbPath, atomically = true)
+
+        if (!wrote) error("❌ Failed to write DB file to: $sqliterDbPath")
+        println("✔️ DB file written successfully")
+
+        // Double-check existence
+        val existsAfter = fm.fileExistsAtPath(sqliterDbPath)
+        println("🔎 DB exists after write? $existsAfter")
+
+        if (existsAfter) {
+            val contents = fm.contentsOfDirectoryAtPath(sqliterDir, null)?.map { it.toString() }
+            println("📄 Files in SQLiter dir: $contents")
+        }
+
+        println("🚀 NOW creating driver")
+        val driver = NativeSqliteDriver(
+            schema = TallyDatabase.Schema,
+            name = DB_FILE_NAME
+        )
+
+        println("✔️ Driver created successfully")
+
+        return driver
+    }
 }
 
-// Helper: convert ByteArray -> NSData
 @OptIn(ExperimentalForeignApi::class)
 private fun ByteArray.toNSData(): NSData = memScoped {
     NSData.create(
         bytes = this@toNSData.refTo(0).getPointer(this),
-        length = size.toULong()
+        length = this@toNSData.size.toULong()
     )
 }

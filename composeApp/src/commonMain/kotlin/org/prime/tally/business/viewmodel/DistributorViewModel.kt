@@ -1,0 +1,95 @@
+package org.prime.tally.business.viewmodel
+
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import org.prime.tally.business.repository.DistributorRepository
+import org.prime.tally.data.model.DistributorRequest
+import org.prime.tally.data.model.DistributorResponse
+
+class DistributorViewModel : ViewModel() {
+    private val _dataState = mutableStateOf(DataState<DistributorResponse>())
+    val dataState: State<DataState<DistributorResponse>> = _dataState
+    private val _listState = mutableStateOf(DataState<List<DistributorRequest>>())
+    val listState: State<DataState<List<DistributorRequest>>> = _listState
+
+
+    fun createDistributor(distributorRequest: DistributorRequest, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+
+            _dataState.value = DataState(isLoading = true)
+
+            val res = DistributorRepository.createDistributor(distributorRequest)
+
+            if (res?.statuscode == 200) {
+                _dataState.value = DataState(
+                    success = true, message = res.message, isLoading = false
+                )
+                onSuccess()
+            } else {
+                _dataState.value = DataState(
+                    success = false,
+                    isLoading = false,
+                    error = res?.message ?: "Error Occurred. Please try again."
+                )
+            }
+        }
+    }
+    fun listDistributor() {
+        println("👉 listDistributor() CALLED")
+
+        viewModelScope.launch {
+            println("👉 Setting loading state TRUE")
+            _listState.value = DataState(isLoading = true)
+
+            println("👉 Calling DistributorRepository.listDistributor()...")
+            val res = DistributorRepository.listDistributor()
+
+            println("👉 Repository returned: $res")
+
+            // Print all fields separately to avoid guessing
+            println("👉 res == null ? ${res == null}")
+            if (res != null) {
+                println("👉 res.statuscode = ${res.statuscode}")
+                println("👉 res.message = ${res.message}")
+                println("👉 res.data = ${res.data}")
+                println("👉 res.data.size = ${res.data?.size ?: -1}")
+            }
+
+            if (res?.statuscode == 200) {
+
+                _listState.value = DataState(
+                    success = true,
+                    message = res.message,
+                    isLoading = false,
+                    data = res.data
+                )
+
+            } else {
+
+                _listState.value = DataState(
+                    success = false,
+                    isLoading = false,
+                    error = res?.message ?: "Error Occurred. Please try again."
+                )
+            }
+
+        }
+    }
+
+
+    fun clearError() {
+        _dataState.value = _dataState.value.copy(error = null)
+    }
+
+
+    data class DataState<T>(
+        val success: Boolean = false,
+        val isLoading: Boolean = false,
+        val data: T? = null,
+        val error: String? = null,
+        val message: String? = null
+    )
+}

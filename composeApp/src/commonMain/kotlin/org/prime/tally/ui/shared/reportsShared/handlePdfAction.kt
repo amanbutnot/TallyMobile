@@ -10,6 +10,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import org.prime.tally.data.expect.createPdfFromHtml
 import kotlin.time.Clock
@@ -29,11 +30,10 @@ suspend fun handlePdfAction(
     onLoadingChange(true)
     delay(100)
     try {
-        val platformFile = withContext(Dispatchers.IO) {
-            PlatformFile(
-                createPdfFromHtml(htmlContent, fileName)
-            )
-        }
+        val platformFile = PlatformFile(
+            createPdfFromHtml(htmlContent, fileName)
+        )
+
 
         when (action) {
             PdfAction.Download -> {
@@ -60,8 +60,8 @@ fun generateUniqueFileName(baseName: String): String {
 
     val timestamp =
         (now.year % 100).toString().padStart(2, '0') +
-                now.monthNumber.toString().padStart(2, '0') +
-                now.dayOfMonth.toString().padStart(2, '0') +
+                now.month.number.toString().padStart(2, '0') +
+                now.day.toString().padStart(2, '0') +
                 now.hour.toString().padStart(2, '0') +
                 now.minute.toString().padStart(2, '0') +
                 now.second.toString().padStart(2, '0')
