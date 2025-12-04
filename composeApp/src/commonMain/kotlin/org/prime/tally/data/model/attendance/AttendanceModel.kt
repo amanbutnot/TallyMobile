@@ -23,14 +23,14 @@ data class AttendanceResponse(
 
 @Serializable
 data class AttendanceListResponse(
-    val locationDateTime: String,
-    val locationId: Int,
-    val recType: Int,
-    val c1: String,
-    val c2: String,
-    val c3: String,
-    val c4: String,
-    val c5: String
+    val LocationDateTime: String,
+    val LocationID: Int,
+    val RecType: Int,
+    val C1: String?=null,
+    val C2: String,
+    val C3: String,
+    val C4: String,
+    val C5: String
 )
 
 @Serializable

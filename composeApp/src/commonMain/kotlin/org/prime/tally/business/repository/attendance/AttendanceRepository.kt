@@ -37,7 +37,7 @@ object AttendanceRepository {
             null
         }
     }
-    suspend fun getAttendanceList(attendanceRequest: AttendanceListRequest): ApiResponse<AttendanceListResponse>? {
+    suspend fun getAttendanceList(attendanceRequest: AttendanceListRequest): ApiResponse<List<AttendanceListResponse>>? {
         val token = SharedPrefs.Token.get()
         return try {
             val response = client.post("${BASE_URL}/Locations/ViewLocations.php") {
