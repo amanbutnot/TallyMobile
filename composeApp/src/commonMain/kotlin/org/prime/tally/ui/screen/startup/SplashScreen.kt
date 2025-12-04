@@ -2,6 +2,7 @@ package org.prime.tally.ui.screen.startup
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -30,11 +33,17 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.painterResource
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.expect.readFileBytes
 import org.prime.tally.ui.screen.auth.LoginScreen
+import org.prime.tally.ui.screen.auth.OnBoardingScreen
+import org.prime.tally.ui.screen.auth.SignUpScreen
 import org.prime.tally.ui.screen.home.Dashboard
+import tallymobile.composeapp.generated.resources.Res
+import tallymobile.composeapp.generated.resources.splashImage
 
 object SplashScreen : Screen {
     @Composable
@@ -47,14 +56,12 @@ object SplashScreen : Screen {
         LaunchedEffect(Unit) {
             delay(2000)
 
-            //TODO: make it go to onBoardingScreen when it is completed
-//            nav.replaceAll(OnBoardingScreen)
             val fileBytes = readFileBytes()
             if (fileBytes != null) {
                 DatabaseHolder.init(fileBytes)
                 nav.replaceAll(Dashboard)
             } else {
-                nav.replaceAll(LoginScreen)
+                nav.replaceAll(OnBoardingScreen)
             }
 
         }
@@ -64,17 +71,17 @@ object SplashScreen : Screen {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    "Tally",
-                    textAlign = TextAlign.Center,
-                    color = colors.primary,
-                    style = type.headlineSmall.copy(fontSize = 50.sp)
-                )
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    "Smart Accounting App",
-                    color = colors.onBackground.copy(alpha = 0.5f),
-                    style = type.headlineSmall.copy(fontSize = 14.sp)
+//                Text(
+//                    "Easy Karobar",
+//                    textAlign = TextAlign.Center,
+//                    color = colors.primary,
+//                    style = type.headlineSmall.copy(fontSize = 50.sp)
+//                )
+                Image(
+                    painterResource(Res.drawable.splashImage),
+                    contentDescription = "",
+                    contentScale = ContentScale.FillWidth,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
                 )
             }
 

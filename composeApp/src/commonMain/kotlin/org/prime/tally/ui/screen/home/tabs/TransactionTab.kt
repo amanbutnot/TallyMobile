@@ -11,17 +11,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Money
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -42,7 +42,8 @@ import cafe.adriel.voyager.navigator.internal.BackHandler
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
-import org.prime.tally.ui.screen.transactions.SingleEntryReceipt
+import org.prime.tally.ui.screen.attendance.AttendanceListScreen
+import org.prime.tally.ui.screen.transactions.SingleEntryFilterScreen
 
 object TransactionTab : Tab {
     override val options: TabOptions
@@ -58,6 +59,7 @@ object TransactionTab : Tab {
         val nav = LocalNavigator.currentOrThrow.parent
         val colors = MaterialTheme.colorScheme
 
+
         BackHandler(true) {
             tabNav.current = HomeTab
         }
@@ -66,7 +68,7 @@ object TransactionTab : Tab {
             modifier = Modifier
                 .fillMaxSize()
                 .background(colors.background)
-                .verticalScroll(rememberScrollState())
+                // .verticalScroll(rememberScrollState())
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -123,19 +125,78 @@ object TransactionTab : Tab {
                         TransactionType("Contra", Icons.Default.Money)
                     )
 
-                    LazyRow(
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(3),
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                         contentPadding = PaddingValues(vertical = 4.dp)
                     ) {
-                        items(entryList) { type ->
+                        itemsIndexed(entryList) { index, type ->
                             TransactionButton(
                                 icon = type.icon,
                                 title = type.name,
                                 onClick = {
-                                    nav?.push(SingleEntryReceipt(type.name))
+                                    when (index) {
+                                        0 -> nav?.push(
+                                            SingleEntryFilterScreen(
+                                                type.name,
+                                                vchType = 14
+                                            )
+                                        )
+
+                                        1 -> nav?.push(
+                                            SingleEntryFilterScreen(
+                                                type.name,
+                                                vchType = 19
+                                            )
+                                        )
+
+                                        2 -> nav?.push(
+                                            SingleEntryFilterScreen(
+                                                type.name,
+                                                vchType = 16
+                                            )
+                                        )
+
+                                        3 -> nav?.push(
+                                            SingleEntryFilterScreen(
+                                                type.name,
+                                                vchType = 15
+                                            )
+                                        )
+
+                                    }
                                 }
                             )
+                        }
+                        item {
+                            TransactionButton(
+                                onClick = {
+
+                                    nav?.push(AttendanceListScreen(
+                                        isCheckIn = true,
+                                        name = "Check In/Out"
+                                    ))
+                                },
+                                icon = Icons.Default.Work,
+                                title = "Check In/Out Filter",
+                            )
+
+                        }
+                        item {
+                            TransactionButton(
+                                onClick = {
+                                    nav?.push(AttendanceListScreen(
+                                        isCheckIn = false,
+                                        name = "Attendance Filter"
+                                    ))
+
+                                },
+                                icon = Icons.Default.Work,
+                                title = "Attendance",
+                            )
+
                         }
                     }
                 }
@@ -157,7 +218,7 @@ fun TransactionButton(
     onClick: () -> Unit
 ) {
     Card(
-        modifier = modifier.size(width = 95.dp, height = 85.dp),
+        modifier = modifier.size(width = 85.dp, height = 75.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -175,7 +236,7 @@ fun TransactionButton(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(8.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

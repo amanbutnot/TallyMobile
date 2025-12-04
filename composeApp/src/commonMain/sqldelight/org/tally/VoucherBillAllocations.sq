@@ -41,6 +41,30 @@ WHERE V.CM2 IN ('New Ref', 'Advance')
   AND Adj.AdjustmentAmount < 0
 ORDER BY V.DATE, V.CM1;
 
+billReceivableLedgerList:
+SELECT
+    V.VCH_GUID,
+    V.DATE AS date,
+    V.VCHTYPE AS vchType,
+    V.BILLNUMBER AS billNumber,
+    V.CM1 AS cm1,
+    V.DUEDATE AS dueDate,
+    V.D1 AS d1,
+    Adj.AdjustmentAmount AS adjustmentAmount
+FROM Vouchers_BILLALLOCATIONS AS V
+INNER JOIN (
+    SELECT BILLID, SUM(D1) AS AdjustmentAmount
+    FROM Vouchers_BILLALLOCATIONS
+    GROUP BY BILLID
+) AS Adj
+ON V.BILLID = Adj.BILLID
+WHERE V.CM2 IN ('New Ref', 'Advance')
+  AND V.D1 < 0
+  AND  V.DATE>=? AND V.DATE<=?
+  AND V.CM1 =?
+  AND Adj.AdjustmentAmount < 0
+ORDER BY V.DATE, V.CM1;
+
 
 billPayableList:
 SELECT
@@ -64,3 +88,29 @@ WHERE V.CM2 IN ('New Ref', 'Advance')
   AND  V.DATE>=? AND V.DATE<=?
   AND Adj.AdjustmentAmount > 0
 ORDER BY V.DATE, V.CM1;
+
+
+billPayableLedgerList:
+SELECT
+    V.VCH_GUID,
+    V.DATE AS date,
+    V.VCHTYPE AS vchType,
+    V.BILLNUMBER AS billNumber,
+    V.CM1 AS cm1,
+    V.DUEDATE AS dueDate,
+    V.D1 AS d1,
+    Adj.AdjustmentAmount AS adjustmentAmount
+FROM Vouchers_BILLALLOCATIONS AS V
+INNER JOIN (
+    SELECT BILLID, SUM(D1) AS AdjustmentAmount
+    FROM Vouchers_BILLALLOCATIONS
+    GROUP BY BILLID
+) AS Adj
+ON V.BILLID = Adj.BILLID
+WHERE V.CM2 IN ('New Ref', 'Advance')
+  AND V.D1 > 0
+  AND  V.DATE>=? AND V.DATE<=?
+  AND V.CM1 =?
+  AND Adj.AdjustmentAmount > 0
+ORDER BY V.DATE, V.CM1;
+
