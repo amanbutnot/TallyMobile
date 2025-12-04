@@ -53,7 +53,11 @@ import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.expect.deleteDbFile
 import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.screen.auth.LoginScreen
+import org.prime.tally.ui.screen.auth.OnBoardingScreen
+import org.prime.tally.ui.screen.distributor.CreateDistributorScreen
+import org.prime.tally.ui.screen.distributor.ListDistributorScreen
 import org.prime.tally.ui.shared.composables.TallyAlertBox
+import org.prime.tally.ui.shared.composables.TallyButton
 import org.prime.tally.ui.shared.composables.TallyDivider
 import org.prime.tally.ui.shared.composables.TallyIconButton
 import org.prime.tally.ui.shared.composables.TallyScaffold
@@ -134,6 +138,21 @@ object SettingScreen : Screen {
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
+                    TallyDivider()
+                    TallyButton(
+                        label = "Create Distributor",
+                        onClick = { nav.push(CreateDistributorScreen) },
+                        backgroundColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        enabled = true, modifier = Modifier.padding(vertical = 12.dp)
+                    )
+                    TallyButton(
+                        label = "List Distributors",
+                        onClick = { nav.push(ListDistributorScreen) },
+                        backgroundColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        enabled = true
+                    )
                     TallyDivider()
 
                     Text(
@@ -228,8 +247,9 @@ object SettingScreen : Screen {
                         onConfirm = {
                             SharedPrefs.Token.clear()
                             SharedPrefs.FileId.clear()
+                            SharedPrefs.DistributorData.clear()
                             deleteDbFile()
-                            nav.replaceAll(LoginScreen)
+                            nav.replaceAll(OnBoardingScreen)
                         },
                         onCancel = {
                             showAlertBox = false
