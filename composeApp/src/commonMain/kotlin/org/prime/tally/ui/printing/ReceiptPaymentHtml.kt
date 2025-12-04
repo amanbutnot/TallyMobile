@@ -18,7 +18,7 @@ fun receiptPaymentHtml(
     totalCredit: Double,
     companyAddress: String,
     companyContact: String,
-    documentType: String = "RECEIPT / PAYMENT SLIP"
+    documentType: String
 ): String {
     val html = StringBuilder()
 
@@ -138,10 +138,6 @@ fun receiptPaymentHtml(
                 <th class="number">${totalCredit.formatToAmtDec()}</th>
             </tr>
             </table>
-
-            <div class="footer-note">
-                This is a system-generated receipt/payment slip.
-            </div>
         </body>
         </html>
         """.trimIndent()

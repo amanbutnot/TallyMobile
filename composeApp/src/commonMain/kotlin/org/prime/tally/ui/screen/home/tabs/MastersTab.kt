@@ -29,7 +29,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -132,7 +131,7 @@ object MastersTab : Tab {
 }
 
 @Composable
-private fun MasterButton(
+fun MasterButton(
     icon: ImageVector,
     title: String,
     modifier: Modifier = Modifier,

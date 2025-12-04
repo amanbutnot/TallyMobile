@@ -43,6 +43,8 @@ import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyResultDialog
 import org.prime.tally.ui.shared.composables.TallyTextField
 import org.prime.tally.business.viewmodel.AuthViewModel
+import org.prime.tally.data.utils.SharedPrefs
+import org.prime.tally.ui.shared.composables.TallyScaffold
 
 object LoginScreen : Screen {
     @Composable
@@ -70,124 +72,131 @@ object LoginScreen : Screen {
                 confirmText = "Try Again"
             )
         }
+        TallyScaffold(
+            title = "Login",
+            onBack = { nav.replaceAll(OnBoardingScreen) },
+            showEditIcon = false,
+        ) {paddingValues ->
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(colors.background),
-            contentAlignment = Alignment.Center
-        ) {
-            Card(
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = colors.surfaceContainerHigh),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-            ) {
-
-                Column(
+                    .fillMaxSize().padding(paddingValues)
+                    .background(colors.background),
+                contentAlignment = Alignment.Center
+            )
+            {
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .padding(horizontal = 24.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = colors.surfaceContainerHigh),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Dashboard,
-                        contentDescription = "App icon",
-                        tint = colors.primary,
-                        modifier = Modifier.size(60.dp)
-                    )
-                    Spacer(Modifier.height(16.dp))
 
-                    Text(
-                        text = "Welcome Back",
-                        style = type.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = colors.onSurface
-                        )
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = "Your finances, simplified — sign in to continue",
-                        style = type.bodyMedium.copy(color = colors.onSurfaceVariant)
-                    )
-
-                    Spacer(Modifier.height(32.dp))
-
-
-                    TallyTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        placeholder = "Enter your email",
-                        isPassword = false,
-                        isNumber = false,
-                        label = "Email",
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(Modifier.height(16.dp))
-
-                    TallyTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        placeholder = "Enter your password",
-                        isPassword = true,
-                        isNumber = false,
-                        label = "Password",
-                        imeAction = ImeAction.Done,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(Modifier.height(8.dp))
-
-                    TextButton(
-                        onClick = {
-                            nav.push(ForgotPasswordScreen)
-                        }, modifier = Modifier
-                            .align(Alignment.End)
-
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Icon(
+                            Icons.Default.Dashboard,
+                            contentDescription = "App icon",
+                            tint = colors.primary,
+                            modifier = Modifier.size(60.dp)
+                        )
+                        Spacer(Modifier.height(16.dp))
+
                         Text(
-                            text = "Forgot password?",
-                            fontSize = 14.sp,
-                            color = colors.primary,
-
+                            text = "Welcome Back",
+                            style = type.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = colors.onSurface
                             )
-                    }
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Your finances, simplified — sign in to continue",
+                            style = type.bodyMedium.copy(color = colors.onSurfaceVariant)
+                        )
 
-                    TallyButton(
-                        label = "Login",
-                        onClick = {
-                            viewModel.userLogin(
-                                LoginRequest(
-                                    Username = email,
-                                    Password = password
+                        Spacer(Modifier.height(32.dp))
+
+
+                        TallyTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            placeholder = "Enter your email",
+                            isPassword = false,
+                            isNumber = false,
+                            label = "Email",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(Modifier.height(16.dp))
+
+                        TallyTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            placeholder = "Enter your password",
+                            isPassword = true,
+                            isNumber = false,
+                            label = "Password",
+                            imeAction = ImeAction.Done,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(Modifier.height(8.dp))
+
+                        TextButton(
+                            onClick = {
+                                nav.push(ForgotPasswordScreen)
+                            }, modifier = Modifier
+                                .align(Alignment.End)
+
+                        ) {
+                            Text(
+                                text = "Forgot password?",
+                                fontSize = 14.sp,
+                                color = colors.primary,
+
                                 )
-                            ) {
-                                nav.replaceAll(GoogleDriveDownloadScreen)
-                            }
-                        },
-                        backgroundColor = colors.primary,
-                        contentColor = colors.onPrimary,
-                        enabled = !(email.isEmpty() || password.isEmpty()),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                        }
 
-                    Spacer(Modifier.height(16.dp))
+                        TallyButton(
+                            label = "Login",
+                            onClick = {
+                                viewModel.userLogin(
+                                    LoginRequest(
+                                        Username = email,
+                                        Password = password
+                                    )
+                                ) {
+                                    nav.replaceAll(GoogleDriveDownloadScreen)
+                                }
+                            },
+                            backgroundColor = colors.primary,
+                            contentColor = colors.onPrimary,
+                            enabled = !(email.isEmpty() || password.isEmpty()),
+                            modifier = Modifier.fillMaxWidth()
+                        )
 
-                    TallyButton(
-                        label = "Support Ticket",
-                        //TODO: add a real url
-                        onClick = { urlHandler.openUri("https://support.google.com/") },
-                        backgroundColor = Color.Transparent,
-                        contentColor = colors.primary,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                        Spacer(Modifier.height(16.dp))
+
+                        TallyButton(
+                            label = "Support Ticket",
+                            //TODO: add a real url
+                            onClick = { urlHandler.openUri("https://support.google.com/") },
+                            backgroundColor = Color.Transparent,
+                            contentColor = colors.primary,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
-            }
 
+            }
         }
     }
 }

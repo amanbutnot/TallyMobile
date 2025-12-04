@@ -37,6 +37,9 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import CurrentDate
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material3.Surface
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.ui.shared.composables.TallyButton
 import org.prime.tally.ui.shared.composables.TallyScaffold
@@ -49,6 +52,7 @@ fun ReportFilterScreen(
     showStartDate: Boolean,
     showEndDate: Boolean,
     showAccountSelect: Boolean,
+    buttonText:String="Generate Report",
     onGenerateClick: (GenerateReportData) -> Unit
 ) {
     val nav = LocalNavigator.currentOrThrow
@@ -98,7 +102,7 @@ fun ReportFilterScreen(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Select period for your report and account",
+                        text = "Fill the filters",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -134,13 +138,39 @@ fun ReportFilterScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
-                            TallyButton(
-                                label = selectedAccount.ifEmpty { "Select Account" },
-                                onClick = { showBottomSheet = true },
-                                backgroundColor = MaterialTheme.colorScheme.secondary,
-                                contentColor = MaterialTheme.colorScheme.onSecondary,
-                                enabled = true
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { showBottomSheet = true },
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                             )
+                            {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = selectedAccount.ifEmpty { "Choose an account" },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = if (selectedAccount.isEmpty())
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        else
+                                            MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Outlined.KeyboardArrowDown,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
                         }
 
                         Box(
@@ -197,7 +227,7 @@ fun ReportFilterScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             TallyButton(
-                label = "Generate Report",
+                label = buttonText,
                 onClick = {
                     onGenerateClick(
                         GenerateReportData(

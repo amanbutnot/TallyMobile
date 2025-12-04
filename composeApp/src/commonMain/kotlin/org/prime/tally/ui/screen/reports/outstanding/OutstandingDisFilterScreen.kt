@@ -4,24 +4,26 @@ import androidx.compose.runtime.Composable
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import org.prime.tally.ui.shared.reportsShared.AllOneFilterScreen
+import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.shared.reportsShared.ReportFilterScreen
 
-data class OutstandingFilterScreen(val name: String) : Screen {
+object OutstandingDisFilterScreen : Screen {
     @Composable
     override fun Content() {
         val nav = LocalNavigator.currentOrThrow
-        AllOneFilterScreen(
-            title = "$name Filter",
+        ReportFilterScreen(
+            title = "Bill Receivable Filter",
             showStartDate = true,
             showEndDate = true,
+            showAccountSelect = false,
+            buttonText = "Generate",
             onGenerateClick = {
                 nav.push(
                     OutstandingReportScreen(
-                        name = name,
+                        name = "Bill Receivable",
                         startDate = it.startDate,
                         endDate = it.endDate,
-                        cm1 = it.accountName
+                        cm1 = SharedPrefs.DistributorData.get()?.ledger_name
                     )
                 )
             }

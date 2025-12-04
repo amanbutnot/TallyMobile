@@ -59,10 +59,16 @@ import org.prime.tally.ui.shared.reportsShared.TableCell
 import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.BillPayableList
+import org.tally.BillReceivableLedgerList
 import org.tally.BillReceivableList
 import kotlin.math.absoluteValue
 
-data class OutstandingReportScreen(val name: String, val startDate: String, val endDate: String) :
+data class OutstandingReportScreen(
+    val name: String,
+    val startDate: String,
+    val endDate: String,
+    val cm1: String? = null
+) :
     Screen {
     @Composable
     override fun Content() {
@@ -80,23 +86,63 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
         var selectedOption by remember { mutableStateOf("Name") }
         val nav = LocalNavigator.currentOrThrow
 
-        val columnSmallWeight = 2.5f
-        val columnBigWeight = 7.5f
 
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
                 if (name == "Bill Receivable") {
-                    receivableList = db.voucherBillAllocationsQueries.billReceivableList(
-                        DATE = startDate,
-                        DATE_ = endDate
-                    ).executeAsList()
+                    if (cm1 != "") {
+                        receivableList = db.voucherBillAllocationsQueries.billReceivableLedgerList(
+                            DATE = startDate,
+                            DATE_ = endDate,
+                            CM1 = cm1
+                        ).executeAsList().map {
+                            BillReceivableList(
+                                VCH_GUID = it.VCH_GUID,
+                                date = it.date,
+                                vchType = it.vchType,
+                                billNumber = it.billNumber,
+                                cm1 = it.cm1,
+                                dueDate = it.dueDate,
+                                d1 = it.d1,
+                                adjustmentAmount = it.adjustmentAmount
+                            )
+                        }
+
+                    } else {
+                        receivableList = db.voucherBillAllocationsQueries.billReceivableList(
+                            DATE = startDate,
+                            DATE_ = endDate
+                        ).executeAsList()
+                    }
+
                 }
                 if (name == "Bill Payable") {
-                    payableList = db.voucherBillAllocationsQueries.billPayableList(
-                        DATE = startDate,
-                        DATE_ = endDate
-                    ).executeAsList()
+                    if (cm1 != "") {
+                        payableList = db.voucherBillAllocationsQueries.billPayableLedgerList(
+                            DATE = startDate,
+                            DATE_ = endDate,
+                            CM1 = cm1
+                        ).executeAsList().map {
+                            BillPayableList(
+                                VCH_GUID = it.VCH_GUID,
+                                date = it.date,
+                                vchType = it.vchType,
+                                billNumber = it.billNumber,
+                                cm1 = it.cm1,
+                                dueDate = it.dueDate,
+                                d1 = it.d1,
+                                adjustmentAmount = it.adjustmentAmount
+                            )
+                        }
+
+                    } else {
+                        payableList = db.voucherBillAllocationsQueries.billPayableList(
+                            DATE = startDate,
+                            DATE_ = endDate
+                        ).executeAsList()
+                    }
+
                 }
                 withContext(Dispatchers.Main) {
                     isLoading = false
@@ -201,7 +247,8 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
                         vchType = item.vchType ?: "",
                         refNo = item.billNumber ?: "",
                         refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
-                        pendingAmount = item.adjustmentAmount?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
+                        pendingAmount = item.adjustmentAmount?.absoluteValue?.formatToAmtDec()
+                            ?.toDouble() ?: 0.0,
                         due = "Y",
                         dueDate = item.dueDate ?: "",
                         dueDays = DueDays(
@@ -217,7 +264,8 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
                         vchType = item.vchType ?: "",
                         refNo = item.billNumber ?: "",
                         refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
-                        pendingAmount = item.adjustmentAmount?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
+                        pendingAmount = item.adjustmentAmount?.absoluteValue?.formatToAmtDec()
+                            ?.toDouble() ?: 0.0,
                         due = "Y",
                         dueDate = item.dueDate ?: "",
                         dueDays = DueDays(
@@ -228,7 +276,6 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
                 }
             }
 
-            // Get the first account name or use "All Accounts"
             val accountName = if (name == "Bill Receivable") {
                 receivableList.firstOrNull()?.cm1 ?: "All Accounts"
             } else {
@@ -496,7 +543,7 @@ data class OutstandingReportScreen(val name: String, val startDate: String, val 
                                                             DueDays(
                                                                 endDate,
                                                                 item.dueDate.toString()
-                                                            )
+                                                            ) + " Days"
                                                         })",
                                                         1f,
                                                         textAlign = TextAlign.Start,

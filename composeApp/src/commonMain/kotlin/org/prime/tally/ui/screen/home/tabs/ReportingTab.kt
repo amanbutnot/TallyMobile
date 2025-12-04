@@ -104,7 +104,7 @@ object ReportingTab : Tab {
                         onClick = {
                             //TODO: add appropriate screens
                             when (report) {
-                                Report.Ledger -> nav?.push(LedgerReportFilterScreen)
+                                Report.Ledger -> nav?.push(LedgerReportFilterScreen())
                                 Report.Outstanding -> nav?.push(OutstandingSelectScreen)
                                 Report.PendingOrders -> nav?.push(Dashboard)
                                 Report.Quotations -> nav?.push(Dashboard)
