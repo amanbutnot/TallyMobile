@@ -3,6 +3,7 @@ package org.prime.tally.ui.screen.transactions.sale
 import CurrentDate
 import TallyDatePickerRow
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -54,6 +56,11 @@ data class SundryItem(
     val amount: Double = 0.0
 )
 
+enum class TaxType {
+    INCLUSIVE,
+    EXTRA
+}
+
 data class SaleScreen(val name: String) : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +73,7 @@ data class SaleScreen(val name: String) : Screen {
         var selectedLedgerGUID by rememberSaveable { mutableStateOf("") }
         var narration by rememberSaveable { mutableStateOf("") }
         var selectedDate by rememberSaveable { mutableStateOf(CurrentDate()) }
+        var taxType by rememberSaveable { mutableStateOf(TaxType.INCLUSIVE) }
 
         var selectedItems by remember { mutableStateOf<List<InvoiceItem>>(emptyList()) }
         var selectedSundries by remember { mutableStateOf<List<SundryItem>>(emptyList()) }
@@ -99,97 +107,133 @@ data class SaleScreen(val name: String) : Screen {
                             .weight(1f)
                             .padding(horizontal = 16.dp)
                             .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        Spacer(modifier = Modifier.height(4.dp))
 
-                        TallyDatePickerRow(
-                            label = "Entry Date",
-                            selectedDate = selectedDate,
-                            onDateSelected = { selectedDate = it },
-                            defaultDate = CurrentDate()
+                        // Header Card with Date and Party
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                TallyDatePickerRow(
+                                    label = "Entry Date",
+                                    selectedDate = selectedDate,
+                                    onDateSelected = { selectedDate = it },
+                                    defaultDate = CurrentDate()
+                                )
+
+                                SelectLedgerRow(
+                                    selectedAccount = selectedLedger,
+                                    onShowBottomSheet = { showLedgerSheet = true },
+                                    title = "Party Ledger"
+                                )
+                            }
+                        }
+
+                        // Tax Type Section
+                        TaxTypeSelector(
+                            selectedTaxType = taxType,
+                            onTaxTypeSelected = { taxType = it }
                         )
 
-                        SelectLedgerRow(
-                            selectedAccount = selectedLedger,
-                            onShowBottomSheet = { showLedgerSheet = true },
-                            title = "Party Ledger"
-                        )
+                        // Items Section
+                        SectionCard(title = "ITEMS", count = selectedItems.size) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                AddButton(label = "Add Item") { showItemSheet = true }
 
-                        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                                selectedItems.forEach { item ->
+                                    ItemCard(
+                                        item = item,
+                                        onQuantityChange = { newQty ->
+                                            selectedItems = selectedItems.map {
+                                                if (it.name == item.name) it.copy(qty = newQty) else it
+                                            }
+                                        },
+                                        onRemove = { selectedItems = selectedItems - item }
+                                    )
+                                }
 
-                        SectionHeader("ITEMS", selectedItems.size)
-                        AddButton(label = "Add Item") { showItemSheet = true }
-
-                        selectedItems.forEach { item ->
-                            ItemCard(
-                                item = item,
-                                onQuantityChange = { newQty ->
-                                    selectedItems = selectedItems.map {
-                                        if (it.name == item.name) it.copy(qty = newQty) else it
-                                    }
-                                },
-                                onRemove = { selectedItems = selectedItems - item }
-                            )
+                                if (selectedItems.isNotEmpty()) {
+                                    SubtotalRow("Subtotal", itemsTotal)
+                                }
+                            }
                         }
 
-                        if (selectedItems.isNotEmpty()) {
-                            SubtotalRow("Items Subtotal", itemsTotal)
+                        // Sundries Section
+                        SectionCard(title = "SUNDRIES", count = selectedSundries.size) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                AddButton(label = "Add Sundry") { showSundrySheet = true }
+
+                                selectedSundries.forEach { sundry ->
+                                    SundryCard(
+                                        sundry = sundry,
+                                        onAmountChange = { newAmount ->
+                                            selectedSundries = selectedSundries.map {
+                                                if (it.name == sundry.name) it.copy(amount = newAmount) else it
+                                            }
+                                        },
+                                        onRemove = { selectedSundries = selectedSundries - sundry }
+                                    )
+                                }
+
+                                if (selectedSundries.isNotEmpty()) {
+                                    SubtotalRow("Subtotal", sundriesTotal)
+                                }
+                            }
                         }
 
-                        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-
-                        // SUNDRIES section (refactored)
-                        SectionHeader("SUNDRIES", selectedSundries.size)
-                        AddButton(label = "Add Sundry") { showSundrySheet = true }
-
-                        selectedSundries.forEach { sundry ->
-                            SundryCard(
-                                sundry = sundry,
-                                onAmountChange = { newAmount ->
-                                    selectedSundries = selectedSundries.map {
-                                        if (it.name == sundry.name) it.copy(amount = newAmount) else it
-                                    }
-                                },
-                                onRemove = { selectedSundries = selectedSundries - sundry }
-                            )
+                        // Narration Card
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                TallyNarrationField(
+                                    value = narration,
+                                    onValueChange = { narration = it },
+                                    label = "Narration"
+                                )
+                            }
                         }
 
-                        if (selectedSundries.isNotEmpty()) {
-                            SubtotalRow("Sundries Subtotal", sundriesTotal)
-                        }
-
-                        TallyNarrationField(
-                            value = narration,
-                            onValueChange = { narration = it },
-                            label = "Narration"
-                        )
-
-                        Spacer(modifier = Modifier.height(80.dp))
+                        Spacer(modifier = Modifier.height(60.dp))
                     }
 
                     // Bottom Bar
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shadowElevation = 8.dp,
+                        shadowElevation = 12.dp,
+                        tonalElevation = 2.dp,
                         color = MaterialTheme.colorScheme.surface
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 12.dp),
+                                    .padding(vertical = 8.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column {
                                     Text(
-                                        text = "Total Amount",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        text = "TOTAL AMOUNT",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        letterSpacing = 0.8.sp
                                     )
+                                    Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = "$grandTotal",
-                                        style = MaterialTheme.typography.headlineMedium,
+                                        text = "${grandTotal}",
+                                        style = MaterialTheme.typography.headlineSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary
                                     )
@@ -198,7 +242,7 @@ data class SaleScreen(val name: String) : Screen {
                                 TallyButton(
                                     onClick = { /* Transaction logic */ },
                                     enabled = selectedLedger.isNotEmpty() && selectedItems.isNotEmpty(),
-                                    label = if (isEdit) "Update" else "Create",
+                                    label = if (isEdit) "Update" else "Create Invoice",
                                     backgroundColor = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -206,7 +250,7 @@ data class SaleScreen(val name: String) : Screen {
                     }
                 }
 
-                // Bottom Sheets (refactored to SelectionSheet)
+                // Bottom Sheets
                 SelectionSheet(
                     show = showLedgerSheet,
                     title = "Select Party Ledger",
@@ -254,28 +298,130 @@ data class SaleScreen(val name: String) : Screen {
     }
 }
 
-
+@Composable
+fun TaxTypeSelector(
+    selectedTaxType: TaxType,
+    onTaxTypeSelected: (TaxType) -> Unit
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "TAX TYPE",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                letterSpacing = 0.6.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                TaxTypeOption(
+                    label = "Tax Inclusive",
+                    selected = selectedTaxType == TaxType.INCLUSIVE,
+                    onClick = { onTaxTypeSelected(TaxType.INCLUSIVE) },
+                    modifier = Modifier.weight(1f)
+                )
+                TaxTypeOption(
+                    label = "Tax Extra",
+                    selected = selectedTaxType == TaxType.EXTRA,
+                    onClick = { onTaxTypeSelected(TaxType.EXTRA) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
 
 @Composable
-fun SectionHeader(title: String, count: Int) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+fun TaxTypeOption(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .clip(MaterialTheme.shapes.small)
+            .clickable { onClick() },
+        shape = MaterialTheme.shapes.small,
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+        border = if (selected) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-            letterSpacing = 0.5.sp
-        )
-        if (count > 0) {
-            Text(
-                text = "$count",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            RadioButton(
+                selected = selected,
+                onClick = onClick,
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = MaterialTheme.colorScheme.primary
+                ),
+                modifier = Modifier.size(20.dp)
             )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun SectionCard(
+    title: String,
+    count: Int,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    letterSpacing = 0.6.sp
+                )
+                if (count > 0) {
+                    Surface(
+                        shape = MaterialTheme.shapes.extraSmall,
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text(
+                            text = "$count",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            content()
         }
     }
 }
@@ -284,11 +430,15 @@ fun SectionHeader(title: String, count: Int) {
 fun AddButton(label: String, onClick: () -> Unit) {
     OutlinedButton(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp),
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.primary
+            contentColor = MaterialTheme.colorScheme.primary,
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
+        shape = MaterialTheme.shapes.small
     ) {
         Icon(
             imageVector = Icons.Default.Add,
@@ -296,7 +446,7 @@ fun AddButton(label: String, onClick: () -> Unit) {
             modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
-        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -329,41 +479,46 @@ fun QuantitySelector(
     onIncrease: () -> Unit
 ) {
     Surface(
-        shape = MaterialTheme.shapes.extraSmall,
+        shape = MaterialTheme.shapes.small,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-        color = MaterialTheme.colorScheme.surface
+        color = MaterialTheme.colorScheme.surfaceVariant
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Remove,
-                contentDescription = "Decrease",
-                modifier = Modifier
-                    .size(20.dp)
-                    .clickable { onDecrease() }
-                    .padding(2.dp),
-                tint = MaterialTheme.colorScheme.onSurface
-            )
+            IconButton(
+                onClick = onDecrease,
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Remove,
+                    contentDescription = "Decrease",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             Text(
                 text = "$qty",
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(horizontal = 8.dp),
-                textAlign = TextAlign.Center
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(horizontal = 12.dp),
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Increase",
-                modifier = Modifier
-                    .size(20.dp)
-                    .clickable { onIncrease() }
-                    .padding(2.dp),
-                tint = MaterialTheme.colorScheme.onSurface
-            )
+            IconButton(
+                onClick = onIncrease,
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Increase",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -374,7 +529,6 @@ fun ItemCard(
     onQuantityChange: (Int) -> Unit,
     onRemove: () -> Unit
 ) {
-
     LaunchedEffect(item.qty) {
         if (item.qty == 0) {
             onRemove()
@@ -384,8 +538,8 @@ fun ItemCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.small,
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
-        color = Color.Transparent
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 1.dp
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -395,11 +549,12 @@ fun ItemCard(
                 Text(
                     text = item.name,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "${item.price}",
+                    text = "₹ ${item.price}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -407,7 +562,7 @@ fun ItemCard(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 QuantitySelector(
                     qty = item.qty,
@@ -416,22 +571,22 @@ fun ItemCard(
                 )
 
                 Text(
-                    text = "${item.total}",
+                    text = "₹ ${item.total}",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.widthIn(min = 60.dp),
+                    modifier = Modifier.widthIn(min = 70.dp),
                     textAlign = TextAlign.End
                 )
 
                 IconButton(
                     onClick = onRemove,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(28.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Remove",
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -449,8 +604,8 @@ fun SundryCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.small,
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
-        color = Color.Transparent
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 1.dp
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -461,71 +616,79 @@ fun SundryCard(
                 text = sundry.name,
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Surface(
-                    modifier = Modifier.width(100.dp),
-                    shape = MaterialTheme.shapes.extraSmall,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-                    color = MaterialTheme.colorScheme.surface
+                    modifier = Modifier.width(110.dp),
+                    shape = MaterialTheme.shapes.small,
+                    color = MaterialTheme.colorScheme.surfaceVariant
                 ) {
-                    BasicTextField(
-                        value = if (sundry.amount == 0.0) "" else sundry.amount.toString(),
-                        onValueChange = { newValue ->
-                            if (newValue.isEmpty()) {
-                                onAmountChange(0.0)
-                            } else {
-                                val filtered = newValue.filter { it.isDigit() || it == '.' }
-                                val dotCount = filtered.count { it == '.' }
-                                val validInput = if (dotCount > 1) {
-                                    filtered.substringBefore('.') + "." +
-                                            filtered.substringAfter('.').replace(".", "")
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = "₹",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                        BasicTextField(
+                            value = if (sundry.amount == 0.0) "" else sundry.amount.toString(),
+                            onValueChange = { newValue ->
+                                if (newValue.isEmpty()) {
+                                    onAmountChange(0.0)
                                 } else {
-                                    filtered
+                                    val filtered = newValue.filter { it.isDigit() || it == '.' }
+                                    val dotCount = filtered.count { it == '.' }
+                                    val validInput = if (dotCount > 1) {
+                                        filtered.substringBefore('.') + "." +
+                                                filtered.substringAfter('.').replace(".", "")
+                                    } else {
+                                        filtered
+                                    }
+                                    onAmountChange(validInput.toDoubleOrNull() ?: 0.0)
                                 }
-                                onAmountChange(validInput.toDoubleOrNull() ?: 0.0)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.End,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            decorationBox = { innerTextField ->
+                                if (sundry.amount == 0.0) {
+                                    Text(
+                                        text = "0.00",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                            textAlign = TextAlign.End
+                                        ),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                                innerTextField()
                             }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.End,
-                            fontWeight = FontWeight.Medium
-                        ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        decorationBox = { innerTextField ->
-                            if (sundry.amount == 0.0) {
-                                Text(
-                                    text = "0",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                                        textAlign = TextAlign.End
-                                    ),
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                            innerTextField()
-                        }
-                    )
+                        )
+                    }
                 }
 
                 IconButton(
                     onClick = onRemove,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(28.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Remove",
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -536,24 +699,29 @@ fun SundryCard(
 
 @Composable
 fun SubtotalRow(label: String, amount: Double) {
+    HorizontalDivider(
+        modifier = Modifier.padding(vertical = 8.dp),
+        thickness = 0.5.dp,
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+            .padding(vertical = 4.dp, horizontal = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = "$amount",
-            style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = "${amount}",
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }
