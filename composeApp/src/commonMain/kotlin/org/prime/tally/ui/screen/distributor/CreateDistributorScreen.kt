@@ -243,25 +243,42 @@ data class CreateDistributorScreen(
                         TallyButton(
                             label = if(isEdit) "Update Distributor" else "Create Distributor",
                             onClick = {
-                                // Handle sign up
-                                viewModel.createDistributor(
-                                    DistributorRequest(
-                                        distributor_name = name,
-                                        mobile_no = number,
-                                        password = password,
-                                        ledger_name = selectedAccount,
-                                        ledger_guid = selectedGUID,
-                                        status = selectedStatus
-                                    )
-                                ) {
-                                    name = ""
-                                    number = ""
-                                    password = ""
-                                    confirmPassword = ""
-                                    selectedAccount = ""
-                                    selectedGUID = ""
-                                    showSuccessDialog = true
+                                if(isEdit){
+                                    viewModel.updateDistributor(
+                                        DistributorRequest(
+                                            distributor_id = distributor?.distributor_id,
+                                            distributor_name = name,
+                                            mobile_no = number,
+                                            password = password,
+                                            ledger_name = selectedAccount,
+                                            ledger_guid = selectedGUID,
+                                            status = selectedStatus
+                                        )
+                                    ) {
+                                    nav.pop()
+                                    }
+                                }else{
+
+                                    viewModel.createDistributor(
+                                        DistributorRequest(
+                                            distributor_name = name,
+                                            mobile_no = number,
+                                            password = password,
+                                            ledger_name = selectedAccount,
+                                            ledger_guid = selectedGUID,
+                                            status = selectedStatus
+                                        )
+                                    ) {
+                                        name = ""
+                                        number = ""
+                                        password = ""
+                                        confirmPassword = ""
+                                        selectedAccount = ""
+                                        selectedGUID = ""
+                                        showSuccessDialog = true
+                                    }
                                 }
+                                // Handle sign up
                             },
                             backgroundColor = colors.primary,
                             contentColor = colors.onPrimary,
