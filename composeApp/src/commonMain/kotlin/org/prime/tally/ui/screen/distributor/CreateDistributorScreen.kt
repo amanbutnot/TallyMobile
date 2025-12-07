@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PersonAddAlt
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,7 +39,9 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.tally.business.viewmodel.AuthViewModel
 import org.prime.tally.business.viewmodel.DistributorViewModel
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.model.Distributor
 import org.prime.tally.data.model.DistributorRequest
+import org.prime.tally.data.model.DistributorResponse
 import org.prime.tally.ui.screen.transactions.SelectLedgerRow
 import org.prime.tally.ui.screen.transactions.TransactionBottomSheet
 import org.prime.tally.ui.screen.transactions.TransactionLedgerBottomSheet
@@ -48,7 +51,11 @@ import org.prime.tally.ui.shared.composables.TallyResultDialog
 import org.prime.tally.ui.shared.composables.TallyScaffold
 import org.prime.tally.ui.shared.composables.TallyTextField
 
-object CreateDistributorScreen : Screen {
+data class CreateDistributorScreen(
+    val isEdit: Boolean = false,
+    val distributor: DistributorRequest? = null
+) :
+    Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
@@ -63,6 +70,7 @@ object CreateDistributorScreen : Screen {
         var selectedName by remember { mutableStateOf("") }
         var selectedNumber by remember { mutableStateOf("") }
         var selectedGUID by remember { mutableStateOf("") }
+        var selectedStatus by remember { mutableStateOf("active") }
         var showBottomSheet by remember { mutableStateOf(false) }
         var showSuccessDialog by remember { mutableStateOf(false) }
         val db = DatabaseHolder.instance
@@ -71,6 +79,15 @@ object CreateDistributorScreen : Screen {
         val viewModel: DistributorViewModel = viewModel { DistributorViewModel() }
         val state by viewModel.dataState
         val nav = LocalNavigator.currentOrThrow
+
+
+        if (isEdit && distributor != null) {
+            selectedAccount = distributor.ledger_name
+            selectedGUID = distributor.ledger_guid
+            name = distributor.distributor_name
+            number = distributor.mobile_no
+            selectedStatus = distributor.status.toString()
+        }
 
         if (state.isLoading) {
             TallyLoadingDialog("Creating your distributor")
@@ -93,7 +110,7 @@ object CreateDistributorScreen : Screen {
             )
         }
         TallyScaffold(
-            title = "Create Distributor",
+            title = if (isEdit) "Edit Distributor" else "Create Distributor",
             onBack = { nav.pop() },
             showEditIcon = false,
         ) { paddingValues ->
@@ -122,7 +139,7 @@ object CreateDistributorScreen : Screen {
                     ) {
                         // Header Section
                         Icon(
-                            Icons.Default.PersonAddAlt,
+                            if (isEdit) Icons.Default.Edit else Icons.Default.PersonAddAlt,
                             contentDescription = "App icon",
                             tint = colors.primary,
                             modifier = Modifier.size(52.dp)
@@ -130,7 +147,7 @@ object CreateDistributorScreen : Screen {
                         Spacer(Modifier.height(12.dp))
 
                         Text(
-                            text = "Create Distributor",
+                            text = if (isEdit) "Edit Distributor" else "Create Distributor",
                             style = type.headlineMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = colors.onSurface
@@ -179,7 +196,7 @@ object CreateDistributorScreen : Screen {
                                     selectedAccount = it.Name.toString()
                                     selectedGUID = it.GUID.toString()
                                     selectedName = it.Name.toString()
-                                    selectedNumber  = it.MobileNo.toString()
+                                    selectedNumber = it.MobileNo.toString()
                                     name = selectedName
                                     number = selectedNumber
                                 }
@@ -224,7 +241,7 @@ object CreateDistributorScreen : Screen {
                                 password == confirmPassword
 
                         TallyButton(
-                            label = "Create Distributor",
+                            label = if(isEdit) "Update Distributor" else "Create Distributor",
                             onClick = {
                                 // Handle sign up
                                 viewModel.createDistributor(
@@ -234,7 +251,7 @@ object CreateDistributorScreen : Screen {
                                         password = password,
                                         ledger_name = selectedAccount,
                                         ledger_guid = selectedGUID,
-                                        status = "active"
+                                        status = selectedStatus
                                     )
                                 ) {
                                     name = ""
