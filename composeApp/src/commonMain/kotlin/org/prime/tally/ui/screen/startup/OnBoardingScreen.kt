@@ -130,8 +130,8 @@ object OnBoardingScreen : Screen {
                 ) {
                     // Sign Up Button
                     TallyButton(
-                        label = "Get Started",
-                        onClick = { nav.push(SignUpScreen) },
+                        label = "Login",
+                        onClick = { nav.push(LoginScreen) },
                         backgroundColor = colors.primary,
                         contentColor = colors.onPrimary,
                         enabled = true,
@@ -149,16 +149,16 @@ object OnBoardingScreen : Screen {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "Already have an account?",
+                            text = "Don't have an account?",
                             style = type.bodyMedium.copy(
                                 color = colors.onSurfaceVariant
                             )
                         )
                         TextButton(
-                            onClick = { nav.push(LoginScreen) }
+                            onClick = { nav.push(SignUpScreen) }
                         ) {
                             Text(
-                                text = "Sign In",
+                                text = "Sign Up",
                                 style = type.bodyMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = colors.primary
