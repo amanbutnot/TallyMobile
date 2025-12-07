@@ -12,6 +12,8 @@ import org.prime.tally.data.model.DistributorResponse
 class DistributorViewModel : ViewModel() {
     private val _dataState = mutableStateOf(DataState<DistributorResponse>())
     val dataState: State<DataState<DistributorResponse>> = _dataState
+    private val _updateState = mutableStateOf(DataState<DistributorResponse>())
+    val updateState: State<DataState<DistributorResponse>> = _updateState
     private val _listState = mutableStateOf(DataState<List<DistributorRequest>>())
     val listState: State<DataState<List<DistributorRequest>>> = _listState
 
@@ -37,27 +39,35 @@ class DistributorViewModel : ViewModel() {
             }
         }
     }
+
+    fun updateDistributor(distributorRequest: DistributorRequest, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+
+            _updateState.value = DataState(isLoading = true)
+
+            val res = DistributorRepository.updateDistributor(distributorRequest)
+
+            if (res?.statuscode == 200) {
+                _updateState.value = DataState(
+                    success = true, message = res.message, isLoading = false
+                )
+                onSuccess()
+            } else {
+                _updateState.value = DataState(
+                    success = false,
+                    isLoading = false,
+                    error = res?.message ?: "Error Occurred. Please try again."
+                )
+            }
+        }
+    }
+
     fun listDistributor() {
-        println("👉 listDistributor() CALLED")
 
         viewModelScope.launch {
-            println("👉 Setting loading state TRUE")
             _listState.value = DataState(isLoading = true)
 
-            println("👉 Calling DistributorRepository.listDistributor()...")
             val res = DistributorRepository.listDistributor()
-
-            println("👉 Repository returned: $res")
-
-            // Print all fields separately to avoid guessing
-            println("👉 res == null ? ${res == null}")
-            if (res != null) {
-                println("👉 res.statuscode = ${res.statuscode}")
-                println("👉 res.message = ${res.message}")
-                println("👉 res.data = ${res.data}")
-                println("👉 res.data.size = ${res.data?.size ?: -1}")
-            }
-
             if (res?.statuscode == 200) {
 
                 _listState.value = DataState(

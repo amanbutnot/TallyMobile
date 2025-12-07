@@ -16,5 +16,6 @@ data class DistributorRequest(
 
 @Serializable
 data class DistributorResponse(
-    val distributor_id: Int
+    val distributor_id: Int?=null,
+    val id: Int?=null,
 )

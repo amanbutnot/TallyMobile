@@ -33,6 +33,22 @@ object DistributorRepository {
             null
         }
     }
+   suspend fun updateDistributor(distributorRequest: DistributorRequest): ApiResponse<DistributorResponse>? {
+        val token = SharedPrefs.Token.get()
+        return try {
+
+            val response = client.post("${BASE_URL}/Distributors/update-distributor.php") {
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $token")
+                setBody(distributorRequest)
+            }
+            println(response.bodyAsText())
+            response.body()
+        } catch (e: Exception) {
+            print("Error Occurred: ${e.message}")
+            null
+        }
+    }
 
     suspend fun listDistributor(): ApiResponse<List<DistributorRequest>>? {
         val token = SharedPrefs.Token.get()
