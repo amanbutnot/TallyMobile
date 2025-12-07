@@ -141,7 +141,7 @@ object SettingScreen : Screen {
                     TallyDivider()
                     TallyButton(
                         label = "Create Distributor",
-                        onClick = { nav.push(CreateDistributorScreen) },
+                        onClick = { nav.push(CreateDistributorScreen()) },
                         backgroundColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         enabled = true, modifier = Modifier.padding(vertical = 12.dp)
