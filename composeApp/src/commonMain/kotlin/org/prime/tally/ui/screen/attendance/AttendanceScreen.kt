@@ -149,7 +149,7 @@ data class AttendanceScreen(
                         SelectLedgerRow(
                             selectedAccount = selectedAccount,
                             onShowBottomSheet = { showBottomSheet = true },
-                            title = "Ledger", enabled = isCheckIn(spDate)
+                            title = "Ledger",
                         )
                     }
 
