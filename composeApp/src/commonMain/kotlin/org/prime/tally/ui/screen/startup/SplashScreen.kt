@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -93,7 +94,7 @@ object SplashScreen : Screen {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.Bottom
             ) {
-                listOf(120, 250, 160, 270, 220).forEach { height ->
+                listOf(100, 150, 200, 250, 300).forEach { height ->
                     BarChartLine(height.dp, modifier = Modifier.weight(1f))
                 }
 
@@ -110,7 +111,7 @@ private fun BarChartLine(height: Dp, modifier: Modifier = Modifier) {
 
     val animatedHeight by animateDpAsState(
         targetValue = if (visible) height else 0.dp,
-        animationSpec = tween(1200)
+        animationSpec = tween(1800)
     )
 
     LaunchedEffect(Unit) {
@@ -122,12 +123,13 @@ private fun BarChartLine(height: Dp, modifier: Modifier = Modifier) {
         modifier = modifier
             .height(animatedHeight).clip(
                 RoundedCornerShape(
-                    topStart = 16.dp,
-                    topEnd = 16.dp,
+                    topStart = 20.dp,
+                    topEnd = 0.dp,
                     bottomStart = 0.dp,
                     bottomEnd = 0.dp
                 )
             )
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+//            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+            .background(Color(0xfff56013).copy(alpha = 1f))
     )
 }
