@@ -1,4 +1,8 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -83,15 +87,15 @@ kotlin {
             implementation(libs.kotlinx.datetime)
 
             //Handle Files
-            implementation("io.github.vinceglb:filekit-core:0.12.0")
+            implementation(libs.filekit.core)
             // Enables FileKit dialogs without Compose dependencies
-            implementation("io.github.vinceglb:filekit-dialogs:0.12.0")
+            implementation(libs.filekit.dialogs)
 
 // Enables FileKit dialogs with Composable utilities
-            implementation("io.github.vinceglb:filekit-dialogs-compose:0.12.0")
+            implementation(libs.filekit.dialogs.compose)
 
             //Coil Image loading
-            implementation("io.coil-kt.coil3:coil-compose:3.2.0")
+            implementation(libs.coil.compose)
 
 
             implementation(libs.compass.geocoder)
@@ -123,6 +127,10 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        val sdf = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US)
+        sdf.timeZone = TimeZone.getTimeZone("Asia/Kolkata")
+        val buildDateTime = sdf.format(Date())
+        setProperty("archivesBaseName", "Easy_Karobar_$buildDateTime")
     }
     packaging {
         resources {
