@@ -10,7 +10,9 @@ androidx-core = "1.17.0"
 androidx-espresso = "3.7.0"
 androidx-lifecycle = "2.9.5"
 androidx-testExt = "1.3.0"
+coilCompose = "3.3.0"
 composeMultiplatform = "1.9.0-alpha02"
+filekitCore = "0.12.0"
 junit = "4.13.2"
 kmpDateTimePicker = "1.1.1"
 kotlin = "2.2.21"
@@ -26,7 +28,11 @@ compass = "2.4.1"
 
 [libraries]
 android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "androidDriver" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
 coroutines-extensions = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "androidDriver" }
+filekit-core = { module = "io.github.vinceglb:filekit-core", version.ref = "filekitCore" }
+filekit-dialogs = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "filekitCore" }
+filekit-dialogs-compose = { module = "io.github.vinceglb:filekit-dialogs-compose", version.ref = "filekitCore" }
 kmp-date-time-picker = { module = "network.chaintech:kmp-date-time-picker", version.ref = "kmpDateTimePicker" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
