@@ -1,5 +1,6 @@
 package org.prime.tally.ui.screen.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,6 +37,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.jetbrains.compose.resources.painterResource
 import org.prime.tally.data.model.LoginRequest
 import org.prime.tally.ui.screen.startup.GoogleDriveDownloadScreen
 import org.prime.tally.ui.shared.composables.TallyButton
@@ -45,6 +47,8 @@ import org.prime.tally.ui.shared.composables.TallyTextField
 import org.prime.tally.business.viewmodel.AuthViewModel
 import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.shared.composables.TallyScaffold
+import tallymobile.composeapp.generated.resources.Res
+import tallymobile.composeapp.generated.resources.splashImage
 
 object LoginScreen : Screen {
     @Composable
@@ -78,13 +82,16 @@ object LoginScreen : Screen {
             showEditIcon = false,
         ) {paddingValues ->
 
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxSize().padding(paddingValues)
                     .background(colors.background),
-                contentAlignment = Alignment.Center
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Top
             )
+
+
             {
+            Image(painterResource(Res.drawable.splashImage), contentDescription = "App Icon", modifier = Modifier.size(200.dp))
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -101,13 +108,6 @@ object LoginScreen : Screen {
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            Icons.Default.Dashboard,
-                            contentDescription = "App icon",
-                            tint = colors.primary,
-                            modifier = Modifier.size(60.dp)
-                        )
-                        Spacer(Modifier.height(16.dp))
 
                         Text(
                             text = "Welcome Back",
@@ -187,8 +187,7 @@ object LoginScreen : Screen {
 
                         TallyButton(
                             label = "Support Ticket",
-                            //TODO: add a real url
-                            onClick = { urlHandler.openUri("https://support.google.com/") },
+                            onClick = { urlHandler.openUri("http://easykarobar.in/support-ticket.php") },
                             backgroundColor = Color.Transparent,
                             contentColor = colors.primary,
                             modifier = Modifier.fillMaxWidth(),
