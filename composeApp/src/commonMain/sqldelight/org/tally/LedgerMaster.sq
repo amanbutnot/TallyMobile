@@ -24,3 +24,8 @@ CREATE TABLE LedgerMaster (
 
 selectAll:
 SELECT * FROM LedgerMaster ORDER BY Name;
+
+selectNameFromGuid:
+SELECT Name
+ FROM LedgerMaster
+ WHERE GUID = ?;
