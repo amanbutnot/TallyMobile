@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +16,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,15 +61,13 @@ object OnBoardingScreen : Screen {
             ) {
                 Spacer(Modifier.height(40.dp))
 
-                // Top Section - Logo and App Name
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // App Icon with elevated background
                     Card(
-                        modifier = Modifier.size(120.dp),
+                        modifier = Modifier.size(200.dp),
                         shape = RoundedCornerShape(28.dp),
 
                         elevation = CardDefaults.cardElevation(8.dp)
@@ -87,48 +83,33 @@ object OnBoardingScreen : Screen {
                         }
                     }
 
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(32.dp))
 
-                    // App Name
-                    Text(
-                        text = "Easy Karobar",
-                        style = type.displaySmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = colors.primary,
-                            letterSpacing = 0.5.sp
-                        )
-                    )
-
-                    Spacer(Modifier.height(12.dp))
-
-                    // Tagline
                     Text(
                         text = "Simplify Your Business",
-                        style = type.titleMedium.copy(
+                        style = type.displayLarge.copy(
                             color = colors.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Bold
                         )
                     )
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(16.dp))
 
                     Text(
-                        text = "Manage invoices, track expenses, and grow\nyour business with ease",
-                        style = type.bodyMedium.copy(
+                        text = "Manage invoices, track expenses, and grow your business with ease",
+                        style = type.titleLarge.copy(
                             color = colors.onSurfaceVariant.copy(alpha = 0.7f),
                             textAlign = TextAlign.Center,
-                            lineHeight = 20.sp
+
                         ),
                         modifier = Modifier.padding(horizontal = 32.dp)
                     )
                 }
 
-                // Bottom Section - Action Buttons
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Sign Up Button
                     TallyButton(
                         label = "Login",
                         onClick = { nav.push(LoginScreen) },
@@ -141,31 +122,31 @@ object OnBoardingScreen : Screen {
                     )
 
                     Spacer(Modifier.height(12.dp))
-
-                    // Sign In Option
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Don't have an account?",
-                            style = type.bodyMedium.copy(
-                                color = colors.onSurfaceVariant
-                            )
-                        )
-                        TextButton(
-                            onClick = { nav.push(SignUpScreen) }
-                        ) {
-                            Text(
-                                text = "Sign Up",
-                                style = type.bodyMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = colors.primary
-                                )
-                            )
-                        }
-                    }
+//
+//                    // Sign In Option
+//                    Row(
+//                        verticalAlignment = Alignment.CenterVertically,
+//                        horizontalArrangement = Arrangement.Center,
+//                        modifier = Modifier.fillMaxWidth()
+//                    ) {
+//                        Text(
+//                            text = "Don't have an account?",
+//                            style = type.bodyMedium.copy(
+//                                color = colors.onSurfaceVariant
+//                            )
+//                        )
+//                        TextButton(
+//                            onClick = { nav.push(SignUpScreen) }
+//                        ) {
+//                            Text(
+//                                text = "Sign Up",
+//                                style = type.bodyMedium.copy(
+//                                    fontWeight = FontWeight.Bold,
+//                                    color = colors.primary
+//                                )
+//                            )
+//                        }
+//                    }
 
                     Spacer(Modifier.height(8.dp))
                 }
@@ -173,27 +154,4 @@ object OnBoardingScreen : Screen {
         }
     }
 
-    @Composable
-    private fun FeatureItem(emoji: String, label: String) {
-        val colors = MaterialTheme.colorScheme
-        val type = MaterialTheme.typography
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = emoji,
-                fontSize = 28.sp
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = label,
-                style = type.labelSmall.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    color = colors.onSurface
-                )
-            )
-        }
-    }
 }
