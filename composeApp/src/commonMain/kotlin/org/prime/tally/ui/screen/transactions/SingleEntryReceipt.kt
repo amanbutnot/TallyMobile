@@ -111,7 +111,6 @@ data class SingleEntryReceipt(
 
                     if (isEdit) {
                         InfoRow("Voucher No", existingTransaction?.VchNo ?: "")
-                        InfoRow("Transaction ID", existingTransaction?.TransactionID.toString())
                     }
 
 
