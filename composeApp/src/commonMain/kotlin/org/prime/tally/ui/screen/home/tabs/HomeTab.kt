@@ -122,7 +122,6 @@ object HomeTab : Tab {
             report.copy(RepType = newRepType)
         }
 
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -163,7 +162,8 @@ object HomeTab : Tab {
                                                 OutstandingReportScreen(
                                                     name = "Bill Receivable",
                                                     startDate = StartDate(),
-                                                    endDate = CurrentDate()
+                                                    endDate = CurrentDate(),
+                                                    cm1 = ""
                                                 )
                                             )
 
@@ -171,7 +171,8 @@ object HomeTab : Tab {
                                                 OutstandingReportScreen(
                                                     name = "Bill Payable",
                                                     startDate = StartDate(),
-                                                    endDate = CurrentDate()
+                                                    endDate = CurrentDate(),
+                                                    cm1 = ""
                                                 )
                                             )
 
@@ -284,7 +285,7 @@ fun ExpandableGrid() {
         "Check In/Out" to Icons.Default.LocationCity,
         "Attendance" to Icons.Default.LocationOn,
 
-        "Sale return" to Icons.Default.ShoppingCart,
+        "Sale Return" to Icons.Default.ShoppingCart,
         "Purchase Order" to Icons.Default.AddShoppingCart,
         "Purchase Invoice" to Icons.Default.ShoppingCart,
         "Purchase Return" to Icons.Default.Receipt,
@@ -322,9 +323,9 @@ fun ExpandableGrid() {
                         "Receipt" -> nav?.push(SingleEntryReceipt(name.first, vchType = 14))
                         "Payment" -> nav?.push(SingleEntryReceipt(name.first, vchType = 19))
                         "Journal" -> nav?.push(SingleEntryReceipt(name.first, vchType = 16))
-//                        "Sale Order" -> nav?.push(SingleEntryReceipt(name.first, vchType = 15))
-//                        "Sale Return" -> nav?.push(SingleEntryReceipt(name.first, vchType = 21))
-                        "Sale Invoice" -> nav?.push(SaleScreen("Sales"))
+                        "Sale Order" -> nav?.push(SaleScreen(name = name.first, vchType = 12))
+                        "Sale Return" -> nav?.push(SaleScreen(name = name.first, vchType = 3))
+                        "Sale Invoice" -> nav?.push(SaleScreen(name = name.first, vchType = 9))
                         "Check In/Out" -> scope.launch {
                             showLoading = true
                             try {
@@ -358,7 +359,6 @@ fun ExpandableGrid() {
                                 showLoading = false
                             }
                         }
-
                         "Attendance" -> scope.launch {
                             showLoading = true
                             try {
@@ -392,10 +392,10 @@ fun ExpandableGrid() {
                                 showLoading = false
                             }
                         }
-//                        "Purchase Order" -> nav?.push(SingleEntryReceipt(name.first, vchType = 22))
-//                        "Purchase Invoice" -> nav?.push(SingleEntryReceipt(name.first, vchType = 23))
-//                        "Purchase Return" -> nav?.push(SingleEntryReceipt(name.first, vchType = 24))
-//                        "Stock Transfer" -> nav?.push(SingleEntryReceipt(name.first, vchType = 25))
+                        "Purchase Order" -> nav?.push(SaleScreen(name = name.first, vchType = 13))
+                        "Purchase Invoice" -> nav?.push(SaleScreen(name = name.first, vchType = 2))
+                        "Purchase Return" -> nav?.push(SaleScreen(name = name.first, vchType = 10))
+                        "Stock Transfer" -> nav?.push(SaleScreen(name = name.first, vchType = 7))
                         "Contra" -> nav?.push(SingleEntryReceipt(name.first, vchType = 15))
                     }
                 }
