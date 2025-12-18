@@ -21,6 +21,12 @@ fun getQtyDecimal(): Int {
     return row?.D3?.toInt() ?: 1
 }
 
+fun getNameFromGUID(guid:String):String {
+    val db = DatabaseHolder.instance
+    val row = db.ledgerMasterQueries.selectNameFromGuid(guid).executeAsOneOrNull()
+    return row?.Name?:""
+}
+
 fun getAmtDecimal(): Int {
     val db = DatabaseHolder.instance
     val row = db.companyInformationQueries.getCompanyInformation().executeAsOneOrNull()
