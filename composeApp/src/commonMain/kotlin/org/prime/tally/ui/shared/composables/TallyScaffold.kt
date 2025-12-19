@@ -104,7 +104,7 @@ fun TallyReportScaffold(
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
-                Box(modifier = Modifier.navigationBarsPadding()) {
+                Box(modifier = Modifier) {
                     bottomBarContent()
                 }
             }
