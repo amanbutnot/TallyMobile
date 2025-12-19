@@ -289,7 +289,7 @@ fun ExpandableGrid() {
         "Purchase Order" to Icons.Default.AddShoppingCart,
         "Purchase Invoice" to Icons.Default.ShoppingCart,
         "Purchase Return" to Icons.Default.Receipt,
-        "Stock Transfer" to Icons.Default.Payment,
+     //   "Stock Transfer" to Icons.Default.Payment,
         "Contra" to Icons.Default.Payment
     )
 
@@ -395,7 +395,7 @@ fun ExpandableGrid() {
                         "Purchase Order" -> nav?.push(SaleScreen(name = name.first, vchType = 13))
                         "Purchase Invoice" -> nav?.push(SaleScreen(name = name.first, vchType = 2))
                         "Purchase Return" -> nav?.push(SaleScreen(name = name.first, vchType = 10))
-                        "Stock Transfer" -> nav?.push(SaleScreen(name = name.first, vchType = 7))
+                       // "Stock Transfer" -> nav?.push(SaleScreen(name = name.first, vchType = 7))
                         "Contra" -> nav?.push(SingleEntryReceipt(name.first, vchType = 15))
                     }
                 }
