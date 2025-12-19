@@ -51,6 +51,7 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -283,16 +284,16 @@ data class SaleScreen(
                 } else {
                     Column(
                         modifier = Modifier.padding(paddingValues).fillMaxSize()
-                            .navigationBarsPadding()
                     )
                     {
                         Column(
                             modifier = Modifier
-                                .weight(1f)
+
                                 .padding(horizontal = 16.dp)
                                 .verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
+                        )
+                        {
                             Spacer(modifier = Modifier.height(4.dp))
 
                             ElevatedCard(
@@ -405,8 +406,10 @@ data class SaleScreen(
                                             },
                                             onRemove = { selectedItems = selectedItems - item },
                                             onEdit = {
-                                                selectedItems = selectedItems - item
-                                                editingItem = item
+                                                if (editingItem == null) {
+                                                    selectedItems = selectedItems - item
+                                                    editingItem = item
+                                                }
                                             }
                                         )
                                     }
@@ -465,84 +468,7 @@ data class SaleScreen(
                             Spacer(modifier = Modifier.height(60.dp))
                         }
 
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shadowElevation = 12.dp,
-                            tonalElevation = 2.dp,
-                            color = MaterialTheme.colorScheme.surface
-                        )
-                        {
-                            Column(modifier = Modifier.padding(16.dp)) {
 
-                                Column(
-                                    horizontalAlignment = Alignment.End,
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    Text(
-                                        text = "TOTAL",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        letterSpacing = 0.8.sp
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = formatTwo(grandTotal),
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-
-
-                                TallyButton(
-
-                                    onClick = {
-                                        val billingItems = selectedItems.map { item ->
-                                            val prod = itemsList.find { it.Name == item.name }
-                                            BillingItem(
-                                                product_id = prod?.ID?.toString() ?: "",
-                                                product_name = item.name,
-                                                quantity = item.qty,
-                                                list_price = item.listPrice,
-                                                discount_percent = item.discountPercentage,
-                                                discount_amt = null,
-                                                tax_rate1 = gstPercent,
-                                                tax_rate2 = 0.0,
-                                                taxable = item.taxable,
-                                                net = item.net,
-                                                gstAmt = item.gstAmt
-                                            )
-                                        }
-
-                                        viewmodel.createEditInventoryResponse(
-                                            inventoryVoucherRequest = InventoryVoucherRequest(
-                                                billing_guid = selectedLedgerGUID,
-                                                vch_type = vchType,
-                                                billing_name = selectedLedger,
-                                                billing_mobile = "",
-                                                billing_state = "",
-                                                billing_country = "",
-                                                billing_address = "",
-                                                taxType = if (taxType == TaxType.EXTRA) 1 else 2,
-                                                items = billingItems,
-                                                sundries = selectedSundries,
-                                                TranDate = selectedDate,
-                                                Narration = narration, TransactionID = tranId
-                                            ),
-                                            onSuccess = {
-                                                showResultDialog = true
-                                            },
-                                            url = if (isEdit) "updateInventory" else "addInventoryVch"
-                                        )
-                                    },
-                                    enabled = selectedLedger.isNotEmpty() && selectedItems.isNotEmpty(),
-                                    label = if (isEdit) "Update" else "Create Invoice",
-                                    backgroundColor = MaterialTheme.colorScheme.primary
-                                )
-
-                            }
-                        }
                     }
 
                 }
@@ -552,7 +478,8 @@ data class SaleScreen(
                 SelectionSheet(
                     show = showLedgerSheet,
                     title = "Select Party Ledger",
-                    options = ledgerList.map { it.Name ?: "" },
+                    options = ledgerList.filter { it.L1 == 1.0 || it.L2 == 1.0 || it.L3 == 1.0 }
+                        .map { it.Name ?: "" },
                     onSelect = { selected ->
                         selectedLedger = selected
                         selectedLedgerGUID = ledgerList.find { l -> l.Name == selected }?.GUID ?: ""
@@ -588,6 +515,87 @@ data class SaleScreen(
                         isSuccess = state.success,
                         confirmText = "Ok"
                     )
+                }
+            },
+            showBottomBar = true,
+            bottomBarContent = {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shadowElevation = 12.dp,
+                    tonalElevation = 2.dp,
+                    color = MaterialTheme.colorScheme.surface
+                )
+                {
+                    Column(modifier = Modifier.padding(16.dp).navigationBarsPadding()) {
+
+                        Column(
+                            horizontalAlignment = Alignment.End,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = "TOTAL",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                letterSpacing = 0.8.sp
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = formatTwo(grandTotal),
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+
+                        TallyButton(
+
+                            onClick = {
+                                val billingItems = selectedItems.map { item ->
+                                    val prod = itemsList.find { it.Name == item.name }
+                                    BillingItem(
+                                        product_id = prod?.ID?.toString() ?: "",
+                                        product_name = item.name,
+                                        quantity = item.qty,
+                                        list_price = item.listPrice,
+                                        discount_percent = item.discountPercentage,
+                                        discount_amt = null,
+                                        tax_rate1 = gstPercent,
+                                        tax_rate2 = 0.0,
+                                        taxable = item.taxable,
+                                        net = item.net,
+                                        gstAmt = item.gstAmt
+                                    )
+                                }
+
+                                viewmodel.createEditInventoryResponse(
+                                    inventoryVoucherRequest = InventoryVoucherRequest(
+                                        billing_guid = selectedLedgerGUID,
+                                        vch_type = vchType,
+                                        billing_name = selectedLedger,
+                                        billing_mobile = "",
+                                        billing_state = "",
+                                        billing_country = "",
+                                        billing_address = "",
+                                        taxType = if (taxType == TaxType.EXTRA) 1 else 2,
+                                        items = billingItems,
+                                        sundries = selectedSundries,
+                                        TranDate = selectedDate,
+                                        Narration = narration, TransactionID = tranId
+                                    ),
+                                    onSuccess = {
+                                        showResultDialog = true
+                                    },
+                                    url = if (isEdit) "updateInventory" else "addInventoryVch"
+                                )
+                            },
+                            enabled = selectedLedger.isNotEmpty() && selectedItems.isNotEmpty(),
+                            label = if (isEdit) "Update" else "Create Invoice",
+                            backgroundColor = MaterialTheme.colorScheme.primary
+                        )
+
+                    }
                 }
             }
         )
@@ -881,15 +889,17 @@ fun ExpandedItemEditor(
 ) {
     var qtyText by rememberSaveable { mutableStateOf(initialQuantity.toString()) }
     var priceText by rememberSaveable { mutableStateOf("") }
-    //var listPriceText by rememberSaveable { mutableStateOf(defaultListPrice.toString()) }
-    //var discountText by rememberSaveable { mutableStateOf("$initialDiscount") }
+    var amountText by rememberSaveable { mutableStateOf("") }
     var listPriceText by rememberSaveable { mutableStateOf("") }
     var discountText by rememberSaveable { mutableStateOf("") }
 
-    if (defaultListPrice != 0.0) {
+    // Track if user has manually entered amount
+    var isAmountManuallyEntered by rememberSaveable { mutableStateOf(false) }
+
+    if (defaultListPrice != 0.0 && listPriceText.isEmpty()) {
         listPriceText = defaultListPrice.toString()
     }
-    if (initialDiscount != 0.0) {
+    if (initialDiscount != 0.0 && discountText.isEmpty()) {
         discountText = initialDiscount.toString()
     }
 
@@ -906,7 +916,7 @@ fun ExpandedItemEditor(
     val listPrice = parseDoubleSafe(if (listPriceText == "") "0.0" else listPriceText)
     val discount = parseDoubleSafe(if (discountText == "") "0.0" else discountText)
 
-    val computedUnit = (listPrice - discount).coerceAtLeast(0.0)
+    val computedUnit = listPrice * (1 - discount / 100)
 
     val enteredUnit = if (priceText.isBlank()) computedUnit else parseDoubleSafe(priceText)
 
@@ -938,11 +948,13 @@ fun ExpandedItemEditor(
         Column(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+        )
+        {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
-            ) {
+            )
+            {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = name,
@@ -970,7 +982,8 @@ fun ExpandedItemEditor(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            )
+            {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Qty",
@@ -981,16 +994,22 @@ fun ExpandedItemEditor(
                         value = qtyText,
                         onValueChange = { new ->
                             qtyText = new.filter { it.isDigit() }.ifEmpty { "0" }
+
+                            // Recalculate amount when qty changes and amount was manually entered
+                            if (isAmountManuallyEntered && amountText.isNotBlank()) {
+                                val newQty = parseDoubleSafe(qtyText).toInt().coerceAtLeast(1)
+                                val amount = parseDoubleSafe(amountText)
+                                listPriceText = if (newQty > 0) formatTwo(amount / newQty) else ""
+                                priceText = listPriceText
+                            }
                         },
                         keyboardType = KeyboardType.Number
                     )
-
-
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "List Pr.",
+                        text = "List Price.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -998,10 +1017,12 @@ fun ExpandedItemEditor(
                         value = listPriceText,
                         onValueChange = { new ->
                             listPriceText = new.filter { it.isDigit() || it == '.' }
+                            // Reset amount manual entry flag when list price is directly edited
+                            isAmountManuallyEntered = false
+                            priceText = ""
                         },
                         keyboardType = KeyboardType.Decimal
                     )
-
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
@@ -1013,28 +1034,58 @@ fun ExpandedItemEditor(
                     BorderedInput(
                         value = discountText,
                         onValueChange = { new ->
-                            discountText = new.filter { it.isDigit() || it == '.' }
+                            val raw = new.filter { it.isDigit() || it == '.' }
+                            val value = raw.toDoubleOrNull() ?: 0.0
+                            val clamped = value.coerceAtMost(100.0)
+                            discountText = if (raw.isEmpty()) "" else clamped.toString()
 
+                            // If discount is changed after amount entry, reset the flag
+                            if (isAmountManuallyEntered) {
+                                isAmountManuallyEntered = false
+                                priceText = ""
+                            }
                         },
                         keyboardType = KeyboardType.Decimal
                     )
-
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (taxType == TaxType.EXTRA) "Price (ex GST)" else "Price (incl GST)",
+                        text = "Amount",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     BorderedInput(
-                        value = priceText.ifBlank { formatTwo(computedUnit) },
+                        value = if (isAmountManuallyEntered && amountText.isNotBlank()) {
+                            amountText
+                        } else {
+                            priceText.ifBlank { formatTwo(computedUnit * qty) }
+                        },
                         onValueChange = { new ->
-                            priceText = new.filter { it.isDigit() || it == '.' }
+                            val filtered = new.filter { it.isDigit() || it == '.' }
+                            amountText = filtered
+
+                            // When amount is entered, set discount to 0 and calculate list price
+                            if (filtered.isNotBlank()) {
+                                isAmountManuallyEntered = true
+                                discountText = "0"
+
+                                val amount = parseDoubleSafe(filtered)
+                                val currentQty = parseDoubleSafe(qtyText).toInt().coerceAtLeast(1)
+
+                                listPriceText = if (currentQty > 0) {
+                                    formatTwo(amount / currentQty)
+                                } else {
+                                    ""
+                                }
+                                priceText = listPriceText
+                            } else {
+                                isAmountManuallyEntered = false
+                                priceText = ""
+                            }
                         },
                         keyboardType = KeyboardType.Decimal
                     )
-
                 }
             }
 
@@ -1106,7 +1157,6 @@ fun ExpandedItemEditor(
 
                     if (finalQty > 0) {
                         onAdd(
-
                             finalQty,
                             unitPriceToStore,
                             discount,
@@ -1115,7 +1165,6 @@ fun ExpandedItemEditor(
                             gstAmount,
                             netAmount
                         )
-                    } else {
                     }
                 }) {
                     Text("Add")
@@ -1124,7 +1173,6 @@ fun ExpandedItemEditor(
         }
     }
 }
-
 @Composable
 fun SundryCard(
     sundry: SundryItem,
@@ -1357,7 +1405,7 @@ fun TaxTypeOption(
 fun BorderedInput(
     value: String,
     onValueChange: (String) -> Unit,
-    keyboardType: KeyboardType = KeyboardType.Text,
+    keyboardType: KeyboardType = KeyboardType.Text, isEnabled: Boolean = true
 ) {
     Box(
         modifier = Modifier
@@ -1371,6 +1419,7 @@ fun BorderedInput(
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
+            enabled = isEnabled,
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
