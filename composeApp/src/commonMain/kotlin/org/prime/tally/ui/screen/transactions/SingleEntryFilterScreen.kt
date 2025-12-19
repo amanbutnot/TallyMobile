@@ -17,14 +17,30 @@ data class SingleEntryFilterScreen(val name: String, val vchType: Int) : Screen 
             showAccountSelect = false,
             buttonText = "Show List",
             onGenerateClick = {
-                nav.push(
-                    SingleEntryListScreen(
-                        startDate = it.startDate,
-                        endDate = it.endDate,
-                        vchType = vchType,
-                        name = name
-                    )
-                )
+                when (vchType) {
+                    14, 19, 16, 15 -> {
+                        nav.push(
+                            SingleEntryListScreen(
+                                startDate = it.startDate,
+                                endDate = it.endDate,
+                                vchType = vchType,
+                                name = name
+                            )
+                        )
+                    }
+
+                    12, 3, 9, 13, 10, 2, 7 -> {
+                        nav.push(
+                            InventoryListScreen(
+                                startDate = it.startDate,
+                                endDate = it.endDate,
+                                vchType = vchType,
+                                name = name
+                            )
+                        )
+                    }
+
+                }
 
             }
         )
