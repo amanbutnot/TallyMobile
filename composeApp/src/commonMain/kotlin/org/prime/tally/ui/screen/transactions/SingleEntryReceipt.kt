@@ -120,7 +120,7 @@ data class SingleEntryReceipt(
                         onDateSelected = { selectedDate = it },
                         defaultDate = CurrentDate(),
 
-                    )
+                        )
 
                     SelectLedgerRow(
                         selectedAccount = selectedAccount,
@@ -233,9 +233,17 @@ data class SingleEntryReceipt(
                         backgroundColor = MaterialTheme.colorScheme.primary
                     )
 
+                    val filteredLedgerList = if (name == "Contra") {
+                        list.filter { it.L2 == 1.0 || it.L3 == 1.0 }
+                    } else {
+                        list.filter { it.L1 == 1.0 }
+                    }
+
+                    val filteredSettlementList = list.filter { it.L2 == 1.0 || it.L3 == 1.0 }
+
                     TransactionBottomSheet(
                         showBottomSheet = showBottomSheet,
-                        list = list.map { Pair(it.Name ?: "", it.GUID ?: "") },
+                        list = filteredLedgerList.map { Pair(it.Name ?: "", it.GUID ?: "") },
                         onSelected = {
                             it.let {
                                 selectedAccount = it.first
@@ -248,7 +256,7 @@ data class SingleEntryReceipt(
                     )
                     TransactionBottomSheet(
                         showBottomSheet = showSettlementBottomSheet,
-                        list = list.map { Pair(it.Name ?: "", it.GUID ?: "") },
+                        list = filteredSettlementList.map { Pair(it.Name ?: "", it.GUID ?: "") },
                         onSelected = {
                             it.let {
                                 selectedSettlement = it.first
@@ -334,8 +342,41 @@ fun InfoRow(label: String, value: String) {
 fun SelectLedgerRow(
     selectedAccount: String,
     onShowBottomSheet: () -> Unit,
-    modifier: Modifier = Modifier, title: String, enabled: Boolean = true
+    modifier: Modifier = Modifier,
+    title: String,
+    enabled: Boolean = true
 ) {
+    val borderColor =
+        when {
+            !enabled -> MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            selectedAccount.isNotEmpty() ->
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+
+            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+        }
+
+    val bgColor =
+        if (enabled) MaterialTheme.colorScheme.surfaceContainerLow
+        else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+
+    val textColor =
+        when {
+            !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+            selectedAccount.isEmpty() ->
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+
+            else -> MaterialTheme.colorScheme.onSurface
+        }
+
+    val iconColor =
+        when {
+            !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+            selectedAccount.isEmpty() ->
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+
+            else -> MaterialTheme.colorScheme.primary
+        }
+
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -343,25 +384,20 @@ fun SelectLedgerRow(
         Text(
             text = "Select $title",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (enabled)
+                MaterialTheme.colorScheme.onSurfaceVariant
+            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
             fontWeight = FontWeight.Medium
         )
 
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-            border = BorderStroke(
-                width = 1.dp,
-                color = if (selectedAccount.isNotEmpty())
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                else
-                    MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-            ),
+            color = bgColor,
+            border = BorderStroke(1.dp, borderColor),
+            enabled = enabled,
             onClick = {
-                if (enabled) {
-                    onShowBottomSheet()
-                }
+                if (enabled) onShowBottomSheet()
             }
         ) {
             Row(
@@ -376,24 +412,15 @@ fun SelectLedgerRow(
                     Icon(
                         imageVector = Icons.Default.AccountBalance,
                         contentDescription = "Select $title",
-                        tint = if (selectedAccount.isEmpty())
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                        else
-                            MaterialTheme.colorScheme.primary,
+                        tint = iconColor,
                         modifier = Modifier.size(20.dp)
                     )
 
                     Text(
                         text = selectedAccount.ifEmpty { "Select $title" },
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (selectedAccount.isEmpty())
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        else
-                            MaterialTheme.colorScheme.onSurface,
-                        fontWeight = if (selectedAccount.isEmpty())
-                            FontWeight.Normal
-                        else
-                            FontWeight.Medium,
+                        color = textColor,
+                        fontWeight = if (selectedAccount.isEmpty()) FontWeight.Normal else FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -402,7 +429,9 @@ fun SelectLedgerRow(
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    tint = if (enabled)
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
                     modifier = Modifier.size(18.dp)
                 )
             }
