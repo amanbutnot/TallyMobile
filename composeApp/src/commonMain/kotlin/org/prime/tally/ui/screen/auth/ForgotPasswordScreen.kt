@@ -34,6 +34,8 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.tally.business.viewmodel.AuthViewModel
 import org.prime.tally.ui.shared.composables.TallyButton
+import org.prime.tally.ui.shared.composables.TallyLoadingDialog
+import org.prime.tally.ui.shared.composables.TallyResultDialog
 import org.prime.tally.ui.shared.composables.TallyScaffold
 import org.prime.tally.ui.shared.composables.TallyTextField
 
@@ -48,6 +50,21 @@ object ForgotPasswordScreen : Screen {
 
         val authViewModel: AuthViewModel = viewModel { AuthViewModel() }
         val validateState by authViewModel.validateState
+
+        if (validateState.isLoading) {
+            TallyLoadingDialog(
+                text = "Validating your mobile number"
+            )
+        }
+
+        if (validateState.error != null) {
+            TallyResultDialog(
+                message = validateState.message ?: "Error Occurred",
+                onDone = { authViewModel.clearValidateMessage() },
+                isSuccess = validateState.success,
+                confirmText = "Ok"
+            )
+        }
 
         TallyScaffold(
             title = "Forgot Password",

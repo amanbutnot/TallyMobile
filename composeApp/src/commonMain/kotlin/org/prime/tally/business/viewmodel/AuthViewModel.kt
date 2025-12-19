@@ -22,6 +22,12 @@ class AuthViewModel : ViewModel() {
     private val _resetState = mutableStateOf(DataState<Unit>())
     val resetState: State<DataState<Unit>> = _resetState
 
+
+    fun clearValidateMessage(){
+        _validateState.value = _validateState.value.copy(error = null)
+    }
+
+
     fun validateMobile(username: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
 
