@@ -52,8 +52,23 @@ object SharedPrefs {
         }
 
     }
+    object CheckInOutDate {
+        private const val KEY = "checkInOutKey"
+        fun save(date: String) {
+            settings.putString(KEY, date)
+        }
 
-    object AttendanceLedger {
+        fun get(): String? {
+            return settings.getStringOrNull(KEY)
+        }
+
+        fun clear() {
+            settings.remove(KEY)
+        }
+
+    }
+
+    object CheckInOutLedger {
         private const val KEY = "attendance_ledger"
         fun save(date: String) {
             settings.putString(KEY, date)
