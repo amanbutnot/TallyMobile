@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.trace
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -42,6 +43,7 @@ import org.prime.tally.business.viewmodel.transactions.InventoryVoucherViewModel
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.model.transactions.InventoryListRequest
 import org.prime.tally.data.model.transactions.InventoryListResponse
+import org.prime.tally.ui.screen.transactions.sale.SaleScreen
 import org.prime.tally.ui.shared.composables.EmptyListPlaceholder
 import org.prime.tally.ui.shared.composables.TallyCircularLoader
 import org.prime.tally.ui.shared.composables.TallyDivider
@@ -58,6 +60,7 @@ data class InventoryListScreen(
     @Composable
     override fun Content() {
         val viewModel: InventoryVoucherViewModel = viewModel { InventoryVoucherViewModel() }
+        val nav = LocalNavigator.currentOrThrow
         val state by viewModel.listState
 
 
@@ -91,6 +94,11 @@ data class InventoryListScreen(
                         EmptyListPlaceholder(
                             icon = Icons.Default.Inbox,
                             title = state.error.toString(),
+                            onAddClick = {  nav.push(SaleScreen(
+                                name = name,
+                                vchType = vchType,
+                                isEdit = false
+                            )) },
                         )
                     }
 
@@ -99,15 +107,15 @@ data class InventoryListScreen(
                             state.data?.let {
                                 itemsIndexed(it) { index, item ->
                                     ListItem(item) {
-//                                        nav.push(
-//                                            SingleEntryReceipt(
-//                                                name = name,
-//                                                vchType = vchType,
-//                                                existingTransaction = item
-//                                            )
-//                                        )
+                                        nav.push(
+                                            SaleScreen(
+                                                name = name,
+                                                vchType = vchType,
+                                                tranId = item.id,
+                                                isEdit = true
+                                            )
+                                        )
                                     }
-                                    if (index < state.data!!.lastIndex) TallyDivider()
                                 }
                             }
                         }

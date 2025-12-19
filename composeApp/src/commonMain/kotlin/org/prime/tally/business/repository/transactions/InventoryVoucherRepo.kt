@@ -7,8 +7,11 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
-import org.prime.tally.business.repository.DistributorRepository
+import kotlinx.serialization.Serializable
 import org.prime.tally.data.model.ApiResponse
+import org.prime.tally.data.model.transactions.InventoryItemResponse
+import org.prime.tally.data.model.transactions.InventoryListRequest
+import org.prime.tally.data.model.transactions.InventoryListResponse
 import org.prime.tally.data.model.transactions.InventoryVoucherRequest
 import org.prime.tally.data.model.transactions.InventoryVoucherResponse
 import org.prime.tally.data.utils.BASE_URL
@@ -19,11 +22,14 @@ object InventoryVoucherRepo {
 
     val client = KtorClient.client
 
-    suspend fun createInventoryVch(inventoryVoucherRequest: InventoryVoucherRequest): ApiResponse<InventoryVoucherResponse>? {
+    suspend fun createInventoryVch(
+        inventoryVoucherRequest: InventoryVoucherRequest,
+        endpoint: String
+    ): ApiResponse<InventoryVoucherResponse>? {
         val token = SharedPrefs.Token.get()
         return try {
 
-            val response = client.post("${BASE_URL}/Transactions/addInventoryVch.php") {
+            val response = client.post("${BASE_URL}/Transactions/${endpoint}.php") {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
                 setBody(inventoryVoucherRequest)
@@ -36,4 +42,63 @@ object InventoryVoucherRepo {
             null
         }
     }
+
+    suspend fun listInventoryVch(inventoryListRequest: InventoryListRequest): ApiResponse<List<InventoryListResponse>>? {
+        val token = SharedPrefs.Token.get()
+        return try {
+
+            val response = client.post("${BASE_URL}/Transactions/listInventory.php") {
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $token")
+                setBody(inventoryListRequest)
+            }
+            println(response.bodyAsText())
+            response.body()
+        } catch (e: Exception) {
+            print("Error Occurred: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun getInventoryVoucher(tranId: Int): ApiResponse<InventoryItemResponse>? {
+        val token = SharedPrefs.Token.get()
+        return try {
+
+            val response = client.post("${BASE_URL}/Transactions/getTransaction.php") {
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $token")
+                setBody(mapOf("Transaction_ID" to tranId))
+            }
+            println(response.bodyAsText())
+            response.body()
+        } catch (e: Exception) {
+            print("Error Occurred: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun deleteInventoryVoucher(
+        tranId: Int,
+        vchType: Int
+    ): ApiResponse<DeleteResponse>? {
+        val token = SharedPrefs.Token.get()
+        return try {
+
+            val response = client.post("${BASE_URL}/Transactions/deleteInventory.php") {
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $token")
+                setBody(mapOf("TransactionID" to tranId, "vch_type" to vchType))
+            }
+            println(response.bodyAsText())
+            response.body()
+        } catch (e: Exception) {
+            print("Error Occurred: ${e.message}")
+            null
+        }
+    }
 }
+
+@Serializable
+data class DeleteResponse(
+    val TransactionID: Int
+)
