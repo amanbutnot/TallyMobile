@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -74,9 +73,7 @@ import org.prime.tally.data.model.attendance.AttendanceRequest
 import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.screen.transactions.SelectLedgerRow
 import org.prime.tally.ui.screen.transactions.TransactionBottomSheet
-import org.prime.tally.ui.shared.composables.TallyAlertBox
 import org.prime.tally.ui.shared.composables.TallyButton
-import org.prime.tally.ui.shared.composables.TallyCircularLoader
 import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyResultDialog
 import org.prime.tally.ui.shared.composables.TallyScaffold
@@ -84,10 +81,7 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 data class AttendanceScreen(
-    val lat: Double,
-    val lon: Double,
-    val address: String,
-    val isAttendance: Boolean
+    val lat: Double, val lon: Double, val address: String, val isAttendance: Boolean
 ) : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalEncodingApi::class)
@@ -109,14 +103,23 @@ data class AttendanceScreen(
         var selectedAccount by remember { mutableStateOf("") }
 
         LaunchedEffect(Unit) {
-            selectedAccount = SharedPrefs.AttendanceLedger.get() ?: ""
+            selectedAccount = SharedPrefs.CheckInOutLedger.get() ?: ""
         }
         var showBottomSheet by rememberSaveable { mutableStateOf(false) }
 
         val db = DatabaseHolder.instance
         val list = db.ledgerMasterQueries.selectAll().executeAsList()
 
-        val spDate = SharedPrefs.AttendanceDate.get()
+        val lastAttendanceDate = SharedPrefs.AttendanceDate.get()
+        val lastCheckInOutDate = SharedPrefs.CheckInOutDate.get()
+
+        val buttonName = if (isAttendance) {
+            if (isCheckIn(lastAttendanceDate)) "Check In" else "Check Out"
+        } else {
+            if (isCheckIn(lastCheckInOutDate)) "Check In" else "Check Out"
+
+        }
+
         if (state.isLoading) {
             TallyLoadingDialog("Please Wait")
         }
@@ -128,18 +131,13 @@ data class AttendanceScreen(
             content = { paddingValues ->
 
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
+                    modifier = Modifier.fillMaxSize().background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    colors.surface,
-                                    colors.surfaceVariant.copy(alpha = 0.3f)
+                                    colors.surface, colors.surfaceVariant.copy(alpha = 0.3f)
                                 )
                             )
-                        )
-                        .verticalScroll(scrollState)
-                        .padding(paddingValues)
+                        ).verticalScroll(scrollState).padding(paddingValues)
                         .padding(horizontal = 8.dp, vertical = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
@@ -150,6 +148,7 @@ data class AttendanceScreen(
                             selectedAccount = selectedAccount,
                             onShowBottomSheet = { showBottomSheet = true },
                             title = "Ledger",
+                            enabled = isCheckIn(lastCheckInOutDate)
                         )
                     }
 
@@ -170,9 +169,9 @@ data class AttendanceScreen(
                     ElegantCard(
                         icon = Icons.Default.LocationOn,
                         title = "Location Details",
-                        iconTint = colors.primary, modifier = Modifier
-                    )
-                    {
+                        iconTint = colors.primary,
+                        modifier = Modifier
+                    ) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
                                 address,
@@ -188,18 +187,16 @@ data class AttendanceScreen(
                     ElegantCard(
                         icon = Icons.Default.PhotoCamera,
                         title = "Camera Capture",
-                        iconTint = colors.secondary, modifier = Modifier
-                    )
-                    {
+                        iconTint = colors.secondary,
+                        modifier = Modifier
+                    ) {
                         Column(
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
 
                             Button(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(52.dp),
+                                modifier = Modifier.fillMaxWidth().height(52.dp),
                                 onClick = {
                                     scope.launch {
                                         val file = FileKit.openCameraPicker(
@@ -219,8 +216,7 @@ data class AttendanceScreen(
                                     contentColor = colors.onPrimaryContainer
                                 ),
                                 elevation = ButtonDefaults.buttonElevation(
-                                    defaultElevation = 2.dp,
-                                    pressedElevation = 6.dp
+                                    defaultElevation = 2.dp, pressedElevation = 6.dp
                                 )
                             ) {
                                 Icon(
@@ -238,11 +234,8 @@ data class AttendanceScreen(
 
                             capturedFile?.let { file ->
                                 Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .shadow(
-                                            elevation = 8.dp,
-                                            shape = RoundedCornerShape(16.dp)
+                                    modifier = Modifier.fillMaxWidth().shadow(
+                                            elevation = 8.dp, shape = RoundedCornerShape(16.dp)
                                         ),
                                     shape = RoundedCornerShape(16.dp),
 
@@ -254,10 +247,8 @@ data class AttendanceScreen(
                                         AsyncImage(
                                             model = file.path,
                                             contentDescription = "Captured image",
-                                            modifier = Modifier
-                                                .wrapContentWidth()
-                                                .wrapContentHeight()
-                                                .padding(8.dp)
+                                            modifier = Modifier.wrapContentWidth()
+                                                .wrapContentHeight().padding(8.dp)
                                                 .clip(RoundedCornerShape(12.dp)),
                                             contentScale = ContentScale.Fit
                                         )
@@ -267,55 +258,53 @@ data class AttendanceScreen(
                             }
 
                             TallyButton(
-                                label = if (isCheckIn(spDate)) "Check In" else "Check Out",
+                                label = buttonName,
                                 onClick = {
 
                                     if (isAttendance) {
+                                        //ATTENDANCE
                                         viewModel.sendAttendance(
                                             attendanceRequest = AttendanceRequest(
-                                                LoginID = "Admin",
-                                                TranType = 1,
-                                                RecType = if (isCheckIn(spDate)) 1 else 2,
-                                                C2 = lat.toString(),
-                                                C3 = lon.toString(),
-                                                C4 = address,
-                                                C5 = capturedFileInBytes
-                                            ),
-                                            onSuccess = {
-                                                if (isCheckIn(spDate)) {
-                                                    SharedPrefs.AttendanceDate.save(CurrentDate())
-                                                } else {
-                                                    SharedPrefs.AttendanceDate.clear()
-                                                }
-                                                showAlert = true
+                                            LoginID = "Admin",
+                                            TranType = 1,
+                                            RecType = if (isCheckIn(lastAttendanceDate)) 1 else 2,
+                                            C2 = lat.toString(),
+                                            C3 = lon.toString(),
+                                            C4 = address,
+                                            C5 = capturedFileInBytes
+                                        ), onSuccess = {
+                                            if (isCheckIn(lastAttendanceDate)) {
+                                                SharedPrefs.AttendanceDate.save(CurrentDate())
+                                            } else {
+                                                SharedPrefs.AttendanceDate.clear()
+                                            }
+                                            showAlert = true
 
-                                            }
-                                        )
+                                        })
                                     } else {
+                                        // CHECK IN CHECK OUT
                                         viewModel.sendAttendance(
                                             attendanceRequest = AttendanceRequest(
-                                                LoginID = "Admin",
-                                                TranType = 2,
-                                                RecType = if (isCheckIn(spDate)) 1 else 2,
-                                                C1 = selectedAccount,
-                                                C2 = lat.toString(),
-                                                C3 = lon.toString(),
-                                                C4 = address,
-                                                C5 = capturedFileInBytes
-                                            ),
-                                            onSuccess = {
-                                                if (isCheckIn(spDate)) {
-                                                    SharedPrefs.AttendanceDate.save(CurrentDate())
-                                                    SharedPrefs.AttendanceLedger.save(
-                                                        selectedAccount
-                                                    )
-                                                } else {
-                                                    SharedPrefs.AttendanceDate.clear()
-                                                    SharedPrefs.AttendanceLedger.clear()
-                                                }
-                                                showAlert = true
+                                            LoginID = "Admin",
+                                            TranType = 2,
+                                            RecType = if (isCheckIn(lastCheckInOutDate)) 1 else 2,
+                                            C1 = selectedAccount,
+                                            C2 = lat.toString(),
+                                            C3 = lon.toString(),
+                                            C4 = address,
+                                            C5 = capturedFileInBytes
+                                        ), onSuccess = {
+                                            if (isCheckIn(lastCheckInOutDate)) {
+                                                SharedPrefs.CheckInOutDate.save(CurrentDate())
+                                                SharedPrefs.CheckInOutLedger.save(
+                                                    selectedAccount
+                                                )
+                                            } else {
+                                                SharedPrefs.CheckInOutDate.clear()
+                                                SharedPrefs.CheckInOutLedger.clear()
                                             }
-                                        )
+                                            showAlert = true
+                                        })
                                     }
 
 
@@ -350,30 +339,25 @@ data class AttendanceScreen(
 private fun ElegantCard(
     icon: ImageVector,
     title: String,
-    iconTint: Color, modifier: Modifier = Modifier,
+    iconTint: Color,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
     val typography = MaterialTheme.typography
 
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .shadow(
+        modifier = modifier.fillMaxWidth().shadow(
                 elevation = 4.dp,
                 shape = RoundedCornerShape(20.dp),
                 ambientColor = iconTint.copy(alpha = 0.1f),
                 spotColor = iconTint.copy(alpha = 0.1f)
-            ),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
+            ), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(
             containerColor = colors.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ), elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // Header with icon
             Row(
@@ -386,8 +370,7 @@ private fun ElegantCard(
                     modifier = Modifier.size(48.dp)
                 ) {
                     Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
+                        contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()
                     ) {
                         Icon(
                             imageVector = icon,
@@ -407,8 +390,7 @@ private fun ElegantCard(
             }
 
             HorizontalDivider(
-                color = colors.outlineVariant.copy(alpha = 0.3f),
-                thickness = 1.dp
+                color = colors.outlineVariant.copy(alpha = 0.3f), thickness = 1.dp
             )
 
             content()
