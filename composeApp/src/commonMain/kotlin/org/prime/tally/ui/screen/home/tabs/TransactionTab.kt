@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -59,6 +60,30 @@ object TransactionTab : Tab {
         val nav = LocalNavigator.currentOrThrow.parent
         val colors = MaterialTheme.colorScheme
 
+        val entryList = listOf(
+            TransactionType("Receipt", Icons.Default.Receipt),
+            TransactionType("Payment", Icons.Default.Payment),
+            TransactionType("Journal", Icons.Default.AccountBalance),
+            TransactionType("Contra", Icons.Default.Money),
+            TransactionType("Check in/out", Icons.Default.Work),
+            TransactionType("Attendance", Icons.Default.Work)
+        )
+
+        val inventoryList = listOf(
+            TransactionType("Sale Order", Icons.Default.Receipt),
+            TransactionType("Sale Return", Icons.Default.Payment),
+            TransactionType("Sale Invoice", Icons.Default.AccountBalance),
+            TransactionType("Purchase Order", Icons.Default.Money),
+            TransactionType("Purchase Return", Icons.Default.Work),
+            TransactionType("Purchase Invoice", Icons.Default.Work),
+            TransactionType("Stock Transfer", Icons.Default.Work)
+        )
+
+        val othersList = listOf(
+            TransactionType("Check in/out", Icons.Default.Work),
+            TransactionType("Attendance", Icons.Default.Work)
+        )
+
 
         BackHandler(true) {
             tabNav.current = HomeTab
@@ -68,7 +93,7 @@ object TransactionTab : Tab {
             modifier = Modifier
                 .fillMaxSize()
                 .background(colors.background)
-                // .verticalScroll(rememberScrollState())
+                //        .verticalScroll(rememberScrollState())
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -91,114 +116,198 @@ object TransactionTab : Tab {
             }
 
             // Transaction Types Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = colors.surface
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 2.dp
-                ),
-                border = BorderStroke(
-                    1.dp,
-                    colors.outline.copy(alpha = 0.12f)
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Entry Types",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = colors.onSurface
-                    )
-
-                    val entryList = listOf(
-                        TransactionType("Receipt", Icons.Default.Receipt),
-                        TransactionType("Payment", Icons.Default.Payment),
-                        TransactionType("Journal", Icons.Default.AccountBalance),
-                        TransactionType("Contra", Icons.Default.Money)
-                    )
-
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(3),
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(vertical = 4.dp)
-                    ) {
-                        itemsIndexed(entryList) { index, type ->
-                            TransactionButton(
-                                icon = type.icon,
-                                title = type.name,
-                                onClick = {
-                                    when (index) {
-                                        0 -> nav?.push(
-                                            SingleEntryFilterScreen(
-                                                type.name,
-                                                vchType = 14
-                                            )
-                                        )
-
-                                        1 -> nav?.push(
-                                            SingleEntryFilterScreen(
-                                                type.name,
-                                                vchType = 19
-                                            )
-                                        )
-
-                                        2 -> nav?.push(
-                                            SingleEntryFilterScreen(
-                                                type.name,
-                                                vchType = 16
-                                            )
-                                        )
-
-                                        3 -> nav?.push(
-                                            SingleEntryFilterScreen(
-                                                type.name,
-                                                vchType = 15
-                                            )
-                                        )
-
-                                    }
-                                }
+            TopCard(
+                colors,
+                title = "Inventory",
+                tranList = inventoryList, onClick = { index, type ->
+                    when (index) {
+                        0 -> nav?.push(
+                            SingleEntryFilterScreen(
+                                type.name,
+                                vchType = 12
                             )
-                        }
-                        item {
-                            TransactionButton(
-                                onClick = {
+                        )
 
-                                    nav?.push(AttendanceListScreen(
-                                        isCheckIn = true,
-                                        name = "Check In/Out"
-                                    ))
-                                },
-                                icon = Icons.Default.Work,
-                                title = "Check In/Out Filter",
+                        1 -> nav?.push(
+                            SingleEntryFilterScreen(
+                                type.name,
+                                vchType = 3
                             )
+                        )
 
-                        }
-                        item {
-                            TransactionButton(
-                                onClick = {
-                                    nav?.push(AttendanceListScreen(
-                                        isCheckIn = false,
-                                        name = "Attendance Filter"
-                                    ))
-
-                                },
-                                icon = Icons.Default.Work,
-                                title = "Attendance",
+                        2 -> nav?.push(
+                            SingleEntryFilterScreen(
+                                type.name,
+                                vchType = 9
                             )
+                        )
 
-                        }
+                        3 -> nav?.push(
+                            SingleEntryFilterScreen(
+                                type.name,
+                                vchType = 13
+                            )
+                        )
+
+                        4 -> nav?.push(
+                            SingleEntryFilterScreen(
+                                type.name,
+                                vchType = 10
+                            )
+                        )
+
+                        5 -> nav?.push(
+                            SingleEntryFilterScreen(
+                                type.name,
+                                vchType = 2
+                            )
+                        )
+
+                        6 -> nav?.push(
+                            SingleEntryFilterScreen(
+                                type.name,
+                                vchType = 7
+                            )
+                        )
+
                     }
+                }
+            )
+            TopCard(
+                colors,
+                title = "Entry Types",
+                tranList = entryList, onClick = { index, type ->
+                    when (index) {
+                        0 -> nav?.push(
+                            SingleEntryFilterScreen(
+                                type.name,
+                                vchType = 14
+                            )
+                        )
+
+                        1 -> nav?.push(
+                            SingleEntryFilterScreen(
+                                type.name,
+                                vchType = 19
+                            )
+                        )
+
+                        2 -> nav?.push(
+                            SingleEntryFilterScreen(
+                                type.name,
+                                vchType = 16
+                            )
+                        )
+
+                        3 -> nav?.push(
+                            SingleEntryFilterScreen(
+                                type.name,
+                                vchType = 15
+                            )
+                        )
+                        4 -> {
+                            nav?.push(
+                                AttendanceListScreen(
+                                    isCheckIn = true,
+                                    name = "Check In/Out"
+                                )
+                            )
+                        }
+
+                        5 -> {
+                            nav?.push(
+                                AttendanceListScreen(
+                                    isCheckIn = false,
+                                    name = "Attendance Filter"
+                                )
+                            )
+                        }
+
+
+                    }
+                }
+            )
+//            TopCard(
+//                colors,
+//                title = "Others", tranList = othersList, onClick = { index, _ ->
+//                    when (index) {
+//                        0 -> {
+//                            nav?.push(
+//                                AttendanceListScreen(
+//                                    isCheckIn = true,
+//                                    name = "Check In/Out"
+//                                )
+//                            )
+//                        }
+//
+//                        1 -> {
+//                            nav?.push(
+//                                AttendanceListScreen(
+//                                    isCheckIn = false,
+//                                    name = "Attendance Filter"
+//                                )
+//                            )
+//                        }
+//
+//                    }
+//
+//                }
+//            )
+
+        }
+    }
+}
+
+@Composable
+private fun TopCard(
+    colors: ColorScheme,
+    title: String,
+    tranList: List<TransactionType>,
+    onClick: (Int, TransactionType) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = colors.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        ),
+        border = BorderStroke(
+            1.dp,
+            colors.outline.copy(alpha = 0.12f)
+        )
+    )
+    {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = colors.onSurface
+            )
+
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(vertical = 4.dp)
+            ) {
+                itemsIndexed(tranList) { index, type ->
+                    TransactionButton(
+                        icon = type.icon,
+                        title = type.name,
+                        onClick = {
+                            onClick(index, type)
+                        }
+                    )
                 }
             }
         }
