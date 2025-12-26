@@ -1,0 +1,25 @@
+CREATE TABLE Product_Param_Stock (
+    MasterCode1 REAL,
+    MasterCode2 REAL,
+    Value1 REAL,
+    Value2 REAL,
+    Value3 REAL,
+    BCN TEXT,
+    C1 TEXT,
+    C2 TEXT,
+    C3 TEXT,
+    C4 TEXT,
+    C5 TEXT
+);
+
+
+getProductStockList:
+SELECT
+    pps.*,
+    p.Name  AS ProductName,
+    g.Name  AS GodownName
+FROM Product_Param_Stock pps
+JOIN Products p
+    ON p.GUID = pps.MasterCode1
+JOIN GodownMaster g
+    ON g.GUID = pps.MasterCode2;
