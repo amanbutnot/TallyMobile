@@ -1,7 +1,9 @@
 package org.prime.tally.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -84,6 +86,7 @@ private val darkScheme = darkColorScheme(
 )
 
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TallyTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -97,6 +100,7 @@ fun TallyTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = appTypography(),
+        motionScheme = MotionScheme.expressive(),
         content = content
     )
 }
