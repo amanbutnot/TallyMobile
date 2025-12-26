@@ -218,24 +218,28 @@ object HomeTab : Tab {
                 HeadingTitle("Create")
                 ExpandableGrid()
             } else {
-                HeadingTitle("Reports")
-                Row(
+                Spacer(Modifier.height(8.dp))
+                HeadingTitle("Quick Actions")
+
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    MasterButton(
-                        icon = Icons.Default.Receipt, modifier = Modifier.weight(1f),
+                    // First Card - Bill Receivable
+                    ReportActionCard(
                         title = "Bill Receivable",
+                        description = "View outstanding receivables and pending bills",
+                        icon = Icons.Default.Receipt,
                         onClick = {
-                            nav?.push(
-                                OutstandingDisFilterScreen
-                            )
+                            nav?.push(OutstandingDisFilterScreen)
                         }
                     )
-                    MasterButton(
-                        icon = Icons.Default.Cases, modifier = Modifier.weight(1f),
-                        title = "Ledger",
+
+                    // Second Card - Ledger
+                    ReportActionCard(
+                        title = "Ledger Report",
+                        description = "Access detailed ledger statements and transactions",
+                        icon = Icons.Default.Cases,
                         onClick = {
                             nav?.push(LedgerReportFilterScreen(showAccount = false))
                         }
@@ -244,6 +248,89 @@ object HomeTab : Tab {
             }
 
 
+        }
+    }
+}
+
+@Composable
+fun ReportActionCard(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Icon Container
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(
+                        MaterialTheme.colorScheme.primaryContainer,
+                        RoundedCornerShape(12.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+
+            // Text Content
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 18.sp
+                )
+            }
+
+            // Arrow Indicator
+            Icon(
+                imageVector = Icons.Default.ExpandMore,
+                contentDescription = "Navigate",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier
+                    .size(24.dp)
+                    .padding(start = 4.dp)
+            )
         }
     }
 }
@@ -289,7 +376,7 @@ fun ExpandableGrid() {
         "Purchase Order" to Icons.Default.AddShoppingCart,
         "Purchase Invoice" to Icons.Default.ShoppingCart,
         "Purchase Return" to Icons.Default.Receipt,
-     //   "Stock Transfer" to Icons.Default.Payment,
+        //   "Stock Transfer" to Icons.Default.Payment,
         "Contra" to Icons.Default.Payment
     )
 
@@ -359,6 +446,7 @@ fun ExpandableGrid() {
                                 showLoading = false
                             }
                         }
+
                         "Attendance" -> scope.launch {
                             showLoading = true
                             try {
@@ -392,10 +480,11 @@ fun ExpandableGrid() {
                                 showLoading = false
                             }
                         }
+
                         "Purchase Order" -> nav?.push(SaleScreen(name = name.first, vchType = 13))
                         "Purchase Invoice" -> nav?.push(SaleScreen(name = name.first, vchType = 2))
                         "Purchase Return" -> nav?.push(SaleScreen(name = name.first, vchType = 10))
-                       // "Stock Transfer" -> nav?.push(SaleScreen(name = name.first, vchType = 7))
+                        // "Stock Transfer" -> nav?.push(SaleScreen(name = name.first, vchType = 7))
                         "Contra" -> nav?.push(SingleEntryReceipt(name.first, vchType = 15))
                     }
                 }
