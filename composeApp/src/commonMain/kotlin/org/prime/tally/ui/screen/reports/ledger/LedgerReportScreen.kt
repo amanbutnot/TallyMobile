@@ -44,6 +44,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.expect.formatToQtyDec
 import org.prime.tally.ui.printing.LedgerRow
 import org.prime.tally.ui.printing.accountLedgerHtml
 import org.prime.tally.ui.shared.composables.MenuItemData
@@ -422,6 +423,7 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(vertical = 4.dp).clickable {
+                                                println("GUID: ${item.VCH_GUID}")
                                                 nav.push(
                                                     LedgerReportItemScreen(
                                                         vchNo = item.VOUCHERNUMBER.toString(),
@@ -459,14 +461,14 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                                                     isHeader = false
                                                 )
                                                 TableCell(
-                                                    text = if (item.D2 == 0.0) "${item.D3} Dr" else "${item.D2} Cr",
+                                                    text = if (item.D2 == 0.0) "${item.D3?.formatToQtyDec()} Dr" else "${item.D2?.formatToQtyDec()} Cr",
                                                     weight = columnSmallWeight,
                                                     textAlign = TextAlign.End,
                                                     textColor = if (item.D2 == 0.0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                                                     isHeader = false
                                                 )
                                                 TableCell(
-                                                    text = "${kotlin.math.abs(bal)} $balType",
+                                                    text = "${kotlin.math.abs(bal).formatToQtyDec()} $balType",
                                                     weight = columnSmallWeight,
                                                     textAlign = TextAlign.End,
                                                     isHeader = false

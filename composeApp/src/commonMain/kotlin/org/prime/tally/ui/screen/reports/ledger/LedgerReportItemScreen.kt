@@ -1,13 +1,31 @@
 package org.prime.tally.ui.screen.reports.ledger
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -19,15 +37,26 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.expect.formatToAmtDec
+import org.prime.tally.data.expect.formatToQtyDec
 import org.prime.tally.ui.printing.InvoiceItem
 import org.prime.tally.ui.printing.InvoiceParticular
 import org.prime.tally.ui.printing.ReceiptPaymentRow
 import org.prime.tally.ui.printing.receiptPaymentHtml
 import org.prime.tally.ui.printing.salesInvoiceHtml
-import org.prime.tally.ui.shared.composables.*
+import org.prime.tally.ui.shared.composables.MenuItemData
+import org.prime.tally.ui.shared.composables.TallyCircularLoader
+import org.prime.tally.ui.shared.composables.TallyLoadingDialog
+import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.globalShared.CompanyName
 import org.prime.tally.ui.shared.globalShared.Tdate
-import org.prime.tally.ui.shared.reportsShared.*
+import org.prime.tally.ui.shared.globalShared.isBusy
+import org.prime.tally.ui.shared.reportsShared.PdfAction
+import org.prime.tally.ui.shared.reportsShared.ReportColumn
+import org.prime.tally.ui.shared.reportsShared.TableCell
+import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
+import org.prime.tally.ui.shared.reportsShared.handlePdfAction
+import kotlin.math.absoluteValue
 
 data class LedgerReportItemScreen(
     val vchNo: String,
@@ -41,8 +70,10 @@ data class LedgerReportItemScreen(
         val db = DatabaseHolder.instance
         val ledgerStockItemList =
             db.vouchersStockItemsQueries.ledgerStockItemList(guid).executeAsList()
+        val ledgerStockBusyItemList = db.vouchersBsLedgersQueries.selectAll(guid).executeAsList()
         val ledgerReportItemList =
             db.vouchersLedgersQueries.ledgerReportItemList(guid).executeAsList()
+        val vouchers = db.vouchersQueries.selectByGuid(guid).executeAsOneOrNull()
 
         var isLoading by remember { mutableStateOf(false) }
         var shareLoading by remember { mutableStateOf(false) }
@@ -238,7 +269,10 @@ data class LedgerReportItemScreen(
                             .padding(horizontal = 8.dp)
                     ) {
                         Spacer(Modifier.height(8.dp))
-
+                        Text(
+                            "Name: " + vouchers?.PARTYLEDGERNAME.toString(),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
+                        )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -318,17 +352,21 @@ data class LedgerReportItemScreen(
                                             TableCell((index + 1).toString(), stockColumn1Weight)
                                             TableCell(item.Item_Name ?: "", stockColumn2Weight)
                                             TableCell(
-                                                item.Qty.toString(),
+                                                item.Qty?.absoluteValue?.formatToQtyDec()
+                                                    .toString(),
                                                 stockColumn3Weight,
                                                 textAlign = TextAlign.End
                                             )
+                                            println("RATE IS : ${item.Amt?.absoluteValue?.formatToAmtDec()}")
                                             TableCell(
-                                                item.Rate.toString(),
+                                                item.Rate?.absoluteValue?.formatToAmtDec()
+                                                    .toString(),
                                                 stockColumn4Weight,
                                                 textAlign = TextAlign.End
                                             )
                                             TableCell(
-                                                item.Amt.toString(),
+                                                item.Amt?.absoluteValue?.formatToAmtDec()
+                                                    .toString(),
                                                 stockColumn5Weight,
                                                 textAlign = TextAlign.End
                                             )
@@ -345,7 +383,7 @@ data class LedgerReportItemScreen(
                                         TextAlign.End
                                     ),
                                     ReportColumn(
-                                        amtTotal.toString(),
+                                        amtTotal.absoluteValue.formatToAmtDec(),
                                         stockColumn5Weight,
                                         TextAlign.End
                                     )
@@ -354,15 +392,20 @@ data class LedgerReportItemScreen(
                             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         }
 
-                        val indexedLedgerList =
-                            if (ledgerStockItemList.isNotEmpty()) ledgerReportItemList.drop(2) else ledgerReportItemList
+                        val indexedLedgerList = when {
+
+                            ledgerStockItemList.isNotEmpty() -> ledgerReportItemList.drop(1)
+                            else -> ledgerReportItemList
+                        }
+
 
                         if (ledgerReportItemList.isNotEmpty()) {
                             val totalCredit = ledgerReportItemList.sumOf { it.CreditAmt ?: 0.0 }
                             val totalDebit = ledgerReportItemList.sumOf { it.DebitAmt ?: 0.0 }
 
+
                             Text(
-                                "Ledger Details:",
+                                if (isBusy()) "Bill Sundry" else "Ledger Details:",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                             )
                             Spacer(Modifier.height(4.dp))
@@ -372,7 +415,8 @@ data class LedgerReportItemScreen(
                                 colors = CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                                 )
-                            ) {
+                            )
+                            {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -398,6 +442,14 @@ data class LedgerReportItemScreen(
                                             isHeader = true
                                         )
                                     } else {
+                                        if (isBusy()) {
+                                            TableCell(
+                                                "Per",
+                                                stockColumn5Weight,
+                                                textAlign = TextAlign.End,
+                                                isHeader = true
+                                            )
+                                        }
                                         TableCell(
                                             "Amount",
                                             stockColumn5Weight,
@@ -409,51 +461,106 @@ data class LedgerReportItemScreen(
                                 }
                             }
 
-                            LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                                itemsIndexed(indexedLedgerList) { index, item ->
-                                    Card(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.surface
-                                        )
-                                    ) {
-                                        Row(
+
+                            if (isBusy()) {
+                                LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                                    itemsIndexed(ledgerStockBusyItemList) { index, item ->
+                                        Card(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            TableCell((index + 1).toString(), stockColumn1Weight)
-                                            TableCell(
-                                                item.LedgerName ?: "",
-                                                stockColumn2Weight + stockColumn3Weight
+                                                .padding(vertical = 4.dp),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.surface
                                             )
-                                            if (ledgerStockItemList.isEmpty()) {
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
                                                 TableCell(
-                                                    item.CreditAmt.toString(),
+                                                    (index + 1).toString(),
+                                                    stockColumn1Weight
+                                                )
+                                                TableCell(
+                                                    item.CM1 ?: "",
+                                                    stockColumn2Weight + stockColumn3Weight
+                                                )
+                                                TableCell(
+                                                    item.D1?.absoluteValue?.formatToAmtDec()
+                                                        .toString(),
+                                                    stockColumn5Weight,
+                                                    textAlign = TextAlign.End,
+                                                    isHeader = true
+                                                )
+                                                println("D3 iS : ${item.D3}")
+
+                                                TableCell(
+                                                    item.D3?.absoluteValue?.formatToAmtDec()
+                                                        .toString(),
                                                     stockColumn5Weight,
                                                     textAlign = TextAlign.End
                                                 )
+                                            }
+                                        }
+                                    }
+                                }   
+                            } else {
+
+                                LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                                    itemsIndexed(indexedLedgerList) { index, item ->
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.surface
+                                            )
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
                                                 TableCell(
-                                                    item.DebitAmt.toString(),
-                                                    stockColumn5Weight,
-                                                    textAlign = TextAlign.End
+                                                    (index + 1).toString(),
+                                                    stockColumn1Weight
                                                 )
-                                            } else {
                                                 TableCell(
-                                                    item.CreditAmt.toString(),
-                                                    stockColumn5Weight,
-                                                    textAlign = TextAlign.End
+                                                    item.LedgerName ?: "",
+                                                    stockColumn2Weight + stockColumn3Weight
                                                 )
+                                                if (ledgerStockItemList.isEmpty()) {
+                                                    TableCell(
+                                                        item.CreditAmt?.absoluteValue?.formatToAmtDec()
+                                                            .toString(),
+                                                        stockColumn5Weight,
+                                                        textAlign = TextAlign.End
+                                                    )
+                                                    TableCell(
+                                                        item.DebitAmt?.absoluteValue?.formatToAmtDec()
+                                                            .toString(),
+                                                        stockColumn5Weight,
+                                                        textAlign = TextAlign.End
+                                                    )
+                                                } else {
+                                                    TableCell(
+                                                        item.CreditAmt?.absoluteValue?.formatToAmtDec()
+                                                            .toString(),
+                                                        stockColumn5Weight,
+                                                        textAlign = TextAlign.End
+                                                    )
+
+                                                }
 
                                             }
-
                                         }
                                     }
                                 }
                             }
+
 
                             TallyReportBottomBar(
                                 columns = listOf(
@@ -462,26 +569,36 @@ data class LedgerReportItemScreen(
                                         (stockColumn1Weight + stockColumn2Weight + stockColumn3Weight + stockColumn4Weight),
                                         TextAlign.End
                                     ),
-                                    if (ledgerStockItemList.isEmpty()) {
+                                    if (isBusy()) {
                                         ReportColumn(
-                                            totalCredit.toString(),
-                                            stockColumn5Weight,
-                                            TextAlign.End
-                                        )
-                                        ReportColumn(
-                                            totalDebit.toString(),
+                                            vouchers?.D1?.absoluteValue?.formatToAmtDec()
+                                                .toString(),
                                             stockColumn5Weight,
                                             TextAlign.End
                                         )
                                     } else {
-                                        ReportColumn(
-                                            (totalDebit+totalCredit).toString(),
-                                            stockColumn5Weight,
-                                            TextAlign.End
-                                        )
-                                    }
+                                        if (ledgerStockItemList.isEmpty()) {
+                                            ReportColumn(
+                                                totalCredit.formatToAmtDec(),
+                                                stockColumn5Weight,
+                                                TextAlign.End
+                                            )
+                                            ReportColumn(
+                                                totalDebit.formatToAmtDec(),
+                                                stockColumn5Weight,
+                                                TextAlign.End
+                                            )
+                                        } else {
+                                            ReportColumn(
+                                                (totalDebit + totalCredit).absoluteValue.formatToAmtDec(),
+                                                stockColumn5Weight,
+                                                TextAlign.End
+                                            )
+                                        }
+                                    },
 
-                                )
+
+                                    )
                             )
                         }
                     }
