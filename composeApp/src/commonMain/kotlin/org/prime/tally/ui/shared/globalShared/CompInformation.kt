@@ -21,14 +21,20 @@ fun getQtyDecimal(): Int {
     return row?.D3?.toInt() ?: 1
 }
 
-fun getNameFromGUID(guid:String):String {
+fun getNameFromGUID(guid: String): String {
     val db = DatabaseHolder.instance
     val row = db.ledgerMasterQueries.selectNameFromGuid(guid).executeAsOneOrNull()
-    return row?.Name?:""
+    return row?.Name ?: ""
 }
 
 fun getAmtDecimal(): Int {
     val db = DatabaseHolder.instance
     val row = db.companyInformationQueries.getCompanyInformation().executeAsOneOrNull()
     return row?.D4?.toInt() ?: 1
+}
+
+fun isBusy(): Boolean {
+    val db = DatabaseHolder.instance
+    val row = db.companyInformationQueries.getCompanyInformation().executeAsOneOrNull()
+    return row?.T10 == "Busy"
 }

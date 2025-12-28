@@ -4,13 +4,22 @@ import kotlin.math.floor
 import kotlin.math.pow
 
 actual fun Double.formatToQtyDec(num: Int): String {
-    val factor = 10.0.pow(num)
-    val truncated = floor(this * factor) / factor
-    return "%.${num}f".format(truncated)
+    return this.toBigDecimal()
+        .setScale(num, java.math.RoundingMode.DOWN)
+        .toPlainString()
 }
 
 actual fun Double.formatToAmtDec(num: Int): String {
-    val factor = 10.0.pow(num)
-    val truncated = floor(this * factor) / factor
-    return "%.${num}f".format(truncated)
+    val bd = this.toBigDecimal()
+        .setScale(num, java.math.RoundingMode.DOWN)
+
+    val formatter = java.text.NumberFormat.getNumberInstance(
+        java.util.Locale("en", "IN")
+    ).apply {
+        minimumFractionDigits = num
+        maximumFractionDigits = num
+        isGroupingUsed = true
+    }
+
+    return formatter.format(bd)
 }
