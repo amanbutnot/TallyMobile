@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -79,12 +81,6 @@ object TransactionTab : Tab {
             TransactionType("Stock Transfer", Icons.Default.Work)
         )
 
-        val othersList = listOf(
-            TransactionType("Check in/out", Icons.Default.Work),
-            TransactionType("Attendance", Icons.Default.Work)
-        )
-
-
         BackHandler(true) {
             tabNav.current = HomeTab
         }
@@ -93,7 +89,7 @@ object TransactionTab : Tab {
             modifier = Modifier
                 .fillMaxSize()
                 .background(colors.background)
-                //        .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState())
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -222,38 +218,9 @@ object TransactionTab : Tab {
                                 )
                             )
                         }
-
-
                     }
                 }
             )
-//            TopCard(
-//                colors,
-//                title = "Others", tranList = othersList, onClick = { index, _ ->
-//                    when (index) {
-//                        0 -> {
-//                            nav?.push(
-//                                AttendanceListScreen(
-//                                    isCheckIn = true,
-//                                    name = "Check In/Out"
-//                                )
-//                            )
-//                        }
-//
-//                        1 -> {
-//                            nav?.push(
-//                                AttendanceListScreen(
-//                                    isCheckIn = false,
-//                                    name = "Attendance Filter"
-//                                )
-//                            )
-//                        }
-//
-//                    }
-//
-//                }
-//            )
-
         }
     }
 }
@@ -293,12 +260,18 @@ private fun TopCard(
                 color = colors.onSurface
             )
 
+            val rows = (tranList.size / 3 + if (tranList.size % 3 > 0) 1 else 0)
+            val gridHeight = (rows * 87).dp
+
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(gridHeight),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(vertical = 4.dp)
+                contentPadding = PaddingValues(vertical = 4.dp),
+                userScrollEnabled = false
             ) {
                 itemsIndexed(tranList) { index, type ->
                     TransactionButton(
