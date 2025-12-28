@@ -444,7 +444,7 @@ data class LedgerReportItemScreen(
                                     } else {
                                         if (isBusy()) {
                                             TableCell(
-                                                "Per",
+                                                "%",
                                                 stockColumn5Weight,
                                                 textAlign = TextAlign.End,
                                                 isHeader = true
@@ -488,7 +488,9 @@ data class LedgerReportItemScreen(
                                                     stockColumn2Weight + stockColumn3Weight
                                                 )
                                                 TableCell(
-                                                    item.D1?.absoluteValue?.formatToAmtDec()
+                                                    if (item.D1?.absoluteValue?.formatToAmtDec()
+                                                            .toString() == "0.00"
+                                                    ) "" else item.D1?.absoluteValue?.formatToAmtDec()
                                                         .toString(),
                                                     stockColumn5Weight,
                                                     textAlign = TextAlign.End,
@@ -505,7 +507,7 @@ data class LedgerReportItemScreen(
                                             }
                                         }
                                     }
-                                }   
+                                }
                             } else {
 
                                 LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {

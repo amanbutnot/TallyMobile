@@ -22,7 +22,9 @@ data class InventoryVoucherRequest(
 @Serializable
 data class SundryItem(
     val name: String,
-    val amount: Double = 0.0
+    val amount: Double = 0.0,
+    val guid:String,
+    val i1: Int?=null
 )
 
 
@@ -38,7 +40,8 @@ data class BillingItem(
     val tax_rate2: Double,
     val taxable:Double,
     val gstAmt: Double,
-    val net:Double
+    val net:Double,
+    val guid:String
 )
 
 

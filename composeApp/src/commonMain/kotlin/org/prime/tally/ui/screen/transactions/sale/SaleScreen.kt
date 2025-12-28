@@ -51,7 +51,6 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -85,6 +84,8 @@ import org.prime.tally.data.model.transactions.InventoryVoucherRequest
 import org.prime.tally.data.model.transactions.SundryItem
 import org.prime.tally.ui.screen.transactions.SelectLedgerRow
 import org.prime.tally.ui.screen.transactions.TallyNarrationField
+import org.prime.tally.ui.screen.transactions.TransactionBottomSheet
+import org.prime.tally.ui.screen.transactions.TransactionBottomSheetThree
 import org.prime.tally.ui.screen.transactions.TransactionOneBottomSheet
 import org.prime.tally.ui.shared.composables.MenuItemData
 import org.prime.tally.ui.shared.composables.TallyAlertBox
@@ -118,7 +119,9 @@ data class InvoiceItem(
     //sdfasdfasdfadsfsadf
     val taxable: Double,
     val gstAmt: Double,
-    val net: Double
+    val net: Double,
+    // GUID for the selected product (not shown in UI, sent to backend)
+    val guid: String = ""
 ) {
     val total: Double get() = price * qty
 }
@@ -159,6 +162,7 @@ data class SaleScreen(
         var editingItem by remember { mutableStateOf<InvoiceItem?>(null) }
 
         var pendingSelectedProductName by rememberSaveable { mutableStateOf<String?>(null) }
+        var pendingSelectedProductGUID by rememberSaveable { mutableStateOf<String?>(null) }
 
         val ledgerList = db.ledgerMasterQueries.selectAll().executeAsList()
         val busyLedgerList = db.bSMasterQueries.selectAll().executeAsList()
@@ -238,13 +242,21 @@ data class SaleScreen(
                         taxable = it.item_amount.toDouble(),
                         gstAmt = it.taxamt1.toDouble(),
                         net = it.total_amt.toDouble()
+                        // guid will default to "" if backend item doesn't include guid in this DTO
                     )
                 }
             }
         }
 
 
-        val sundriesTotal = selectedSundries.sumOf { it.amount }
+        val sundriesTotal = selectedSundries.sumOf {
+            when (it.i1) {
+                1 -> it.amount
+                0 -> -it.amount
+                else -> 0.0
+            }
+        }
+
         val grandTotal = itemsTotal + sundriesTotal
 
         if (state.isLoading) {
@@ -262,6 +274,7 @@ data class SaleScreen(
                         taxable = 0.0,
                         gstAmt = 0.0,
                         net = 0.0,
+                        guid = pendingSelectedProductGUID ?: ""
                     )
                 showItemSheet = false
                 pendingSelectedProductName = null
@@ -355,7 +368,9 @@ data class SaleScreen(
                                                         listPrice = listPriceText,
                                                         taxable = taxable,
                                                         gstAmt = gstAmount,
-                                                        net = net
+                                                        net = net,
+                                                        guid = product.GUID ?: pendingSelectedProductGUID
+                                                        ?: ""
                                                     )
                                                     editingItem = null
                                                 },
@@ -381,7 +396,8 @@ data class SaleScreen(
                                                         listPrice = listPriceText,
                                                         taxable = taxable,
                                                         gstAmt = gstAmount,
-                                                        net = net
+                                                        net = net,
+                                                        guid = pendingSelectedProductGUID ?: ""
                                                     )
                                                     editingItem = null
                                                 },
@@ -496,30 +512,44 @@ data class SaleScreen(
                     options = itemsList,
                     onSelect = { itemName ->
                         pendingSelectedProductName = itemName.Name
+                        pendingSelectedProductGUID = itemName.GUID
                     },
                     onDismiss = { showItemSheet = false }
                 )
                 if (isBusy()) {
-                    SelectionSheet(
+                    SelectionSheetThree(
                         show = showSundrySheet,
-                        title = if (isBusy()) "Select Sundry" else "Select Ledger",
-                        options = busyLedgerList.map { it.Name ?: "" },
-                        onSelect = { sundryName ->
+                        title = "Select Sundry",
+                        options = busyLedgerList.map {
+                            Triple(
+                                it.Name ?: "",
+                                it.GUID ?: "",
+                                it.I1?.toInt() ?: 0
+                            )
+                        },
+                        onSelect = { sundryName, GUID, i1 ->
                             if (!selectedSundries.any { it.name == sundryName }) {
-                                selectedSundries = selectedSundries + SundryItem(sundryName, 0.0)
+                                selectedSundries =
+                                    selectedSundries + SundryItem(
+                                        sundryName,
+                                        0.0,
+                                        guid = GUID,
+                                        i1 = i1
+                                    )
                             }
                         },
                         onDismiss = { showSundrySheet = false }
                     )
                 } else {
 
-                    SelectionSheet(
+                    SelectionSheetTwo(
                         show = showSundrySheet,
-                        title = "Select Sundry Ledger",
-                        options = ledgerList.map { it.Name ?: "" },
-                        onSelect = { sundryName ->
+                        title = "Select Ledger",
+                        options = ledgerList.map { Pair(it.Name ?: "", it.GUID ?: "") },
+                        onSelect = { sundryName, GUID ->
                             if (!selectedSundries.any { it.name == sundryName }) {
-                                selectedSundries = selectedSundries + SundryItem(sundryName, 0.0)
+                                selectedSundries =
+                                    selectedSundries + SundryItem(sundryName, 0.0, guid = GUID)
                             }
                         },
                         onDismiss = { showSundrySheet = false }
@@ -569,6 +599,7 @@ data class SaleScreen(
                         TallyButton(
 
                             onClick = {
+
                                 val billingItems = selectedItems.map { item ->
                                     val prod = itemsList.find { it.Name == item.name }
                                     BillingItem(
@@ -582,7 +613,9 @@ data class SaleScreen(
                                         tax_rate2 = 0.0,
                                         taxable = item.taxable,
                                         net = item.net,
-                                        gstAmt = item.gstAmt
+                                        gstAmt = item.gstAmt,
+                                        // include the pending item GUID so backend receives it
+                                        guid = item.guid
                                     )
                                 }
 
@@ -602,6 +635,20 @@ data class SaleScreen(
                                         Narration = narration, TransactionID = tranId
                                     ),
                                     onSuccess = {
+                                        println(InventoryVoucherRequest(
+                                            billing_guid = selectedLedgerGUID,
+                                            vch_type = vchType,
+                                            billing_name = selectedLedger,
+                                            billing_mobile = "",
+                                            billing_state = "",
+                                            billing_country = "",
+                                            billing_address = "",
+                                            taxType = if (taxType == TaxType.EXTRA) 1 else 2,
+                                            items = billingItems,
+                                            sundries = selectedSundries,
+                                            TranDate = selectedDate,
+                                            Narration = narration, TransactionID = tranId
+                                        ))
                                         showResultDialog = true
                                     },
                                     url = if (isEdit) "updateInventory" else "addInventoryVch"
@@ -646,6 +693,57 @@ fun SelectionSheet(
         list = options,
         onSelected = {
             onSelect(it)
+            onDismiss()
+        },
+        onDismiss = { onDismiss() },
+        bottomSheetState = rememberModalBottomSheetState(),
+        title = title
+    )
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SelectionSheetTwo(
+    show: Boolean,
+    title: String,
+    options: List<Pair<String, String>>,
+    onSelect: (String, String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    TransactionBottomSheet(
+        showBottomSheet = show,
+        list = options,
+        onSelected = { it ->
+            it.let {
+                onSelect(it.first, it.second)
+
+            }
+            onDismiss()
+        },
+        onDismiss = { onDismiss() },
+        bottomSheetState = rememberModalBottomSheetState(),
+        title = title
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SelectionSheetThree(
+    show: Boolean,
+    title: String,
+    options: List<Triple<String, String, Int>>,
+    onSelect: (String, String, Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    TransactionBottomSheetThree(
+        showBottomSheet = show,
+        list = options,
+        onSelected = { it ->
+            it.let {
+                onSelect(it.first, it.second, it.third)
+
+            }
             onDismiss()
         },
         onDismiss = { onDismiss() },
