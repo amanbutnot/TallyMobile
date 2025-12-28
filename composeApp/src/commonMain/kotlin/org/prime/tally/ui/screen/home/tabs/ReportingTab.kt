@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.AssignmentLate
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.ProductionQuantityLimits
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Card
@@ -48,6 +49,7 @@ import org.prime.tally.ui.screen.home.Dashboard
 import org.prime.tally.ui.screen.reports.godown.GodownClosingStockListScreen
 import org.prime.tally.ui.screen.reports.ledger.LedgerReportFilterScreen
 import org.prime.tally.ui.screen.reports.outstanding.OutstandingSelectScreen
+import org.prime.tally.ui.screen.reports.productReport.ProductReportScreen
 import org.prime.tally.ui.screen.reports.registers.RegisterSelectScreen
 import org.prime.tally.ui.screen.reports.stock.StockReportScreen
 import org.prime.tally.ui.screen.reports.trialBalance.TrialBalanceScreen
@@ -64,7 +66,7 @@ object ReportingTab : Tab {
     override fun Content() {
 
         val tabNav = LocalTabNavigator.current
-        BackHandler(true){
+        BackHandler(true) {
             tabNav.current = HomeTab
         }
 
@@ -85,6 +87,7 @@ object ReportingTab : Tab {
                 Report.TrialBalance,
                 Report.Registers,
                 Report.StockReport,
+                Report.ProductStock,
 //                Report.PendingOrders,
 //                Report.Quotations,
                 Report.GoDownWiseClosingStock
@@ -108,6 +111,7 @@ object ReportingTab : Tab {
                                 Report.Outstanding -> nav?.push(OutstandingSelectScreen)
                                 Report.PendingOrders -> nav?.push(Dashboard)
                                 Report.Quotations -> nav?.push(Dashboard)
+                                Report.ProductStock-> nav?.push(ProductReportScreen)
                                 Report.Registers -> nav?.push(RegisterSelectScreen)
                                 Report.StockReport -> nav?.push(StockReportScreen)
                                 Report.TrialBalance -> nav?.push(TrialBalanceScreen)
@@ -184,4 +188,5 @@ sealed class Report(val title: String, val icon: ImageVector) {
     object PendingOrders : Report("Pending Orders", Icons.Default.ShoppingCart)
     object Quotations : Report("Quotations", Icons.Default.Description)
     object GoDownWiseClosingStock : Report("Godown Wise Closeing Stock", Icons.Default.Description)
+    object ProductStock : Report("Product Report", Icons.Default.ProductionQuantityLimits)
 }

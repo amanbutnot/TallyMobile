@@ -95,6 +95,7 @@ import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.composables.TallyResultDialog
 import org.prime.tally.ui.shared.composables.TallySearchBar
 import org.prime.tally.ui.shared.globalShared.Tdate
+import org.prime.tally.ui.shared.globalShared.isBusy
 import org.tally.Products
 import kotlin.math.abs
 import kotlin.math.round
@@ -160,8 +161,8 @@ data class SaleScreen(
         var pendingSelectedProductName by rememberSaveable { mutableStateOf<String?>(null) }
 
         val ledgerList = db.ledgerMasterQueries.selectAll().executeAsList()
+        val busyLedgerList = db.bSMasterQueries.selectAll().executeAsList()
         val itemsList = db.productsQueries.selectAll().executeAsList()
-
         val viewmodel: InventoryVoucherViewModel = viewModel { InventoryVoucherViewModel() }
         val state by viewmodel.dataState
         val oneState by viewmodel.oneState
@@ -421,10 +422,12 @@ data class SaleScreen(
                             }
 
                             SectionCard(
-                                title = "SUNDRIES",
+                                title = if (isBusy()) "SUNDRIES" else "Ledgers",
                                 count = selectedSundries.size,
                                 headerAction = {
-                                    SmallAddButton(label = "Add Sundry") { showSundrySheet = true }
+                                    SmallAddButton(label = if (isBusy()) "Add Sundry" else "Add Ledger") {
+                                        showSundrySheet = true
+                                    }
                                 }
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -496,18 +499,32 @@ data class SaleScreen(
                     },
                     onDismiss = { showItemSheet = false }
                 )
+                if (isBusy()) {
+                    SelectionSheet(
+                        show = showSundrySheet,
+                        title = if (isBusy()) "Select Sundry" else "Select Ledger",
+                        options = busyLedgerList.map { it.Name ?: "" },
+                        onSelect = { sundryName ->
+                            if (!selectedSundries.any { it.name == sundryName }) {
+                                selectedSundries = selectedSundries + SundryItem(sundryName, 0.0)
+                            }
+                        },
+                        onDismiss = { showSundrySheet = false }
+                    )
+                } else {
 
-                SelectionSheet(
-                    show = showSundrySheet,
-                    title = "Select Sundry Ledger",
-                    options = ledgerList.map { it.Name ?: "" },
-                    onSelect = { sundryName ->
-                        if (!selectedSundries.any { it.name == sundryName }) {
-                            selectedSundries = selectedSundries + SundryItem(sundryName, 0.0)
-                        }
-                    },
-                    onDismiss = { showSundrySheet = false }
-                )
+                    SelectionSheet(
+                        show = showSundrySheet,
+                        title = "Select Sundry Ledger",
+                        options = ledgerList.map { it.Name ?: "" },
+                        onSelect = { sundryName ->
+                            if (!selectedSundries.any { it.name == sundryName }) {
+                                selectedSundries = selectedSundries + SundryItem(sundryName, 0.0)
+                            }
+                        },
+                        onDismiss = { showSundrySheet = false }
+                    )
+                }
                 if (showResultDialog) {
                     TallyResultDialog(
                         message = "${state.message} ${state.data?.VoucherNumber}",
@@ -1173,6 +1190,7 @@ fun ExpandedItemEditor(
         }
     }
 }
+
 @Composable
 fun SundryCard(
     sundry: SundryItem,
