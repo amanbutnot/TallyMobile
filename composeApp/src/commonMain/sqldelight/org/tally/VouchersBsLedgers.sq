@@ -1,0 +1,17 @@
+CREATE TABLE Vouchers_BS_Ledgers (
+    GUID TEXT NOT NULL PRIMARY KEY,
+    VCH_GUID TEXT NOT NULL,
+    VchType TEXT,
+    VchName TEXT,
+    DATE TEXT,
+    VOUCHERNUMBER TEXT,
+    SRNO INTEGER,
+    CM1 TEXT,
+    CM2 TEXT,
+    D1 REAL,
+    D2 REAL,
+    D3 REAL
+);
+
+selectAll:
+SELECT * FROM Vouchers_BS_Ledgers WHERE VCH_GUID = ?;
