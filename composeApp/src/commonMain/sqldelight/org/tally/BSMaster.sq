@@ -1,0 +1,18 @@
+CREATE TABLE BSMaster (
+    Code INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name TEXT,
+    Alias TEXT,
+    PrintName TEXT,
+    I1 INTEGER,
+    I2 INTEGER,
+    I3 INTEGER,
+    I4 INTEGER,
+    I5 INTEGER,
+    D1 REAL,
+    D2 REAL,
+    D3 REAL,
+    GUID TEXT UNIQUE
+);
+
+selectAll:
+SELECT * FROM BSMaster;
