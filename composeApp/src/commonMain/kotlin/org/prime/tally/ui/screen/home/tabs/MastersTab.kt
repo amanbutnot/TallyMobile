@@ -43,6 +43,7 @@ import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.prime.tally.data.enums.MasterEnums
+import org.prime.tally.data.model.SalesmanPermission
 import org.prime.tally.ui.screen.MasterListScreen
 
 object MastersTab : Tab {
@@ -58,15 +59,12 @@ object MastersTab : Tab {
         val colors = MaterialTheme.colorScheme
         val nav = LocalNavigator.currentOrThrow.parent
         val tabNav = LocalTabNavigator.current
-        BackHandler(true){
+        BackHandler(true) {
             tabNav.current = HomeTab
         }
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(colors.background)
-                .verticalScroll(rememberScrollState())
-                .padding(20.dp),
+            modifier = Modifier.fillMaxSize().background(colors.background)
+                .verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
@@ -81,50 +79,54 @@ object MastersTab : Tab {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                MasterButton(
-                    Icons.Default.AccountBalance,
-                    "Accounts",
-                    modifier = Modifier.weight(1f)
-                ) {
-                    nav?.push(MasterListScreen(MasterEnums.ACCOUNTS))
+                SalesmanPermission("D1") {
+                    MasterButton(
+                        Icons.Default.AccountBalance, "Accounts", modifier = Modifier.weight(1f)
+                    ) {
+                        nav?.push(MasterListScreen(MasterEnums.ACCOUNTS))
+                    }
                 }
-                MasterButton(
-                    Icons.Default.Groups2,
-                    "Account Groups",
-                    modifier = Modifier.weight(1f)
-                ) { nav?.push(MasterListScreen(MasterEnums.ACCOUNT_GROUP))}
+                SalesmanPermission("D2"){
+                    MasterButton(
+                        Icons.Default.Groups2, "Account Groups", modifier = Modifier.weight(1f)
+                    ) { nav?.push(MasterListScreen(MasterEnums.ACCOUNT_GROUP)) }
+                }
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                MasterButton(
-                    Icons.Default.Inventory2,
-                    "Items",
-                    modifier = Modifier.weight(1f)
-                ) { nav?.push(MasterListScreen(MasterEnums.ITEMS))}
-                MasterButton(
-                    Icons.Default.Category,
-                    "Item Groups",
-                    modifier = Modifier.weight(1f)
-                ) { nav?.push(MasterListScreen(MasterEnums.ITEM_GROUP))}
+                SalesmanPermission("D3"){
+                    MasterButton(
+                        Icons.Default.Inventory2, "Items", modifier = Modifier.weight(1f)
+                    ) { nav?.push(MasterListScreen(MasterEnums.ITEMS)) }
+
+                }
+                SalesmanPermission("D4"){
+                    MasterButton(
+                        Icons.Default.Category, "Item Groups", modifier = Modifier.weight(1f)
+                    ) { nav?.push(MasterListScreen(MasterEnums.ITEM_GROUP)) }
+
+                }
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                MasterButton(
-                    Icons.Default.Straighten,
-                    "Units",
-                    modifier = Modifier.weight(1f)
-                ) { nav?.push(MasterListScreen(MasterEnums.ITEM_UNIT))}
-                MasterButton(
-                    Icons.Default.Warehouse,
-                    "Material Centers",
-                    modifier = Modifier.weight(1f)
-                ) { nav?.push(MasterListScreen(MasterEnums.MATERIAL_CENTER))}
+                SalesmanPermission("D5"){
+                    MasterButton(
+                        Icons.Default.Straighten, "Units", modifier = Modifier.weight(1f)
+                    ) { nav?.push(MasterListScreen(MasterEnums.ITEM_UNIT)) }
+
+                }
+                SalesmanPermission("D6"){
+
+                    MasterButton(
+                        Icons.Default.Warehouse, "Material Centers", modifier = Modifier.weight(1f)
+                    ) { nav?.push(MasterListScreen(MasterEnums.MATERIAL_CENTER)) }
+                }
             }
         }
     }
@@ -132,10 +134,7 @@ object MastersTab : Tab {
 
 @Composable
 fun MasterButton(
-    icon: ImageVector,
-    title: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    icon: ImageVector, title: String, modifier: Modifier = Modifier, onClick: () -> Unit
 ) {
     Card(
         modifier = modifier.height(140.dp),
@@ -144,19 +143,14 @@ fun MasterButton(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp,
-            pressedElevation = 8.dp
+            defaultElevation = 2.dp, pressedElevation = 8.dp
         ),
         border = BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
         ),
-        onClick = { onClick() }
-    ) {
+        onClick = { onClick() }) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -173,7 +167,9 @@ fun MasterButton(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Medium, overflow = TextOverflow.Ellipsis, maxLines = 1
+                fontWeight = FontWeight.Medium,
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 1
             )
         }
     }

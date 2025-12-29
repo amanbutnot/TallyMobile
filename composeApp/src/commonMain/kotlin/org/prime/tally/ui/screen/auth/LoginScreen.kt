@@ -60,7 +60,7 @@ object LoginScreen : Screen {
         val colors = MaterialTheme.colorScheme
         val type = MaterialTheme.typography
 
-        var email by remember { mutableStateOf("") }
+        var email by remember { mutableStateOf(SharedPrefs.LoginInfo.get() ?: "") }
         var password by remember { mutableStateOf("") }
         val viewModel: AuthViewModel = viewModel { AuthViewModel() }
         val state by viewModel.authState
@@ -84,7 +84,7 @@ object LoginScreen : Screen {
             title = "Login",
             onBack = { nav.replaceAll(OnBoardingScreen) },
             showEditIcon = false,
-        ) {paddingValues ->
+        ) { paddingValues ->
 
             Column(
                 modifier = Modifier
@@ -92,12 +92,17 @@ object LoginScreen : Screen {
                         rememberScrollState()
                     )
                     .background(colors.background),
-                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Top
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top
             )
 
 
             {
-            Image(painterResource(Res.drawable.splashImage), contentDescription = "App Icon", modifier = Modifier.size(200.dp))
+                Image(
+                    painterResource(Res.drawable.splashImage),
+                    contentDescription = "App Icon",
+                    modifier = Modifier.size(200.dp)
+                )
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -180,6 +185,8 @@ object LoginScreen : Screen {
                                         Password = password
                                     )
                                 ) {
+                                    SharedPrefs.LoginInfo.clear()
+                                    SharedPrefs.LoginInfo.save(email)
                                     nav.replaceAll(GoogleDriveDownloadScreen)
                                 }
                             },

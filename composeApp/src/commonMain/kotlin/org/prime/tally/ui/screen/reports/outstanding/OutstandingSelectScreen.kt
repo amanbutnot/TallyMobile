@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.tally.data.model.SalesmanPermission
 import org.prime.tally.ui.screen.home.tabs.ReportButton
 import org.prime.tally.ui.shared.composables.TallyScaffold
 
@@ -48,11 +49,6 @@ object OutstandingSelectScreen : Screen {
                     modifier = Modifier.padding(20.dp).padding(bottom = 8.dp),
                 )
 
-                val reports = listOf(
-                    Outstanding.Receivable,
-                    Outstanding.Payable,
-
-                    )
 
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
@@ -61,30 +57,37 @@ object OutstandingSelectScreen : Screen {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(reports) { report ->
-                        ReportButton(
-                            icon = report.icon,
-                            title = report.title,
-                            onClick = {
-                                nav.push(
-                                    OutstandingFilterScreen(report.title)
-                                )
-                            }
-                        )
+                    item{
+                        SalesmanPermission("D8"){
+                            ReportButton(
+                                icon = Icons.Default.AccountBalance,
+                                title = "Bill Receivable",
+                                onClick = {
+                                    nav.push(
+                                        OutstandingFilterScreen("Bill Receivable")
+                                    )
+                                }
+                            )
+                        }
                     }
+                    item{
+                        SalesmanPermission("D9"){
+                            ReportButton(
+                                icon = Icons.Default.AssignmentLate,
+                                title = "Bill Payable",
+                                onClick = {
+                                    nav.push(
+                                        OutstandingFilterScreen("Bill Payable")
+                                    )
+                                }
+                            )
+                        }
+                    }
+
                 }
 
             }
         }
 
 
-    }
-}
-
-
-sealed class Outstanding(val title: String, val icon: ImageVector) {
-    object Receivable : Outstanding("Bill Receivable", Icons.Default.AccountBalance)
-    object Payable : Outstanding("Bill Payable", Icons.Default.AssignmentLate)
-
-
-}
+    }}
