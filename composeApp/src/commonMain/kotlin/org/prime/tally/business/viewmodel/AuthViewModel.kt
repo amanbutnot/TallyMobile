@@ -23,7 +23,7 @@ class AuthViewModel : ViewModel() {
     val resetState: State<DataState<Unit>> = _resetState
 
 
-    fun clearValidateMessage(){
+    fun clearValidateMessage() {
         _validateState.value = _validateState.value.copy(error = null)
     }
 
@@ -72,7 +72,6 @@ class AuthViewModel : ViewModel() {
     }
 
 
-
     fun userLogin(loginRequest: LoginRequest, onSuccess: () -> Unit) {
         viewModelScope.launch {
 
@@ -100,6 +99,11 @@ class AuthViewModel : ViewModel() {
                 if (distributor != null) {
                     println("data saving: $distributor")
                     SharedPrefs.DistributorData.save(distributor)
+                }
+                val permissions = res.data?.permissions
+                if (permissions != null) {
+                    println("data saving: $permissions")
+                    SharedPrefs.Permissions.save(permissions)
                 }
                 onSuccess()
             } else {

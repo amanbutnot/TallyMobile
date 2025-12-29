@@ -1,6 +1,8 @@
 package org.prime.tally.data.model
 
+import androidx.compose.runtime.Composable
 import kotlinx.serialization.Serializable
+import org.prime.tally.data.utils.SharedPrefs
 
 
 @Serializable
@@ -37,7 +39,8 @@ data class LoginResponse(
     val C10: String,
     val token: String,
     val token_expiry: String,
-    val distributor: Distributor? = null
+    val distributor: Distributor? = null,
+    val permissions: Permissions? = null
 )
 
 @Serializable
@@ -46,6 +49,125 @@ data class Distributor(
     val ledger_name: String,
     val ledger_GUID: String
 )
+
+@Serializable
+data class Permissions(
+    val D1: Int,
+    val D2: Int,
+    val D3: Int,
+    val D4: Int,
+    val D5: Int,
+    val D6: Int,
+    val D7: Int,
+    val D8: Int,
+    val D9: Int,
+    val D10: Int,
+    val D11: Int,
+    val D12: Int,
+    val D13: Int,
+    val D14: Int,
+    val D15: Int,
+    val D16: Int,
+    val D17: Int,
+    val D18: Int,
+    val D19: Int,
+    val D20: Int,
+    val D21: Int,
+    val D22: Int,
+    val D23: Int,
+    val D24: Int,
+    val D25: Int,
+    val D26: Int,
+    val D27: Int,
+    val D28: Int,
+    val D29: Int,
+    val D30: Int,
+    val D31: Int,
+    val D32: Int,
+    val D33: Int,
+    val D34: Int,
+    val D35: Int,
+    val D36: Int,
+    val D37: Int,
+    val D38: Int,
+    val D39: Int,
+    val D40: Int,
+    val D41: Int,
+    val D42: Int,
+    val D43: Int,
+    val D44: Int,
+    val D45: Int,
+    val D46: Int,
+    val D47: Int,
+    val D48: Int,
+    val D49: Int,
+    val D50: Int
+) {
+    fun isEnabled(flag: String): Boolean {
+        return when (flag) {
+            "D1" -> D1 == 0
+            "D2" -> D2 == 0
+            "D3" -> D3 == 0
+            "D4" -> D4 == 0
+            "D5" -> D5 == 0
+            "D6" -> D6 == 0
+            "D7" -> D7 == 0
+            "D8" -> D8 == 0
+            "D9" -> D9 == 0
+            "D10" -> D10 == 0
+            "D11" -> D11 == 0
+            "D12" -> D12 == 0
+            "D13" -> D13 == 0
+            "D14" -> D14 == 0
+            "D15" -> D15 == 0
+            "D16" -> D16 == 0
+            "D17" -> D17 == 0
+            "D18" -> D18 == 0
+            "D19" -> D19 == 0
+            "D20" -> D20 == 0
+            "D21" -> D21 == 0
+            "D22" -> D22 == 0
+            "D23" -> D23 == 0
+            "D24" -> D24 == 0
+            "D25" -> D25 == 0
+            "D26" -> D26 == 0
+            "D27" -> D27 == 0
+            "D28" -> D28 == 0
+            "D29" -> D29 == 0
+            "D30" -> D30 == 0
+            "D31" -> D31 == 0
+            "D32" -> D32 == 0
+            "D33" -> D33 == 0
+            "D34" -> D34 == 0
+            "D35" -> D35 == 0
+            "D36" -> D36 == 0
+            "D37" -> D37 == 0
+            "D38" -> D38 == 0
+            "D39" -> D39 == 0
+            "D40" -> D40 == 0
+            "D41" -> D41 == 0
+            "D42" -> D42 == 0
+            "D43" -> D43 == 0
+            "D44" -> D44 == 0
+            "D45" -> D45 == 0
+            "D46" -> D46 == 0
+            "D47" -> D47 == 0
+            "D48" -> D48 == 0
+            "D49" -> D49 == 0
+            "D50" -> D50 == 0
+            else -> false
+        }
+    }
+}
+
+@Composable
+fun SalesmanPermission(flag: String, block: @Composable () -> Unit) {
+    val permissions = SharedPrefs.Permissions.get()
+    if (permissions == null || permissions.isEnabled(flag)) {
+        block()
+    }
+}
+
 
 @Serializable
 data class RegisterRequest(
@@ -71,6 +193,6 @@ data class RegisterResponse(
 
 @Serializable
 data class ForgotResponse(
-    val ID:Int,
+    val ID: Int,
     val FirstName: String
 )
