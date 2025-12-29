@@ -192,30 +192,30 @@ object SettingScreen : Screen {
                         color = colors.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
                     )
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        ManagementCard(
-                            icon = Icons.Default.Add,
-                            label = "Create",
-                            subtitle = "New Salesman",
-                            containerColor = colors.secondaryContainer,
-                            contentColor = colors.onSecondaryContainer,
-                            onClick = { /* TODO: Navigate to CreateSalesmanScreen */ },
-                            modifier = Modifier.weight(1f)
-                        )
-                        ManagementCard(
-                            icon = Icons.Default.List,
-                            label = "View All",
-                            subtitle = "Salesmen",
-                            containerColor = colors.secondary,
-                            contentColor = colors.onSecondary,
-                            onClick = { /* TODO: Navigate to ListSalesmanScreen */ },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+//
+//                    Row(
+//                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+//                        modifier = Modifier.fillMaxWidth()
+//                    ) {
+//                        ManagementCard(
+//                            icon = Icons.Default.Add,
+//                            label = "Create",
+//                            subtitle = "New Salesman",
+//                            containerColor = colors.secondaryContainer,
+//                            contentColor = colors.onSecondaryContainer,
+//                            onClick = { /* TODO: Navigate to CreateSalesmanScreen */ },
+//                            modifier = Modifier.weight(1f)
+//                        )
+//                        ManagementCard(
+//                            icon = Icons.Default.List,
+//                            label = "View All",
+//                            subtitle = "Salesmen",
+//                            containerColor = colors.secondary,
+//                            contentColor = colors.onSecondary,
+//                            onClick = { /* TODO: Navigate to ListSalesmanScreen */ },
+//                            modifier = Modifier.weight(1f)
+//                        )
+//                    }
 
                     Spacer(modifier = Modifier.height(20.dp))
                     TallyDivider()
@@ -309,6 +309,7 @@ object SettingScreen : Screen {
                             SharedPrefs.Token.clear()
                             SharedPrefs.FileId.clear()
                             SharedPrefs.DistributorData.clear()
+                            SharedPrefs.Permissions.clear()
                             deleteDbFile()
                             nav.replaceAll(OnBoardingScreen)
                         },

@@ -101,5 +101,36 @@ object SharedPrefs {
             settings.remove(KEY)
         }
     }
+    object Permissions {
+        private const val KEY = "permissoins"
 
+        fun save(permissions: org.prime.tally.data.model.Permissions) {
+            val json = Json.encodeToString(permissions)
+            settings.putString(KEY, json)
+        }
+
+        fun get(): org.prime.tally.data.model.Permissions? {
+            val stored = settings.getStringOrNull(KEY) ?: return null
+            return runCatching { Json.decodeFromString<org.prime.tally.data.model.Permissions>(stored) }.getOrNull()
+        }
+
+        fun clear() {
+            settings.remove(KEY)
+        }
+    }
+
+    object LoginInfo {
+        private const val KEY = "loginInfo"
+        fun save(login: String) {
+            settings.putString(KEY, login)
+        }
+
+        fun get(): String? {
+            return settings.getStringOrNull(KEY)
+        }
+
+        fun clear() {
+            settings.remove(KEY)
+        }
+    }
 }
