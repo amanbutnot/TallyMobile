@@ -1,0 +1,21 @@
+CREATE TABLE ProductStock (
+    MasterCode1 REAL,
+    MasterCode2 REAL,
+    Value1 REAL,
+    Value2 REAL,
+    Value3 REAL,
+    GUID TEXT NOT NULL UNIQUE
+);
+
+
+getProductStockItemList:
+SELECT
+    pps.*,
+    p.Name AS ProductName,
+	p.UnitName,
+    g.Name AS GodownName
+FROM ProductStock    pps
+JOIN Products p
+    ON p.GUID = pps.MasterCode1
+JOIN GodownMaster g
+    ON g.GUID = pps.MasterCode2;

@@ -8,6 +8,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -52,7 +56,7 @@ import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductStockList
 
-object ProductReportScreen : Screen {
+data class ProductReportScreen(val productGuid:String?=null) : Screen {
     @Composable
     override fun Content() {
         val db = DatabaseHolder.instance
@@ -81,7 +85,8 @@ object ProductReportScreen : Screen {
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
-                list = db.productParamStockQueries.getProductStockList().executeAsList()
+                println(productGuid)
+                list = db.productParamStockQueries.getProductStockList(productGuid).executeAsList()
             }
             isLoading = false
         }
@@ -242,15 +247,15 @@ object ProductReportScreen : Screen {
                                 )
                             }
                         }
-
+                        val state = rememberLazyListState()
                         // Data rows with vertical scroll
-                        Column(
+                        LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .weight(1f)
-                                .verticalScroll(verticalScrollState)
-                        ) {
-                            filteredList.forEachIndexed { index, item ->
+                                .weight(1f), state = state
+                        )
+                        {
+                            itemsIndexed(items = filteredList) { index, item ->
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = CardDefaults.cardColors(

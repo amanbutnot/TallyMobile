@@ -16,10 +16,12 @@ CREATE TABLE Product_Param_Stock (
 getProductStockList:
 SELECT
     pps.*,
-    p.Name  AS ProductName,
-    g.Name  AS GodownName
+    p.Name AS ProductName,
+    g.Name AS GodownName
 FROM Product_Param_Stock pps
 JOIN Products p
     ON p.GUID = pps.MasterCode1
 JOIN GodownMaster g
-    ON g.GUID = pps.MasterCode2;
+    ON g.GUID = pps.MasterCode2
+WHERE
+    (:productGuid IS NULL OR p.GUID = :productGuid);
