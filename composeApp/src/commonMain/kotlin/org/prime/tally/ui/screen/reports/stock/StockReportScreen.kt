@@ -31,6 +31,7 @@ import org.prime.tally.data.expect.formatToAmtDec
 import org.prime.tally.data.expect.formatToQtyDec
 import org.prime.tally.ui.printing.Quadruple
 import org.prime.tally.ui.printing.fourHeaderHtml
+import org.prime.tally.ui.screen.reports.productReport.ProductReportScreen
 import org.prime.tally.ui.shared.composables.MenuItemData
 import org.prime.tally.ui.shared.composables.TallyCircularLoader
 import org.prime.tally.ui.shared.composables.TallyLoadingDialog
@@ -45,6 +46,7 @@ import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.tally.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.tally.ui.shared.reportsShared.TallyReportLazyList
 import org.prime.tally.ui.shared.reportsShared.handlePdfAction
+import org.tally.GetProductStockItemList
 import org.tally.StockReportList
 import kotlin.math.absoluteValue
 
@@ -54,7 +56,7 @@ object StockReportScreen : Screen {
 
         val db = DatabaseHolder.instance
 
-        var list by remember { mutableStateOf<List<StockReportList>>(emptyList()) }
+        var list by remember { mutableStateOf<List<GetProductStockItemList>>(emptyList()) }
         var isLoading by remember { mutableStateOf(true) }
         var showSearchBar by remember { mutableStateOf(false) }
         var searchQuery by remember { mutableStateOf("") }
@@ -69,14 +71,14 @@ object StockReportScreen : Screen {
         val column3Weight = 0.2f
         val column4Weight = 0.4f
 
-        val totalQty = list.sumOf { it.Item_Qty ?: 0.0 }
-        val totalAmt = list.sumOf { it.Item_Amt ?: 0.0 }
+        val totalQty = list.sumOf { it.Value1 ?: 0.0 }
+        val totalAmt = list.sumOf { it.Value3 ?: 0.0 }
 
 
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
-                list = db.vouchersStockItemsQueries.stockReportList().executeAsList()
+                list = db.productStockQueries.getProductStockItemList().executeAsList()
                 withContext(Dispatchers.Main) {
                     isLoading = false
                 }
@@ -92,7 +94,7 @@ object StockReportScreen : Screen {
             list
         } else {
             list.filter {
-                it.Item_Name?.startsWith(
+                it.ProductName?.startsWith(
                     searchQuery,
                     ignoreCase = true
                 ) == true
@@ -101,10 +103,10 @@ object StockReportScreen : Screen {
 
         val rows: List<Quadruple<String, String, String, String>> = filteredList.map { item ->
             Quadruple(
-                item.Item_Name ?: "",
-                item.Item_Unit ?: "",
-                item.Item_Qty?.formatToQtyDec() ?: "-",
-                item.Item_Amt?.formatToAmtDec() ?: ""
+                item.ProductName ?: "",
+                item.UnitName ?: "",
+                item.Value1?.formatToQtyDec() ?: "-",
+                item.Value3?.formatToAmtDec() ?: ""
             )
         }
 
@@ -207,11 +209,11 @@ object StockReportScreen : Screen {
                                     column1Weight,
                                     TextAlign.Start
                                 ),
-                                ReportColumn(
-                                    "Unit",
-                                    column2Weight,
-                                    TextAlign.End
-                                ),
+//                                ReportColumn(
+//                                    "Unit",
+//                                    column2Weight,
+//                                    TextAlign.End
+//                                ),
                                 ReportColumn(
                                     "Qty",
                                     column3Weight,
@@ -224,34 +226,40 @@ object StockReportScreen : Screen {
                                 )
                             )
                         )
+
                         TallyReportLazyList(
                             items = filteredList,
                             onItemClick = { item ->
-                                nav.push(StockItemReportScreen(item.Item_Name))
+                             //TODO: this is the StockItemReportListScreen
+                                          //   nav.push(StockItemReportScreen(item.Item_Name))
+                                println(item.MasterCode1?.toInt())
+                                nav.push(ProductReportScreen(item.MasterCode1?.toInt().toString()))
 
                             },
+
                             content = { item ->
                                 TableCell(
-                                    text = item.Item_Name ?: "",
+                                    text = item.ProductName ?: "",
                                     weight = column1Weight,
                                     textAlign = TextAlign.Companion.Start,
                                     isHeader = false
                                 )
-
+                                //TODO: ENABLE LATER
+//
+//                                TableCell(
+//                                    text = item.Item_Unit.toString(),
+//                                    weight = column2Weight,
+//                                    textAlign = TextAlign.Companion.End,
+//                                    isHeader = false
+//                                )
                                 TableCell(
-                                    text = item.Item_Unit.toString(),
-                                    weight = column2Weight,
-                                    textAlign = TextAlign.Companion.End,
-                                    isHeader = false
-                                )
-                                TableCell(
-                                    text = item.Item_Qty?.formatToQtyDec()?:"-",
+                                    text = item.Value1?.formatToQtyDec()?:"-",
                                     weight = column3Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false
                                 )
                                 TableCell(
-                                    text = item.Item_Amt?.formatToAmtDec()?:"-",
+                                    text = item.Value3?.formatToAmtDec()?:"-",
                                     weight = column4Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false

@@ -32,6 +32,7 @@ stockReportList:
 SELECT
     CM1 AS Item_Name,
     CM3 AS Item_Unit,
+    GUID AS Guid,
     SUM(D1) AS Item_Qty,
     SUM(D3) AS Item_Amt
 FROM Vouchers_StockItems

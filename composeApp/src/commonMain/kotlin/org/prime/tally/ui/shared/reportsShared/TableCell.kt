@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -94,10 +95,11 @@ fun <T> TallyReportLazyList(
     onItemClick: (T) -> Unit = {},
     content: @Composable RowScope.(T) -> Unit
 ) {
+    val state = rememberLazyListState()
     LazyColumn(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(), state = state
     ) {
-        items(items) { item ->
+        items(items = items) { item ->
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
