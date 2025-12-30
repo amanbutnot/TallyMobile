@@ -43,6 +43,7 @@ import org.prime.tally.ui.shared.composables.TallyButton
 import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyResultDialog
 import org.prime.tally.ui.shared.composables.TallyScaffold
+import org.prime.tally.ui.shared.globalShared.getLedgerMasters
 
 data class SingleEntryReceipt(
     val name: String,
@@ -81,7 +82,7 @@ data class SingleEntryReceipt(
         var showPopup by remember { mutableStateOf(false) }
         var showBottomSheet by rememberSaveable { mutableStateOf(false) }
         var showSettlementBottomSheet by rememberSaveable { mutableStateOf(false) }
-        val list = db.ledgerMasterQueries.selectAll().executeAsList()
+        val list =getLedgerMasters(db)
 
 
         val viewmodel: SingleEntryViewModel = viewModel { SingleEntryViewModel() }

@@ -31,6 +31,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -45,8 +49,11 @@ import cafe.adriel.voyager.navigator.internal.BackHandler
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import org.prime.tally.data.model.salesmanPermission
 import org.prime.tally.ui.screen.attendance.AttendanceListScreen
 import org.prime.tally.ui.screen.transactions.SingleEntryFilterScreen
+import org.prime.tally.ui.screen.transactions.SingleEntryReceipt
+import org.prime.tally.ui.shared.composables.PermissionDeniedDialog
 
 object TransactionTab : Tab {
     override val options: TabOptions
@@ -84,6 +91,8 @@ object TransactionTab : Tab {
         BackHandler(true) {
             tabNav.current = HomeTab
         }
+        var showDeniedDialog by remember { mutableStateOf(false) }
+
 
         Column(
             modifier = Modifier
@@ -117,47 +126,101 @@ object TransactionTab : Tab {
                 title = "Inventory",
                 tranList = inventoryList, onClick = { index, type ->
                     when (index) {
-                        0 -> nav?.push(
-                            SingleEntryFilterScreen(
-                                type.name,
-                                vchType = 12
+                        0 -> {
+                            salesmanPermission(
+                                "D20",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        SingleEntryFilterScreen(
+                                            type.name,
+                                            vchType = 12
+                                        )
+                                    )
+                                }
                             )
-                        )
 
-                        1 -> nav?.push(
-                            SingleEntryFilterScreen(
-                                type.name,
-                                vchType = 3
-                            )
-                        )
+                        }
 
-                        2 -> nav?.push(
-                            SingleEntryFilterScreen(
-                                type.name,
-                                vchType = 9
+                        1 -> {
+                            salesmanPermission(
+                                "D24",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        SingleEntryFilterScreen(
+                                            type.name,
+                                            vchType = 3
+                                        )
+                                    )
+                                }
                             )
-                        )
 
-                        3 -> nav?.push(
-                            SingleEntryFilterScreen(
-                                type.name,
-                                vchType = 13
-                            )
-                        )
+                        }
 
-                        4 -> nav?.push(
-                            SingleEntryFilterScreen(
-                                type.name,
-                                vchType = 10
+                        2 -> {
+                            salesmanPermission(
+                                "D21",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        SingleEntryFilterScreen(
+                                            type.name,
+                                            vchType = 9
+                                        )
+                                    )
+                                }
                             )
-                        )
 
-                        5 -> nav?.push(
-                            SingleEntryFilterScreen(
-                                type.name,
-                                vchType = 2
+                        }
+
+                        3 -> {
+                            salesmanPermission(
+                                "D25",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        SingleEntryFilterScreen(
+                                            type.name,
+                                            vchType = 13
+                                        )
+                                    )
+                                }
                             )
-                        )
+
+                        }
+
+                        4 -> {
+                            salesmanPermission(
+                                "D27",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        SingleEntryFilterScreen(
+                                            type.name,
+                                            vchType = 10
+                                        )
+                                    )
+                                }
+                            )
+
+                        }
+
+                        5 -> {
+                            salesmanPermission(
+                                "D26",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        SingleEntryFilterScreen(
+                                            type.name,
+                                            vchType = 2
+                                        )
+                                    )
+                                }
+                            )
+
+                        }
 
                         6 -> nav?.push(
                             SingleEntryFilterScreen(
@@ -174,53 +237,111 @@ object TransactionTab : Tab {
                 title = "Entry Types",
                 tranList = entryList, onClick = { index, type ->
                     when (index) {
-                        0 -> nav?.push(
-                            SingleEntryFilterScreen(
-                                type.name,
-                                vchType = 14
+                        0 -> {
+                            salesmanPermission(
+                                "D17",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        SingleEntryFilterScreen(
+                                            type.name,
+                                            vchType = 14
+                                        )
+                                    )
+                                }
                             )
-                        )
 
-                        1 -> nav?.push(
-                            SingleEntryFilterScreen(
-                                type.name,
-                                vchType = 19
-                            )
-                        )
-
-                        2 -> nav?.push(
-                            SingleEntryFilterScreen(
-                                type.name,
-                                vchType = 16
-                            )
-                        )
-
-                        3 -> nav?.push(
-                            SingleEntryFilterScreen(
-                                type.name,
-                                vchType = 15
-                            )
-                        )
-                        4 -> {
-                            nav?.push(
-                                AttendanceListScreen(
-                                    isCheckIn = true,
-                                    name = "Check In/Out"
-                                )
-                            )
                         }
 
-                        5 -> {
-                            nav?.push(
-                                AttendanceListScreen(
-                                    isCheckIn = false,
-                                    name = "Attendance Filter"
-                                )
+                        1 -> {
+                            salesmanPermission(
+                                "D18",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        SingleEntryFilterScreen(
+                                            type.name,
+                                            vchType = 19
+                                        )
+                                    )
+                                }
                             )
+
+                        }
+
+                        2 -> {
+                            salesmanPermission(
+                                "D19",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        SingleEntryFilterScreen(
+                                            type.name,
+                                            vchType = 16
+                                        )
+                                    )
+                                }
+                            )
+
+                        }
+
+                        3 -> {
+                            salesmanPermission(
+                                "D28",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        SingleEntryFilterScreen(
+                                            type.name,
+                                            vchType = 15
+                                        )
+                                    )
+                                }
+                            )
+
+                        }
+                        4 ->
+                        {
+                            salesmanPermission(
+                                "D22",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        AttendanceListScreen(
+                                            isCheckIn = true,
+                                            name = "Check In/Out"
+                                        )
+                                    )
+                                }
+                            )
+
+                        }
+
+
+                        5 ->
+
+                        {
+                            salesmanPermission(
+                                "D23",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        AttendanceListScreen(
+                                            isCheckIn = false,
+                                            name = "Attendance Filter"
+                                        )
+                                    )
+                                }
+                            )
+
                         }
                     }
                 }
             )
+
+            if (showDeniedDialog) {
+                PermissionDeniedDialog { showDeniedDialog = false }
+            }
         }
     }
 }
