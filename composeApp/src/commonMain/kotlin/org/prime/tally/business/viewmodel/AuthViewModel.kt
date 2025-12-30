@@ -100,10 +100,14 @@ class AuthViewModel : ViewModel() {
                     println("data saving: $distributor")
                     SharedPrefs.DistributorData.save(distributor)
                 }
-                val permissions = res.data?.permissions
-                if (permissions != null) {
-                    println("data saving: $permissions")
-                    SharedPrefs.Permissions.save(permissions)
+                println("ADMIOAJFDLKJDS ${res.data?.role != "admin"}")
+                if(res.data?.role != "admin"){
+                    val permissions = res.data?.permissions
+                    if (permissions != null) {
+                        println("data saving: $permissions")
+                        SharedPrefs.Permissions.save(permissions)
+                    }
+//TODO: FILE ID (Data not found)
                 }
                 onSuccess()
             } else {

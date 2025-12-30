@@ -50,6 +50,7 @@ import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyResultDialog
 import org.prime.tally.ui.shared.composables.TallyScaffold
 import org.prime.tally.ui.shared.composables.TallyTextField
+import org.prime.tally.ui.shared.globalShared.getLedgerMasters
 
 data class CreateDistributorScreen(
     val isEdit: Boolean = false,
@@ -74,7 +75,7 @@ data class CreateDistributorScreen(
         var showBottomSheet by remember { mutableStateOf(false) }
         var showSuccessDialog by remember { mutableStateOf(false) }
         val db = DatabaseHolder.instance
-        val list = db.ledgerMasterQueries.selectAll().executeAsList()
+        val list = getLedgerMasters(db)
 
         val viewModel: DistributorViewModel = viewModel { DistributorViewModel() }
         val state by viewModel.dataState
