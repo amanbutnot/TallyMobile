@@ -1,6 +1,5 @@
 package org.prime.tally.data.model
 
-import androidx.compose.runtime.Composable
 import kotlinx.serialization.Serializable
 import org.prime.tally.data.utils.SharedPrefs
 
@@ -39,6 +38,7 @@ data class LoginResponse(
     val C10: String,
     val token: String,
     val token_expiry: String,
+    val role: String,
     val distributor: Distributor? = null,
     val permissions: Permissions? = null
 )
@@ -52,6 +52,15 @@ data class Distributor(
 
 @Serializable
 data class Permissions(
+    val FilterAGRP:String,
+    val ConfigAGRP:String,
+    val FilterAccounts:String,
+    val ConfigAccounts:String,
+    val FilterIGRP:String,
+    val ConfigIGRP:String,
+    val FilterItems:String,
+    val ConfigItems:String,
+    val FilterMobile: String,
     val D1: Int,
     val D2: Int,
     val D3: Int,
@@ -160,11 +169,19 @@ data class Permissions(
     }
 }
 
-@Composable
-fun SalesmanPermission(flag: String, block: @Composable () -> Unit) {
+fun salesmanPermission(flag: String, accessDeniedBlock: () -> Unit, successBlock: () -> Unit) {
+    println("Sending value of D: $flag")
     val permissions = SharedPrefs.Permissions.get()
-    if (permissions == null || permissions.isEnabled(flag)) {
-        block()
+    println("Filter Mobile value: ${permissions?.FilterMobile}")
+
+    if (permissions?.FilterMobile == "N" || permissions == null) {
+        successBlock()
+    } else {
+        if (permissions.isEnabled(flag) && permissions.FilterMobile == "Y") {
+            successBlock()
+        } else {
+            accessDeniedBlock()
+        }
     }
 }
 

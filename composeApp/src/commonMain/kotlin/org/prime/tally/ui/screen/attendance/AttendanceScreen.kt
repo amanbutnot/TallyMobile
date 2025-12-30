@@ -77,6 +77,7 @@ import org.prime.tally.ui.shared.composables.TallyButton
 import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyResultDialog
 import org.prime.tally.ui.shared.composables.TallyScaffold
+import org.prime.tally.ui.shared.globalShared.getLedgerMasters
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -108,7 +109,7 @@ data class AttendanceScreen(
         var showBottomSheet by rememberSaveable { mutableStateOf(false) }
 
         val db = DatabaseHolder.instance
-        val list = db.ledgerMasterQueries.selectAll().executeAsList()
+        val list = getLedgerMasters(db)
 
         val lastAttendanceDate = SharedPrefs.AttendanceDate.get()
         val lastCheckInOutDate = SharedPrefs.CheckInOutDate.get()
