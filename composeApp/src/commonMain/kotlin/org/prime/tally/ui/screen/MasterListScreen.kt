@@ -51,7 +51,9 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import org.prime.tally.data.enums.MasterEnums
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.shared.composables.TallyScaffold
+import org.prime.tally.ui.shared.globalShared.getLedgerMasters
 import org.tally.GodownMaster
 import org.tally.LedgerGroupMaster
 import org.tally.LedgerMaster
@@ -69,9 +71,11 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
         val showBottomSheet = remember { mutableStateOf(false) }
         val selectedItem = remember { mutableStateOf<Any?>(null) }
 
+
         LaunchedEffect(Unit) {
             allItems.value = when (masterEnum) {
-                MasterEnums.ACCOUNTS -> db.ledgerMasterQueries.selectAll().executeAsList()
+
+                MasterEnums.ACCOUNTS -> getLedgerMasters(db)
                 MasterEnums.ACCOUNT_GROUP -> db.ledgerGroupMasterQueries.selectAll().executeAsList()
                 MasterEnums.ITEMS -> db.productsQueries.selectAll().executeAsList()
                 MasterEnums.ITEM_GROUP -> db.productGroupMasterQueries.selectAll().executeAsList()

@@ -76,6 +76,7 @@ import dev.jordond.compass.geolocation.Locator
 import dev.jordond.compass.geolocation.mobile.mobile
 import kotlinx.coroutines.launch
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.model.salesmanPermission
 import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.screen.attendance.AttendanceScreen
 import org.prime.tally.ui.screen.attendance.formatAddress
@@ -87,6 +88,7 @@ import org.prime.tally.ui.screen.reports.outstanding.OutstandingReportScreen
 import org.prime.tally.ui.screen.reports.registers.RegisterReportScreen
 import org.prime.tally.ui.screen.transactions.SingleEntryReceipt
 import org.prime.tally.ui.screen.transactions.sale.SaleScreen
+import org.prime.tally.ui.shared.composables.PermissionDeniedDialog
 import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.globalShared.CompanyName
 import org.prime.tally.ui.shared.globalShared.StartDate
@@ -357,6 +359,11 @@ fun ExpandableGrid() {
         )
     }
 
+    var showDeniedDialog by remember { mutableStateOf(false) }
+
+    if (showDeniedDialog) {
+        PermissionDeniedDialog { showDeniedDialog = false }
+    }
     if (showLoading) {
         TallyLoadingDialog("Getting Location")
     }
@@ -407,85 +414,238 @@ fun ExpandableGrid() {
                         "Show More" -> expanded = true
                         "Show Less" -> expanded = false
 
-                        "Receipt" -> nav?.push(SingleEntryReceipt(name.first, vchType = 14))
-                        "Payment" -> nav?.push(SingleEntryReceipt(name.first, vchType = 19))
-                        "Journal" -> nav?.push(SingleEntryReceipt(name.first, vchType = 16))
-                        "Sale Order" -> nav?.push(SaleScreen(name = name.first, vchType = 12))
-                        "Sale Return" -> nav?.push(SaleScreen(name = name.first, vchType = 3))
-                        "Sale Invoice" -> nav?.push(SaleScreen(name = name.first, vchType = 9))
-                        "Check In/Out" -> scope.launch {
-                            showLoading = true
-                            try {
-                                val locator = Locator.mobile()
-                                val geolocator = Geolocator(locator)
-
-                                when (val result =
-                                    geolocator.current(Priority.HighAccuracy)) {
-                                    is GeolocatorResult.Success -> {
-                                        val c = result.data.coordinates
-                                        val lat = c.latitude
-                                        val lon = c.longitude
-                                        val place =
-                                            getPlaceFromCoordinates(lat, lon)
-                                        val address =
-                                            place?.let { formatAddress(it) }
-                                                ?: "Address not found"
-                                        nav?.push(
-                                            AttendanceScreen(
-                                                lat, lon, address,
-                                                isAttendance = false
-                                            )
+                        "Receipt" -> {
+                            salesmanPermission(
+                                "D17",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        SingleEntryReceipt(
+                                            name.first,
+                                            vchType = 14
                                         )
-                                    }
-
-                                    is GeolocatorResult.Error -> {
-                                        showLocationPopup = true
-                                    }
+                                    )
                                 }
-                            } finally {
-                                showLoading = false
-                            }
+                            )
+
                         }
 
-                        "Attendance" -> scope.launch {
-                            showLoading = true
-                            try {
-                                val locator = Locator.mobile()
-                                val geolocator = Geolocator(locator)
-
-                                when (val result =
-                                    geolocator.current(Priority.HighAccuracy)) {
-                                    is GeolocatorResult.Success -> {
-                                        val c = result.data.coordinates
-                                        val lat = c.latitude
-                                        val lon = c.longitude
-                                        val place =
-                                            getPlaceFromCoordinates(lat, lon)
-                                        val address =
-                                            place?.let { formatAddress(it) }
-                                                ?: "Address not found"
-                                        nav?.push(
-                                            AttendanceScreen(
-                                                lat, lon, address,
-                                                isAttendance = true
-                                            )
+                        "Payment" -> {
+                            salesmanPermission(
+                                "D18",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        SingleEntryReceipt(
+                                            name.first,
+                                            vchType = 19
                                         )
-                                    }
-
-                                    is GeolocatorResult.Error -> {
-                                        showLocationPopup = true
-                                    }
+                                    )
                                 }
-                            } finally {
-                                showLoading = false
-                            }
+                            )
+
                         }
 
-                        "Purchase Order" -> nav?.push(SaleScreen(name = name.first, vchType = 13))
-                        "Purchase Invoice" -> nav?.push(SaleScreen(name = name.first, vchType = 2))
-                        "Purchase Return" -> nav?.push(SaleScreen(name = name.first, vchType = 10))
+                        "Journal" -> {
+                            salesmanPermission(
+                                "D19",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        SingleEntryReceipt(
+                                            name.first,
+                                            vchType = 16
+                                        )
+                                    )
+                                }
+                            )
+
+                        }
+
+                        "Sale Order" -> {
+                            salesmanPermission(
+                                "D20",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        SaleScreen(
+                                            name.first,
+                                            vchType = 12
+                                        )
+                                    )
+                                }
+                            )
+
+                        }
+
+                        "Sale Return" -> salesmanPermission(
+                            "D24",
+                            accessDeniedBlock = { showDeniedDialog = true },
+                            successBlock = {
+                                nav?.push(
+                                    SaleScreen(
+                                        name.first,
+                                        vchType = 3
+                                    )
+                                )
+                            }
+                        )
+
+                        "Sale Invoice" -> {
+                            salesmanPermission(
+                                "D21",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav?.push(
+                                        SaleScreen(
+                                            name.first,
+                                            vchType = 9
+                                        )
+                                    )
+                                }
+                            )
+
+                        }
+
+                        "Check In/Out" -> {
+
+                            salesmanPermission(
+                                "D22",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    scope.launch {
+                                        showLoading = true
+                                        try {
+                                            val locator = Locator.mobile()
+                                            val geolocator = Geolocator(locator)
+
+                                            when (val result =
+                                                geolocator.current(Priority.HighAccuracy)) {
+                                                is GeolocatorResult.Success -> {
+                                                    val c = result.data.coordinates
+                                                    val lat = c.latitude
+                                                    val lon = c.longitude
+                                                    val place =
+                                                        getPlaceFromCoordinates(lat, lon)
+                                                    val address =
+                                                        place?.let { formatAddress(it) }
+                                                            ?: "Address not found"
+                                                    nav?.push(
+                                                        AttendanceScreen(
+                                                            lat, lon, address,
+                                                            isAttendance = false
+                                                        )
+                                                    )
+                                                }
+
+                                                is GeolocatorResult.Error -> {
+                                                    showLocationPopup = true
+                                                }
+                                            }
+                                        } finally {
+                                            showLoading = false
+                                        }
+                                    }
+                                }
+                            )
+
+
+                        }
+
+                        "Attendance" -> {
+                            salesmanPermission(
+                                "D23",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    scope.launch {
+                                        showLoading = true
+                                        try {
+                                            val locator = Locator.mobile()
+                                            val geolocator = Geolocator(locator)
+
+                                            when (val result =
+                                                geolocator.current(Priority.HighAccuracy)) {
+                                                is GeolocatorResult.Success -> {
+                                                    val c = result.data.coordinates
+                                                    val lat = c.latitude
+                                                    val lon = c.longitude
+                                                    val place =
+                                                        getPlaceFromCoordinates(lat, lon)
+                                                    val address =
+                                                        place?.let { formatAddress(it) }
+                                                            ?: "Address not found"
+                                                    nav?.push(
+                                                        AttendanceScreen(
+                                                            lat, lon, address,
+                                                            isAttendance = true
+                                                        )
+                                                    )
+                                                }
+
+                                                is GeolocatorResult.Error -> {
+                                                    showLocationPopup = true
+                                                }
+                                            }
+                                        } finally {
+                                            showLoading = false
+                                        }
+                                    }
+                                }
+                            )
+
+                        }
+
+                        "Purchase Order" -> salesmanPermission(
+                            "D25",
+                            accessDeniedBlock = { showDeniedDialog = true },
+                            successBlock = {
+                                nav?.push(
+                                    SaleScreen(
+                                        name.first,
+                                        vchType = 13
+                                    )
+                                )
+                            }
+                        )
+
+                        "Purchase Invoice" -> salesmanPermission(
+                            "D26",
+                            accessDeniedBlock = { showDeniedDialog = true },
+                            successBlock = {
+                                nav?.push(
+                                    SaleScreen(
+                                        name.first,
+                                        vchType = 2
+                                    )
+                                )
+                            }
+                        )
+
+                        "Purchase Return" -> salesmanPermission(
+                            "D27",
+                            accessDeniedBlock = { showDeniedDialog = true },
+                            successBlock = {
+                                nav?.push(
+                                    SaleScreen(
+                                        name.first,
+                                        vchType = 10
+                                    )
+                                )
+                            }
+                        )
                         // "Stock Transfer" -> nav?.push(SaleScreen(name = name.first, vchType = 7))
-                        "Contra" -> nav?.push(SingleEntryReceipt(name.first, vchType = 15))
+                        "Contra" -> salesmanPermission(
+                            "D28",
+                            accessDeniedBlock = { showDeniedDialog = true },
+                            successBlock = {
+                                nav?.push(
+                                    SingleEntryReceipt(
+                                        name.first,
+                                        vchType = 15
+                                    )
+                                )
+                            }
+                        )
                     }
                 }
             )

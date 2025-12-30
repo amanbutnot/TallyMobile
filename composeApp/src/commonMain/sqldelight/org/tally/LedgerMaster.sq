@@ -27,8 +27,31 @@ CREATE TABLE LedgerMaster (
 );
 
 
+
+-- ledger.sq
+
+-- All filters
+selectAllFilterAGRP:
+SELECT * FROM LedgerMaster
+WHERE GroupCode IN ? AND GUID NOT IN ?
+ORDER BY Name;
+
+-- Only GroupCode filter
+selectByGroupCode:
+SELECT * FROM LedgerMaster
+WHERE GroupCode IN ?
+ORDER BY Name;
+
+-- Only GUID exclusion
+selectExcludingGuid:
+SELECT * FROM LedgerMaster
+WHERE GUID NOT IN ?
+ORDER BY Name;
+
+-- No filters
 selectAll:
-SELECT * FROM LedgerMaster ORDER BY Name;
+SELECT * FROM LedgerMaster
+ORDER BY Name;
 
 selectNameFromGuid:
 SELECT Name
