@@ -18,6 +18,10 @@ import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -25,7 +29,10 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.tally.data.model.salesmanPermission
 import org.prime.tally.ui.screen.home.tabs.ReportButton
+import org.prime.tally.ui.screen.reports.stock.StockReportScreen
+import org.prime.tally.ui.shared.composables.PermissionDeniedDialog
 import org.prime.tally.ui.shared.composables.TallyScaffold
 
 object RegisterSelectScreen : Screen {
@@ -33,6 +40,11 @@ object RegisterSelectScreen : Screen {
     override fun Content() {
         val colors = MaterialTheme.colorScheme
         val nav = LocalNavigator.currentOrThrow
+        var showDeniedDialog by remember { mutableStateOf(false) }
+
+        if (showDeniedDialog) {
+            PermissionDeniedDialog { showDeniedDialog = false }
+        }
         TallyScaffold(
             "Register Select",
             onBack = { nav.pop() },
@@ -56,8 +68,8 @@ object RegisterSelectScreen : Screen {
                     Registers.Purchase,
                     Registers.Receipt,
                     Registers.Payment,
-                  //  Registers.SaleReturn,
-                  //  Registers.PurchaseReturn
+                    //  Registers.SaleReturn,
+                    //  Registers.PurchaseReturn
                 )
 
                 LazyVerticalGrid(
@@ -74,10 +86,44 @@ object RegisterSelectScreen : Screen {
                             onClick = {
                                 //TODO: add appropriate screens
                                 when (report) {
-                                    Registers.Sales -> nav.push(RegisterFilterScreen(Registers.Sales.title))
-                                    Registers.Purchase -> nav.push(RegisterFilterScreen(Registers.Purchase.title))
-                                    Registers.Receipt -> nav.push(RegisterFilterScreen(Registers.Receipt.title))
-                                    Registers.Payment -> nav.push(RegisterFilterScreen(Registers.Payment.title))
+                                    Registers.Sales -> {
+
+                                        salesmanPermission(
+                                            "D13",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Sales.title)) }
+                                        )
+
+                                    }
+
+                                    Registers.Purchase -> {
+                                        salesmanPermission(
+                                            "D14",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Purchase.title)) }
+                                        )
+
+                                    }
+
+                                    Registers.Receipt -> {
+                                        salesmanPermission(
+                                            "D15",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Receipt.title)) }
+                                        )
+
+                                    }
+
+                                    Registers.Payment -> {
+                                        salesmanPermission(
+                                            "D16",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Payment.title)) }
+                                        )
+
+
+                                    }
+
                                     Registers.SaleReturn -> nav.push(RegisterFilterScreen(Registers.SaleReturn.title))
                                     Registers.PurchaseReturn -> nav.push(
                                         RegisterFilterScreen(

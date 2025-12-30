@@ -8,22 +8,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AssignmentLate
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import org.prime.tally.data.model.SalesmanPermission
+import org.prime.tally.data.model.salesmanPermission
 import org.prime.tally.ui.screen.home.tabs.ReportButton
+import org.prime.tally.ui.screen.reports.ledger.LedgerReportFilterScreen
+import org.prime.tally.ui.shared.composables.PermissionDeniedDialog
 import org.prime.tally.ui.shared.composables.TallyScaffold
 
 object OutstandingSelectScreen : Screen {
@@ -31,6 +35,11 @@ object OutstandingSelectScreen : Screen {
     override fun Content() {
         val colors = MaterialTheme.colorScheme
         val nav = LocalNavigator.currentOrThrow
+        var showDeniedDialog by remember { mutableStateOf(false) }
+
+        if (showDeniedDialog) {
+            PermissionDeniedDialog { showDeniedDialog = false }
+        }
         TallyScaffold(
             "Outstanding Select",
             onBack = { nav.pop() },
@@ -58,30 +67,38 @@ object OutstandingSelectScreen : Screen {
                     modifier = Modifier.fillMaxSize()
                 ) {
                     item{
-                        SalesmanPermission("D8"){
                             ReportButton(
                                 icon = Icons.Default.AccountBalance,
                                 title = "Bill Receivable",
                                 onClick = {
-                                    nav.push(
-                                        OutstandingFilterScreen("Bill Receivable")
+                                    salesmanPermission(
+                                        "D8",
+                                        accessDeniedBlock = {  showDeniedDialog = true  },
+                                        successBlock = {nav.push(
+                                            OutstandingFilterScreen("Bill Receivable")
+                                        )}
                                     )
+
                                 }
                             )
-                        }
+
                     }
                     item{
-                        SalesmanPermission("D9"){
                             ReportButton(
                                 icon = Icons.Default.AssignmentLate,
                                 title = "Bill Payable",
                                 onClick = {
-                                    nav.push(
-                                        OutstandingFilterScreen("Bill Payable")
+                                    salesmanPermission(
+                                        "D9",
+                                        accessDeniedBlock = {  showDeniedDialog = true  },
+                                        successBlock = {   nav.push(
+                                            OutstandingFilterScreen("Bill Payable")
+                                        )}
                                     )
+
                                 }
                             )
-                        }
+
                     }
 
                 }

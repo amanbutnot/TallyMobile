@@ -28,6 +28,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -43,8 +47,9 @@ import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.prime.tally.data.enums.MasterEnums
-import org.prime.tally.data.model.SalesmanPermission
+import org.prime.tally.data.model.salesmanPermission
 import org.prime.tally.ui.screen.MasterListScreen
+import org.prime.tally.ui.shared.composables.PermissionDeniedDialog
 
 object MastersTab : Tab {
     override val options: TabOptions
@@ -59,6 +64,7 @@ object MastersTab : Tab {
         val colors = MaterialTheme.colorScheme
         val nav = LocalNavigator.currentOrThrow.parent
         val tabNav = LocalTabNavigator.current
+        var showDeniedDialog by remember { mutableStateOf(false) }
         BackHandler(true) {
             tabNav.current = HomeTab
         }
@@ -79,54 +85,92 @@ object MastersTab : Tab {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                SalesmanPermission("D1") {
-                    MasterButton(
-                        Icons.Default.AccountBalance, "Accounts", modifier = Modifier.weight(1f)
-                    ) {
-                        nav?.push(MasterListScreen(MasterEnums.ACCOUNTS))
-                    }
+
+                MasterButton(
+                    Icons.Default.AccountBalance, "Accounts", modifier = Modifier.weight(1f)
+                ) {
+                    salesmanPermission(
+                        "D1",
+                        accessDeniedBlock = { showDeniedDialog = true },
+                        successBlock = { nav?.push(MasterListScreen(MasterEnums.ACCOUNTS)) }
+                    )
+
                 }
-                SalesmanPermission("D2"){
-                    MasterButton(
-                        Icons.Default.Groups2, "Account Groups", modifier = Modifier.weight(1f)
-                    ) { nav?.push(MasterListScreen(MasterEnums.ACCOUNT_GROUP)) }
+
+                MasterButton(
+                    Icons.Default.Groups2, "Account Groups", modifier = Modifier.weight(1f)
+                ) {
+                    salesmanPermission(
+                        "D2",
+                        accessDeniedBlock = { showDeniedDialog = true },
+                        successBlock = { nav?.push(MasterListScreen(MasterEnums.ACCOUNT_GROUP)) }
+                    )
                 }
+
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                SalesmanPermission("D3"){
-                    MasterButton(
-                        Icons.Default.Inventory2, "Items", modifier = Modifier.weight(1f)
-                    ) { nav?.push(MasterListScreen(MasterEnums.ITEMS)) }
+                MasterButton(
+                    Icons.Default.Inventory2, "Items", modifier = Modifier.weight(1f)
+                ) {
 
+                    salesmanPermission(
+                        "D3",
+                        accessDeniedBlock = { showDeniedDialog = true },
+                        successBlock = { nav?.push(MasterListScreen(MasterEnums.ITEMS)) }
+                    )
                 }
-                SalesmanPermission("D4"){
-                    MasterButton(
-                        Icons.Default.Category, "Item Groups", modifier = Modifier.weight(1f)
-                    ) { nav?.push(MasterListScreen(MasterEnums.ITEM_GROUP)) }
 
+
+                MasterButton(
+                    Icons.Default.Category, "Item Groups", modifier = Modifier.weight(1f)
+                ) {
+
+                    salesmanPermission(
+                        "D4",
+                        accessDeniedBlock = { showDeniedDialog = true },
+                        successBlock = { nav?.push(MasterListScreen(MasterEnums.ITEM_GROUP)) }
+                    )
                 }
+
+
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                SalesmanPermission("D5"){
-                    MasterButton(
-                        Icons.Default.Straighten, "Units", modifier = Modifier.weight(1f)
-                    ) { nav?.push(MasterListScreen(MasterEnums.ITEM_UNIT)) }
 
+                MasterButton(
+                    Icons.Default.Straighten, "Units", modifier = Modifier.weight(1f)
+                ) {
+                    salesmanPermission(
+                        "D5",
+                        accessDeniedBlock = { showDeniedDialog = true },
+                        successBlock = { nav?.push(MasterListScreen(MasterEnums.ITEM_UNIT)) }
+                    )
                 }
-                SalesmanPermission("D6"){
 
-                    MasterButton(
-                        Icons.Default.Warehouse, "Material Centers", modifier = Modifier.weight(1f)
-                    ) { nav?.push(MasterListScreen(MasterEnums.MATERIAL_CENTER)) }
+
+
+
+                MasterButton(
+                    Icons.Default.Warehouse, "Material Centers", modifier = Modifier.weight(1f)
+                ) {
+                    salesmanPermission(
+                        "D6",
+                        accessDeniedBlock = { showDeniedDialog = true },
+                        successBlock = { nav?.push(MasterListScreen(MasterEnums.MATERIAL_CENTER)) }
+                    )
                 }
+
+            }
+
+            if (showDeniedDialog) {
+                PermissionDeniedDialog { showDeniedDialog = false }
             }
         }
     }
