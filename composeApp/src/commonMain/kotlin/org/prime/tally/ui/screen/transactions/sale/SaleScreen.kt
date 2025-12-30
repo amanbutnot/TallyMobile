@@ -96,6 +96,7 @@ import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.composables.TallyResultDialog
 import org.prime.tally.ui.shared.composables.TallySearchBar
 import org.prime.tally.ui.shared.globalShared.Tdate
+import org.prime.tally.ui.shared.globalShared.getLedgerMasters
 import org.prime.tally.ui.shared.globalShared.isBusy
 import org.tally.Products
 import kotlin.math.abs
@@ -164,7 +165,7 @@ data class SaleScreen(
         var pendingSelectedProductName by rememberSaveable { mutableStateOf<String?>(null) }
         var pendingSelectedProductGUID by rememberSaveable { mutableStateOf<String?>(null) }
 
-        val ledgerList = db.ledgerMasterQueries.selectAll().executeAsList()
+        val ledgerList = getLedgerMasters(db)
         val busyLedgerList = db.bSMasterQueries.selectAll().executeAsList()
         val itemsList = db.productsQueries.selectAll().executeAsList()
         val viewmodel: InventoryVoucherViewModel = viewModel { InventoryVoucherViewModel() }

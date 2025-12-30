@@ -30,6 +30,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -45,6 +49,9 @@ import cafe.adriel.voyager.navigator.internal.BackHandler
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import org.prime.tally.data.enums.MasterEnums
+import org.prime.tally.data.model.salesmanPermission
+import org.prime.tally.ui.screen.MasterListScreen
 import org.prime.tally.ui.screen.home.Dashboard
 import org.prime.tally.ui.screen.reports.godown.GodownClosingStockListScreen
 import org.prime.tally.ui.screen.reports.ledger.LedgerReportFilterScreen
@@ -53,6 +60,7 @@ import org.prime.tally.ui.screen.reports.productReport.ProductReportScreen
 import org.prime.tally.ui.screen.reports.registers.RegisterSelectScreen
 import org.prime.tally.ui.screen.reports.stock.StockReportScreen
 import org.prime.tally.ui.screen.reports.trialBalance.TrialBalanceScreen
+import org.prime.tally.ui.shared.composables.PermissionDeniedDialog
 
 object ReportingTab : Tab {
     override val options: TabOptions
@@ -68,6 +76,11 @@ object ReportingTab : Tab {
         val tabNav = LocalTabNavigator.current
         BackHandler(true) {
             tabNav.current = HomeTab
+        }
+        var showDeniedDialog by remember { mutableStateOf(false) }
+
+        if (showDeniedDialog) {
+            PermissionDeniedDialog { showDeniedDialog = false }
         }
 
         val colors = MaterialTheme.colorScheme
@@ -107,17 +120,51 @@ object ReportingTab : Tab {
                         onClick = {
                             //TODO: add appropriate screens
                             when (report) {
-                                Report.Ledger -> nav?.push(LedgerReportFilterScreen())
+                                Report.Ledger -> {
+                                    salesmanPermission(
+                                        "D7",
+                                        accessDeniedBlock = {  showDeniedDialog = true  },
+                                        successBlock = { nav?.push(LedgerReportFilterScreen())}
+                                    )
+                                }
                                 Report.Outstanding -> nav?.push(OutstandingSelectScreen)
                                 Report.PendingOrders -> nav?.push(Dashboard)
                                 Report.Quotations -> nav?.push(Dashboard)
                                 Report.ProductStock-> nav?.push(ProductReportScreen(null))
                                 Report.Registers -> nav?.push(RegisterSelectScreen)
-                                Report.StockReport -> nav?.push(StockReportScreen)
-                                Report.TrialBalance -> nav?.push(TrialBalanceScreen)
-                                Report.GoDownWiseClosingStock -> nav?.push(
-                                    GodownClosingStockListScreen
-                                )
+                                Report.StockReport -> {
+                                    salesmanPermission(
+                                        "D11",
+                                        accessDeniedBlock = {  showDeniedDialog = true  },
+                                        successBlock = {   nav?.push(StockReportScreen)}
+                                    )
+
+                                }
+                                Report.TrialBalance -> {
+                                    salesmanPermission(
+                                        "D10",
+                                        accessDeniedBlock = {  showDeniedDialog = true  },
+                                        successBlock = {    nav?.push(TrialBalanceScreen)}
+                                    )
+
+                                }
+                                Report.GoDownWiseClosingStock -> {
+
+
+                                    salesmanPermission(
+                                        "D12",
+                                        accessDeniedBlock = {  showDeniedDialog = true  },
+                                        successBlock = {  nav?.push(
+                                            GodownClosingStockListScreen
+                                        )}
+                                    )
+
+                                }
+
+
+
+
+
                             }
                         }
                     )
