@@ -1,11 +1,16 @@
 package org.prime.tally.ui.screen.reports.productReport
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -56,7 +61,7 @@ import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductStockList
 
-data class ProductReportScreen(val productGuid:String?=null) : Screen {
+data class ProductReportScreen(val productGuid: String? = null) : Screen {
     @Composable
     override fun Content() {
         val db = DatabaseHolder.instance
@@ -190,144 +195,206 @@ data class ProductReportScreen(val productGuid:String?=null) : Screen {
                             )
                         }
 
-                        // Header Card (sticky)
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .horizontalScroll(horizontalScrollState)
-                                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                            ) {
-                                TableCellFixed(
-                                    text = "Product Name",
-                                    width = columnWidths[0],
-                                    textAlign = TextAlign.Start,
-                                    isHeader = true
-                                )
-                                TableCellFixed(
-                                    text = "Location",
-                                    width = columnWidths[1],
-                                    textAlign = TextAlign.Start,
-                                    isHeader = true
-                                )
-                                TableCellFixed(
-                                    text = "Main Qty",
-                                    width = columnWidths[2],
-                                    textAlign = TextAlign.End,
-                                    isHeader = true
-                                )
-                                TableCellFixed(
-                                    text = "Alt Qty",
-                                    width = columnWidths[3],
-                                    textAlign = TextAlign.End,
-                                    isHeader = true
-                                )
-                                TableCellFixed(
-                                    text = "C1",
-                                    width = columnWidths[4],
-                                    textAlign = TextAlign.End,
-                                    isHeader = true
-                                )
-                                TableCellFixed(
-                                    text = "C2",
-                                    width = columnWidths[5],
-                                    textAlign = TextAlign.End,
-                                    isHeader = true
-                                )
-                                TableCellFixed(
-                                    text = "C3",
-                                    width = columnWidths[6],
-                                    textAlign = TextAlign.End,
-                                    isHeader = true
-                                )
-                            }
-                        }
-                        val state = rememberLazyListState()
-                        // Data rows with vertical scroll
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f), state = state
-                        )
-                        {
-                            itemsIndexed(items = filteredList) { index, item ->
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = if (index % 2 == 0) {
-                                            MaterialTheme.colorScheme.surface
-                                        } else {
-                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                        }
-                                    ),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(filteredList) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp)
+                                        .padding(top = 16.dp, bottom = 20.dp)
                                 ) {
+                                    Text(
+                                        text = it.ProductName.toString(),
+                                        style = MaterialTheme.typography.headlineLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+
                                     Row(
-                                        modifier = Modifier
-                                            .horizontalScroll(horizontalScrollState)
-                                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        TableCellFixed(
-                                            text = item.ProductName ?: "-",
-                                            width = columnWidths[0],
-                                            textAlign = TextAlign.Start,
-                                            isHeader = false
+                                        Text(
+                                            text = it.C1.toString(),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
-                                        TableCellFixed(
-                                            text = item.GodownName ?: "-",
-                                            width = columnWidths[1],
-                                            textAlign = TextAlign.Start,
-                                            isHeader = false
+                                        Text(
+                                            text = it.C2.toString(),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
-                                        TableCellFixed(
-                                            text = item.Value1?.toString() ?: "-",
-                                            width = columnWidths[2],
-                                            textAlign = TextAlign.End,
-                                            isHeader = false
+                                        Text(
+                                            text = it.C3.toString(),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
-                                        TableCellFixed(
-                                            text = item.Value2?.toString() ?: "-",
-                                            width = columnWidths[3],
-                                            textAlign = TextAlign.End,
-                                            isHeader = false
-                                        )
-                                        TableCellFixed(
-                                            text = item.C1 ?: "-",
-                                            width = columnWidths[4],
-                                            textAlign = TextAlign.End,
-                                            isHeader = false
-                                        )
-                                        TableCellFixed(
-                                            text = item.C2 ?: "-",
-                                            width = columnWidths[5],
-                                            textAlign = TextAlign.End,
-                                            isHeader = false
-                                        )
-                                        TableCellFixed(
-                                            text = item.C3 ?: "-",
-                                            width = columnWidths[6],
-                                            textAlign = TextAlign.End,
-                                            isHeader = false
+                                        Text(
+                                            text = it.Value1.toString(),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.primary
                                         )
                                     }
                                 }
-                                if (index < filteredList.lastIndex) {
-                                    HorizontalDivider(
-                                        thickness = 0.5.dp,
-                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                                    )
-                                }
+
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    thickness = 1.dp,
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                )
+
+                                Spacer(modifier = Modifier.height(4.dp))
                             }
                         }
+                        // Header Card (sticky)
+                        ScrollableScreen(horizontalScrollState, columnWidths, filteredList)
                     }
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun ColumnScope.ScrollableScreen(
+    horizontalScrollState: ScrollState,
+    columnWidths: List<Dp>,
+    filteredList: List<GetProductStockList>
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    )
+    {
+        Row(
+            modifier = Modifier
+                .horizontalScroll(horizontalScrollState)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            TableCellFixed(
+                text = "Product Name",
+                width = columnWidths[0],
+                textAlign = TextAlign.Start,
+                isHeader = true
+            )
+            TableCellFixed(
+                text = "Location",
+                width = columnWidths[1],
+                textAlign = TextAlign.Start,
+                isHeader = true
+            )
+            TableCellFixed(
+                text = "Main Qty",
+                width = columnWidths[2],
+                textAlign = TextAlign.End,
+                isHeader = true
+            )
+            TableCellFixed(
+                text = "Alt Qty",
+                width = columnWidths[3],
+                textAlign = TextAlign.End,
+                isHeader = true
+            )
+            TableCellFixed(
+                text = "C1",
+                width = columnWidths[4],
+                textAlign = TextAlign.End,
+                isHeader = true
+            )
+            TableCellFixed(
+                text = "C2",
+                width = columnWidths[5],
+                textAlign = TextAlign.End,
+                isHeader = true
+            )
+            TableCellFixed(
+                text = "C3",
+                width = columnWidths[6],
+                textAlign = TextAlign.End,
+                isHeader = true
+            )
+        }
+    }
+    val state = rememberLazyListState()
+    // Data rows with vertical scroll
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f), state = state
+    )
+    {
+        itemsIndexed(items = filteredList) { index, item ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (index % 2 == 0) {
+                        MaterialTheme.colorScheme.surface
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    }
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .horizontalScroll(horizontalScrollState)
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    TableCellFixed(
+                        text = item.ProductName ?: "-",
+                        width = columnWidths[0],
+                        textAlign = TextAlign.Start,
+                        isHeader = false
+                    )
+                    TableCellFixed(
+                        text = item.GodownName ?: "-",
+                        width = columnWidths[1],
+                        textAlign = TextAlign.Start,
+                        isHeader = false
+                    )
+                    TableCellFixed(
+                        text = item.Value1?.toString() ?: "-",
+                        width = columnWidths[2],
+                        textAlign = TextAlign.End,
+                        isHeader = false
+                    )
+                    TableCellFixed(
+                        text = item.Value2?.toString() ?: "-",
+                        width = columnWidths[3],
+                        textAlign = TextAlign.End,
+                        isHeader = false
+                    )
+                    TableCellFixed(
+                        text = item.C1 ?: "-",
+                        width = columnWidths[4],
+                        textAlign = TextAlign.End,
+                        isHeader = false
+                    )
+                    TableCellFixed(
+                        text = item.C2 ?: "-",
+                        width = columnWidths[5],
+                        textAlign = TextAlign.End,
+                        isHeader = false
+                    )
+                    TableCellFixed(
+                        text = item.C3 ?: "-",
+                        width = columnWidths[6],
+                        textAlign = TextAlign.End,
+                        isHeader = false
+                    )
+                }
+            }
+            if (index < filteredList.lastIndex) {
+                HorizontalDivider(
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+            }
+        }
     }
 }
 
