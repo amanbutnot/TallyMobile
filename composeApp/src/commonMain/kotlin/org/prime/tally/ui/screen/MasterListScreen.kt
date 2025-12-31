@@ -53,6 +53,7 @@ import org.prime.tally.data.enums.MasterEnums
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.shared.composables.TallyScaffold
+import org.prime.tally.ui.shared.globalShared.getItemMasters
 import org.prime.tally.ui.shared.globalShared.getLedgerMasters
 import org.tally.GodownMaster
 import org.tally.LedgerGroupMaster
@@ -77,7 +78,7 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
 
                 MasterEnums.ACCOUNTS -> getLedgerMasters(db)
                 MasterEnums.ACCOUNT_GROUP -> db.ledgerGroupMasterQueries.selectAll().executeAsList()
-                MasterEnums.ITEMS -> db.productsQueries.selectAll().executeAsList()
+                MasterEnums.ITEMS -> getItemMasters(db)
                 MasterEnums.ITEM_GROUP -> db.productGroupMasterQueries.selectAll().executeAsList()
                 MasterEnums.ITEM_UNIT -> db.productUnitMasterQueries.selectAll().executeAsList()
                 MasterEnums.MATERIAL_CENTER -> db.godownMasterQueries.selectAll().executeAsList()
@@ -237,7 +238,7 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
                     Text(
                         text = index.toString(),
                         color = MaterialTheme.colorScheme.onPrimary,
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
