@@ -96,6 +96,7 @@ import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.composables.TallyResultDialog
 import org.prime.tally.ui.shared.composables.TallySearchBar
 import org.prime.tally.ui.shared.globalShared.Tdate
+import org.prime.tally.ui.shared.globalShared.getItemMasters
 import org.prime.tally.ui.shared.globalShared.getLedgerMasters
 import org.prime.tally.ui.shared.globalShared.isBusy
 import org.tally.Products
@@ -167,7 +168,7 @@ data class SaleScreen(
 
         val ledgerList = getLedgerMasters(db)
         val busyLedgerList = db.bSMasterQueries.selectAll().executeAsList()
-        val itemsList = db.productsQueries.selectAll().executeAsList()
+        val itemsList = getItemMasters(db)
         val viewmodel: InventoryVoucherViewModel = viewModel { InventoryVoucherViewModel() }
         val state by viewmodel.dataState
         val oneState by viewmodel.oneState
