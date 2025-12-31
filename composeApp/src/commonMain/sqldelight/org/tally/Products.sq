@@ -28,5 +28,27 @@ CREATE TABLE Products (
     GUID TEXT UNIQUE
 );
 
+-- ledger.sq
+
+-- All filters
+selectAllFilterAGRP:
+SELECT * FROM Products
+WHERE GroupCode IN ? AND GUID NOT IN ?
+ORDER BY Name;
+
+-- Only GroupCode filter
+selectByGroupCode:
+SELECT * FROM Products
+WHERE GroupCode IN ?
+ORDER BY Name;
+
+-- Only GUID exclusion
+selectExcludingGuid:
+SELECT * FROM Products
+WHERE GUID NOT IN ?
+ORDER BY Name;
+
+-- No filters
 selectAll:
-SELECT * FROM Products ORDER BY Name;
+SELECT * FROM Products
+ORDER BY Name;
