@@ -1,5 +1,6 @@
 package org.prime.tally.data.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.prime.tally.data.utils.SharedPrefs
 
@@ -7,7 +8,19 @@ import org.prime.tally.data.utils.SharedPrefs
 @Serializable
 data class LoginRequest(
     val Username: String,
-    val Password: String
+    val Password: String,
+    val CompanyID:Int?=null
+)
+
+    @Serializable
+    data class CompanyList(
+        val CompanyDetails: List<Company>
+    )
+
+@Serializable
+data class Company(
+    val CompanyID: Int,
+    val CompanyName: String
 )
 
 @Serializable
