@@ -3,7 +3,6 @@ package org.prime.tally.ui.screen.auth
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,11 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -42,15 +37,15 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.jetbrains.compose.resources.painterResource
+import org.prime.tally.business.viewmodel.AuthViewModel
 import org.prime.tally.data.model.LoginRequest
+import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.screen.startup.GoogleDriveDownloadScreen
 import org.prime.tally.ui.shared.composables.TallyButton
 import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyResultDialog
-import org.prime.tally.ui.shared.composables.TallyTextField
-import org.prime.tally.business.viewmodel.AuthViewModel
-import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.shared.composables.TallyScaffold
+import org.prime.tally.ui.shared.composables.TallyTextField
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.splashImage
 
@@ -183,12 +178,13 @@ object LoginScreen : Screen {
                                     LoginRequest(
                                         Username = email,
                                         Password = password
-                                    )
-                                ) {
-                                    SharedPrefs.LoginInfo.clear()
-                                    SharedPrefs.LoginInfo.save(email)
-                                    nav.replaceAll(GoogleDriveDownloadScreen)
-                                }
+                                    ),
+                                    onSuccess = {
+                                        nav.replaceAll(GoogleDriveDownloadScreen)
+                                    }, onListSuccess = { companyList ->
+                                        nav.push(SelectCompanyScreen(email, password, companyList))
+                                    }
+                                )
                             },
                             backgroundColor = colors.primary,
                             contentColor = colors.onPrimary,
