@@ -8,6 +8,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import org.prime.tally.data.model.ApiResponse
 import org.prime.tally.data.model.ForgotResponse
+import org.prime.tally.data.model.LoginApiWrapper
 import org.prime.tally.data.model.LoginRequest
 import org.prime.tally.data.model.LoginResponse
 import org.prime.tally.data.model.RegisterRequest
@@ -18,9 +19,9 @@ import org.prime.tally.data.utils.KtorClient
 object AuthRepository {
     val client = KtorClient.client
 
-    suspend fun userLogin(loginRequest: LoginRequest): ApiResponse<LoginResponse>? {
+    suspend fun userLogin(loginRequest: LoginRequest): LoginApiWrapper? {
         return try {
-            val response = client.post("${BASE_URL}/Users/Login.php") {
+            val response = client.post("${BASE_URL}/Users/LoginMulti.php") {
                 contentType(ContentType.Application.Json)
                 setBody(loginRequest)
             }

@@ -5,10 +5,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
 import org.prime.tally.data.model.LoginRequest
 import org.prime.tally.data.model.LoginResponse
 import org.prime.tally.business.repository.AuthRepository
 import org.prime.tally.data.expect.deleteDbFile
+import org.prime.tally.data.model.CompanyList
 import org.prime.tally.data.model.ForgotResponse
 import org.prime.tally.data.utils.SharedPrefs
 
@@ -72,53 +75,101 @@ class AuthViewModel : ViewModel() {
     }
 
 
-    fun userLogin(loginRequest: LoginRequest, onSuccess: () -> Unit) {
+    fun userLogin(
+        loginRequest: LoginRequest,
+        onSuccess: () -> Unit,
+        onListSuccess: (CompanyList) -> Unit
+    )
+    {
+        val json = Json {
+            ignoreUnknownKeys = true
+        }
         viewModelScope.launch {
+
 
             _authState.value = AuthState(isLoading = true)
 
-            val res = AuthRepository.userLogin(loginRequest)
+            try {
+                val res = AuthRepository.userLogin(loginRequest)
 
-            if (res?.statuscode == 200) {
-                _authState.value = AuthState(
-                    success = true, message = res.message
-                )
-                val token = res.data?.token
-                val fileId = res.data?.C9
-                if (!token.isNullOrBlank() && !fileId.isNullOrBlank()) {
-                    SharedPrefs.Token.clear()
-                    SharedPrefs.FileId.clear()
-                    SharedPrefs.DistributorData.clear()
-                    deleteDbFile()
-                    SharedPrefs.Token.save(token)
-                    SharedPrefs.FileId.save(fileId)
-                } else {
-                    println("⚠️ Login success, but token is null or blank")
-                }
-                val distributor = res.data?.distributor
-                if (distributor != null) {
-                    println("data saving: $distributor")
-                    SharedPrefs.DistributorData.save(distributor)
-                }
-                println("ADMIOAJFDLKJDS ${res.data?.role != "admin"}")
-                if(res.data?.role != "admin"){
-                    val permissions = res.data?.permissions
-                    if (permissions != null) {
-                        println("data saving: $permissions")
-                        SharedPrefs.Permissions.save(permissions)
+                when (res?.statuscode) {
+
+                    200 -> {
+                        val loginData =
+                            json.decodeFromJsonElement<LoginResponse>(res.data)
+
+
+                        // token + fileId
+                        if (!loginData.token.isBlank() && loginData.C9.isNotBlank()) {
+                            SharedPrefs.Token.clear()
+                            SharedPrefs.FileId.clear()
+                            SharedPrefs.DistributorData.clear()
+                            deleteDbFile()
+
+                            SharedPrefs.Token.save(loginData.token)
+                            SharedPrefs.FileId.save(loginData.C9)
+                        } else {
+                            println("⚠️ Login success but token/fileId missing")
+                            _authState.value = AuthState(
+                                success = false,
+                                error = "Data not found",
+                                message = res.message
+                            )
+                            return@launch
+                        }
+                        // distributor
+                        loginData.distributor?.let {
+                            SharedPrefs.DistributorData.save(it)
+                        }
+
+                        // permissions (non-admin)
+                        if (loginData.role != "admin") {
+                            loginData.permissions?.let {
+                                SharedPrefs.Permissions.save(it)
+                            }
+                        }
+                        SharedPrefs.LoginInfo.clear()
+                        SharedPrefs.LoginInfo.save(loginRequest.Username)
+                        SharedPrefs.User.save(loginData)
+
+                        _authState.value = AuthState(
+                            success = true,
+                            message = res.message
+                        )
+                        onSuccess()
                     }
-//TODO: FILE ID (Data not found)
+
+                    900 -> {
+                        val companies =
+                            json.decodeFromJsonElement<CompanyList>(res.data)
+
+                        _authState.value = AuthState(
+                            success = true,
+                            message = res.message
+                        )
+                        onListSuccess(companies)
+
+                    }
+
+                    else -> {
+                        _authState.value = AuthState(
+                            success = false,
+                            isLoading = false,
+                            error = res?.message ?: "Unexpected error"
+                        )
+                    }
                 }
-                onSuccess()
-            } else {
+
+            } catch (e: Exception) {
                 _authState.value = AuthState(
                     success = false,
                     isLoading = false,
-                    error = res?.message ?: "Login failed. Please try again."
+                    error = e.message ?: "Unexpected error"
                 )
             }
         }
     }
+
 
     fun clearError() {
         _authState.value = _authState.value.copy(error = null)
