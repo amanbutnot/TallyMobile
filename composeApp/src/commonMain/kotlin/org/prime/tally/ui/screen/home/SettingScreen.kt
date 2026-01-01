@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -59,12 +58,10 @@ import cafe.adriel.voyager.navigator.internal.BackHandler
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.expect.deleteDbFile
 import org.prime.tally.data.utils.SharedPrefs
-import org.prime.tally.ui.screen.auth.LoginScreen
 import org.prime.tally.ui.screen.auth.OnBoardingScreen
 import org.prime.tally.ui.screen.distributor.CreateDistributorScreen
 import org.prime.tally.ui.screen.distributor.ListDistributorScreen
 import org.prime.tally.ui.shared.composables.TallyAlertBox
-import org.prime.tally.ui.shared.composables.TallyButton
 import org.prime.tally.ui.shared.composables.TallyDivider
 import org.prime.tally.ui.shared.composables.TallyIconButton
 import org.prime.tally.ui.shared.composables.TallyScaffold
@@ -181,17 +178,17 @@ object SettingScreen : Screen {
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
-                    TallyDivider()
-
-                    // Salesman Management Section
-                    Text(
-                        text = "Salesman Management",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = colors.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-                    )
+//                    TallyDivider()
+//
+//                    // Salesman Management Section
+//                    Text(
+//                        text = "Salesman Management",
+//                        style = MaterialTheme.typography.titleSmall.copy(
+//                            fontWeight = FontWeight.SemiBold
+//                        ),
+//                        color = colors.onSurfaceVariant,
+//                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+//                    )
 //
 //                    Row(
 //                        horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -231,6 +228,16 @@ object SettingScreen : Screen {
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         ProfileItem(Icons.Default.Email, "Email Address", compInfo.T7.toString())
+                        ProfileItem(
+                            Icons.Default.Person,
+                            "Name",
+                            SharedPrefs.User.get()?.FirstName ?: "-"
+                        )
+                        ProfileItem(
+                            Icons.Default.Numbers,
+                            "Mobile Number",
+                            SharedPrefs.User.get()?.Mobile ?: "-"
+                        )
                         ProfileItem(Icons.Default.Business, "Company Name", CompanyName())
                         ProfileItem(
                             Icons.Default.LocationOn,

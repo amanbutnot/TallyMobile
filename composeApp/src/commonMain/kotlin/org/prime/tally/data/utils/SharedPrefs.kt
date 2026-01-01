@@ -3,6 +3,7 @@ package org.prime.tally.data.utils
 import com.russhwolf.settings.Settings
 import kotlinx.serialization.json.Json
 import org.prime.tally.data.model.Distributor
+import org.prime.tally.data.model.LoginResponse
 
 object SharedPrefs {
     private val settings: Settings = Settings()
@@ -102,7 +103,7 @@ object SharedPrefs {
         }
     }
     object Permissions {
-        private const val KEY = "permissoins"
+        private const val KEY = "permissions"
 
         fun save(permissions: org.prime.tally.data.model.Permissions) {
             val json = Json.encodeToString(permissions)
@@ -112,6 +113,23 @@ object SharedPrefs {
         fun get(): org.prime.tally.data.model.Permissions? {
             val stored = settings.getStringOrNull(KEY) ?: return null
             return runCatching { Json.decodeFromString<org.prime.tally.data.model.Permissions>(stored) }.getOrNull()
+        }
+
+        fun clear() {
+            settings.remove(KEY)
+        }
+    }
+    object User {
+        private const val KEY = "user"
+
+        fun save(loginResponse: LoginResponse) {
+            val json = Json.encodeToString(loginResponse)
+            settings.putString(KEY, json)
+        }
+
+        fun get(): LoginResponse? {
+            val stored = settings.getStringOrNull(KEY) ?: return null
+            return runCatching { Json.decodeFromString<LoginResponse>(stored) }.getOrNull()
         }
 
         fun clear() {
