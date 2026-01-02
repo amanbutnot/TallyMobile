@@ -1,6 +1,5 @@
 package org.prime.tally.ui.shared.globalShared
 
-import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.utils.SharedPrefs
 import org.tally.LedgerMaster
 import org.tally.Products
@@ -62,11 +61,11 @@ fun getLedgerMasters(db: TallyDatabase): List<LedgerMaster> {
 
 fun getItemMasters(db: TallyDatabase): List<Products> {
     val perms = SharedPrefs.Permissions.get()
-    val filterAGRP = perms?.FilterIGRP == "Y"
-    val filterAccounts = perms?.FilterItems == "Y"
+    val filterIGRP = perms?.FilterIGRP == "Y"
+    val filterItems = perms?.FilterItems == "Y"
 
-    println(filterAccounts)
-    println(filterAGRP)
+    println(filterItems)
+    println(filterIGRP)
 
     return when {
         perms==null->{
@@ -74,23 +73,24 @@ fun getItemMasters(db: TallyDatabase): List<Products> {
                 .executeAsList()
         }
         // Both filters active
-        filterAGRP && filterAccounts -> {
-            val groupCodes = perms.FilterIGRP.parseToDoubleList()
-            val excludeGuids = perms.FilterItems.parseToStringList()
+        filterIGRP && filterItems -> {
+            val groupCodes = perms.ConfigIGRP.parseToDoubleList()
+            val excludeGuids = perms.ConfigItems.parseToStringList()
             db.productsQueries.selectAllFilterAGRP(groupCodes, excludeGuids)
                 .executeAsList()
         }
 
         // Only GroupCode filter
-        filterAGRP -> {
-            val groupCodes = perms.FilterIGRP.parseToDoubleList()
+        filterIGRP -> {
+            val groupCodes = perms.ConfigIGRP.parseToDoubleList()
+            println(groupCodes)
             db.productsQueries.selectByGroupCode(groupCodes)
                 .executeAsList()
         }
 
         // Only GUID exclusion
-        filterAccounts -> {
-            val excludeGuids = perms.FilterItems.parseToStringList()
+        filterItems -> {
+            val excludeGuids = perms.ConfigItems.parseToStringList()
             db.productsQueries.selectExcludingGuid(excludeGuids)
                 .executeAsList()
         }
