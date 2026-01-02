@@ -58,6 +58,7 @@ import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.model.attendance.AttendanceListRequest
 import org.prime.tally.data.model.attendance.AttendanceListResponse
 import org.prime.tally.data.model.attendance.SalesmanList
+import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.screen.transactions.TransactionBottomSheet
 import org.prime.tally.ui.screen.transactions.TransactionOneBottomSheet
 import org.prime.tally.ui.shared.composables.TallyButton
@@ -81,6 +82,7 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
             var showBottomSheet by remember { mutableStateOf(false) }
             val state = rememberModalBottomSheetState()
             val viewModel: AttendanceViewModel = viewModel { AttendanceViewModel() }
+            val isAdmin = SharedPrefs.User.get()?.role=="admin"
             var selectedSalesman by rememberSaveable {
                 mutableStateOf<SalesmanList?>(null)
             }
@@ -157,10 +159,10 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
                         verticalArrangement = Arrangement.spacedBy(24.dp)
                     ) {
 
-                        if (isCheckIn) {
+                        if (isCheckIn && isAdmin) {
                             Column {
                                 Text(
-                                    text = "Select Account",
+                                    text = "Select Salesman",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(bottom = 8.dp)
@@ -186,7 +188,7 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = selectedAccount.ifEmpty { "Choose an account" },
+                                            text = selectedAccount.ifEmpty { "Choose a saleman" },
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = if (selectedAccount.isEmpty())
                                                 MaterialTheme.colorScheme.onSurfaceVariant
@@ -265,8 +267,8 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
                         )
                     },
                     enabled = (startDate.isNotEmpty()) &&
-                            (endDate.isNotEmpty()) &&
-                            (selectedAccount.isNotEmpty()),
+                            (endDate.isNotEmpty()) && (if(isAdmin) selectedMobile.isNotEmpty() else selectedMobile.isEmpty())
+                            ,
                     backgroundColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
