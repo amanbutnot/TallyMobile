@@ -34,9 +34,16 @@ data class AttendanceListResponse(
 )
 
 @Serializable
+data class SalesmanList(
+    val salesman_name:String,
+    val salesman_mobile:String
+)
+
+@Serializable
 data class AttendanceListRequest(
     val VchType: Int,
     val StartDate: String,
     val EndDate: String,
+    val salesman_mobile:String
 
 )
