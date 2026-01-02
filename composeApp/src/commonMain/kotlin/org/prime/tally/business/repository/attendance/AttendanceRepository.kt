@@ -14,6 +14,7 @@ import org.prime.tally.data.model.attendance.AttendanceListRequest
 import org.prime.tally.data.model.attendance.AttendanceListResponse
 import org.prime.tally.data.model.attendance.AttendanceRequest
 import org.prime.tally.data.model.attendance.AttendanceResponse
+import org.prime.tally.data.model.attendance.SalesmanList
 import org.prime.tally.data.utils.BASE_URL
 import org.prime.tally.data.utils.KtorClient
 import org.prime.tally.data.utils.SharedPrefs
@@ -37,6 +38,7 @@ object AttendanceRepository {
             null
         }
     }
+
     suspend fun getAttendanceList(attendanceRequest: AttendanceListRequest): ApiResponse<List<AttendanceListResponse>>? {
         val token = SharedPrefs.Token.get()
         return try {
@@ -45,6 +47,22 @@ object AttendanceRepository {
                 header("Authorization", "Bearer $token")
 
                 setBody(attendanceRequest)
+            }
+            println(attendanceRequest)
+            println(response.bodyAsText())
+            response.body()
+        } catch (e: Exception) {
+            print("Error Occurred: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun getSalesmanList(): ApiResponse<List<SalesmanList>>? {
+        val token = SharedPrefs.Token.get()
+        return try {
+            val response = client.post("${BASE_URL}/Distributors/listSalesmanMobiles.php") {
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $token")
             }
             println(response.bodyAsText())
             response.body()
