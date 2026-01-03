@@ -76,6 +76,7 @@ import dev.jordond.compass.geolocation.Locator
 import dev.jordond.compass.geolocation.mobile.mobile
 import kotlinx.coroutines.launch
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.model.hasSalesmanPermission
 import org.prime.tally.data.model.salesmanPermission
 import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.screen.attendance.AttendanceScreen
@@ -107,6 +108,7 @@ object HomeTab : Tab {
         val db = DatabaseHolder.instance
         val queries = db.companyInformationQueries
         val compInfo = queries.getCompanyInformation().executeAsOne()
+        var showDeniedDialog by remember { mutableStateOf(false) }
         val nav = LocalNavigator.currentOrThrow.parent
 
         val reportList = queries.dashboardReportData(StartDate(), CurrentDate()).executeAsList()
@@ -129,7 +131,8 @@ object HomeTab : Tab {
                 .fillMaxSize()
                 .padding(8.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        )
+        {
             if (isAdmin()) {
 
                 HeadingTitle("Details")
@@ -153,67 +156,179 @@ object HomeTab : Tab {
                     filteredReportList.chunked(3).take(2).forEach { rowItems ->
                         LazyRow(
                             contentPadding = PaddingValues(horizontal = 8.dp),
-                        ) {
+                        )
+                        {
                             items(rowItems) { item ->
                                 DashboardCard(
                                     name = item.RepType,
-                                    amount = if (item.PenAmt != null) item.PenAmt.toString() else "-",
+                                    amount = when (item.RecType) {
+                                        1L -> {
+                                            if (hasSalesmanPermission("D8")) {
+                                                if (item.PenAmt != null) item.PenAmt.toString() else "-"
+
+                                            } else {
+                                                "X"
+
+                                            }
+                                        }
+
+                                        2L -> {
+                                            if (hasSalesmanPermission("D9")) {
+                                                if (item.PenAmt != null) item.PenAmt.toString() else "-"
+
+                                            } else {
+                                                "X"
+
+                                            }
+                                        }
+
+                                        3L -> {
+                                            if (hasSalesmanPermission("D13")) {
+                                                if (item.PenAmt != null) item.PenAmt.toString() else "-"
+
+                                            } else {
+                                                "X"
+
+                                            }
+                                        }
+
+                                        4L -> {
+                                            if (hasSalesmanPermission("D14")) {
+                                                if (item.PenAmt != null) item.PenAmt.toString() else "-"
+
+                                            } else {
+                                                "X"
+
+                                            }
+                                        }
+
+
+                                        5L -> {
+                                            if (hasSalesmanPermission("D15")) {
+                                                if (item.PenAmt != null) item.PenAmt.toString() else "-"
+
+                                            } else {
+                                                "X"
+
+                                            }
+                                        }
+
+                                        6L -> {
+                                            if (hasSalesmanPermission("D16")) {
+                                                if (item.PenAmt != null) item.PenAmt.toString() else "-"
+
+                                            } else {
+                                                "X"
+
+                                            }
+                                        }
+
+                                        else -> {
+                                            if (item.PenAmt != null) item.PenAmt.toString() else "-"
+
+                                        }
+                                    },
                                     onClick = {
                                         when (item.RecType) {
-                                            1L -> nav?.push(
-                                                OutstandingReportScreen(
-                                                    name = "Bill Receivable",
-                                                    startDate = StartDate(),
-                                                    endDate = CurrentDate(),
-                                                    cm1 = ""
+                                            1L ->
+                                                salesmanPermission(
+                                                    flag = "D8",
+                                                    accessDeniedBlock = { showDeniedDialog = true },
+                                                    successBlock = {
+                                                        nav?.push(
+                                                            OutstandingReportScreen(
+                                                                name = "Bill Receivable",
+                                                                startDate = StartDate(),
+                                                                endDate = CurrentDate(),
+                                                                cm1 = ""
+                                                            )
+                                                        )
+                                                    }
                                                 )
+
+
+                                            2L ->
+                                                salesmanPermission(
+                                                    flag = "D9",
+                                                    accessDeniedBlock = { showDeniedDialog = true },
+                                                    successBlock = {
+                                                        nav?.push(
+                                                            OutstandingReportScreen(
+                                                                name = "Bill Payable",
+                                                                startDate = StartDate(),
+                                                                endDate = CurrentDate(),
+                                                                cm1 = ""
+                                                            )
+                                                        )
+                                                    }
+                                                )
+
+
+                                            3L ->
+                                                salesmanPermission(
+                                                    flag = "D13",
+                                                    accessDeniedBlock = { showDeniedDialog = true },
+                                                    successBlock = {
+                                                        nav?.push(
+                                                            RegisterReportScreen(
+                                                                name = "Sales",
+                                                                startDate = StartDate(),
+                                                                endDate = CurrentDate()
+                                                            )
+                                                        )
+                                                    }
+                                                )
+
+
+                                            4L ->
+
+                                                salesmanPermission(
+                                                    flag = "D14",
+                                                    accessDeniedBlock = { showDeniedDialog = true },
+                                                    successBlock = {
+                                                        nav?.push(
+                                                            RegisterReportScreen(
+                                                                name = "Purchase",
+                                                                startDate = StartDate(),
+                                                                endDate = CurrentDate()
+                                                            )
+                                                        )
+                                                    }
+                                                )
+
+                                            5L -> salesmanPermission(
+                                                flag = "D15",
+                                                accessDeniedBlock = { showDeniedDialog = true },
+                                                successBlock = {
+                                                    nav?.push(
+                                                        RegisterReportScreen(
+                                                            name = "Receipt",
+                                                            startDate = StartDate(),
+                                                            endDate = CurrentDate()
+                                                        )
+                                                    )
+                                                }
                                             )
 
-                                            2L -> nav?.push(
-                                                OutstandingReportScreen(
-                                                    name = "Bill Payable",
-                                                    startDate = StartDate(),
-                                                    endDate = CurrentDate(),
-                                                    cm1 = ""
-                                                )
-                                            )
-
-                                            3L -> nav?.push(
-                                                RegisterReportScreen(
-                                                    name = "Sales",
-                                                    startDate = StartDate(),
-                                                    endDate = CurrentDate()
-                                                )
-                                            )
-
-                                            4L -> nav?.push(
-                                                RegisterReportScreen(
-                                                    name = "Purchase",
-                                                    startDate = StartDate(),
-                                                    endDate = CurrentDate()
-                                                )
-                                            )
-
-                                            5L -> nav?.push(
-                                                RegisterReportScreen(
-                                                    name = "Receipt",
-                                                    startDate = StartDate(),
-                                                    endDate = CurrentDate()
-                                                )
-                                            )
-
-                                            6L -> nav?.push(
-                                                RegisterReportScreen(
-                                                    name = "Payment",
-                                                    startDate = StartDate(),
-                                                    endDate = CurrentDate()
-                                                )
+                                            6L -> salesmanPermission(
+                                                flag = "D16",
+                                                accessDeniedBlock = { showDeniedDialog = true },
+                                                successBlock = {
+                                                    nav?.push(
+                                                        RegisterReportScreen(
+                                                            name = "Payment",
+                                                            startDate = StartDate(),
+                                                            endDate = CurrentDate()
+                                                        )
+                                                    )
+                                                }
                                             )
                                         }
                                     }
                                 )
                             }
                         }
+
                     }
                 }
 
@@ -249,7 +364,9 @@ object HomeTab : Tab {
                 }
             }
 
-
+            if (showDeniedDialog) {
+                PermissionDeniedDialog { showDeniedDialog = false }
+            }
         }
     }
 }
