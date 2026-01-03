@@ -203,7 +203,7 @@ data class CreateDistributorScreen(
                                 }
                             },
                             onDismiss = { showBottomSheet = false },
-                            bottomSheetState = rememberModalBottomSheetState(),
+                            bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
                             title = "Ledger Name",
                         )
                         Spacer(Modifier.height(16.dp))

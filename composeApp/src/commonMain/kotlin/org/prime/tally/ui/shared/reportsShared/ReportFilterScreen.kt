@@ -65,7 +65,7 @@ fun ReportFilterScreen(
         val db = DatabaseHolder.instance
         val list =getLedgerMasters(db)
         val nameList = list.map { it.Name }
-        val state = rememberModalBottomSheetState()
+        val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
         Column(
             modifier = Modifier
