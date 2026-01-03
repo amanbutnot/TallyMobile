@@ -76,6 +76,7 @@ import dev.jordond.compass.geolocation.Locator
 import dev.jordond.compass.geolocation.mobile.mobile
 import kotlinx.coroutines.launch
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.expect.formatToAmtDec
 import org.prime.tally.data.model.hasSalesmanPermission
 import org.prime.tally.data.model.salesmanPermission
 import org.prime.tally.data.utils.SharedPrefs
@@ -133,10 +134,7 @@ object HomeTab : Tab {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         )
         {
-            if (isAdmin()) {
-
-                HeadingTitle("Details")
-            } else {
+            if (!isAdmin()) {
                 HeadingTitle("Hi, ${SharedPrefs.DistributorData.get()?.UserName ?: "User"}")
             }
             CompanyInfoCard(
@@ -164,7 +162,7 @@ object HomeTab : Tab {
                                     amount = when (item.RecType) {
                                         1L -> {
                                             if (hasSalesmanPermission("D8")) {
-                                                if (item.PenAmt != null) item.PenAmt.toString() else "-"
+                                                if (item.PenAmt != null) item.PenAmt.formatToAmtDec() else "-"
 
                                             } else {
                                                 "X"
@@ -174,7 +172,7 @@ object HomeTab : Tab {
 
                                         2L -> {
                                             if (hasSalesmanPermission("D9")) {
-                                                if (item.PenAmt != null) item.PenAmt.toString() else "-"
+                                                if (item.PenAmt != null) item.PenAmt.formatToAmtDec() else "-"
 
                                             } else {
                                                 "X"
@@ -184,7 +182,7 @@ object HomeTab : Tab {
 
                                         3L -> {
                                             if (hasSalesmanPermission("D13")) {
-                                                if (item.PenAmt != null) item.PenAmt.toString() else "-"
+                                                if (item.PenAmt != null) item.PenAmt.formatToAmtDec() else "-"
 
                                             } else {
                                                 "X"
@@ -194,7 +192,7 @@ object HomeTab : Tab {
 
                                         4L -> {
                                             if (hasSalesmanPermission("D14")) {
-                                                if (item.PenAmt != null) item.PenAmt.toString() else "-"
+                                                if (item.PenAmt != null) item.PenAmt.formatToAmtDec() else "-"
 
                                             } else {
                                                 "X"
@@ -205,7 +203,7 @@ object HomeTab : Tab {
 
                                         5L -> {
                                             if (hasSalesmanPermission("D15")) {
-                                                if (item.PenAmt != null) item.PenAmt.toString() else "-"
+                                                if (item.PenAmt != null) item.PenAmt.formatToAmtDec() else "-"
 
                                             } else {
                                                 "X"
@@ -215,7 +213,7 @@ object HomeTab : Tab {
 
                                         6L -> {
                                             if (hasSalesmanPermission("D16")) {
-                                                if (item.PenAmt != null) item.PenAmt.toString() else "-"
+                                                if (item.PenAmt != null) item.PenAmt.formatToAmtDec() else "-"
 
                                             } else {
                                                 "X"
@@ -224,7 +222,7 @@ object HomeTab : Tab {
                                         }
 
                                         else -> {
-                                            if (item.PenAmt != null) item.PenAmt.toString() else "-"
+                                            if (item.PenAmt != null) item.PenAmt.formatToAmtDec() else "-"
 
                                         }
                                     },

@@ -44,6 +44,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.expect.formatToAmtDec
 import org.prime.tally.data.expect.formatToQtyDec
 import org.prime.tally.ui.printing.LedgerRow
 import org.prime.tally.ui.printing.accountLedgerHtml
@@ -236,7 +237,7 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                             TextAlign.Start
                         ),
                         ReportColumn(
-                            "Closing: ${kotlin.math.abs(closingBalance)} $closingBalanceType",
+                            "Closing: ${closingBalance.formatToAmtDec()} $closingBalanceType",
                             columnBigWeight,
                             TextAlign.End
                         ),
@@ -391,7 +392,7 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                             horizontalArrangement = Arrangement.End
                         ) {
                             Text(
-                                "Opening: ${kotlin.math.abs(openingBalance?.OpeningBal?.toDouble() ?: 0.0)} $openingBalType",
+                                "Opening: ${openingBalance?.OpeningBal?.formatToAmtDec()} $openingBalType",
                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.onBackground
                             )
@@ -414,7 +415,7 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                                     }
                                 }
                             } else {
-                                var bal = openingBalance?.OpeningBal?.toDouble() ?: 0.0
+                                var bal = openingBalance?.OpeningBal?.formatToAmtDec()?.toDouble() ?: 0.0
                                 items(filteredList) { item ->
                                     bal += (item.D2 ?: 0.0) - (item.D3 ?: 0.0)
                                     val balType = if (bal >= 0) "Cr" else "Dr"
@@ -461,14 +462,14 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                                                     isHeader = false
                                                 )
                                                 TableCell(
-                                                    text = if (item.D2 == 0.0) "${item.D3?.formatToQtyDec()} Dr" else "${item.D2?.formatToQtyDec()} Cr",
+                                                    text = if (item.D2 == 0.0) "${item.D3?.formatToAmtDec()} Dr" else "${item.D2?.formatToAmtDec()} Cr",
                                                     weight = columnSmallWeight,
                                                     textAlign = TextAlign.End,
                                                     textColor = if (item.D2 == 0.0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                                                     isHeader = false
                                                 )
                                                 TableCell(
-                                                    text = "${kotlin.math.abs(bal).formatToQtyDec()} $balType",
+                                                    text = "${kotlin.math.abs(bal).formatToAmtDec()} $balType",
                                                     weight = columnSmallWeight,
                                                     textAlign = TextAlign.End,
                                                     isHeader = false
