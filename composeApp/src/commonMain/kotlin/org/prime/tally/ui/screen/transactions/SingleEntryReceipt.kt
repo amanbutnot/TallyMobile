@@ -252,7 +252,7 @@ data class SingleEntryReceipt(
                             }
                         },
                         onDismiss = { showBottomSheet = false },
-                        bottomSheetState = rememberModalBottomSheetState(),
+                        bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
                         title = "Ledger Name",
                     )
                     TransactionBottomSheet(
@@ -265,7 +265,7 @@ data class SingleEntryReceipt(
                             }
                         },
                         onDismiss = { showSettlementBottomSheet = false },
-                        bottomSheetState = rememberModalBottomSheetState(),
+                        bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
                         title = "Settlement",
                     )
                 }
