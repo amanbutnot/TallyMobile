@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import org.prime.tally.data.enums.MasterEnums
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.expect.formatToAmtDec
 import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.shared.composables.TallyScaffold
 import org.prime.tally.ui.shared.globalShared.getItemMasters
@@ -385,16 +386,16 @@ private fun BottomSheetContent(item: Any) {
                     SectionHeader("Pricing Information")
                 }
                 item.PurcPrice?.let {
-                    item { SheetRow(label = "Purchase Price", value = "₹${it}") }
+                    item { SheetRow(label = "Purchase Price", value = it.formatToAmtDec()) }
                 }
                 item.SalesPrice?.let {
-                    item { SheetRow(label = "Sales Price", value = "₹${it}") }
+                    item { SheetRow(label = "Sales Price", value = it.formatToAmtDec()) }
                 }
                 item.SelfValPrice?.let {
-                    item { SheetRow(label = "Self Value Price", value = "₹${it}") }
+                    item { SheetRow(label = "Self Value Price", value = it.formatToAmtDec()) }
                 }
                 item.MinSalesPrice?.let {
-                    item { SheetRow(label = "Min Sales Price", value = "₹${it}") }
+                    item { SheetRow(label = "Min Sales Price", value = it.formatToAmtDec()) }
                 }
 
             }

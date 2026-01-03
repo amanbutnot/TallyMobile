@@ -448,7 +448,8 @@ data class OutstandingReportScreen(
 
                         LazyColumn(
                             modifier = Modifier.fillMaxSize()
-                        ) {
+                        )
+                        {
                             if (name == "Bill Receivable") {
                                 if (filteredReceivableList.isEmpty()) {
                                     item {
@@ -491,16 +492,6 @@ data class OutstandingReportScreen(
                                                     vertical = 10.dp
                                                 )
                                             ) {
-                                                Row {
-                                                    TableCell(
-                                                        item.cm1.toString(),
-                                                        1f,
-                                                        textAlign = TextAlign.Start,
-                                                        isHeader = true
-                                                    )
-                                                }
-                                                Spacer(Modifier.height(4.dp))
-
                                                 Row(
                                                     modifier = Modifier.fillMaxWidth(),
                                                     verticalAlignment = Alignment.CenterVertically
@@ -509,15 +500,28 @@ data class OutstandingReportScreen(
                                                         "Bill No. ${item.billNumber}",
                                                         1f,
                                                         textAlign = TextAlign.Start,
-                                                        isHeader = false
+                                                        isHeader = true
                                                     )
                                                     TableCell(
                                                         "Date: ${Tdate(item.date.toString())}",
                                                         1f,
                                                         textAlign = TextAlign.End,
+                                                        isHeader = true
+                                                    )
+                                                }
+
+                                                Spacer(Modifier.height(4.dp))
+
+                                                Row {
+                                                    TableCell(
+                                                        item.cm1.toString(),
+                                                        1f,
+                                                        textAlign = TextAlign.Start,
                                                         isHeader = false
                                                     )
                                                 }
+
+
                                                 Spacer(Modifier.height(4.dp))
                                                 Row(
                                                     modifier = Modifier.fillMaxWidth(),
@@ -597,32 +601,34 @@ data class OutstandingReportScreen(
                                                 )
                                             ) {
                                                 Row {
+
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        TableCell(
+                                                            "Bill No. ${item.billNumber}",
+                                                            1f,
+                                                            textAlign = TextAlign.Start,
+                                                            isHeader = true
+                                                        )
+                                                        TableCell(
+                                                            "Date: ${Tdate(item.date.toString())}",
+                                                            1f,
+                                                            textAlign = TextAlign.End,
+                                                            isHeader = true
+                                                        )
+                                                    }
+                                                    Spacer(Modifier.height(4.dp))
                                                     TableCell(
                                                         item.cm1.toString(),
                                                         1f,
                                                         textAlign = TextAlign.Start,
-                                                        isHeader = true
+                                                        isHeader = false
                                                     )
                                                 }
-                                                Spacer(Modifier.height(4.dp))
 
-                                                Row(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    TableCell(
-                                                        "Bill No. ${item.billNumber}",
-                                                        1f,
-                                                        textAlign = TextAlign.Start,
-                                                        isHeader = false
-                                                    )
-                                                    TableCell(
-                                                        "Date: ${Tdate(item.date.toString())}",
-                                                        1f,
-                                                        textAlign = TextAlign.End,
-                                                        isHeader = false
-                                                    )
-                                                }
+
                                                 Spacer(Modifier.height(4.dp))
                                                 Row(
                                                     modifier = Modifier.fillMaxWidth(),
