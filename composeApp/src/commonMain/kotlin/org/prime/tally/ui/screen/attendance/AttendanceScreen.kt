@@ -163,7 +163,7 @@ data class AttendanceScreen(
                             }
                         },
                         onDismiss = { showBottomSheet = false },
-                        bottomSheetState = rememberModalBottomSheetState(),
+                        bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
                         title = "Ledger Name",
                     )
 

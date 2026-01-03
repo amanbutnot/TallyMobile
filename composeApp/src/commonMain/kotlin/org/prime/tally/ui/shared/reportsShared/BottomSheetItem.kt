@@ -76,7 +76,7 @@ fun <T> BottomSheetItem(
             sheetGesturesEnabled = false,
             containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp,
-            modifier = Modifier.fillMaxHeight(0.9f)
+            modifier = Modifier.fillMaxHeight()
         ) {
             Column(
                 modifier = Modifier
