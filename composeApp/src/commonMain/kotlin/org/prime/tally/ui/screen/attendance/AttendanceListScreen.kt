@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,6 +32,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -54,20 +54,16 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.tally.business.viewmodel.attendance.AttendanceViewModel
-import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.model.attendance.AttendanceListRequest
 import org.prime.tally.data.model.attendance.AttendanceListResponse
 import org.prime.tally.data.model.attendance.SalesmanList
 import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.screen.transactions.TransactionBottomSheet
-import org.prime.tally.ui.screen.transactions.TransactionOneBottomSheet
 import org.prime.tally.ui.shared.composables.TallyButton
 import org.prime.tally.ui.shared.composables.TallyCircularLoader
 import org.prime.tally.ui.shared.composables.TallyScaffold
 import org.prime.tally.ui.shared.globalShared.StartDate
 import org.prime.tally.ui.shared.globalShared.Tdate
-import org.prime.tally.ui.shared.globalShared.getLedgerMasters
-import org.prime.tally.ui.shared.reportsShared.BottomSheetItem
 
 data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -80,16 +76,14 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
             var selectedAccount by rememberSaveable { mutableStateOf("") }
             var selectedMobile by rememberSaveable { mutableStateOf("") }
             var showBottomSheet by remember { mutableStateOf(false) }
-            val state = rememberModalBottomSheetState()
+            var reportType by rememberSaveable { mutableStateOf("ALL") }
+
+            val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
             val viewModel: AttendanceViewModel = viewModel { AttendanceViewModel() }
-            val isAdmin = SharedPrefs.User.get()?.role=="admin"
-            var selectedSalesman by rememberSaveable {
-                mutableStateOf<SalesmanList?>(null)
-            }
+            val isAdmin = SharedPrefs.User.get()?.role == "admin"
 
             val vState by viewModel.salesmanList
             val nameList = vState.data ?: emptyList()
-
 
             LaunchedEffect(Unit) {
                 viewModel.getSalesmanList()
@@ -98,162 +92,206 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues).navigationBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            )
-            {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(paddingValues)
+                    .navigationBarsPadding()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Compact Header
+                Text(
+                    text = "Attendance Configuration",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-                {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CalendarMonth,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
 
-                    Column {
-                        Text(
-                            text = "Date Range",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Fill the filters",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Card(
+                // Main Card
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
                     border = BorderStroke(
                         1.dp,
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                    ),
-                    shape = RoundedCornerShape(16.dp)
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-
+                        // Report Type Section (Only for Admin and Check-in)
                         if (isCheckIn && isAdmin) {
-                            Column {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(
-                                    text = "Select Salesman",
+                                    text = "Attendance Type",
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(bottom = 8.dp)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .clickable { showBottomSheet = true },
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainer,
-                                    border = BorderStroke(
-                                        1.dp,
-                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                                    )
-                                )
-                                {
-                                    Row(
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    // All Salesmen Option
+                                    Surface(
                                         modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 14.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = selectedAccount.ifEmpty { "Choose a saleman" },
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = if (selectedAccount.isEmpty())
-                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                reportType = "ALL"
+                                                selectedAccount = ""
+                                                selectedMobile = ""
+                                            },
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (reportType == "ALL")
+                                            MaterialTheme.colorScheme.primaryContainer
+                                        else
+                                            MaterialTheme.colorScheme.surfaceContainer,
+                                        border = BorderStroke(
+                                            1.5.dp,
+                                            if (reportType == "ALL")
+                                                MaterialTheme.colorScheme.primary
                                             else
-                                                MaterialTheme.colorScheme.onSurface
+                                                MaterialTheme.colorScheme.outlineVariant
                                         )
-                                        Icon(
-                                            imageVector = Icons.Outlined.KeyboardArrowDown,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(20.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            RadioButton(
+                                                selected = reportType == "ALL",
+                                                onClick = null,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text(
+                                                "All Salesmen",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = if (reportType == "ALL")
+                                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                                else
+                                                    MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                    }
+
+                                    // Single Salesman Option
+                                    Surface(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable { reportType = "SINGLE" },
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (reportType == "SINGLE")
+                                            MaterialTheme.colorScheme.primaryContainer
+                                        else
+                                            MaterialTheme.colorScheme.surfaceContainer,
+                                        border = BorderStroke(
+                                            1.5.dp,
+                                            if (reportType == "SINGLE")
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.outlineVariant
                                         )
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            RadioButton(
+                                                selected = reportType == "SINGLE",
+                                                onClick = null,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text(
+                                                "Single Salesman",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = if (reportType == "SINGLE")
+                                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                                else
+                                                    MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
                                     }
                                 }
                             }
 
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(1.dp)
-                                    .background(MaterialTheme.colorScheme.outlineVariant)
+                            // Salesman Selection (only for SINGLE)
+                            if (reportType == "SINGLE") {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(
+                                        text = "Select Salesman",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable { showBottomSheet = true },
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = MaterialTheme.colorScheme.surfaceContainer,
+                                        border = BorderStroke(
+                                            1.dp,
+                                            MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                                        )
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 12.dp, vertical = 14.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = selectedAccount.ifEmpty { "Choose a salesman" },
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = if (selectedAccount.isEmpty())
+                                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                                else
+                                                    MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Icon(
+                                                imageVector = Icons.Outlined.KeyboardArrowDown,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            HorizontalDivider(
+                                thickness = 1.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
                             )
                         }
 
+                        // Date Range Section
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            TallyDatePickerRow(
+                                label = "Start Date",
+                                selectedDate = startDate,
+                                onDateSelected = { startDate = it },
+                                defaultDate = CurrentDate()
+                            )
 
-                        TallyDatePickerRow(
-                            label = "Start Date",
-                            selectedDate = startDate,
-                            onDateSelected = { startDate = it },
-                            defaultDate = CurrentDate()
-
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .background(MaterialTheme.colorScheme.outlineVariant)
-                        )
-
-
-                        TallyDatePickerRow(
-                            label = "End Date",
-                            selectedDate = endDate,
-                            defaultDate = CurrentDate(),
-                            onDateSelected = { endDate = it }
-                        )
-
-
-
-                        TransactionBottomSheet(
-                            showBottomSheet = showBottomSheet,
-                            list = nameList.map { Pair(it.salesman_name, it.salesman_mobile) },
-                            onSelected = {
-                                it.let { selectedAccount = it.first
-                                selectedMobile = it.second}
-                            },
-                            onDismiss = { showBottomSheet = false },
-                            bottomSheetState = state
-                        )
-
+                            TallyDatePickerRow(
+                                label = "End Date",
+                                selectedDate = endDate,
+                                defaultDate = CurrentDate(),
+                                onDateSelected = { endDate = it }
+                            )
+                        }
                     }
                 }
+
                 Spacer(modifier = Modifier.weight(1f))
 
+                // Generate Button
                 TallyButton(
                     label = "Generate",
                     onClick = {
@@ -261,18 +299,37 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
                             AttendanceScreenUi(
                                 startDate = startDate,
                                 endDate = endDate,
-                                accountName = selectedMobile,
+                                accountName = if (isAdmin && reportType == "SINGLE") selectedMobile else "",
                                 vchType = if (isCheckIn) 2 else 1
                             )
                         )
                     },
                     enabled = (startDate.isNotEmpty()) &&
-                            (endDate.isNotEmpty()) && (if(isAdmin) selectedMobile.isNotEmpty() else selectedMobile.isEmpty())
-                            ,
+                            (endDate.isNotEmpty()) &&
+                            (if (isAdmin && isCheckIn) {
+                                if (reportType == "SINGLE") selectedMobile.isNotEmpty() else true
+                            } else true),
                     backgroundColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             }
+
+            // Bottom Sheet
+            TransactionBottomSheet(
+                showBottomSheet = showBottomSheet,
+                list = nameList.map {
+                    Pair("${it.salesman_name} (${it.salesman_mobile})", it.salesman_mobile)
+                },
+                onSelected = {
+                    it.let {
+                        selectedAccount = it.first
+                        selectedMobile = it.second
+                    }
+                },
+                onDismiss = { showBottomSheet = false },
+                bottomSheetState = state,
+                title = "Select Salesman"
+            )
         }
     }
 }
@@ -486,24 +543,6 @@ private fun AttendanceItem(item: AttendanceListResponse) {
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Location Info
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Lat: ${item.C2}, Lon: ${item.C3}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
 
                 if (item.C4.isNotBlank()) {
                     Spacer(modifier = Modifier.height(6.dp))
@@ -511,8 +550,6 @@ private fun AttendanceItem(item: AttendanceListResponse) {
                         text = item.C4,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
                         lineHeight = MaterialTheme.typography.bodySmall.lineHeight
                     )
                 }

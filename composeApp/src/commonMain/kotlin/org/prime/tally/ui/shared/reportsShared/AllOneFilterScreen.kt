@@ -50,7 +50,7 @@ fun AllOneFilterScreen(
         val db = DatabaseHolder.instance
         val list = db.ledgerMasterQueries.selectAll().executeAsList()
         val nameList = list.map { (it.Name ?: "") to (it.GUID ?: "") }
-        val state = rememberModalBottomSheetState()
+        val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
         Column(
             modifier = Modifier
