@@ -1,6 +1,5 @@
 package org.prime.tally.data.model
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.prime.tally.data.utils.SharedPrefs
 
@@ -9,13 +8,13 @@ import org.prime.tally.data.utils.SharedPrefs
 data class LoginRequest(
     val Username: String,
     val Password: String,
-    val CompanyID:Int?=null
+    val CompanyID: Int? = null
 )
 
-    @Serializable
-    data class CompanyList(
-        val CompanyDetails: List<Company>
-    )
+@Serializable
+data class CompanyList(
+    val CompanyDetails: List<Company>
+)
 
 @Serializable
 data class Company(
@@ -65,14 +64,14 @@ data class Distributor(
 
 @Serializable
 data class Permissions(
-    val FilterAGRP:String,
-    val ConfigAGRP:String,
-    val FilterAccounts:String,
-    val ConfigAccounts:String,
-    val FilterIGRP:String,
-    val ConfigIGRP:String,
-    val FilterItems:String,
-    val ConfigItems:String,
+    val FilterAGRP: String,
+    val ConfigAGRP: String,
+    val FilterAccounts: String,
+    val ConfigAccounts: String,
+    val FilterIGRP: String,
+    val ConfigIGRP: String,
+    val FilterItems: String,
+    val ConfigItems: String,
     val FilterMobile: String,
     val D1: Int,
     val D2: Int,
@@ -194,6 +193,20 @@ fun salesmanPermission(flag: String, accessDeniedBlock: () -> Unit, successBlock
             successBlock()
         } else {
             accessDeniedBlock()
+        }
+    }
+}
+
+fun hasSalesmanPermission(flag: String): Boolean {
+    val permissions = SharedPrefs.Permissions.get()
+
+    return if (permissions?.FilterMobile == "N" || permissions == null) {
+        true
+    } else {
+        if (permissions.isEnabled(flag) && permissions.FilterMobile == "Y") {
+            true
+        } else {
+            false
         }
     }
 }
