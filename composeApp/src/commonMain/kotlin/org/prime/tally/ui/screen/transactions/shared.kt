@@ -42,6 +42,7 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -215,8 +216,9 @@ fun TransactionBottomSheet(
             sheetGesturesEnabled = false,
             containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp,
-            modifier = Modifier.fillMaxHeight(0.9f)
-        ) {
+            modifier = Modifier.fillMaxHeight()
+        )
+        {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -271,8 +273,7 @@ fun TransactionBottomSheet(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f), contentPadding = WindowInsets.navigationBars.only(
-                        WindowInsetsSides.Bottom).asPaddingValues()
+                        ,
                 ) {
                     // Results count (when searching)
                     if (query.isNotBlank()) {
@@ -352,11 +353,12 @@ fun TransactionBottomSheet(
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionBottomSheetThree(
     showBottomSheet: Boolean,
-    list: List<Triple<String, String,Int>>,
+    list: List<Triple<String, String, Int>>,
     onSelected: (Triple<String, String, Int>) -> Unit,
     onDismiss: () -> Unit,
     bottomSheetState: SheetState,
@@ -390,7 +392,7 @@ fun TransactionBottomSheetThree(
             sheetGesturesEnabled = false,
             containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp,
-            modifier = Modifier.fillMaxHeight(0.9f)
+            modifier = Modifier.fillMaxHeight()
         ) {
             Column(
                 modifier = Modifier
@@ -446,8 +448,7 @@ fun TransactionBottomSheetThree(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f), contentPadding = WindowInsets.navigationBars.only(
-                        WindowInsetsSides.Bottom).asPaddingValues()
+
                 ) {
                     // Results count (when searching)
                     if (query.isNotBlank()) {
@@ -566,7 +567,7 @@ fun TransactionOneBottomSheet(
             sheetGesturesEnabled = false,
             containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp,
-            modifier = Modifier.fillMaxHeight(0.9f)
+            modifier = Modifier.fillMaxHeight()
         ) {
             Column(
                 modifier = Modifier
@@ -622,7 +623,7 @@ fun TransactionOneBottomSheet(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
+
                 ) {
                     // Results count (when searching)
                     if (query.isNotBlank()) {
@@ -740,7 +741,7 @@ fun TransactionLedgerBottomSheet(
             sheetGesturesEnabled = false,
             containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp,
-            modifier = Modifier.fillMaxHeight(0.9f)
+            modifier = Modifier.fillMaxHeight()
         ) {
             Column(
                 modifier = Modifier
@@ -794,7 +795,7 @@ fun TransactionLedgerBottomSheet(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
+
                 ) {
 
                     // Result count

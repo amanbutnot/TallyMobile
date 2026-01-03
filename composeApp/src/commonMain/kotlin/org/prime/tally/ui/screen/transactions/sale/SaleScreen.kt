@@ -698,7 +698,7 @@ fun SelectionSheet(
             onDismiss()
         },
         onDismiss = { onDismiss() },
-        bottomSheetState = rememberModalBottomSheetState(),
+        bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         title = title
     )
 }
@@ -724,7 +724,7 @@ fun SelectionSheetTwo(
             onDismiss()
         },
         onDismiss = { onDismiss() },
-        bottomSheetState = rememberModalBottomSheetState(),
+        bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         title = title
     )
 }
@@ -749,7 +749,7 @@ fun SelectionSheetThree(
             onDismiss()
         },
         onDismiss = { onDismiss() },
-        bottomSheetState = rememberModalBottomSheetState(),
+        bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         title = title
     )
 }
@@ -771,7 +771,7 @@ fun SelectionSheetItem(
             onDismiss()
         },
         onDismiss = { onDismiss() },
-        bottomSheetState = rememberModalBottomSheetState(),
+        bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         title = title
     )
 }
@@ -1588,7 +1588,7 @@ fun TransactionItemBottomList(
             sheetGesturesEnabled = false,
             containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp,
-            modifier = Modifier.fillMaxHeight(0.9f)
+            modifier = Modifier.fillMaxHeight()
         ) {
             Column(
                 modifier = Modifier
