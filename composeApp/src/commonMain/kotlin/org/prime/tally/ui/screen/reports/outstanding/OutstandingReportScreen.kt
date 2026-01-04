@@ -619,6 +619,9 @@ data class OutstandingReportScreen(
                                                             isHeader = true
                                                         )
                                                     }
+
+                                                }
+                                                Row{
                                                     Spacer(Modifier.height(4.dp))
                                                     TableCell(
                                                         item.cm1.toString(),
