@@ -75,6 +75,7 @@ import dev.jordond.compass.geolocation.GeolocatorResult
 import dev.jordond.compass.geolocation.Locator
 import dev.jordond.compass.geolocation.mobile.mobile
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.expect.formatToAmtDec
 import org.prime.tally.data.model.hasSalesmanPermission
@@ -623,7 +624,6 @@ fun ExpandableGrid() {
                         }
 
                         "Check In/Out" -> {
-
                             salesmanPermission(
                                 "D22",
                                 accessDeniedBlock = { showDeniedDialog = true },
@@ -634,17 +634,19 @@ fun ExpandableGrid() {
                                             val locator = Locator.mobile()
                                             val geolocator = Geolocator(locator)
 
-                                            when (val result =
-                                                geolocator.current(Priority.HighAccuracy)) {
+                                            // Try with timeout to prevent indefinite waiting
+                                            val result = withTimeoutOrNull(30000) { // 30 second timeout
+                                                geolocator.current(Priority.HighAccuracy)
+                                            }
+
+                                            when (result) {
                                                 is GeolocatorResult.Success -> {
                                                     val c = result.data.coordinates
                                                     val lat = c.latitude
                                                     val lon = c.longitude
-                                                    val place =
-                                                        getPlaceFromCoordinates(lat, lon)
-                                                    val address =
-                                                        place?.let { formatAddress(it) }
-                                                            ?: "Address not found"
+                                                    val place = getPlaceFromCoordinates(lat, lon)
+                                                    val address = place?.let { formatAddress(it) }
+                                                        ?: "Address not found"
                                                     nav?.push(
                                                         AttendanceScreen(
                                                             lat, lon, address,
@@ -653,7 +655,7 @@ fun ExpandableGrid() {
                                                     )
                                                 }
 
-                                                is GeolocatorResult.Error -> {
+                                                is GeolocatorResult.Error, null -> {
                                                     showLocationPopup = true
                                                 }
                                             }
@@ -663,8 +665,6 @@ fun ExpandableGrid() {
                                     }
                                 }
                             )
-
-
                         }
 
                         "Attendance" -> {
@@ -678,17 +678,19 @@ fun ExpandableGrid() {
                                             val locator = Locator.mobile()
                                             val geolocator = Geolocator(locator)
 
-                                            when (val result =
-                                                geolocator.current(Priority.HighAccuracy)) {
+                                            // Try with timeout to prevent indefinite waiting
+                                            val result = withTimeoutOrNull(30000) { // 30 second timeout
+                                                geolocator.current(Priority.HighAccuracy)
+                                            }
+
+                                            when (result) {
                                                 is GeolocatorResult.Success -> {
                                                     val c = result.data.coordinates
                                                     val lat = c.latitude
                                                     val lon = c.longitude
-                                                    val place =
-                                                        getPlaceFromCoordinates(lat, lon)
-                                                    val address =
-                                                        place?.let { formatAddress(it) }
-                                                            ?: "Address not found"
+                                                    val place = getPlaceFromCoordinates(lat, lon)
+                                                    val address = place?.let { formatAddress(it) }
+                                                        ?: "Address not found"
                                                     nav?.push(
                                                         AttendanceScreen(
                                                             lat, lon, address,
@@ -697,7 +699,7 @@ fun ExpandableGrid() {
                                                     )
                                                 }
 
-                                                is GeolocatorResult.Error -> {
+                                                is GeolocatorResult.Error, null -> {
                                                     showLocationPopup = true
                                                 }
                                             }
@@ -707,7 +709,6 @@ fun ExpandableGrid() {
                                     }
                                 }
                             )
-
                         }
 
                         "Purchase Order" -> salesmanPermission(
