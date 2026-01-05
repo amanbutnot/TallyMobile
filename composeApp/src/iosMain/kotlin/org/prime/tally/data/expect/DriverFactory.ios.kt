@@ -67,13 +67,25 @@ actual class DriverFactory {
             println("📄 Files in SQLiter dir: $contents")
         }
 
-        println("🚀 NOW creating driver")
+        println("🚀 NOW creating driver (explicit basePath via extendedConfig)")
+
         val driver = NativeSqliteDriver(
             schema = TallyDatabase.Schema,
-            name = DB_FILE_NAME
+            name = DB_FILE_NAME,
+            onConfiguration = { config ->
+                config.copy(
+                    // Prevent SQLDelight from trying to create the schema on an already-populated DB
+                    create = { /* no-op */ },
+                    upgrade = { _, _, _ -> /* no-op */ },
+                    // keep setting basePath so the driver opens the file you wrote
+                    extendedConfig = config.extendedConfig.copy(
+                        basePath = sqliterDir
+                    )
+                )
+            }
         )
 
-        println("✔️ Driver created successfully")
+        println("✔️ Driver created successfully, database path = $sqliterDbPath")
 
         return driver
     }

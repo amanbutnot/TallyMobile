@@ -60,7 +60,9 @@ import dev.jordond.compass.geocoder.Geocoder
 import dev.jordond.compass.geocoder.mobile
 import dev.jordond.compass.geocoder.placeOrNull
 import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.ImageFormat
 import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.compressImage
 import io.github.vinceglb.filekit.dialogs.FileKitCameraFacing
 import io.github.vinceglb.filekit.dialogs.FileKitCameraType
 import io.github.vinceglb.filekit.dialogs.openCameraPicker
@@ -206,7 +208,15 @@ data class AttendanceScreen(
                                         )
                                         file?.let {
                                             val bytes = it.readBytes()
-                                            capturedFileInBytes = Base64.encode(bytes)
+                                            val compressedBytes = FileKit.compressImage(
+                                                bytes = bytes,
+                                                quality = 30, // 0-100, where 100 is highest quality
+                                                maxWidth = 1024, // Optional maximum width
+                                                maxHeight = 1024, // Optional maximum height
+                                                imageFormat = ImageFormat.JPEG // JPEG or PNG
+                                            )
+
+                                            capturedFileInBytes = Base64.encode(compressedBytes)
                                             capturedFile = it
                                         }
                                     }
@@ -263,6 +273,7 @@ data class AttendanceScreen(
                                 onClick = {
 
                                     if (isAttendance) {
+                                        println(capturedFileInBytes)
                                         //ATTENDANCE
                                         viewModel.sendAttendance(
                                             attendanceRequest = AttendanceRequest(
