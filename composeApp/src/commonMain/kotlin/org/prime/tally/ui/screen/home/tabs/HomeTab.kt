@@ -636,7 +636,7 @@ fun ExpandableGrid() {
 
                                             // Try with timeout to prevent indefinite waiting
                                             val result = withTimeoutOrNull(30000) { // 30 second timeout
-                                                geolocator.current(Priority.HighAccuracy)
+                                                geolocator.current(Priority.Balanced)
                                             }
 
                                             when (result) {
@@ -680,7 +680,7 @@ fun ExpandableGrid() {
 
                                             // Try with timeout to prevent indefinite waiting
                                             val result = withTimeoutOrNull(30000) { // 30 second timeout
-                                                geolocator.current(Priority.HighAccuracy)
+                                                geolocator.current(Priority.Balanced)
                                             }
 
                                             when (result) {

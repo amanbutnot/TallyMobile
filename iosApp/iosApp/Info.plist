@@ -4,5 +4,7 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Add a description for why you need this permission</string>
 </dict>
 </plist>
