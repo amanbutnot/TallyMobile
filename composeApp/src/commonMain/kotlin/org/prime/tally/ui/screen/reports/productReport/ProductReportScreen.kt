@@ -61,7 +61,7 @@ import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductStockList
 
-data class ProductReportScreen(val productGuid: String? = null) : Screen {
+data class ProductReportScreen(val productGuid: String? = null, val isMain: Boolean) : Screen {
     @Composable
     override fun Content() {
         val db = DatabaseHolder.instance
@@ -73,19 +73,6 @@ data class ProductReportScreen(val productGuid: String? = null) : Screen {
         val focusRequester = remember { FocusRequester() }
         var shareLoading by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
-        val horizontalScrollState = rememberScrollState()
-        val verticalScrollState = rememberScrollState()
-
-        // Define fixed column widths for proper alignment
-        val columnWidths = listOf(
-            180.dp, // Product Name
-            150.dp, // Location
-            100.dp, // Main Qty
-            100.dp, // Alt Qty
-            80.dp,  // C1
-            80.dp,  // C2
-            80.dp   // C3
-        )
 
         LaunchedEffect(Unit) {
             isLoading = true
@@ -194,61 +181,120 @@ data class ProductReportScreen(val productGuid: String? = null) : Screen {
                                 modifier = Modifier.focusRequester(focusRequester)
                             )
                         }
-
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(filteredList) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp)
-                                        .padding(top = 16.dp, bottom = 20.dp)
-                                ) {
-                                    Text(
-                                        text = it.ProductName.toString(),
-                                        style = MaterialTheme.typography.headlineLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(bottom = 8.dp)
-                                    )
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
+                        if(isMain){
+                            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                items(filteredList) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp)
+                                            .padding(top = 16.dp, bottom = 20.dp)
                                     ) {
                                         Text(
-                                            text = it.C1.toString(),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            text = it.ProductName.toString(),
+                                            style = MaterialTheme.typography.headlineLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(bottom = 8.dp)
                                         )
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = it.C1.toString(),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Text(
+                                                text = it.C2.toString(),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Text(
+                                                text = it.C3.toString(),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Text(
+                                                text = it.Value1.toString(),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        thickness = 1.dp,
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                }
+                            }
+                        }else{
+                            val groupId = filteredList.groupBy { it.ProductName }
+                            LazyColumn(modifier = Modifier.fillMaxSize())
+                            {
+                                groupId.forEach { (name,items) ->
+                                    item {
                                         Text(
-                                            text = it.C2.toString(),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Text(
-                                            text = it.C3.toString(),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Text(
-                                            text = it.Value1.toString(),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.primary
+                                            text = name.toString(),
+                                            style = MaterialTheme.typography.headlineLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(bottom = 8.dp)
                                         )
                                     }
+                                    items(items){
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp)
+                                                .padding(top = 16.dp, bottom = 20.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = it.C1.toString(),
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = it.C2.toString(),
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = it.C3.toString(),
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = it.Value1.toString(),
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(horizontal = 16.dp),
+                                            thickness = 1.dp,
+                                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                    }
                                 }
-
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                    thickness = 1.dp,
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                                )
-
-                                Spacer(modifier = Modifier.height(4.dp))
                             }
                         }
-                        // Header Card (sticky)
-                        ScrollableScreen(horizontalScrollState, columnWidths, filteredList)
+
+
+//                        // Header Card (sticky)
+//                        ScrollableScreen(horizontalScrollState, columnWidths, filteredList)
                     }
                 }
             }

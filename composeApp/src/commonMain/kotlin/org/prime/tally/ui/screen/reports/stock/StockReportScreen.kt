@@ -233,7 +233,7 @@ object StockReportScreen : Screen {
                              //TODO: this is the StockItemReportListScreen
                                           //   nav.push(StockItemReportScreen(item.Item_Name))
                                 println(item.MasterCode1?.toInt())
-                                nav.push(ProductReportScreen(item.MasterCode1?.toInt().toString()))
+                                nav.push(ProductReportScreen(item.MasterCode1?.toInt().toString(), isMain = false))
 
                             },
 
