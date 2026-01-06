@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Business
@@ -167,7 +168,7 @@ object SettingScreen : Screen {
                             modifier = Modifier.weight(1f)
                         )
                         ManagementCard(
-                            icon = Icons.Default.List,
+                            icon = Icons.AutoMirrored.Filled.List,
                             label = "View All",
                             subtitle = "Distributors",
                             containerColor = colors.primary,

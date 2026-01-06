@@ -130,7 +130,7 @@ object ReportingTab : Tab {
                                 Report.Outstanding -> nav?.push(OutstandingSelectScreen)
                                 Report.PendingOrders -> nav?.push(Dashboard)
                                 Report.Quotations -> nav?.push(Dashboard)
-                                Report.ProductStock-> nav?.push(ProductReportScreen(null))
+                                Report.ProductStock-> nav?.push(ProductReportScreen(null, isMain = true))
                                 Report.Registers -> nav?.push(RegisterSelectScreen)
                                 Report.StockReport -> {
                                     salesmanPermission(
