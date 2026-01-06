@@ -125,7 +125,7 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         // Report Type Section (Only for Admin and Check-in)
-                        if (isCheckIn && isAdmin) {
+                        if (isAdmin) {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(
                                     text = "Attendance Type",
@@ -385,7 +385,7 @@ data class AttendanceScreenUi(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(paddingValues),
-                            list = state.data?.take(10).orEmpty()
+                            list = state.data.orEmpty()
                         )
                     }
                 }
