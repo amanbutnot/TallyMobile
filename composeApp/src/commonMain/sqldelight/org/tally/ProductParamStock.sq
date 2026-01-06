@@ -24,4 +24,4 @@ JOIN Products p
 JOIN GodownMaster g
     ON g.GUID = pps.MasterCode2
 WHERE
-    (:productGuid IS NULL OR p.GUID = :productGuid);
+    (:productGuid IS NULL OR p.GUID = :productGuid) ORDER BY ProductName,C1,C2,C3,C4,C5;
