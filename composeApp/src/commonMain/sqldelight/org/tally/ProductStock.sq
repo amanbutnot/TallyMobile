@@ -1,21 +1,123 @@
 CREATE TABLE ProductStock (
-    MasterCode1 REAL,
-    MasterCode2 REAL,
-    Value1 REAL,
-    Value2 REAL,
-    Value3 REAL,
+    MasterCode1 TEXT,
+    MasterCode2 TEXT,
+    Value1 TEXT,
+    Value2 TEXT,
+    Value3 TEXT,
     GUID TEXT NOT NULL UNIQUE
 );
 
 
+-- =====================================================
+-- NO FILTERS (BASE)
+-- =====================================================
 getProductStockItemList:
 SELECT
     pps.*,
     p.Name AS ProductName,
-	p.UnitName,
+    p.UnitName,
     g.Name AS GodownName
-FROM ProductStock    pps
-JOIN Products p
-    ON p.GUID = pps.MasterCode1
-JOIN GodownMaster g
-    ON g.GUID = pps.MasterCode2;
+FROM ProductStock pps
+JOIN Products p ON p.GUID = pps.MasterCode1
+JOIN GodownMaster g ON g.GUID = pps.MasterCode2;
+
+
+-- =====================================================
+-- SINGLE FILTERS
+-- =====================================================
+
+getByGroupCode:
+SELECT
+    pps.*,
+    p.Name AS ProductName,
+    p.UnitName,
+    g.Name AS GodownName
+FROM ProductStock pps
+JOIN Products p ON p.GUID = pps.MasterCode1
+JOIN GodownMaster g ON g.GUID = pps.MasterCode2
+WHERE p.GroupCode IN ?;
+
+
+getExcludingGuids:
+SELECT
+    pps.*,
+    p.Name AS ProductName,
+    p.UnitName,
+    g.Name AS GodownName
+FROM ProductStock pps
+JOIN Products p ON p.GUID = pps.MasterCode1
+JOIN GodownMaster g ON g.GUID = pps.MasterCode2
+WHERE p.GUID NOT IN ?;
+
+
+getByGodownCodes:
+SELECT
+    pps.*,
+    p.Name AS ProductName,
+    p.UnitName,
+    g.Name AS GodownName
+FROM ProductStock pps
+JOIN Products p ON p.GUID = pps.MasterCode1
+JOIN GodownMaster g ON g.GUID = pps.MasterCode2
+WHERE pps.MasterCode2 IN ?;
+
+
+-- =====================================================
+-- TWO FILTERS
+-- =====================================================
+
+getByGroupAndExclude:
+SELECT
+    pps.*,
+    p.Name AS ProductName,
+    p.UnitName,
+    g.Name AS GodownName
+FROM ProductStock pps
+JOIN Products p ON p.GUID = pps.MasterCode1
+JOIN GodownMaster g ON g.GUID = pps.MasterCode2
+WHERE p.GroupCode IN ?
+  AND p.GUID NOT IN ?;
+
+
+getByGroupAndGodown:
+SELECT
+    pps.*,
+    p.Name AS ProductName,
+    p.UnitName,
+    g.Name AS GodownName
+FROM ProductStock pps
+JOIN Products p ON p.GUID = pps.MasterCode1
+JOIN GodownMaster g ON g.GUID = pps.MasterCode2
+WHERE p.GroupCode IN ?
+  AND pps.MasterCode2 IN ?;
+
+
+getExcludeAndGodown:
+SELECT
+    pps.*,
+    p.Name AS ProductName,
+    p.UnitName,
+    g.Name AS GodownName
+FROM ProductStock pps
+JOIN Products p ON p.GUID = pps.MasterCode1
+JOIN GodownMaster g ON g.GUID = pps.MasterCode2
+WHERE p.GUID NOT IN ?
+  AND pps.MasterCode2 IN ?;
+
+
+-- =====================================================
+-- ALL THREE FILTERS
+-- =====================================================
+
+getByGroupExcludeAndGodown:
+SELECT
+    pps.*,
+    p.Name AS ProductName,
+    p.UnitName,
+    g.Name AS GodownName
+FROM ProductStock pps
+JOIN Products p ON p.GUID = pps.MasterCode1
+JOIN GodownMaster g ON g.GUID = pps.MasterCode2
+WHERE p.GroupCode IN ?
+  AND p.GUID NOT IN ?
+  AND pps.MasterCode2 IN ?;
