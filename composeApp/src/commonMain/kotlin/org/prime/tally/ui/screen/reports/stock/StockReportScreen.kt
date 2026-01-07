@@ -22,10 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.expect.formatToAmtDec
 import org.prime.tally.data.expect.formatToQtyDec
@@ -37,8 +34,7 @@ import org.prime.tally.ui.shared.composables.TallyCircularLoader
 import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.composables.TallySearchBar
-import org.prime.tally.ui.shared.globalShared.getAmtDecimal
-import org.prime.tally.ui.shared.globalShared.getQtyDecimal
+import org.prime.tally.ui.shared.globalShared.getProductStockItems
 import org.prime.tally.ui.shared.reportsShared.PdfAction
 import org.prime.tally.ui.shared.reportsShared.ReportColumn
 import org.prime.tally.ui.shared.reportsShared.TableCell
@@ -47,7 +43,6 @@ import org.prime.tally.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.tally.ui.shared.reportsShared.TallyReportLazyList
 import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductStockItemList
-import org.tally.StockReportList
 import kotlin.math.absoluteValue
 
 object StockReportScreen : Screen {
@@ -71,19 +66,27 @@ object StockReportScreen : Screen {
         val column3Weight = 0.2f
         val column4Weight = 0.4f
 
-        val totalQty = list.sumOf { it.Value1 ?: 0.0 }
-        val totalAmt = list.sumOf { it.Value3 ?: 0.0 }
+        val totalQty = list.sumOf { it.Value1?.toDouble() ?: 0.0 }
+        val totalAmt = list.sumOf { it.Value3?.toDouble() ?: 0.0 }
 
 
+//        LaunchedEffect(Unit) {
+//            isLoading = true
+//            withContext(Dispatchers.IO) {
+//                list = db.productStockQueries.getProductStockItemList(null,null, demosadf()).executeAsList()
+//                withContext(Dispatchers.Main) {
+//                    isLoading = false
+//                }
+//            }
+//            isLoading = false
+//        }
         LaunchedEffect(Unit) {
             isLoading = true
-            withContext(Dispatchers.IO) {
-                list = db.productStockQueries.getProductStockItemList().executeAsList()
-                withContext(Dispatchers.Main) {
-                    isLoading = false
-                }
-            }
+            list = getProductStockItems(db)
+
             isLoading = false
+
+
         }
         LaunchedEffect(showSearchBar) {
             if (showSearchBar) {
@@ -105,8 +108,8 @@ object StockReportScreen : Screen {
             Quadruple(
                 item.ProductName ?: "",
                 item.UnitName ?: "",
-                item.Value1?.formatToQtyDec() ?: "-",
-                item.Value3?.formatToAmtDec() ?: ""
+                item.Value1?.toDouble()?.formatToQtyDec() ?: "-",
+                item.Value3?.toDouble()?.formatToAmtDec() ?: ""
             )
         }
 
@@ -145,7 +148,7 @@ object StockReportScreen : Screen {
                                 total1 = totalQty.formatToQtyDec(),
                                 total2 = totalAmt.formatToAmtDec()
 
-                                ),
+                            ),
                             action = PdfAction.Share,
                             onLoadingChange = { shareLoading = it }
                         )
@@ -230,10 +233,15 @@ object StockReportScreen : Screen {
                         TallyReportLazyList(
                             items = filteredList,
                             onItemClick = { item ->
-                             //TODO: this is the StockItemReportListScreen
-                                          //   nav.push(StockItemReportScreen(item.Item_Name))
+                                //TODO: this is the StockItemReportListScreen
+                                //   nav.push(StockItemReportScreen(item.Item_Name))
                                 println(item.MasterCode1?.toInt())
-                                nav.push(ProductReportScreen(item.MasterCode1?.toInt().toString(), isMain = false))
+                                nav.push(
+                                    ProductReportScreen(
+                                        item.MasterCode1?.toInt().toString(),
+                                        isMain = false
+                                    )
+                                )
 
                             },
 
@@ -253,13 +261,13 @@ object StockReportScreen : Screen {
 //                                    isHeader = false
 //                                )
                                 TableCell(
-                                    text = item.Value1?.formatToQtyDec()?:"-",
+                                    text = item.Value1?.toDouble()?.formatToQtyDec() ?: "-",
                                     weight = column3Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false
                                 )
                                 TableCell(
-                                    text = item.Value3?.formatToAmtDec()?:"-",
+                                    text = item.Value3?.toDouble()?.formatToAmtDec() ?: "-",
                                     weight = column4Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false

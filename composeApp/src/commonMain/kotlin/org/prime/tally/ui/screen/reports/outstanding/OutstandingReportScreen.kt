@@ -52,6 +52,7 @@ import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.composables.TallySearchBar
 import org.prime.tally.ui.shared.globalShared.Tdate
+import org.prime.tally.ui.shared.globalShared.outstandingFilter
 import org.prime.tally.ui.shared.reportsShared.DueDays
 import org.prime.tally.ui.shared.reportsShared.PdfAction
 import org.prime.tally.ui.shared.reportsShared.ReportColumn
@@ -95,7 +96,7 @@ data class OutstandingReportScreen(
                         receivableList = db.voucherBillAllocationsQueries.billReceivableLedgerList(
                             DATE = startDate,
                             DATE_ = endDate,
-                            CM1 = cm1
+                            CM1 = cm1, cm3 = outstandingFilter()
                         ).executeAsList().map {
                             BillReceivableList(
                                 VCH_GUID = it.VCH_GUID,
@@ -110,9 +111,10 @@ data class OutstandingReportScreen(
                         }
 
                     } else {
+                        println(outstandingFilter())
                         receivableList = db.voucherBillAllocationsQueries.billReceivableList(
                             DATE = startDate,
-                            DATE_ = endDate
+                            DATE_ = endDate, cm3 =  outstandingFilter()
                         ).executeAsList()
                     }
 
@@ -122,7 +124,7 @@ data class OutstandingReportScreen(
                         payableList = db.voucherBillAllocationsQueries.billPayableLedgerList(
                             DATE = startDate,
                             DATE_ = endDate,
-                            CM1 = cm1
+                            CM1 = cm1, cm3 =  outstandingFilter()
                         ).executeAsList().map {
                             BillPayableList(
                                 VCH_GUID = it.VCH_GUID,
@@ -139,7 +141,7 @@ data class OutstandingReportScreen(
                     } else {
                         payableList = db.voucherBillAllocationsQueries.billPayableList(
                             DATE = startDate,
-                            DATE_ = endDate
+                            DATE_ = endDate, cm3 =  outstandingFilter()
                         ).executeAsList()
                     }
 
