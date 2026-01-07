@@ -73,6 +73,8 @@ data class Permissions(
     val FilterItems: String,
     val ConfigItems: String,
     val FilterMobile: String,
+    val FilterMC:String?=null,
+    val ConfigMC:String?=null,
     val D1: Int,
     val D2: Int,
     val D3: Int,
