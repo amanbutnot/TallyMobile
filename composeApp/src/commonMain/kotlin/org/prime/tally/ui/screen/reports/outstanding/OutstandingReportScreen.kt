@@ -43,6 +43,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.expect.formatToAmtDec
+import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.printing.OutstandingRow
 import org.prime.tally.ui.printing.outstandingHtml
 import org.prime.tally.ui.screen.reports.ledger.LedgerReportItemScreen
@@ -53,6 +54,7 @@ import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.composables.TallySearchBar
 import org.prime.tally.ui.shared.globalShared.Tdate
 import org.prime.tally.ui.shared.globalShared.outstandingFilter
+import org.prime.tally.ui.shared.globalShared.parseToStringList
 import org.prime.tally.ui.shared.reportsShared.DueDays
 import org.prime.tally.ui.shared.reportsShared.PdfAction
 import org.prime.tally.ui.shared.reportsShared.ReportColumn
@@ -87,7 +89,9 @@ data class OutstandingReportScreen(
         var selectedOption by remember { mutableStateOf("Name") }
         val nav = LocalNavigator.currentOrThrow
 
-
+        val perms = SharedPrefs.Permissions.get()
+        val filterBroker = if (perms?.FilterBroker == "Y") 1L else 0L
+        val configBroker = if (filterBroker == 1L) perms?.ConfigBroker.parseToStringList() else emptyList()
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
@@ -96,7 +100,7 @@ data class OutstandingReportScreen(
                         receivableList = db.voucherBillAllocationsQueries.billReceivableLedgerList(
                             DATE = startDate,
                             DATE_ = endDate,
-                            CM1 = cm1, cm3 = outstandingFilter()
+                            CM1 = cm1, filterCm3 = filterBroker, cm3 = configBroker
                         ).executeAsList().map {
                             BillReceivableList(
                                 VCH_GUID = it.VCH_GUID,
@@ -114,7 +118,7 @@ data class OutstandingReportScreen(
                         println(outstandingFilter())
                         receivableList = db.voucherBillAllocationsQueries.billReceivableList(
                             DATE = startDate,
-                            DATE_ = endDate, cm3 =  outstandingFilter()
+                            DATE_ = endDate, filterCm3 = filterBroker, cm3 = configBroker
                         ).executeAsList()
                     }
 
@@ -124,7 +128,7 @@ data class OutstandingReportScreen(
                         payableList = db.voucherBillAllocationsQueries.billPayableLedgerList(
                             DATE = startDate,
                             DATE_ = endDate,
-                            CM1 = cm1, cm3 =  outstandingFilter()
+                            CM1 = cm1, filterCm3 = filterBroker, cm3 = configBroker
                         ).executeAsList().map {
                             BillPayableList(
                                 VCH_GUID = it.VCH_GUID,
@@ -141,7 +145,7 @@ data class OutstandingReportScreen(
                     } else {
                         payableList = db.voucherBillAllocationsQueries.billPayableList(
                             DATE = startDate,
-                            DATE_ = endDate, cm3 =  outstandingFilter()
+                            DATE_ = endDate, filterCm3 = filterBroker, cm3 = configBroker
                         ).executeAsList()
                     }
 
@@ -499,7 +503,7 @@ data class OutstandingReportScreen(
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     TableCell(
-                                                        "Bill No. ${item.billNumber}",
+                                                        "Bill No.:-  ${item.billNumber}",
                                                         1f,
                                                         textAlign = TextAlign.Start,
                                                         isHeader = true

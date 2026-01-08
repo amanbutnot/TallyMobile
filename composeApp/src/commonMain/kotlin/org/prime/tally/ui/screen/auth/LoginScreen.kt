@@ -180,7 +180,7 @@ object LoginScreen : Screen {
                                         Password = password
                                     ),
                                     onSuccess = {
-                                        nav.replaceAll(GoogleDriveDownloadScreen)
+                                        nav.push(GoogleDriveDownloadScreen)
                                     }, onListSuccess = { companyList ->
                                         nav.push(SelectCompanyScreen(email, password, companyList))
                                     }

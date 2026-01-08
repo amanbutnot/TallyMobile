@@ -17,8 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
@@ -49,12 +47,14 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.printing.productReportHtml
 import org.prime.tally.ui.shared.composables.MenuItemData
 import org.prime.tally.ui.shared.composables.TallyCircularLoader
 import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.composables.TallySearchBar
+import org.prime.tally.ui.shared.globalShared.parseToStringList
 import org.prime.tally.ui.shared.reportsShared.PdfAction
 import org.prime.tally.ui.shared.reportsShared.ReportColumn
 import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
@@ -77,8 +77,10 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
-                println(productGuid)
-                list = db.productParamStockQueries.getProductStockList(productGuid).executeAsList()
+                val perms = SharedPrefs.Permissions.get()
+                val enableParam = if (perms?.FilterParam1 == "Y") 1L else 0L
+                val paramFilters = if (enableParam == 1L) perms?.ConfigParam1.parseToStringList() else emptyList()
+                list = db.productParamStockQueries.getProductStockList(productGuid,enableParam,paramFilters).executeAsList()
             }
             isLoading = false
         }
