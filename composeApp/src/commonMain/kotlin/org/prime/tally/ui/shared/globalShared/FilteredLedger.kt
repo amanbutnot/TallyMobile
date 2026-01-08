@@ -1,16 +1,8 @@
 package org.prime.tally.ui.shared.globalShared
 
 import org.prime.tally.data.utils.SharedPrefs
-import org.tally.GetByGodownCodes
-import org.tally.GetByGroupAndExclude
-import org.tally.GetByGroupAndGodown
-import org.tally.GetByGroupCode
-import org.tally.GetByGroupExcludeAndGodown
-import org.tally.GetExcludeAndGodown
-import org.tally.GetExcludingGuids
 import org.tally.GetProductStockItemList
 import org.tally.LedgerMaster
-import org.tally.ProductStock
 import org.tally.Products
 import org.tally.TallyDatabase
 
@@ -114,42 +106,12 @@ fun getItemMasters(db: TallyDatabase): List<Products> {
 
 
 fun outstandingFilter(): String? {
-    return if (SharedPrefs.Permissions.get()?.D29 == 1) {
-        SharedPrefs.User.get()?.FirstName
+    return if (SharedPrefs.Permissions.get()?.FilterBroker == "Y") {
+        SharedPrefs.Permissions.get()?.ConfigBroker
     } else {
         null
     }
 }
-
-private fun GetProductStockItemList.toDomain() = this
-private fun GetByGroupCode.toDomain() = GetProductStockItemList(
-    MasterCode1, MasterCode2, Value1, Value2, Value3,
-    GUID, ProductName, UnitName, GodownName
-)
-private fun GetExcludingGuids.toDomain() = GetProductStockItemList(
-    MasterCode1, MasterCode2, Value1, Value2, Value3,
-    GUID, ProductName, UnitName, GodownName
-)
-private fun GetByGodownCodes.toDomain() = GetProductStockItemList(
-    MasterCode1, MasterCode2, Value1, Value2, Value3,
-    GUID, ProductName, UnitName, GodownName
-)
-private fun GetByGroupAndExclude.toDomain() = GetProductStockItemList(
-    MasterCode1, MasterCode2, Value1, Value2, Value3,
-    GUID, ProductName, UnitName, GodownName
-)
-private fun GetByGroupAndGodown.toDomain() = GetProductStockItemList(
-    MasterCode1, MasterCode2, Value1, Value2, Value3,
-    GUID, ProductName, UnitName, GodownName
-)
-private fun GetExcludeAndGodown.toDomain() = GetProductStockItemList(
-    MasterCode1, MasterCode2, Value1, Value2, Value3,
-    GUID, ProductName, UnitName, GodownName
-)
-private fun GetByGroupExcludeAndGodown.toDomain() = GetProductStockItemList(
-    MasterCode1, MasterCode2, Value1, Value2, Value3,
-    GUID, ProductName, UnitName, GodownName
-)
 
 
 fun getProductStockItems(db: TallyDatabase): List<GetProductStockItemList> {
@@ -157,68 +119,33 @@ fun getProductStockItems(db: TallyDatabase): List<GetProductStockItemList> {
 
     if (perms == null) {
         return db.productStockQueries
-            .getProductStockItemList()
+            .getProductStockItemList(
+                filterGroup = 0,
+                groupCodes = emptyList(),
+                filterExclude = 0,
+                excludeGuids = emptyList(),
+                filterGodown = 0,
+                godownCodes = emptyList()
+            )
             .executeAsList()
-            .map { it.toDomain() }
     }
 
-    val filterGroup = perms.FilterIGRP == "Y"
-    val filterExclude = perms.FilterItems == "Y"
-    val filterGodown = perms.FilterMC == "Y"
+    val filterGroup = if (perms.FilterIGRP == "Y") 1L else 0L
+    val filterExclude = if (perms.FilterItems == "Y") 1L else 0L
+    val filterGodown = if (perms.FilterGodown == "Y") 1L else 0L
 
-    val groupCodes = if (filterGroup) perms.ConfigIGRP.parseToDoubleList() else emptyList()
-    val excludeGuids = if (filterExclude) perms.ConfigItems.parseToStringList() else emptyList()
-    val godownCodes = if (filterGodown) perms.ConfigMC.parseToStringList() else emptyList()
+    val groupCodes = if (filterGroup == 1L) perms.ConfigIGRP.parseToDoubleList() else emptyList()
+    val excludeGuids = if (filterExclude == 1L) perms.ConfigItems.parseToStringList() else emptyList()
+    val godownCodes = if (filterGodown == 1L) perms.ConfigGodown.parseToStringList() else emptyList()
 
-    return when {
-        filterGroup && filterExclude && filterGodown -> {
-            db.productStockQueries
-                .getByGroupExcludeAndGodown(groupCodes, excludeGuids, godownCodes)
-                .executeAsList()
-                .map { it.toDomain() }
-        }
-        filterGroup && filterExclude -> {
-            db.productStockQueries
-                .getByGroupAndExclude(groupCodes, excludeGuids)
-                .executeAsList()
-                .map { it.toDomain() }
-        }
-        filterGroup && filterGodown -> {
-            db.productStockQueries
-                .getByGroupAndGodown(groupCodes, godownCodes)
-                .executeAsList()
-                .map { it.toDomain() }
-        }
-        filterExclude && filterGodown -> {
-            db.productStockQueries
-                .getExcludeAndGodown(excludeGuids, godownCodes)
-                .executeAsList()
-                .map { it.toDomain() }
-        }
-        filterGroup -> {
-            db.productStockQueries
-                .getByGroupCode(groupCodes)
-                .executeAsList()
-                .map { it.toDomain() }
-        }
-        filterExclude -> {
-            db.productStockQueries
-                .getExcludingGuids(excludeGuids)
-                .executeAsList()
-                .map { it.toDomain() }
-        }
-        filterGodown -> {
-            db.productStockQueries
-                .getByGodownCodes(godownCodes)
-                .executeAsList()
-                .map { it.toDomain() }
-        }
-        else -> {
-            db.productStockQueries
-                .getProductStockItemList()
-                .executeAsList()
-                .map { it.toDomain() }
-        }
-    }
+    return db.productStockQueries
+        .getProductStockItemList(
+            filterGroup = filterGroup,
+            groupCodes = groupCodes,
+            filterExclude = filterExclude,
+            excludeGuids = excludeGuids,
+            filterGodown = filterGodown,
+            godownCodes = godownCodes
+        )
+        .executeAsList()
 }
-

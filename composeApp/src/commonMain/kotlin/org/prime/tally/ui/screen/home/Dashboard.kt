@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -41,6 +42,7 @@ import org.prime.tally.ui.screen.home.tabs.HomeTab
 import org.prime.tally.ui.screen.home.tabs.MastersTab
 import org.prime.tally.ui.screen.home.tabs.ReportingTab
 import org.prime.tally.ui.screen.home.tabs.TransactionTab
+import org.prime.tally.ui.screen.startup.GoogleDriveDownloadScreen
 import org.prime.tally.ui.shared.globalShared.CompanyName
 
 object Dashboard : Screen {
@@ -65,6 +67,13 @@ object Dashboard : Screen {
                             )
                         },
                         actions = {
+                            IconButton(onClick = { nav.push(GoogleDriveDownloadScreen)}) {
+                                Icon(
+                                    Icons.Default.CloudSync,
+                                    contentDescription = "Cloud Sync",
+                                    tint = colors.onBackground
+                                )
+                            }
                             IconButton(onClick = { nav.push(SettingScreen) }) {
                                 Icon(
                                     Icons.Default.Settings,
