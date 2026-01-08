@@ -39,7 +39,7 @@ WHERE V.CM2 IN ('New Ref', 'Advance')
   AND V.D1 < 0
   AND  V.DATE>=? AND V.DATE<=?
   AND Adj.AdjustmentAmount < 0
- AND (:cm3 IS NULL OR V.CM3 = :cm3)
+ AND (:filterCm3 = 0 OR V.CM3 IN :cm3)
 ORDER BY V.DATE, V.CM1;
 
 billReceivableLedgerList:
@@ -63,7 +63,7 @@ WHERE V.CM2 IN ('New Ref', 'Advance')
   AND V.D1 < 0
   AND  V.DATE>=? AND V.DATE<=?
   AND V.CM1 =?
-  AND Adj.AdjustmentAmount < 0  AND (:cm3 IS NULL OR V.CM3 = :cm3)
+  AND Adj.AdjustmentAmount < 0  AND (:filterCm3 = 0 OR V.CM3 IN :cm3)
 
 ORDER BY V.DATE, V.CM1;
 
@@ -88,7 +88,7 @@ ON V.BILLID = Adj.BILLID
 WHERE V.CM2 IN ('New Ref', 'Advance')
   AND V.D1 > 0
   AND  V.DATE>=? AND V.DATE<=?
-  AND Adj.AdjustmentAmount > 0  AND (:cm3 IS NULL OR V.CM3 = :cm3)
+  AND Adj.AdjustmentAmount > 0  AND (:filterCm3 = 0 OR V.CM3 IN :cm3)
 
 ORDER BY V.DATE, V.CM1;
 
@@ -114,7 +114,7 @@ WHERE V.CM2 IN ('New Ref', 'Advance')
   AND V.D1 > 0
   AND  V.DATE>=? AND V.DATE<=?
   AND V.CM1 =?
-  AND Adj.AdjustmentAmount > 0  AND (:cm3 IS NULL OR V.CM3 = :cm3)
+  AND Adj.AdjustmentAmount > 0  AND (:filterCm3 = 0 OR V.CM3 IN :cm3)
 
 ORDER BY V.DATE, V.CM1;
 

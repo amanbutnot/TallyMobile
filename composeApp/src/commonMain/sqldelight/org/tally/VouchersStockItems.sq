@@ -51,11 +51,20 @@ Sum(D3) AS Item_Amt
 
 
 godownWiseClosingStockList:
-SELECT CM2 AS Item_Godown ,
-Sum(D1) AS Item_Qty,
-Sum(D3) AS Item_Amt
-FROM Vouchers_StockItems
-  GROUP BY CM2   ORDER BY CM2;
+        SELECT
+            SUM(pps.Value1) AS Item_Qty,
+            SUM(pps.Value3) AS Item_Amt,
+            g.Name           AS Item_Godown,
+            ''               AS UnitName,
+            g.Name           AS GodownName
+        FROM ProductStock pps
+        JOIN GodownMaster g
+            ON g.GUID = pps.MasterCode2
+        WHERE
+            (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes)
+        GROUP BY g.GUID
+        ORDER BY g.Name;
+
 
 
  godownWiseOnEnterList:
