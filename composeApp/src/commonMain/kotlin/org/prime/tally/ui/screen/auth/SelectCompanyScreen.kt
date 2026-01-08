@@ -98,7 +98,7 @@ data class SelectCompanyScreen(val username: String, val passwd: String, val lis
                                         ),
                                         onSuccess = {
 
-                                            nav.replaceAll(GoogleDriveDownloadScreen)
+                                            nav.push(GoogleDriveDownloadScreen)
                                         },
                                         onListSuccess = {}
                                     )
