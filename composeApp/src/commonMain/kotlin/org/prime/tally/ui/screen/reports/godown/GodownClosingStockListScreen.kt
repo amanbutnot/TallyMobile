@@ -29,6 +29,7 @@ import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.expect.formatToAmtDec
 import org.prime.tally.data.expect.formatToQtyDec
+import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.printing.Quadruple
 import org.prime.tally.ui.printing.fourHeaderHtml
 import org.prime.tally.ui.printing.threeHeaderHtml
@@ -38,6 +39,7 @@ import org.prime.tally.ui.shared.composables.TallyCircularLoader
 import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.globalShared.StartDate
+import org.prime.tally.ui.shared.globalShared.parseToStringList
 import org.prime.tally.ui.shared.reportsShared.PdfAction
 import org.prime.tally.ui.shared.reportsShared.ReportColumn
 import org.prime.tally.ui.shared.reportsShared.TableCell
@@ -75,11 +77,14 @@ object GodownClosingStockListScreen : Screen {
         val totalAmt = list.sumOf {
             it.Item_Amt ?: 0.0
         }
+        val perms = SharedPrefs.Permissions.get()
+        val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L
+        val godownCodes = if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
 
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
-                list = db.vouchersStockItemsQueries.godownWiseClosingStockList().executeAsList()
+                list = db.vouchersStockItemsQueries.godownWiseClosingStockList(filterGodown,godownCodes).executeAsList()
                 withContext(Dispatchers.Main) {
                     isLoading = false
                 }

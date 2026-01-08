@@ -29,6 +29,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,41 +44,59 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import kotlinx.coroutines.runBlocking
-import org.prime.tally.data.expect.DatabaseHolder
-import org.prime.tally.data.expect.initializeDatabase
-import org.prime.tally.ui.screen.home.Dashboard
-import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.business.viewmodel.GoogleDriveViewModel
+import org.prime.tally.data.expect.DatabaseHolder
+import org.prime.tally.data.expect.ZipExtractor
+import org.prime.tally.data.utils.SharedPrefs
+import org.prime.tally.ui.screen.home.Dashboard
+import org.prime.tally.ui.shared.composables.TallyResultDialog
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 object GoogleDriveDownloadScreen : Screen {
-    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+    @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalTime::class)
     @Composable
     override fun Content() {
         val colors = MaterialTheme.colorScheme
         val type = MaterialTheme.typography
         val nav = LocalNavigator.currentOrThrow
         val googleDriveViewModel: GoogleDriveViewModel = viewModel { GoogleDriveViewModel() }
+        var showErrorDialog by remember { mutableStateOf(false) }
         val profileState by googleDriveViewModel.driveState
 
 
-//        LaunchedEffect(Unit) {
-//            googleDriveViewModel.getDriveToken() {
-//
-//            }
-//        }
+        if (showErrorDialog) {
+            TallyResultDialog(
+                message = "No ZIP file detected. Please upload the file again",
+                onDone = {
+                    showErrorDialog = false
+                    nav.pop()
+                },
+                isSuccess = false,
+                confirmText = "Try Again"
+            )
+        }
         LaunchedEffect(Unit) {
-            SharedPrefs.FileId.get()?.let {fileId->
-                googleDriveViewModel.getDriveToken {
+            SharedPrefs.FileId.get()?.let { fileId ->
+                googleDriveViewModel.getDriveToken { accessToken ->
                     googleDriveViewModel.downloadDriveFile(
-                        fileId =fileId,
-                        accessToken = it
-                    ) {
+                        fileId = fileId,
+                        accessToken = accessToken
+                    ) { downloadedBytes ->
                         runBlocking {
-                              DatabaseHolder.init(byteArray = it)
+                            try {
+                                val extractor = ZipExtractor()
+                                val extractedBytes = extractor.extractSingle(downloadedBytes)
+                                DatabaseHolder.init(byteArray = extractedBytes)
+                                SharedPrefs.LastSync.save(Clock.System.now().toEpochMilliseconds())
 
+
+                                nav.replaceAll(Dashboard)
+                            } catch (e: Exception) {
+                                showErrorDialog = true
+                            }
                         }
-                     // initializeDatabase(it)
-                        nav.replaceAll(Dashboard)
+                        // initializeDatabase(it)
                     }
                 }
             }

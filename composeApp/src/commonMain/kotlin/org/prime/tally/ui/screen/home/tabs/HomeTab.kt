@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -144,9 +145,11 @@ object HomeTab : Tab {
                 financialYear = Tdate(StartDate()),
                 gstNo = compInfo.T4.toString()
             )
-
+            Spacer(Modifier.height(8.dp))
+            LastSyncedCard(
+                lastSyncDateTime = SharedPrefs.LastSync.get().toString()
+            )
             if (isAdmin()) {
-                Spacer(Modifier.height(8.dp))
                 HeadingTitle("Data")
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -635,9 +638,10 @@ fun ExpandableGrid() {
                                             val geolocator = Geolocator(locator)
 
                                             // Try with timeout to prevent indefinite waiting
-                                            val result = withTimeoutOrNull(30000) { // 30 second timeout
-                                                geolocator.current(Priority.Balanced)
-                                            }
+                                            val result =
+                                                withTimeoutOrNull(30000) { // 30 second timeout
+                                                    geolocator.current(Priority.Balanced)
+                                                }
 
                                             when (result) {
                                                 is GeolocatorResult.Success -> {
@@ -679,9 +683,10 @@ fun ExpandableGrid() {
                                             val geolocator = Geolocator(locator)
 
                                             // Try with timeout to prevent indefinite waiting
-                                            val result = withTimeoutOrNull(30000) { // 30 second timeout
-                                                geolocator.current(Priority.Balanced)
-                                            }
+                                            val result =
+                                                withTimeoutOrNull(30000) { // 30 second timeout
+                                                    geolocator.current(Priority.Balanced)
+                                                }
 
                                             when (result) {
                                                 is GeolocatorResult.Success -> {
@@ -1026,5 +1031,82 @@ private fun InfoRow(
             textAlign = TextAlign.End,
             modifier = Modifier.weight(1f)
         )
+    }
+}
+
+@Composable
+fun LastSyncedCard(
+    lastSyncDateTime: String, // Format: "2024-01-09 14:30:45" or use LocalDateTime
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(20.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Sync,
+                        contentDescription = "Sync",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Last Synced",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = lastSyncDateTime,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            // Optional: Add a sync status indicator
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .background(
+                        MaterialTheme.colorScheme.primary,
+                        CircleShape
+                    )
+            )
+        }
     }
 }
