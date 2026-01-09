@@ -212,7 +212,7 @@ object GodownClosingStockListScreen : Screen {
                         TallyReportHeaderCard(
                             columns = listOf(
                                 ReportColumn(
-                                    "Account Name",
+                                    "Location Name",
                                     column1Weight,
                                     TextAlign.Start
                                 ),
