@@ -25,3 +25,18 @@ JOIN GodownMaster g
     ON g.GUID = pps.MasterCode2
 WHERE
     (:productGuid IS NULL OR p.GUID = :productGuid) AND   (:filterParam1 = 0 OR C1 IN :configParam1) ORDER BY ProductName,C1,C2,C3,C4,C5;
+
+getProductParamStockList:
+SELECT
+    pps.MasterCode1,
+    p.Name AS ProductName,
+    sum(pps.Value1) AS mvalue1,
+    sum(pps.Value2) AS mvalue2
+FROM Product_Param_Stock pps
+JOIN Products p
+    ON p.GUID = pps.MasterCode1
+JOIN GodownMaster g
+    ON g.GUID = pps.MasterCode2
+WHERE
+    (:productGuid IS NULL OR p.GUID = :productGuid) AND   (:filterParam1 = 0 OR C1 IN :configParam1)
+        GROUP BY pps.MasterCode1 ORDER BY ProductName;
