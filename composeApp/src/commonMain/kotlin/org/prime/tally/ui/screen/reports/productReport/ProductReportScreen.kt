@@ -79,8 +79,13 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
             withContext(Dispatchers.IO) {
                 val perms = SharedPrefs.Permissions.get()
                 val enableParam = if (perms?.FilterParam1 == "Y") 1L else 0L
-                val paramFilters = if (enableParam == 1L) perms?.ConfigParam1.parseToStringList() else emptyList()
-                list = db.productParamStockQueries.getProductStockList(productGuid,enableParam,paramFilters).executeAsList()
+                val paramFilters =
+                    if (enableParam == 1L) perms?.ConfigParam1.parseToStringList() else emptyList()
+                list = db.productParamStockQueries.getProductStockList(
+                    productGuid,
+                    enableParam,
+                    paramFilters
+                ).executeAsList()
             }
             isLoading = false
         }
@@ -128,7 +133,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                 onClick = {
                     scope.launch {
                         handlePdfAction(
-                            fileName = "Product Report",
+                            fileName = "Barcode Report",
                             htmlContent = productReportHtml(
                                 rows = list
                             ),
@@ -145,7 +150,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
         }
 
         TallyReportScaffold(
-            title = "Product Report",
+            title = "Barcode Report",
             showBottomBar = true,
             showSearchAction = true,
             showBurgerMenu = true,
@@ -183,122 +188,137 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                                 modifier = Modifier.focusRequester(focusRequester)
                             )
                         }
-                        if(isMain){
-                            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                items(filteredList) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 16.dp)
-                                            .padding(top = 16.dp, bottom = 20.dp)
+//                        if (isMain) {
+//                            LazyColumn(modifier = Modifier.fillMaxSize()) {
+//                                items(filteredList) {
+//                                    Column(
+//                                        modifier = Modifier
+//                                            .fillMaxWidth()
+//                                            .padding(horizontal = 16.dp)
+//                                            .padding(top = 16.dp, bottom = 20.dp)
+//                                    ) {
+//                                        Text(
+//                                            text = it.ProductName.toString(),
+//                                            style = MaterialTheme.typography.headlineLarge,
+//                                            fontWeight = FontWeight.Bold,
+//                                            modifier = Modifier.padding(bottom = 8.dp)
+//                                        )
+//
+//                                        Row(
+//                                            modifier = Modifier.fillMaxWidth(),
+//                                            horizontalArrangement = Arrangement.SpaceBetween
+//                                        ) {
+//                                            Text(
+//                                                text = it.C1.toString(),
+//                                                style = MaterialTheme.typography.bodyMedium,
+//                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+//                                            )
+//                                            Text(
+//                                                text = it.C2.toString(),
+//                                                style = MaterialTheme.typography.bodyMedium,
+//                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+//                                            )
+//                                            Text(
+//                                                text = it.C3.toString(),
+//                                                style = MaterialTheme.typography.bodyMedium,
+//                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+//                                            )
+//                                            Text(
+//                                                text = it.Value1.toString(),
+//                                                style = MaterialTheme.typography.bodyMedium,
+//                                                fontWeight = FontWeight.SemiBold,
+//                                                color = MaterialTheme.colorScheme.primary
+//                                            )
+//                                        }
+//                                    }
+//
+//                                    HorizontalDivider(
+//                                        modifier = Modifier.padding(horizontal = 16.dp),
+//                                        thickness = 1.dp,
+//                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+//                                    )
+//
+//                                    Spacer(modifier = Modifier.height(4.dp))
+//                                }
+//                            }
+//                        } else {
+                        val groupId = filteredList.groupBy { it.ProductName }
+                        LazyColumn(modifier = Modifier.fillMaxSize())
+                        {
+                            groupId.forEach { (name, items) ->
+                                item {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(8.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(
-                                            text = it.ProductName.toString(),
-                                            style = MaterialTheme.typography.headlineLarge,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(bottom = 8.dp)
-                                        )
-
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(
-                                                text = it.C1.toString(),
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Text(
-                                                text = it.C2.toString(),
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Text(
-                                                text = it.C3.toString(),
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Text(
-                                                text = it.Value1.toString(),
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                    }
-
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                        thickness = 1.dp,
-                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                                    )
-
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                }
-                            }
-                        }else{
-                            val groupId = filteredList.groupBy { it.ProductName }
-                            LazyColumn(modifier = Modifier.fillMaxSize())
-                            {
-                                groupId.forEach { (name,items) ->
-                                    item {
                                         Text(
                                             text = name.toString(),
                                             style = MaterialTheme.typography.headlineLarge,
                                             fontWeight = FontWeight.Bold,
                                             modifier = Modifier.padding(bottom = 8.dp)
                                         )
-                                    }
-                                    items(items){
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 16.dp)
-                                                .padding(top = 16.dp, bottom = 20.dp)
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween
-                                            ) {
-                                                Text(
-                                                    text = it.C1.toString(),
-                                                    style = MaterialTheme.typography.bodyLarge,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                                Text(
-                                                    text = it.C2.toString(),
-                                                    style = MaterialTheme.typography.bodyLarge,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                                Text(
-                                                    text = it.C3.toString(),
-                                                    style = MaterialTheme.typography.bodyLarge,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                                Text(
-                                                    text = it.Value1.toString(),
-                                                    style = MaterialTheme.typography.bodyLarge,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = MaterialTheme.colorScheme.primary
-                                                )
-                                            }
-                                        }
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(horizontal = 16.dp),
-                                            thickness = 1.dp,
-                                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                        Text(
+                                            text = "Total: ${items.sumOf { it.Value1 ?: 0.0 }}",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(bottom = 8.dp)
                                         )
-                                        Spacer(modifier = Modifier.height(4.dp))
+
                                     }
+                                }
+                                items(items) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp)
+                                            .padding(top = 16.dp, bottom = 20.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = it.C1.toString(),
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Text(
+                                                text = it.C2.toString(),
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Text(
+                                                text = it.C3.toString(),
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Text(
+                                                text = it.Value1.toString(),
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        thickness = 1.dp,
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(
+                                            alpha = 0.5f
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
                                 }
                             }
                         }
+                    }
 
 
 //                        // Header Card (sticky)
 //                        ScrollableScreen(horizontalScrollState, columnWidths, filteredList)
-                    }
                 }
+                //}
             }
         )
     }
