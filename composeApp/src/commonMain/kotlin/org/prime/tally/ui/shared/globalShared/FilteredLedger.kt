@@ -1,6 +1,7 @@
 package org.prime.tally.ui.shared.globalShared
 
 import org.prime.tally.data.utils.SharedPrefs
+import org.tally.GetProductParamStockList
 import org.tally.GetProductStockItemList
 import org.tally.LedgerMaster
 import org.tally.Products
@@ -146,6 +147,32 @@ fun getProductStockItems(db: TallyDatabase): List<GetProductStockItemList> {
             excludeGuids = excludeGuids,
             filterGodown = filterGodown,
             godownCodes = godownCodes
+        )
+        .executeAsList()
+}
+
+
+fun getProductParamStockItems(db: TallyDatabase): List<GetProductParamStockList> {
+    val perms = SharedPrefs.Permissions.get()
+
+    if (perms == null) {
+        return db.productParamStockQueries
+            .getProductParamStockList(
+                productGuid = null,
+                filterParam1 = 0,
+                configParam1 = emptyList()
+            )
+            .executeAsList()
+    }
+
+    val filterParams = if (perms.FilterParam1 == "Y") 1L else 0L
+    val paramCodes = if (filterParams == 1L) perms.ConfigParam1.parseToStringList() else emptyList()
+
+      return db.productParamStockQueries
+        .getProductParamStockList(
+            productGuid = null,
+            filterParam1 = filterParams,
+            configParam1 = paramCodes
         )
         .executeAsList()
 }
