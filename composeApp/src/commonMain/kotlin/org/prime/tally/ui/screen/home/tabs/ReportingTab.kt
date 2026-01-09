@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.AssignmentLate
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.ProductionQuantityLimits
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Card
@@ -58,6 +59,7 @@ import org.prime.tally.ui.screen.reports.ledger.LedgerReportFilterScreen
 import org.prime.tally.ui.screen.reports.outstanding.OutstandingSelectScreen
 import org.prime.tally.ui.screen.reports.productReport.ProductReportScreen
 import org.prime.tally.ui.screen.reports.registers.RegisterSelectScreen
+import org.prime.tally.ui.screen.reports.stock.ParameterReportScreen
 import org.prime.tally.ui.screen.reports.stock.StockReportScreen
 import org.prime.tally.ui.screen.reports.trialBalance.TrialBalanceScreen
 import org.prime.tally.ui.shared.composables.PermissionDeniedDialog
@@ -101,6 +103,7 @@ object ReportingTab : Tab {
                 Report.Registers,
                 Report.StockReport,
                 Report.ProductStock,
+                Report.ParameterReport,
 //                Report.PendingOrders,
 //                Report.Quotations,
                 Report.GoDownWiseClosingStock
@@ -140,6 +143,15 @@ object ReportingTab : Tab {
                                     )
 
                                 }
+                                //TODO: make D value for parameter report
+                                Report.ParameterReport -> {
+                                    salesmanPermission(
+                                        "D11",
+                                        accessDeniedBlock = {  showDeniedDialog = true  },
+                                        successBlock = {   nav?.push(ParameterReportScreen)}
+                                    )
+
+                                }
                                 Report.TrialBalance -> {
                                     salesmanPermission(
                                         "D10",
@@ -160,10 +172,6 @@ object ReportingTab : Tab {
                                     )
 
                                 }
-
-
-
-
 
                             }
                         }
@@ -234,6 +242,7 @@ sealed class Report(val title: String, val icon: ImageVector) {
     object StockReport : Report("Stock Report", Icons.Default.Inventory)
     object PendingOrders : Report("Pending Orders", Icons.Default.ShoppingCart)
     object Quotations : Report("Quotations", Icons.Default.Description)
-    object GoDownWiseClosingStock : Report("Godown Wise Closeing Stock", Icons.Default.Description)
-    object ProductStock : Report("Product Report", Icons.Default.ProductionQuantityLimits)
+    object GoDownWiseClosingStock : Report("Godown Wise Closing Stock", Icons.Default.Description)
+    object ProductStock : Report("Barcode Report", Icons.Default.QrCodeScanner)
+    object ParameterReport : Report("Parameter Report", Icons.Default.ProductionQuantityLimits)
 }
