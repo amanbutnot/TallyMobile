@@ -37,23 +37,28 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import CurrentDate
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material3.Surface
+import network.chaintech.kmp_date_time_picker.parse
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.ui.shared.composables.TallyButton
 import org.prime.tally.ui.shared.composables.TallyScaffold
 import org.prime.tally.ui.shared.globalShared.StartDate
 import org.prime.tally.ui.shared.globalShared.getLedgerMasters
+import org.prime.tally.ui.shared.globalShared.parseDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportFilterScreen(
-    title:String,
+    title: String,
     showStartDate: Boolean,
     showEndDate: Boolean,
     showAccountSelect: Boolean,
-    buttonText:String="Generate Report",
+    buttonText: String = "Generate Report",
     onGenerateClick: (GenerateReportData) -> Unit
 ) {
     val nav = LocalNavigator.currentOrThrow
@@ -62,8 +67,9 @@ fun ReportFilterScreen(
         var endDate by rememberSaveable { mutableStateOf(CurrentDate()) }
         var selectedAccount by rememberSaveable { mutableStateOf("") }
         var showBottomSheet by remember { mutableStateOf(false) }
+        var showError by remember { mutableStateOf(false) }
         val db = DatabaseHolder.instance
-        val list =getLedgerMasters(db)
+        val list = getLedgerMasters(db)
         val nameList = list.map { it.Name }
         val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -146,7 +152,10 @@ fun ReportFilterScreen(
                                     .clickable { showBottomSheet = true },
                                 shape = RoundedCornerShape(8.dp),
                                 color = MaterialTheme.colorScheme.surfaceContainer,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                                border = BorderStroke(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                                )
                             )
                             {
                                 Row(
@@ -225,21 +234,50 @@ fun ReportFilterScreen(
 
                 }
             }
+            Spacer(modifier = Modifier.height(12.dp))
+            AnimatedVisibility(visible = showError) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ErrorOutline,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+
+                    Spacer(Modifier.width(8.dp))
+
+                    Text(
+                        text = "End date can't be earlier than start date",
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
             Spacer(modifier = Modifier.weight(1f))
 
             TallyButton(
                 label = buttonText,
                 onClick = {
-                    onGenerateClick(
-                        GenerateReportData(
-                            accountName = selectedAccount,
-                            startDate = startDate,
-                            endDate = endDate
+                    if (parseDate(startDate) > parseDate(endDate)) {
+                        showError = true
+                    } else {
+                        showError = false
+                        onGenerateClick(
+                            GenerateReportData(
+                                accountName = selectedAccount,
+                                startDate = startDate,
+                                endDate = endDate
+                            )
                         )
-                    )
-//                    nav.push(
-//                        LedgerReportScreen(selectedAccount, startDate, endDate)
-//                    )
+                    }
                 },
                 enabled = (!showStartDate || startDate.isNotEmpty()) &&
                         (!showEndDate || endDate.isNotEmpty()) &&
