@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CurrencyRupee
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Numbers
@@ -144,39 +143,43 @@ object SettingScreen : Screen {
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Distributor Management Section
-                    Text(
-                        text = "Distributor Management",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = colors.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-                    )
+                    if(userRole()== ROLE.DISTRIBUTOR){
+                        Text(
+                            text = "Distributor Management",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = colors.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            ManagementCard(
+                                icon = Icons.Default.Add,
+                                label = "Create",
+                                subtitle = "New Distributor",
+                                containerColor = colors.primaryContainer,
+                                contentColor = colors.onPrimaryContainer,
+                                onClick = { nav.push(CreateDistributorScreen()) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            ManagementCard(
+                                icon = Icons.AutoMirrored.Filled.List,
+                                label = "View All",
+                                subtitle = "Distributors",
+                                containerColor = colors.primary,
+                                contentColor = colors.onPrimary,
+                                onClick = { nav.push(ListDistributorScreen) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        ManagementCard(
-                            icon = Icons.Default.Add,
-                            label = "Create",
-                            subtitle = "New Distributor",
-                            containerColor = colors.primaryContainer,
-                            contentColor = colors.onPrimaryContainer,
-                            onClick = { nav.push(CreateDistributorScreen()) },
-                            modifier = Modifier.weight(1f)
-                        )
-                        ManagementCard(
-                            icon = Icons.AutoMirrored.Filled.List,
-                            label = "View All",
-                            subtitle = "Distributors",
-                            containerColor = colors.primary,
-                            contentColor = colors.onPrimary,
-                            onClick = { nav.push(ListDistributorScreen) },
-                            modifier = Modifier.weight(1f)
-                        )
                     }
+
+                    // Distributor Management Section
+
 
                     Spacer(modifier = Modifier.height(20.dp))
 //                    TallyDivider()

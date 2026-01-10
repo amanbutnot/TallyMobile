@@ -85,7 +85,8 @@ import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.screen.attendance.AttendanceScreen
 import org.prime.tally.ui.screen.attendance.formatAddress
 import org.prime.tally.ui.screen.attendance.getPlaceFromCoordinates
-import org.prime.tally.ui.screen.home.isAdmin
+import org.prime.tally.ui.screen.home.ROLE
+import org.prime.tally.ui.screen.home.userRole
 import org.prime.tally.ui.screen.reports.ledger.LedgerReportFilterScreen
 import org.prime.tally.ui.screen.reports.outstanding.OutstandingDisFilterScreen
 import org.prime.tally.ui.screen.reports.outstanding.OutstandingReportScreen
@@ -137,7 +138,7 @@ object HomeTab : Tab {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         )
         {
-            if (!isAdmin()) {
+            if (userRole()==ROLE.DISTRIBUTOR) {
                 HeadingTitle("Hi, ${SharedPrefs.DistributorData.get()?.UserName ?: "User"}")
             }
             CompanyInfoCard(
@@ -150,7 +151,7 @@ object HomeTab : Tab {
             LastSyncedCard(
                 lastSyncDateTime = SharedPrefs.LastSync.get().toString()
             )
-            if (isAdmin()) {
+            if (userRole()==ROLE.ADMIN || userRole()==ROLE.SALESMAN) {
                 HeadingTitle("Data")
                 Column(
                     modifier = Modifier.fillMaxWidth(),

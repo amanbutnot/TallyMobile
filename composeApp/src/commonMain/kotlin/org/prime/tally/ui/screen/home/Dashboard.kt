@@ -67,7 +67,7 @@ object Dashboard : Screen {
                             )
                         },
                         actions = {
-                            IconButton(onClick = { nav.push(GoogleDriveDownloadScreen)}) {
+                            IconButton(onClick = { nav.push(GoogleDriveDownloadScreen) }) {
                                 Icon(
                                     Icons.Default.CloudSync,
                                     contentDescription = "Cloud Sync",
@@ -88,7 +88,7 @@ object Dashboard : Screen {
                     )
                 },
                 bottomBar = {
-                    if (isAdmin()) {
+                    if (userRole() == ROLE.ADMIN || userRole() == ROLE.SALESMAN) {
                         BottomTabBar(
                             tabs = listOf(HomeTab, MastersTab, TransactionTab, ReportingTab),
                             tabNavigator = tabNavigator
@@ -164,6 +164,16 @@ fun TabNavigationItem(
     }
 }
 
-fun isAdmin(): Boolean {
-    return SharedPrefs.DistributorData.get() == null
+fun userRole(): ROLE {
+    return when (SharedPrefs.User.get()?.role) {
+        "admin" -> ROLE.ADMIN
+        "salesman" -> ROLE.SALESMAN
+        "distributor" -> ROLE.DISTRIBUTOR
+        else -> {
+            ROLE.ADMIN
+        }
+    }
 }
+
+enum class ROLE { ADMIN, SALESMAN, DISTRIBUTOR }
+
