@@ -1,5 +1,6 @@
 package org.prime.tally.ui.shared.globalShared
 
+import kotlinx.datetime.LocalDate
 import org.prime.tally.data.utils.SharedPrefs
 import org.tally.GetProductParamStockList
 import org.tally.GetProductStockItemList
@@ -175,4 +176,14 @@ fun getProductParamStockItems(db: TallyDatabase): List<GetProductParamStockList>
             configParam1 = paramCodes
         )
         .executeAsList()
+}
+
+
+fun parseDate(date: String): LocalDate {
+    val parts = date.split("-")
+    return LocalDate(
+        year = parts[0].toInt(),
+        monthNumber = parts[1].toInt(),
+        dayOfMonth = parts[2].toInt()
+    )
 }
