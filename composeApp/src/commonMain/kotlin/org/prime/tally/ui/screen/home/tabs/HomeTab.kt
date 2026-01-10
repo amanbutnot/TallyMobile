@@ -97,6 +97,7 @@ import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.globalShared.CompanyName
 import org.prime.tally.ui.shared.globalShared.StartDate
 import org.prime.tally.ui.shared.globalShared.Tdate
+import kotlin.math.absoluteValue
 
 object HomeTab : Tab {
     override val options: TabOptions
@@ -166,7 +167,7 @@ object HomeTab : Tab {
                                     amount = when (item.RecType) {
                                         1L -> {
                                             if (hasSalesmanPermission("D8")) {
-                                                if (item.PenAmt != null) item.PenAmt.formatToAmtDec() else "-"
+                                                if (item.PenAmt != null) item.PenAmt.absoluteValue.formatToAmtDec() else "-"
 
                                             } else {
                                                 "X"
@@ -176,7 +177,7 @@ object HomeTab : Tab {
 
                                         2L -> {
                                             if (hasSalesmanPermission("D9")) {
-                                                if (item.PenAmt != null) item.PenAmt.formatToAmtDec() else "-"
+                                                if (item.PenAmt != null) item.PenAmt.absoluteValue.formatToAmtDec() else "-"
 
                                             } else {
                                                 "X"
@@ -186,7 +187,7 @@ object HomeTab : Tab {
 
                                         3L -> {
                                             if (hasSalesmanPermission("D13")) {
-                                                if (item.PenAmt != null) item.PenAmt.formatToAmtDec() else "-"
+                                                if (item.PenAmt != null) item.PenAmt.absoluteValue.formatToAmtDec() else "-"
 
                                             } else {
                                                 "X"
@@ -196,7 +197,7 @@ object HomeTab : Tab {
 
                                         4L -> {
                                             if (hasSalesmanPermission("D14")) {
-                                                if (item.PenAmt != null) item.PenAmt.formatToAmtDec() else "-"
+                                                if (item.PenAmt != null) item.PenAmt.absoluteValue.formatToAmtDec() else "-"
 
                                             } else {
                                                 "X"
@@ -207,7 +208,7 @@ object HomeTab : Tab {
 
                                         5L -> {
                                             if (hasSalesmanPermission("D15")) {
-                                                if (item.PenAmt != null) item.PenAmt.formatToAmtDec() else "-"
+                                                if (item.PenAmt != null) item.PenAmt.absoluteValue.formatToAmtDec() else "-"
 
                                             } else {
                                                 "X"
@@ -217,7 +218,7 @@ object HomeTab : Tab {
 
                                         6L -> {
                                             if (hasSalesmanPermission("D16")) {
-                                                if (item.PenAmt != null) item.PenAmt.formatToAmtDec() else "-"
+                                                if (item.PenAmt != null) item.PenAmt.absoluteValue.formatToAmtDec() else "-"
 
                                             } else {
                                                 "X"
@@ -226,7 +227,7 @@ object HomeTab : Tab {
                                         }
 
                                         else -> {
-                                            if (item.PenAmt != null) item.PenAmt.formatToAmtDec() else "-"
+                                            if (item.PenAmt != null) item.PenAmt.absoluteValue.formatToAmtDec() else "-"
 
                                         }
                                     },
