@@ -115,12 +115,29 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
         val filteredList = if (searchQuery.isEmpty()) {
             list
         } else {
-            if (selectedOption == "Name") {
-                list.filter { it.AccountName?.startsWith(searchQuery, ignoreCase = true) == true }
-            } else {
-                list.filter { it.VOUCHERNUMBER?.startsWith(searchQuery, ignoreCase = true) == true }
+            val startsWith = list.filter {
+                if (selectedOption == "Name") {
+                    it.AccountName?.startsWith(searchQuery, ignoreCase = true) == true
+                } else {
+                    it.VOUCHERNUMBER?.startsWith(searchQuery, ignoreCase = true) == true
+                }
             }
+
+            val contains = list.filter {
+                if (selectedOption == "Name") {
+                    val value = it.AccountName
+                    value?.contains(searchQuery, ignoreCase = true) == true &&
+                            value?.startsWith(searchQuery, ignoreCase = true) == false
+                } else {
+                    val value = it.VOUCHERNUMBER
+                    value?.contains(searchQuery, ignoreCase = true) == true &&
+                            value?.startsWith(searchQuery, ignoreCase = true) == false
+                }
+            }
+
+            startsWith + contains
         }
+
 
         // Calculate totals and closing balance
         var totalDebit = 0.0
