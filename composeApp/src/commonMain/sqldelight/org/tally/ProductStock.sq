@@ -14,14 +14,14 @@ CREATE TABLE ProductStock (
 
 getProductStockItemList:
 SELECT
-    pps.*,
+pps.MasterCode1,
     p.Name AS ProductName,
-    p.UnitName,
-    g.Name AS GodownName
+    p.UnitName,p.GroupName AS GroupName,Sum(pps.Value1) AS Value1,Sum(pps.Value2) AS Value2,Sum(pps.Value3) AS Value3
 FROM ProductStock pps
 JOIN Products p ON p.GUID = pps.MasterCode1
-JOIN GodownMaster g ON g.GUID = pps.MasterCode2
 WHERE
     (:filterGroup = 0 OR p.GroupCode IN :groupCodes)
     AND (:filterExclude = 0 OR p.GUID NOT IN :excludeGuids)
-    AND (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes);
+    AND (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes)
+GROUP BY pps.MasterCode1,p.Name,  p.UnitName,p.GroupName
+ORDER BY p.Name;
