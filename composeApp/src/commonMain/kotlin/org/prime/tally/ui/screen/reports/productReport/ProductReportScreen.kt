@@ -54,6 +54,7 @@ import org.prime.tally.ui.shared.composables.TallyCircularLoader
 import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.composables.TallySearchBar
+import org.prime.tally.ui.shared.globalShared.parseToDoubleList
 import org.prime.tally.ui.shared.globalShared.parseToStringList
 import org.prime.tally.ui.shared.reportsShared.PdfAction
 import org.prime.tally.ui.shared.reportsShared.ReportColumn
@@ -81,10 +82,27 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                 val enableParam = if (perms?.FilterParam1 == "Y") 1L else 0L
                 val paramFilters =
                     if (enableParam == 1L) perms?.ConfigParam1.parseToStringList() else emptyList()
+                val filterGroup = if (perms?.FilterIGRP == "Y") 1L else 0L
+                val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
+                val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L
+
+                val groupCodes =
+                    if (filterGroup == 1L) perms?.ConfigIGRP.parseToDoubleList() else emptyList()
+                val excludeGuids =
+                    if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
+                val godownCodes =
+                    if (filterGodown == 1L) perms?.ConfigGodown.parseToDoubleList() else emptyList()
+
                 list = db.productParamStockQueries.getProductStockList(
                     productGuid,
                     enableParam,
-                    paramFilters
+                    paramFilters,
+                    filterGroup = filterGroup,
+                    groupCodes = groupCodes,
+                    filterExclude = filterExclude,
+                    excludeGuids = excludeGuids,
+                    filterGodown = filterGodown,
+                    godownCodes = godownCodes
                 ).executeAsList()
             }
             isLoading = false
@@ -99,11 +117,29 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
         val filteredList = if (searchQuery.isEmpty()) {
             list
         } else {
-            list.filter {
-                it.ProductName?.contains(searchQuery, ignoreCase = true) == true ||
-                        it.GodownName?.contains(searchQuery, ignoreCase = true) == true
+            val startsWith = list.filter {
+                it.ProductName?.startsWith(
+                    searchQuery,
+                    ignoreCase = true
+                ) == true || it.GodownName?.startsWith(searchQuery, ignoreCase = true) == true
             }
+
+            val contains = list.filter {
+                val product = it.ProductName
+                val godown = it.GodownName
+
+                (product?.contains(searchQuery, ignoreCase = true) == true || godown?.contains(
+                    searchQuery,
+                    ignoreCase = true
+                ) == true) && (product?.startsWith(
+                    searchQuery,
+                    ignoreCase = true
+                ) != true && godown?.startsWith(searchQuery, ignoreCase = true) != true)
+            }
+
+            startsWith + contains
         }
+
 
         if (shareLoading) {
             TallyLoadingDialog("Generating Report")
@@ -112,38 +148,22 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
 
         val menuItems = listOf(
             MenuItemData(
-                title = "Download",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Product Report",
-                            htmlContent = productReportHtml(
-                                rows = list
-                            ),
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
+            title = "Download", icon = Icons.Default.Download, onClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Product Report", htmlContent = productReportHtml(
+                            rows = list
+                        ), action = PdfAction.Download, onLoadingChange = { shareLoading = it })
                 }
-            ),
-            MenuItemData(
-                title = "Share",
-                icon = Icons.Default.Share,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Barcode Report",
-                            htmlContent = productReportHtml(
-                                rows = list
-                            ),
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
+            }), MenuItemData(
+            title = "Share", icon = Icons.Default.Share, onClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Barcode Report", htmlContent = productReportHtml(
+                            rows = list
+                        ), action = PdfAction.Download, onLoadingChange = { shareLoading = it })
                 }
-            )
-        )
+            }))
 
         if (shareLoading) {
             TallyLoadingDialog("Generating Report")
@@ -160,9 +180,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                 TallyReportBottomBar(
                     columns = listOf(
                         ReportColumn(
-                            "Rows: ${filteredList.count()}",
-                            1f,
-                            TextAlign.Start
+                            "Rows: ${filteredList.count()}", 1f, TextAlign.Start
                         )
                     )
                 )
@@ -170,16 +188,13 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
             content = { paddingValues ->
                 if (isLoading) {
                     Box(
-                        Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        Modifier.fillMaxSize(), contentAlignment = Alignment.Center
                     ) {
                         TallyCircularLoader()
                     }
                 } else {
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues)
+                        modifier = Modifier.fillMaxSize().padding(paddingValues)
                     ) {
                         if (showSearchBar) {
                             TallySearchBar(
@@ -243,8 +258,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
 //                            }
 //                        } else {
                         val groupId = filteredList.groupBy { it.ProductName }
-                        LazyColumn(modifier = Modifier.fillMaxSize())
-                        {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
                             groupId.forEach { (name, items) ->
                                 item {
                                     Row(
@@ -269,8 +283,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                                 }
                                 items(items) {
                                     Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
+                                        modifier = Modifier.fillMaxWidth()
                                             .padding(horizontal = 16.dp)
                                             .padding(top = 16.dp, bottom = 20.dp)
                                     ) {
@@ -319,8 +332,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
 //                        ScrollableScreen(horizontalScrollState, columnWidths, filteredList)
                 }
                 //}
-            }
-        )
+            })
     }
 }
 
@@ -331,16 +343,12 @@ private fun ColumnScope.ScrollableScreen(
     filteredList: List<GetProductStockList>
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
+        modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    )
-    {
+        ), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
         Row(
-            modifier = Modifier
-                .horizontalScroll(horizontalScrollState)
+            modifier = Modifier.horizontalScroll(horizontalScrollState)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             TableCellFixed(
@@ -368,48 +376,33 @@ private fun ColumnScope.ScrollableScreen(
                 isHeader = true
             )
             TableCellFixed(
-                text = "C1",
-                width = columnWidths[4],
-                textAlign = TextAlign.End,
-                isHeader = true
+                text = "C1", width = columnWidths[4], textAlign = TextAlign.End, isHeader = true
             )
             TableCellFixed(
-                text = "C2",
-                width = columnWidths[5],
-                textAlign = TextAlign.End,
-                isHeader = true
+                text = "C2", width = columnWidths[5], textAlign = TextAlign.End, isHeader = true
             )
             TableCellFixed(
-                text = "C3",
-                width = columnWidths[6],
-                textAlign = TextAlign.End,
-                isHeader = true
+                text = "C3", width = columnWidths[6], textAlign = TextAlign.End, isHeader = true
             )
         }
     }
     val state = rememberLazyListState()
     // Data rows with vertical scroll
     LazyColumn(
-        modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f), state = state
-    )
-    {
+        modifier = Modifier.fillMaxWidth().weight(1f), state = state
+    ) {
         itemsIndexed(items = filteredList) { index, item ->
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
+                modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(
                     containerColor = if (index % 2 == 0) {
                         MaterialTheme.colorScheme.surface
                     } else {
                         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                     }
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ), elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Row(
-                    modifier = Modifier
-                        .horizontalScroll(horizontalScrollState)
+                    modifier = Modifier.horizontalScroll(horizontalScrollState)
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     TableCellFixed(
@@ -476,9 +469,7 @@ fun TableCellFixed(
 ) {
     Text(
         text = text,
-        modifier = modifier
-            .width(width)
-            .padding(horizontal = 8.dp),
+        modifier = modifier.width(width).padding(horizontal = 8.dp),
         textAlign = textAlign,
         style = if (isHeader) {
             MaterialTheme.typography.titleSmall
