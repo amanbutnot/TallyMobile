@@ -96,12 +96,17 @@ object StockReportScreen : Screen {
         val filteredList = if (searchQuery.isEmpty()) {
             list
         } else {
-            list.filter {
-                it.ProductName?.startsWith(
-                    searchQuery,
-                    ignoreCase = true
-                ) == true
+            val startsWith = list.filter {
+                it.ProductName?.startsWith(searchQuery, ignoreCase = true) == true
             }
+
+            val contains = list.filter {
+                val value = it.ProductName
+                value?.contains(searchQuery, ignoreCase = true) == true &&
+                        value?.startsWith(searchQuery, ignoreCase = true) == false
+            }
+
+            startsWith + contains
         }
 
         val rows: List<Quadruple<String, String, String, String>> = filteredList.map { item ->
