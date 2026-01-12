@@ -1,5 +1,6 @@
 package org.prime.tally.ui.screen.reports.trialBalance
 
+import CurrentDate
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,13 +23,13 @@ import androidx.compose.ui.text.style.TextAlign
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import CurrentDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.expect.formatToAmtDec
+import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.printing.threeHeaderHtml
 import org.prime.tally.ui.screen.reports.ledger.LedgerReportScreen
 import org.prime.tally.ui.shared.composables.MenuItemData
@@ -37,6 +38,8 @@ import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.composables.TallySearchBar
 import org.prime.tally.ui.shared.globalShared.StartDate
+import org.prime.tally.ui.shared.globalShared.parseToDoubleList
+import org.prime.tally.ui.shared.globalShared.parseToStringList
 import org.prime.tally.ui.shared.reportsShared.PdfAction
 import org.prime.tally.ui.shared.reportsShared.ReportColumn
 import org.prime.tally.ui.shared.reportsShared.TableCell
@@ -83,7 +86,11 @@ object TrialBalanceScreen : Screen {
 
             Triple(item.CM1 ?: "", debit, credit)
         }
-
+        val perms = SharedPrefs.Permissions.get()
+        val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
+        val filterAccounts = if (perms?.FilterAccounts == "Y") 1L else 0L
+        val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
+        val excludeGuids = perms?.ConfigAccounts.parseToStringList()
         val menuItems = listOf(
             MenuItemData(
                 title = "Download",
@@ -97,7 +104,8 @@ object TrialBalanceScreen : Screen {
                                 headers = Triple("Account Name", "Debit", "Credit"),
                                 rows = rows,
                                 totalDebit = totalDebit.formatToAmtDec().toDouble(),
-                                totalCredit = totalCredit.formatToAmtDec().toDouble(), date = StartDate()
+                                totalCredit = totalCredit.formatToAmtDec().toDouble(),
+                                date = StartDate()
                             ),
                             action = PdfAction.Download,
                             onLoadingChange = { shareLoading = it }
@@ -133,7 +141,12 @@ object TrialBalanceScreen : Screen {
 
             isLoading = true
             withContext(Dispatchers.IO) {
-            list = db.vouchersLedgersQueries.trialBalanceList().executeAsList()
+                list = db.vouchersLedgersQueries.trialBalanceList(
+                    groupFilter = filterAGRP,
+                    GroupCode = groupCodes,
+                    excludeFilter = filterAccounts,
+                    GUID = excludeGuids
+                ).executeAsList()
                 withContext(Dispatchers.Main) {
                     isLoading = false
                 }
@@ -148,8 +161,19 @@ object TrialBalanceScreen : Screen {
         val filteredList = if (searchQuery.isEmpty()) {
             list
         } else {
-            list.filter { it.CM1?.startsWith(searchQuery, ignoreCase = true) == true }
+            val startsWith = list.filter {
+                it.CM1?.startsWith(searchQuery, ignoreCase = true) == true
+            }
+
+            val contains = list.filter {
+                val value = it.CM1
+                value?.contains(searchQuery, ignoreCase = true) == true &&
+                        value?.startsWith(searchQuery, ignoreCase = true) == false
+            }
+
+            startsWith + contains
         }
+
 
 
         TallyReportScaffold(
