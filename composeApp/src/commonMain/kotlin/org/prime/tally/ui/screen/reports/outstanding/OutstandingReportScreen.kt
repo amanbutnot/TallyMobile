@@ -54,6 +54,7 @@ import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.composables.TallySearchBar
 import org.prime.tally.ui.shared.globalShared.Tdate
 import org.prime.tally.ui.shared.globalShared.outstandingFilter
+import org.prime.tally.ui.shared.globalShared.parseToDoubleList
 import org.prime.tally.ui.shared.globalShared.parseToStringList
 import org.prime.tally.ui.shared.reportsShared.DueDays
 import org.prime.tally.ui.shared.reportsShared.PdfAction
@@ -62,7 +63,6 @@ import org.prime.tally.ui.shared.reportsShared.TableCell
 import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.BillPayableList
-import org.tally.BillReceivableLedgerList
 import org.tally.BillReceivableList
 import kotlin.math.absoluteValue
 
@@ -91,7 +91,12 @@ data class OutstandingReportScreen(
 
         val perms = SharedPrefs.Permissions.get()
         val filterBroker = if (perms?.FilterBroker == "Y") 1L else 0L
-        val configBroker = if (filterBroker == 1L) perms?.ConfigBroker.parseToStringList() else emptyList()
+        val configBroker =
+            if (filterBroker == 1L) perms?.ConfigBroker.parseToStringList() else emptyList()
+        val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
+        val filterAccounts = if (perms?.FilterAccounts == "Y") 1L else 0L
+        val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
+        val excludeGuids = perms?.ConfigAccounts.parseToStringList()
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
@@ -118,7 +123,13 @@ data class OutstandingReportScreen(
                         println(outstandingFilter())
                         receivableList = db.voucherBillAllocationsQueries.billReceivableList(
                             DATE = startDate,
-                            DATE_ = endDate, filterCm3 = filterBroker, cm3 = configBroker
+                            DATE_ = endDate,
+                            filterCm3 = filterBroker,
+                            cm3 = configBroker,
+                            groupFilter = filterAGRP,
+                            GroupCode = groupCodes,
+                            excludeFilter = filterAccounts,
+                            GUID = excludeGuids
                         ).executeAsList()
                     }
 
@@ -145,7 +156,13 @@ data class OutstandingReportScreen(
                     } else {
                         payableList = db.voucherBillAllocationsQueries.billPayableList(
                             DATE = startDate,
-                            DATE_ = endDate, filterCm3 = filterBroker, cm3 = configBroker
+                            DATE_ = endDate,
+                            filterCm3 = filterBroker,
+                            cm3 = configBroker,
+                            groupFilter = filterAGRP,
+                            GroupCode = groupCodes,
+                            excludeFilter = filterAccounts,
+                            GUID = excludeGuids
                         ).executeAsList()
                     }
 
@@ -164,32 +181,55 @@ data class OutstandingReportScreen(
         val filteredReceivableList = if (searchQuery.isEmpty()) {
             receivableList
         } else {
-            if (selectedOption == "Name") {
-                receivableList.filter { it.cm1?.startsWith(searchQuery, ignoreCase = true) == true }
-            } else {
-                receivableList.filter {
-                    it.billNumber?.startsWith(
-                        searchQuery,
-                        ignoreCase = true
-                    ) == true
+            val startsWith = receivableList.filter {
+                if (selectedOption == "Name") {
+                    it.cm1?.startsWith(searchQuery, ignoreCase = true) == true
+                } else {
+                    it.billNumber?.startsWith(searchQuery, ignoreCase = true) == true
                 }
             }
+
+            val contains = receivableList.filter {
+                if (selectedOption == "Name") {
+                    val value = it.cm1
+                    value?.contains(searchQuery, ignoreCase = true) == true &&
+                            value?.startsWith(searchQuery, ignoreCase = true) == false
+                } else {
+                    val value = it.billNumber
+                    value?.contains(searchQuery, ignoreCase = true) == true &&
+                            value?.startsWith(searchQuery, ignoreCase = true) == false
+                }
+            }
+
+            startsWith + contains
         }
 
         val filteredPayableList = if (searchQuery.isEmpty()) {
             payableList
         } else {
-            if (selectedOption == "Name") {
-                payableList.filter { it.cm1?.contains(searchQuery, ignoreCase = true) == true }
-            } else {
-                payableList.filter {
-                    it.billNumber?.contains(
-                        searchQuery,
-                        ignoreCase = true
-                    ) == true
+            val startsWith = payableList.filter {
+                if (selectedOption == "Name") {
+                    it.cm1?.startsWith(searchQuery, ignoreCase = true) == true
+                } else {
+                    it.billNumber?.startsWith(searchQuery, ignoreCase = true) == true
                 }
             }
+
+            val contains = payableList.filter {
+                if (selectedOption == "Name") {
+                    val value = it.cm1
+                    value?.contains(searchQuery, ignoreCase = true) == true &&
+                            value?.startsWith(searchQuery, ignoreCase = true) == false
+                } else {
+                    val value = it.billNumber
+                    value?.contains(searchQuery, ignoreCase = true) == true &&
+                            value?.startsWith(searchQuery, ignoreCase = true) == false
+                }
+            }
+
+            startsWith + contains
         }
+
 
         // Calculate totals
         val totalRefAmt = if (name == "Bill Receivable") {
@@ -627,7 +667,7 @@ data class OutstandingReportScreen(
                                                     }
 
                                                 }
-                                                Row{
+                                                Row {
                                                     Spacer(Modifier.height(4.dp))
                                                     TableCell(
                                                         item.cm1.toString(),
