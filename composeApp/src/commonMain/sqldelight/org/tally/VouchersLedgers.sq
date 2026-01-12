@@ -21,7 +21,12 @@ trialBalanceList:
 SELECT
     CM1,
     SUM(D1) AS ClsnBal
-FROM Vouchers_Ledgers
+FROM Vouchers_Ledgers WHERE CM1 IN (
+                                                    SELECT Name
+                                                    FROM LedgerMaster
+                                                    WHERE (:groupFilter = 0 OR GroupCode IN ?)
+                                                      AND (:excludeFilter = 0 OR GUID NOT IN ?)
+                                                )
 GROUP BY CM1
 ORDER BY CM1;
 
@@ -50,4 +55,16 @@ ledgerReportItemList:
 SELECT SRNO,CM1 AS LedgerName, D2 AS CreditAmt,D3 AS DebitAmt FROM Vouchers_Ledgers WHERE VCH_GUID  =? ORDER BY SRNO;
 
 registerReportList:
-SELECT DATE,CM1,VchName,VOUCHERNUMBER,D1,VCH_GUID FROM Vouchers_Ledgers   WHERE VchType=? AND SRNO=1 AND DATE>=? AND DATE<=? ORDER BY DATE;
+SELECT DATE,
+VchName,VOUCHERNUMBER,D1,VCH_GUID,CM1
+FROM Vouchers_Ledgers
+WHERE VchType=? AND CM1 IN (
+                        SELECT Name
+                        FROM LedgerMaster
+                        WHERE (:groupFilter = 0 OR GroupCode IN ?)
+                          AND (:excludeFilter = 0 OR GUID NOT IN ?)
+                    )
+  AND SRNO=1
+  AND DATE>=?
+  AND DATE<=?
+ORDER BY DATE ;
