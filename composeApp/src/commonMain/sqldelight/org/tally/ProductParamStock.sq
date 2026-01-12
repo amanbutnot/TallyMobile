@@ -24,7 +24,11 @@ JOIN Products p
 JOIN GodownMaster g
     ON g.GUID = pps.MasterCode2
 WHERE
-    (:productGuid IS NULL OR p.GUID = :productGuid) AND   (:filterParam1 = 0 OR C1 IN :configParam1) ORDER BY ProductName,C1,C2,C3,C4,C5;
+    (:productGuid IS NULL OR p.GUID = :productGuid) AND
+      (:filterParam1 = 0 OR C1 IN :configParam1) AND
+     (:filterGroup = 0 OR p.GroupCode IN :groupCodes) AND
+     (:filterExclude = 0 OR p.GUID NOT IN :excludeGuids) AND
+      (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes) ORDER BY ProductName,C1,C2,C3,C4,C5;
 
 getProductParamStockList:
 SELECT
@@ -38,5 +42,7 @@ JOIN Products p
 JOIN GodownMaster g
     ON g.GUID = pps.MasterCode2
 WHERE
-    (:productGuid IS NULL OR p.GUID = :productGuid) AND   (:filterParam1 = 0 OR C1 IN :configParam1)
+    (:productGuid IS NULL OR p.GUID = :productGuid) AND   (:filterParam1 = 0 OR C1 IN :configParam1) AND     (:filterGroup = 0 OR p.GroupCode IN :groupCodes) AND
+                                                                                                              (:filterExclude = 0 OR p.GUID NOT IN :excludeGuids) AND
+                                                                                                               (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes)
         GROUP BY pps.MasterCode1 ORDER BY ProductName;
