@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.expect.formatToAmtDec
+import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.printing.Quadruple
 import org.prime.tally.ui.printing.fourHeaderHtml
 import org.prime.tally.ui.screen.reports.ledger.LedgerReportItemScreen
@@ -37,6 +38,8 @@ import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyReportScaffold
 import org.prime.tally.ui.shared.composables.TallySearchBar
 import org.prime.tally.ui.shared.globalShared.Tdate
+import org.prime.tally.ui.shared.globalShared.parseToDoubleList
+import org.prime.tally.ui.shared.globalShared.parseToStringList
 import org.prime.tally.ui.shared.reportsShared.PdfAction
 import org.prime.tally.ui.shared.reportsShared.ReportColumn
 import org.prime.tally.ui.shared.reportsShared.TableCell
@@ -70,6 +73,11 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
 
         val totalAmt = list.sumOf { it.D1 ?: 0.0 }
 
+        val perms = SharedPrefs.Permissions.get()
+        val filterAGRP = if (perms?.FilterAGRP == "Y")1L else 0L
+        val filterAccounts = if(perms?.FilterAccounts == "Y")  1L else 0L
+        val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
+        val excludeGuids = perms?.ConfigAccounts.parseToStringList()
 
         LaunchedEffect(Unit) {
             isLoading = true
@@ -77,7 +85,11 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                 list = db.vouchersLedgersQueries.registerReportList(
                     VchType = name,
                     DATE = startDate,
-                    DATE_ = endDate
+                    DATE_ = endDate,
+                    groupFilter =filterAGRP,
+                    GroupCode = groupCodes,
+                    excludeFilter = filterAccounts,
+                    GUID = excludeGuids
                 ).executeAsList()
                 withContext(Dispatchers.Main) {
                     isLoading = false
@@ -93,12 +105,17 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
         val filteredList = if (searchQuery.isEmpty()) {
             list
         } else {
-            list.filter {
-                it.CM1?.startsWith(
-                    searchQuery,
-                    ignoreCase = true
-                ) == true
+            val startsWith = list.filter {
+                it.CM1?.startsWith(searchQuery, ignoreCase = true) == true
             }
+
+            val contains = list.filter {
+                val value = it.CM1
+                value?.contains(searchQuery, ignoreCase = true) == true &&
+                        value?.startsWith(searchQuery, ignoreCase = true) == false
+            }
+
+            startsWith + contains
         }
 
         val rows: List<Quadruple<String, String, String, String>> = filteredList.map { item ->
@@ -121,7 +138,7 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                             fileName = name,
                             htmlContent = fourHeaderHtml(
                                 title = name,
-                                headers = Quadruple("Date", "Name", "Vch No", "Amount"),
+                                headers = Quadruple("Date", "Account", "Vch No", "Amount"),
                                 rows = rows,
                                 total1 = totalAmt.formatToAmtDec(),
                                 startDate = startDate,
@@ -142,7 +159,7 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                             fileName = name,
                             htmlContent = fourHeaderHtml(
                                 title = name,
-                                headers = Quadruple("Date", "Name", "Vch No", "Amount"),
+                                headers = Quadruple("Date", "Account", "Vch No", "Amount"),
                                 rows = rows,
                                 total1 = totalAmt.formatToAmtDec(),
                                 startDate = startDate,
@@ -212,7 +229,7 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                                     TextAlign.Start
                                 ),
                                 ReportColumn(
-                                    "Name",
+                                    "Account",
                                     column2Weight,
                                     TextAlign.Start
                                 ),
