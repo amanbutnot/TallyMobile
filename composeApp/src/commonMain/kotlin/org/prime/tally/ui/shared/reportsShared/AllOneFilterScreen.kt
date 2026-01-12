@@ -27,6 +27,7 @@ import org.prime.tally.ui.screen.transactions.TransactionBottomSheet
 import org.prime.tally.ui.shared.composables.TallyButton
 import org.prime.tally.ui.shared.composables.TallyScaffold
 import org.prime.tally.ui.shared.globalShared.StartDate
+import org.prime.tally.ui.shared.globalShared.getLedgerMasters
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,7 +49,7 @@ fun AllOneFilterScreen(
         var reportType by rememberSaveable { mutableStateOf("ALL") }
 
         val db = DatabaseHolder.instance
-        val list = db.ledgerMasterQueries.selectAll().executeAsList()
+        val list = getLedgerMasters(db)
         val nameList = list.map { (it.Name ?: "") to (it.GUID ?: "") }
         val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
