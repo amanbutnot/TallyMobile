@@ -294,7 +294,7 @@ data class LedgerReportItemScreen(
 
                         if (ledgerStockItemList.isNotEmpty()) {
                             Text(
-                                "Stock Item Details:",
+                                "Voucher Item Details:",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                             )
                             Spacer(Modifier.height(4.dp))

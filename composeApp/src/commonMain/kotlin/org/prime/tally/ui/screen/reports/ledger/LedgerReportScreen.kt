@@ -61,6 +61,7 @@ import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.LedgerOpeningBalance
 import org.tally.LedgerReportList
+import kotlin.math.absoluteValue
 
 data class LedgerReportScreen(val accountName: String, val startDate: String, val endDate: String) :
     Screen {
@@ -254,7 +255,7 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                             TextAlign.Start
                         ),
                         ReportColumn(
-                            "Closing: ${closingBalance.formatToAmtDec()} $closingBalanceType",
+                            "Closing: ${closingBalance.absoluteValue.formatToAmtDec()} $closingBalanceType",
                             columnBigWeight,
                             TextAlign.End
                         ),
@@ -409,7 +410,7 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                             horizontalArrangement = Arrangement.End
                         ) {
                             Text(
-                                "Opening: ${openingBalance?.OpeningBal?.formatToAmtDec()} $openingBalType",
+                                "Opening: ${openingBalance?.OpeningBal?.absoluteValue?.formatToAmtDec()} $openingBalType",
                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.onBackground
                             )
@@ -479,14 +480,14 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                                                     isHeader = false
                                                 )
                                                 TableCell(
-                                                    text = if (item.D2 == 0.0) "${item.D3?.formatToAmtDec()} Dr" else "${item.D2?.formatToAmtDec()} Cr",
+                                                    text = if (item.D2 == 0.0) "${item.D3?.absoluteValue?.formatToAmtDec()} Dr" else "${item.D2?.absoluteValue?.formatToAmtDec()} Cr",
                                                     weight = columnSmallWeight,
                                                     textAlign = TextAlign.End,
                                                     textColor = if (item.D2 == 0.0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                                                     isHeader = false
                                                 )
                                                 TableCell(
-                                                    text = "${kotlin.math.abs(bal).formatToAmtDec()} $balType",
+                                                    text = "${kotlin.math.abs(bal).absoluteValue.formatToAmtDec()} $balType",
                                                     weight = columnSmallWeight,
                                                     textAlign = TextAlign.End,
                                                     isHeader = false

@@ -98,6 +98,8 @@ import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.globalShared.CompanyName
 import org.prime.tally.ui.shared.globalShared.StartDate
 import org.prime.tally.ui.shared.globalShared.Tdate
+import org.prime.tally.ui.shared.globalShared.parseToDoubleList
+import org.prime.tally.ui.shared.globalShared.parseToStringList
 import kotlin.math.absoluteValue
 
 object HomeTab : Tab {
@@ -115,8 +117,25 @@ object HomeTab : Tab {
         val compInfo = queries.getCompanyInformation().executeAsOne()
         var showDeniedDialog by remember { mutableStateOf(false) }
         val nav = LocalNavigator.currentOrThrow.parent
+        val perms = SharedPrefs.Permissions.get()
+        val filterBroker = if (perms?.FilterBroker == "Y") 1L else 0L
+        val configBroker =
+            if (filterBroker == 1L) perms?.ConfigBroker.parseToStringList() else emptyList()
+        val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
+        val filterAccounts = if (perms?.FilterAccounts == "Y") 1L else 0L
+        val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
+        val excludeGuids = perms?.ConfigAccounts.parseToStringList()
 
-        val reportList = queries.dashboardReportData(StartDate(), CurrentDate()).executeAsList()
+        val reportList = queries.dashboardReportData(
+            StartDate(), CurrentDate(), filterCm3 = filterBroker,
+            cm3 = configBroker,
+            groupFilter = filterAGRP,
+            GroupCode = groupCodes,
+            excludeFilter = filterAccounts,
+            GUID = excludeGuids,
+            GroupCode_ =groupCodes,
+            GUID_ = excludeGuids
+        ).executeAsList()
 
         val filteredReportList = reportList.map { report ->
             val newRepType = when (report.RecType) {
@@ -151,7 +170,7 @@ object HomeTab : Tab {
             LastSyncedCard(
                 lastSyncDateTime = SharedPrefs.LastSync.get().toString()
             )
-            if (userRole()==ROLE.ADMIN) {
+            if (userRole()==ROLE.ADMIN || userRole()==ROLE.SALESMAN) {
                 HeadingTitle("Data")
                 Column(
                     modifier = Modifier.fillMaxWidth(),
