@@ -151,7 +151,7 @@ object HomeTab : Tab {
             LastSyncedCard(
                 lastSyncDateTime = SharedPrefs.LastSync.get().toString()
             )
-            if (userRole()==ROLE.ADMIN || userRole()==ROLE.SALESMAN) {
+            if (userRole()==ROLE.ADMIN) {
                 HeadingTitle("Data")
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -338,7 +338,7 @@ object HomeTab : Tab {
 
                 HeadingTitle("Create")
                 ExpandableGrid()
-            } else {
+            } else if(userRole() == ROLE.DISTRIBUTOR){
                 Spacer(Modifier.height(8.dp))
                 HeadingTitle("Quick Actions")
 
@@ -366,6 +366,9 @@ object HomeTab : Tab {
                         }
                     )
                 }
+            }else{
+                HeadingTitle("Create")
+                ExpandableGrid()
             }
 
             if (showDeniedDialog) {
