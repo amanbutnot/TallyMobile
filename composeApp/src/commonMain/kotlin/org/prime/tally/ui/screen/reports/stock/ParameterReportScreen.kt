@@ -295,7 +295,7 @@ object ParameterReportScreen : Screen {
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                             TextButton(onClick = { showGroupFilterSheet = true }) {
-                                Text("Account Group Filter")
+                                Text("Group Filter")
                             }
                         }
                         TallyReportHeaderCard(

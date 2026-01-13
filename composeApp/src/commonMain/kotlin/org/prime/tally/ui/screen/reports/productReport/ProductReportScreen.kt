@@ -290,7 +290,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                             TextButton(onClick = { showGroupFilterSheet = true }) {
-                                Text("Account Group Filter")
+                                Text("Group Filter")
                             }
                         }
 //                        if (isMain) {
