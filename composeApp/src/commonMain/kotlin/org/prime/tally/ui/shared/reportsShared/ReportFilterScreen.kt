@@ -1,11 +1,15 @@
 package org.prime.tally.ui.shared.reportsShared
 
+import CurrentDate
 import TallyDatePickerRow
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,14 +18,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -36,28 +46,29 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import CurrentDate
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material3.Surface
-import network.chaintech.kmp_date_time_picker.parse
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
+import kotlinx.datetime.todayIn
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.ui.shared.composables.TallyButton
 import org.prime.tally.ui.shared.composables.TallyScaffold
 import org.prime.tally.ui.shared.globalShared.StartDate
 import org.prime.tally.ui.shared.globalShared.getLedgerMasters
 import org.prime.tally.ui.shared.globalShared.parseDate
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
 fun ReportFilterScreen(
     title: String,
     showStartDate: Boolean,
     showEndDate: Boolean,
     showAccountSelect: Boolean,
+    showDateRangeSelector: Boolean = false,
     buttonText: String = "Generate Report",
     onGenerateClick: (GenerateReportData) -> Unit
 ) {
@@ -68,106 +79,214 @@ fun ReportFilterScreen(
         var selectedAccount by rememberSaveable { mutableStateOf("") }
         var showBottomSheet by remember { mutableStateOf(false) }
         var showError by remember { mutableStateOf(false) }
+        var selectedRange by rememberSaveable { mutableStateOf("Custom") }
+
         val db = DatabaseHolder.instance
         val list = getLedgerMasters(db)
         val nameList = list.map { it.Name }
         val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+        var showDateRangeMenu by remember { mutableStateOf(false) }
+        val dateRanges = listOf(
+            "Today",
+            "Yesterday",
+            "Tomorrow",
+            "This Week",
+            "Last Week",
+            "Last 7 Days",
+            "Last 30 Days",
+            "This Month",
+            "This Year"
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues).navigationBarsPadding()
+                .padding(paddingValues)
+                .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        )
-        {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            )
-            {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Header Section
+            if (showDateRangeSelector) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.CalendarMonth,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(MaterialTheme.colorScheme.primary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.CalendarMonth,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
 
-                Column {
-                    Text(
-                        text = "Date Range",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Fill the filters",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                            Spacer(modifier = Modifier.width(16.dp))
+
+                            Column {
+                                Text(
+                                    text = "Date Range",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                                Text(
+                                    text = selectedRange,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Box {
+                            Surface(
+                                onClick = { showDateRangeMenu = true },
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.height(44.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "Select",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Outlined.KeyboardArrowDown,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+
+                            DropdownMenu(
+                                expanded = showDateRangeMenu,
+                                onDismissRequest = { showDateRangeMenu = false },
+                                modifier = Modifier
+                                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                                    .padding(vertical = 6.dp)
+                            ) {
+                                dateRanges.forEach { range ->
+
+                                    val isSelected = selectedRange == range
+
+                                    DropdownMenuItem(
+                                        onClick = {
+                                            val (start, end) = getDateRange(range)
+                                            startDate = start
+                                            endDate = end
+                                            selectedRange = range
+                                            showDateRangeMenu = false
+                                        },
+                                        text = {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(
+                                                        if (isSelected)
+                                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                                                        else
+                                                            MaterialTheme.colorScheme.surface,
+                                                        RoundedCornerShape(10.dp)
+                                                    )
+                                                    .padding(vertical = 10.dp, horizontal = 12.dp)
+                                            ) {
+                                                Text(
+                                                    text = range,
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    color = if (isSelected)
+                                                        MaterialTheme.colorScheme.primary
+                                                    else
+                                                        MaterialTheme.colorScheme.onSurface
+                                                )
+                                            }
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+
+                        }
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
-
+            // Filters Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                border = BorderStroke(
-                    1.dp,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                ),
-                shape = RoundedCornerShape(16.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                shape = RoundedCornerShape(20.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-
+                    // Account Selection
                     if (showAccountSelect) {
-                        Column {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(
-                                text = "Select Account",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 8.dp)
+                                text = "Account",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(12.dp))
                                     .clickable { showBottomSheet = true },
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surface,
                                 border = BorderStroke(
-                                    1.dp,
-                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                                    1.5.dp,
+                                    if (selectedAccount.isEmpty())
+                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                    else
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                                 )
-                            )
-                            {
+                            ) {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 14.dp),
+                                        .padding(horizontal = 16.dp, vertical = 16.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = selectedAccount.ifEmpty { "Choose an account" },
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        text = selectedAccount.ifEmpty { "Select an account" },
+                                        style = MaterialTheme.typography.bodyLarge,
                                         color = if (selectedAccount.isEmpty())
                                             MaterialTheme.colorScheme.onSurfaceVariant
                                         else
@@ -177,50 +296,56 @@ fun ReportFilterScreen(
                                         imageVector = Icons.Outlined.KeyboardArrowDown,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
                             }
                         }
 
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .background(MaterialTheme.colorScheme.outlineVariant)
-                        )
+                        if (showStartDate || showEndDate) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                            )
+                        }
                     }
 
-
+                    // Start Date
                     if (showStartDate) {
                         TallyDatePickerRow(
                             label = "Start Date",
                             selectedDate = startDate,
-                            onDateSelected = { startDate = it },
+                            onDateSelected = {
+                                startDate = it
+                                if (showDateRangeSelector) selectedRange = "Custom"
+                            },
                             defaultDate = CurrentDate()
-
                         )
 
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .background(MaterialTheme.colorScheme.outlineVariant)
-                        )
+                        if (showEndDate) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                            )
+                        }
                     }
 
-
+                    // End Date
                     if (showEndDate) {
                         TallyDatePickerRow(
                             label = "End Date",
                             selectedDate = endDate,
                             defaultDate = CurrentDate(),
-                            onDateSelected = { endDate = it }
+                            onDateSelected = {
+                                endDate = it
+                                if (showDateRangeSelector) selectedRange = "Custom"
+                            }
                         )
-
                     }
-
-
 
                     BottomSheetItem(
                         showBottomSheet = showBottomSheet,
@@ -231,38 +356,44 @@ fun ReportFilterScreen(
                         onDismiss = { showBottomSheet = false },
                         bottomSheetState = state
                     )
-
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
+
+            // Error Message
             AnimatedVisibility(visible = showError) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ErrorOutline,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ErrorOutline,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(24.dp)
+                        )
 
-                    Spacer(Modifier.width(8.dp))
-
-                    Text(
-                        text = "End date can't be earlier than start date",
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                        Text(
+                            text = "End date cannot be earlier than start date",
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
             }
+
             Spacer(modifier = Modifier.weight(1f))
 
+            // Generate Button
             TallyButton(
                 label = buttonText,
                 onClick = {
@@ -288,6 +419,50 @@ fun ReportFilterScreen(
         }
     }
 }
+
+@OptIn(ExperimentalTime::class)
+fun getDateRange(range: String): Pair<String, String> {
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+
+    return when (range) {
+        "Today" -> today to today
+        "Yesterday" -> {
+            val y = today.minus(1, DateTimeUnit.DAY)
+            y to y
+        }
+        "Tomorrow" -> {
+            val t = today.plus(1, DateTimeUnit.DAY)
+            t to t
+        }
+        "This Week" -> {
+            val start = today.minus(today.dayOfWeek.isoDayNumber - 1, DateTimeUnit.DAY)
+            start to today
+        }
+        "Last Week" -> {
+            val start = today.minus(today.dayOfWeek.isoDayNumber + 6, DateTimeUnit.DAY)
+            val end = start.plus(6, DateTimeUnit.DAY)
+            start to end
+        }
+        "Last 7 Days" -> today.minus(6, DateTimeUnit.DAY) to today
+        "Last 30 Days" -> today.minus(29, DateTimeUnit.DAY) to today
+        "This Month" -> today.minus(today.dayOfMonth - 1, DateTimeUnit.DAY) to today
+        "This Year" -> today.minus(today.dayOfYear - 1, DateTimeUnit.DAY) to today
+        else -> today to today
+    }.let { it.first.toString() to it.second.toString() }
+}
+
+
+val DayOfWeek.isoDayNumber: Int
+    get() = when (this) {
+        DayOfWeek.MONDAY -> 1
+        DayOfWeek.TUESDAY -> 2
+        DayOfWeek.WEDNESDAY -> 3
+        DayOfWeek.THURSDAY -> 4
+        DayOfWeek.FRIDAY -> 5
+        DayOfWeek.SATURDAY -> 6
+        DayOfWeek.SUNDAY -> 7
+        else -> throw IllegalStateException("Unknown day of week")
+    }
 
 data class GenerateReportData(
     val accountName: String? = null,

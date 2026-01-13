@@ -18,6 +18,7 @@ data class LedgerReportFilterScreen(val showAccount: Boolean = true) : Screen {
             showStartDate = true,
             showEndDate = true,
             showAccountSelect = showAccount,
+            showDateRangeSelector = true,
             onGenerateClick = {
                 if (showAccount) {
                     nav.push(
