@@ -1,6 +1,7 @@
 package org.prime.tally.ui.screen.reports.productReport
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,11 +21,17 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -63,6 +70,7 @@ import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductStockList
 
 data class ProductReportScreen(val productGuid: String? = null, val isMain: Boolean) : Screen {
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val db = DatabaseHolder.instance
@@ -74,6 +82,10 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
         val focusRequester = remember { FocusRequester() }
         var shareLoading by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
+        var showGroupFilterSheet by remember { mutableStateOf(false) }
+        val productGroups = remember { db.productGroupMasterQueries.selectAll().executeAsList() }
+        var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
+        val bottomSheetState = rememberModalBottomSheetState()
 
         LaunchedEffect(Unit) {
             isLoading = true
@@ -114,17 +126,23 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
             }
         }
 
-        val filteredList = if (searchQuery.isEmpty()) {
+        val groupFilteredList = if (selectedGroups.isEmpty()) {
             list
         } else {
-            val startsWith = list.filter {
+            list.filter { it.GroupName in selectedGroups }
+        }
+
+        val filteredList = if (searchQuery.isEmpty()) {
+            groupFilteredList
+        } else {
+            val startsWith = groupFilteredList.filter {
                 it.ProductName?.startsWith(
                     searchQuery,
                     ignoreCase = true
                 ) == true || it.GodownName?.startsWith(searchQuery, ignoreCase = true) == true
             }
 
-            val contains = list.filter {
+            val contains = groupFilteredList.filter {
                 val product = it.ProductName
                 val godown = it.GodownName
 
@@ -169,6 +187,73 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
             TallyLoadingDialog("Generating Report")
         }
 
+        if (showGroupFilterSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showGroupFilterSheet = false },
+                sheetState = bottomSheetState
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Filter by Group", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        TextButton(onClick = { selectedGroups = productGroups.mapNotNull { it.Name } }) {
+                            Text("Select All")
+                        }
+                        TextButton(onClick = { selectedGroups = emptyList() }) {
+                            Text("Clear")
+                        }
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    LazyColumn {
+                        items(productGroups) { group ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        val currentSelection = selectedGroups.toMutableList()
+                                        group.Name?.let {
+                                            if (currentSelection.contains(it)) {
+                                                currentSelection.remove(it)
+                                            } else {
+                                                currentSelection.add(it)
+                                            }
+                                        }
+                                        selectedGroups = currentSelection
+                                    }
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = group.Name in selectedGroups,
+                                    onCheckedChange = { isChecked ->
+                                        val currentSelection = selectedGroups.toMutableList()
+                                        group.Name?.let { name ->
+                                            if (isChecked) {
+                                                currentSelection.add(name)
+                                            } else {
+                                                currentSelection.remove(name)
+                                            }
+                                        }
+                                        selectedGroups = currentSelection
+                                    }
+                                )
+                                Text(group.Name ?: "", modifier = Modifier.padding(start = 8.dp))
+                            }
+                        }
+                    }
+                    Button(
+                        onClick = { showGroupFilterSheet = false },
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(top = 8.dp)
+                    ) {
+                        Text("Apply")
+                    }
+                }
+            }
+        }
+
         TallyReportScaffold(
             title = "Barcode Report",
             showBottomBar = true,
@@ -202,6 +287,11 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                                 onQueryChange = { searchQuery = it },
                                 modifier = Modifier.focusRequester(focusRequester)
                             )
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(onClick = { showGroupFilterSheet = true }) {
+                                Text("Account Group Filter")
+                            }
                         }
 //                        if (isMain) {
 //                            LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -326,12 +416,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                             }
                         }
                     }
-
-
-//                        // Header Card (sticky)
-//                        ScrollableScreen(horizontalScrollState, columnWidths, filteredList)
                 }
-                //}
             })
     }
 }

@@ -17,7 +17,7 @@ getProductStockList:
 SELECT
     pps.*,
     p.Name AS ProductName,
-    g.Name AS GodownName
+    g.Name AS GodownName,p.GroupName
 FROM Product_Param_Stock pps
 JOIN Products p
     ON p.GUID = pps.MasterCode1
@@ -35,7 +35,7 @@ SELECT
     pps.MasterCode1,
     p.Name AS ProductName,
     sum(pps.Value1) AS mvalue1,
-    sum(pps.Value2) AS mvalue2
+    sum(pps.Value2) AS mvalue2,p.GroupName
 FROM Product_Param_Stock pps
 JOIN Products p
     ON p.GUID = pps.MasterCode1
