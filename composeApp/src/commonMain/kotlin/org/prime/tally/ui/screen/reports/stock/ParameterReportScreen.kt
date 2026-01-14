@@ -85,8 +85,7 @@ object ParameterReportScreen : Screen {
         val column3Weight = 0.2f
         val column4Weight = 0.4f
 
-        val totalQty = list.sumOf { it.mvalue1?.toDouble() ?: 0.0 }
-        val totalAmt = list.sumOf { it.mvalue2?.toDouble() ?: 0.0 }
+
 
         LaunchedEffect(Unit) {
             isLoading = true
@@ -132,6 +131,8 @@ object ParameterReportScreen : Screen {
                 item.mvalue2?.formatToAmtDec() ?: ""
             )
         }
+        val totalQty = filteredList.sumOf { it.mvalue1 ?: 0.0 }
+        val totalAmt = filteredList.sumOf { it.mvalue2 ?: 0.0 }
 
         val menuItems = listOf(
             MenuItemData(
@@ -200,7 +201,7 @@ object ParameterReportScreen : Screen {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                     LazyColumn {
-                        items(productGroups) { group ->
+                        items(productGroups, key = {it.GUID!!}) { group ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
