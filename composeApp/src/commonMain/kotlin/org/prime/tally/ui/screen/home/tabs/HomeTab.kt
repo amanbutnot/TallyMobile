@@ -118,6 +118,9 @@ object HomeTab : Tab {
         var showDeniedDialog by remember { mutableStateOf(false) }
         val nav = LocalNavigator.currentOrThrow.parent
         val perms = SharedPrefs.Permissions.get()
+
+
+
         val filterBroker = if (perms?.FilterBroker == "Y") 1L else 0L
         val configBroker =
             if (filterBroker == 1L) perms?.ConfigBroker.parseToStringList() else emptyList()
