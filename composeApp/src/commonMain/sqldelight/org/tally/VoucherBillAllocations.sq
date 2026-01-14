@@ -30,7 +30,7 @@ SELECT
     Adj.AdjustmentAmount AS adjustmentAmount
 FROM Vouchers_BILLALLOCATIONS AS V
 INNER JOIN (
-    SELECT BILLID, SUM(D1) AS AdjustmentAmount
+    SELECT BILLID, ROUND(SUM(D1),3) AS AdjustmentAmount
     FROM Vouchers_BILLALLOCATIONS
     GROUP BY BILLID
 ) AS Adj
@@ -59,7 +59,7 @@ SELECT
     Adj.AdjustmentAmount AS adjustmentAmount
 FROM Vouchers_BILLALLOCATIONS AS V
 INNER JOIN (
-    SELECT BILLID, SUM(D1) AS AdjustmentAmount
+    SELECT BILLID, ROUND(SUM(D1),3) AS AdjustmentAmount
     FROM Vouchers_BILLALLOCATIONS
     GROUP BY BILLID
 ) AS Adj
@@ -85,7 +85,7 @@ SELECT
     Adj.AdjustmentAmount AS adjustmentAmount
 FROM Vouchers_BILLALLOCATIONS AS V
 INNER JOIN (
-    SELECT BILLID, SUM(D1) AS AdjustmentAmount
+    SELECT BILLID, ROUND(SUM(D1),3) AS AdjustmentAmount
     FROM Vouchers_BILLALLOCATIONS
     GROUP BY BILLID
 ) AS Adj
@@ -115,7 +115,7 @@ SELECT
     Adj.AdjustmentAmount AS adjustmentAmount
 FROM Vouchers_BILLALLOCATIONS AS V
 INNER JOIN (
-    SELECT BILLID, SUM(D1) AS AdjustmentAmount
+    SELECT BILLID, ROUND(SUM(D1),3) AS AdjustmentAmount
     FROM Vouchers_BILLALLOCATIONS
     GROUP BY BILLID
 ) AS Adj

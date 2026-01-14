@@ -16,12 +16,12 @@ getProductStockItemList:
 SELECT
 pps.MasterCode1,
     p.Name AS ProductName,
-    p.UnitName,p.GroupName AS GroupName,Sum(pps.Value1) AS Value1,Sum(pps.Value2) AS Value2,Sum(pps.Value3) AS Value3
+    p.UnitName,p.GroupName AS GroupName,ROUND(Sum(pps.Value1),3) AS Value1,ROUND(Sum(pps.Value2),3) AS Value2,ROUND(Sum(pps.Value3),3) AS Value3
 FROM ProductStock pps
 JOIN Products p ON p.GUID = pps.MasterCode1
 WHERE
     (:filterGroup = 0 OR p.GroupCode IN :groupCodes)
     AND (:filterExclude = 0 OR p.GUID NOT IN :excludeGuids)
     AND (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes)
-GROUP BY pps.MasterCode1,p.Name,  p.UnitName,p.GroupName
+GROUP BY pps.MasterCode1,p.Name,  p.UnitName,p.GroupName HAVING ROUND(Sum(pps.Value1),3) <>0
 ORDER BY p.Name;
