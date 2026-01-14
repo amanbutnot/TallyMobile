@@ -179,9 +179,11 @@ data class OutstandingReportScreen(
         }
 
         val filteredReceivableList = if (searchQuery.isEmpty()) {
+            receivableList.filter { it.adjustmentAmount?.toDouble() !=0.0 }
             receivableList
         } else {
             val startsWith = receivableList.filter {
+                it.adjustmentAmount?.toDouble()!=0.0
                 if (selectedOption == "Name") {
                     it.cm1?.startsWith(searchQuery, ignoreCase = true) == true
                 } else {
@@ -190,6 +192,7 @@ data class OutstandingReportScreen(
             }
 
             val contains = receivableList.filter {
+                it.adjustmentAmount?.toDouble()!=0.0
                 if (selectedOption == "Name") {
                     val value = it.cm1
                     value?.contains(searchQuery, ignoreCase = true) == true &&
@@ -205,9 +208,10 @@ data class OutstandingReportScreen(
         }
 
         val filteredPayableList = if (searchQuery.isEmpty()) {
-            payableList
+            payableList.filter { it.adjustmentAmount?.toDouble()!=0.0 }
         } else {
             val startsWith = payableList.filter {
+                it.adjustmentAmount?.toDouble()!=0.0
                 if (selectedOption == "Name") {
                     it.cm1?.startsWith(searchQuery, ignoreCase = true) == true
                 } else {
@@ -216,20 +220,20 @@ data class OutstandingReportScreen(
             }
 
             val contains = payableList.filter {
+                it.adjustmentAmount?.toDouble()!=0.0
                 if (selectedOption == "Name") {
                     val value = it.cm1
                     value?.contains(searchQuery, ignoreCase = true) == true &&
-                            value?.startsWith(searchQuery, ignoreCase = true) == false
+                            value.startsWith(searchQuery, ignoreCase = true) == false
                 } else {
                     val value = it.billNumber
                     value?.contains(searchQuery, ignoreCase = true) == true &&
-                            value?.startsWith(searchQuery, ignoreCase = true) == false
+                            value.startsWith(searchQuery, ignoreCase = true) == false
                 }
             }
 
             startsWith + contains
         }
-
 
         // Calculate totals
         val totalRefAmt = if (name == "Bill Receivable") {
@@ -239,9 +243,9 @@ data class OutstandingReportScreen(
         }
 
         val totalPendingAmt = if (name == "Bill Receivable") {
-            receivableList.sumOf { it.adjustmentAmount?.absoluteValue ?: 0.0 }
+            receivableList.sumOf { it.adjustmentAmount?.toDouble()?.absoluteValue ?: 0.0 }
         } else {
-            payableList.sumOf { it.adjustmentAmount?.absoluteValue ?: 0.0 }
+            payableList.sumOf { it.adjustmentAmount?.toDouble()?.absoluteValue ?: 0.0 }
         }
 
         // Ledger balance type
@@ -257,7 +261,7 @@ data class OutstandingReportScreen(
                             vchType = item.vchType ?: "",
                             refNo = item.billNumber ?: "",
                             refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
-                            pendingAmount = item.adjustmentAmount?.absoluteValue?.formatToAmtDec()
+                            pendingAmount = item.adjustmentAmount?.toDouble()?.absoluteValue?.formatToAmtDec()
                                 ?.toDouble() ?: 0.0,
                             due = "Y",
                             dueDate = item.dueDate ?: "",
@@ -273,7 +277,7 @@ data class OutstandingReportScreen(
                             vchType = item.vchType ?: "",
                             refNo = item.billNumber ?: "",
                             refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
-                            pendingAmount = item.adjustmentAmount?.absoluteValue?.formatToAmtDec()
+                            pendingAmount = item.adjustmentAmount?.absoluteValue?.toDouble()?.formatToAmtDec()
                                 ?.toDouble() ?: 0.0,
                             due = "Y",
                             dueDate = item.dueDate ?: "",
@@ -293,7 +297,7 @@ data class OutstandingReportScreen(
                         vchType = item.vchType ?: "",
                         refNo = item.billNumber ?: "",
                         refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
-                        pendingAmount = item.adjustmentAmount?.absoluteValue?.formatToAmtDec()
+                        pendingAmount = item.adjustmentAmount?.absoluteValue?.toDouble()?.formatToAmtDec()
                             ?.toDouble() ?: 0.0,
                         due = "Y",
                         dueDate = item.dueDate ?: "",
@@ -310,7 +314,7 @@ data class OutstandingReportScreen(
                         vchType = item.vchType ?: "",
                         refNo = item.billNumber ?: "",
                         refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
-                        pendingAmount = item.adjustmentAmount?.absoluteValue?.formatToAmtDec()
+                        pendingAmount = item.adjustmentAmount?.absoluteValue?.toDouble()?.formatToAmtDec()
                             ?.toDouble() ?: 0.0,
                         due = "Y",
                         dueDate = item.dueDate ?: "",
@@ -410,8 +414,8 @@ data class OutstandingReportScreen(
                         ReportColumn(
                             "Pen Amt: ${
                                 if (name == "Bill Receivable") {
-                                    filteredReceivableList.sumOf { it.adjustmentAmount ?: 0.0 }.absoluteValue.formatToAmtDec()
-                                } else filteredPayableList.sumOf { it.adjustmentAmount ?: 0.0 }.absoluteValue.formatToAmtDec()
+                                    filteredReceivableList.sumOf { it.adjustmentAmount?.toDouble() ?: 0.0 }.absoluteValue.formatToAmtDec()
+                                } else filteredPayableList.sumOf { it.adjustmentAmount?.toDouble() ?: 0.0 }.absoluteValue.formatToAmtDec()
                             }",
                             1f,
                             TextAlign.End
@@ -579,8 +583,9 @@ data class OutstandingReportScreen(
                                                         textAlign = TextAlign.Start,
                                                         isHeader = false
                                                     )
+                                                    println(item.adjustmentAmount)
                                                     TableCell(
-                                                        "Pending: ${item.adjustmentAmount?.absoluteValue?.formatToAmtDec()}",
+                                                        "Pending: ${item.adjustmentAmount?.absoluteValue?.toDouble()?.formatToAmtDec()}",
                                                         1f,
                                                         textAlign = TextAlign.End,
                                                         isHeader = false
@@ -689,8 +694,9 @@ data class OutstandingReportScreen(
                                                         textAlign = TextAlign.Start,
                                                         isHeader = false
                                                     )
+                                                    println(item.adjustmentAmount)
                                                     TableCell(
-                                                        "Pending: ${item.adjustmentAmount?.absoluteValue?.formatToAmtDec()}",
+                                                        "Pending: ${item.adjustmentAmount}",
                                                         1f,
                                                         textAlign = TextAlign.End,
                                                         isHeader = false
