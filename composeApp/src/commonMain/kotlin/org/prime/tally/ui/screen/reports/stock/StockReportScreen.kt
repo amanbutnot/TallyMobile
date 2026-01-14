@@ -90,8 +90,7 @@ object StockReportScreen : Screen {
         val column3Weight = 0.2f
         val column4Weight = 0.4f
 
-        val totalQty = list.sumOf { it.Value1?.toDouble() ?: 0.0 }
-        val totalAmt = list.sumOf { it.Value3?.toDouble() ?: 0.0 }
+
 
 
         LaunchedEffect(Unit) {
@@ -128,7 +127,8 @@ object StockReportScreen : Screen {
 
             startsWith + contains
         }
-
+        val totalQty = filteredList.sumOf { it.Value1?.toDouble() ?: 0.0 }
+        val totalAmt = filteredList.sumOf { it.Value3?.toDouble() ?: 0.0 }
         val rows: List<Quadruple<String, String, String, String>> = filteredList.map { item ->
             Quadruple(
                 item.ProductName ?: "",
