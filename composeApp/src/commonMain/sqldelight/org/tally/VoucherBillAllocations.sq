@@ -27,7 +27,7 @@ SELECT
     V.CM1 AS cm1,
     V.DUEDATE AS dueDate,
     V.D1 AS d1,
-    Adj.AdjustmentAmount AS adjustmentAmount
+    Adj.AdjustmentAmount AS adjustmentAmount,lm.GroupName
 FROM Vouchers_BILLALLOCATIONS AS V
 INNER JOIN (
     SELECT BILLID, ROUND(SUM(D1),3) AS AdjustmentAmount
@@ -35,6 +35,7 @@ INNER JOIN (
     GROUP BY BILLID
 ) AS Adj
 ON V.BILLID = Adj.BILLID
+LEFT JOIN LedgerMaster AS lm ON lm.Name = V.CM1
 WHERE V.CM2 IN ('New Ref', 'Advance')
   AND V.D1 < 0
   AND  V.DATE>=? AND V.DATE<=?
@@ -56,7 +57,7 @@ SELECT
     V.CM1 AS cm1,
     V.DUEDATE AS dueDate,
     V.D1 AS d1,
-    Adj.AdjustmentAmount AS adjustmentAmount
+    Adj.AdjustmentAmount AS adjustmentAmount,lm.GroupName
 FROM Vouchers_BILLALLOCATIONS AS V
 INNER JOIN (
     SELECT BILLID, ROUND(SUM(D1),3) AS AdjustmentAmount
@@ -64,6 +65,7 @@ INNER JOIN (
     GROUP BY BILLID
 ) AS Adj
 ON V.BILLID = Adj.BILLID
+LEFT JOIN LedgerMaster AS lm ON lm.Name = V.CM1
 WHERE V.CM2 IN ('New Ref', 'Advance')
   AND V.D1 < 0
   AND  V.DATE>=? AND V.DATE<=?
@@ -82,7 +84,7 @@ SELECT
     V.CM1 AS cm1,
     V.DUEDATE AS dueDate,
     V.D1 AS d1,
-    Adj.AdjustmentAmount AS adjustmentAmount
+    Adj.AdjustmentAmount AS adjustmentAmount,lm.GroupName
 FROM Vouchers_BILLALLOCATIONS AS V
 INNER JOIN (
     SELECT BILLID, ROUND(SUM(D1),3) AS AdjustmentAmount
@@ -90,6 +92,7 @@ INNER JOIN (
     GROUP BY BILLID
 ) AS Adj
 ON V.BILLID = Adj.BILLID
+LEFT JOIN LedgerMaster AS lm ON lm.Name = V.CM1
 WHERE V.CM2 IN ('New Ref', 'Advance')
   AND V.D1 > 0
   AND  V.DATE>=? AND V.DATE<=?
@@ -112,7 +115,7 @@ SELECT
     V.CM1 AS cm1,
     V.DUEDATE AS dueDate,
     V.D1 AS d1,
-    Adj.AdjustmentAmount AS adjustmentAmount
+    Adj.AdjustmentAmount AS adjustmentAmount,lm.GroupName
 FROM Vouchers_BILLALLOCATIONS AS V
 INNER JOIN (
     SELECT BILLID, ROUND(SUM(D1),3) AS AdjustmentAmount
@@ -120,6 +123,7 @@ INNER JOIN (
     GROUP BY BILLID
 ) AS Adj
 ON V.BILLID = Adj.BILLID
+LEFT JOIN LedgerMaster AS lm ON lm.Name = V.CM1
 WHERE V.CM2 IN ('New Ref', 'Advance')
   AND V.D1 > 0
   AND  V.DATE>=? AND V.DATE<=?
