@@ -3,7 +3,6 @@ package org.prime.tally.ui.screen.attendance
 import CurrentDate
 import TallyDatePickerRow
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,11 +20,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material3.Card
@@ -52,7 +49,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
@@ -62,7 +58,6 @@ import coil3.compose.AsyncImage
 import org.prime.tally.business.viewmodel.attendance.AttendanceViewModel
 import org.prime.tally.data.model.attendance.AttendanceListRequest
 import org.prime.tally.data.model.attendance.AttendanceListResponse
-import org.prime.tally.data.model.attendance.SalesmanList
 import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.screen.transactions.TransactionBottomSheet
 import org.prime.tally.ui.shared.composables.TallyButton
@@ -93,6 +88,7 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
 
             LaunchedEffect(Unit) {
                 viewModel.getSalesmanList()
+                println(vState.data)
             }
 
             Column(
@@ -598,29 +594,51 @@ private fun AttendanceItem(item: AttendanceListResponse) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            text = Tdate(item.LocationDateTime.take(10)),
-                            style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Text(
+                                text = Tdate(item.LocationDateTime.take(10)),
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+
+                        if (item.LocationDateTime.length > 10) {
+                            Text(
+                                text = item.LocationDateTime.substring(11).take(8),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
-                    if (item.LocationDateTime.length > 10) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
                         Text(
-                            text = item.LocationDateTime.substring(11).take(8),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = if (item.RecType == 1) "In" else "Out",
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            color = if (item.RecType == 1) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Bold
                         )
+
                     }
+
+
                 }
 
                 if (item.C4.isNotBlank()) {
