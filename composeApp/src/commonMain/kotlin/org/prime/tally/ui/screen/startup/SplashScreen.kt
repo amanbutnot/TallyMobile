@@ -58,12 +58,10 @@ object SplashScreen : Screen {
         val nav = LocalNavigator.currentOrThrow
         val colors = MaterialTheme.colorScheme
         val type = MaterialTheme.typography
-        var showErrorPopup by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
             delay(2000)
-            if (SharedPrefs.LoginVersion.get() == null || SharedPrefs.LoginVersion.get() == MOBILE_VERSION) {
-                SharedPrefs.LoginVersion.save(MOBILE_VERSION)
+            if (SharedPrefs.LoginVersion.get() == MOBILE_VERSION) {
                 val fileBytes = readFileBytes()
                 if (fileBytes != null) {
                     DatabaseHolder.init(fileBytes)
@@ -72,11 +70,8 @@ object SplashScreen : Screen {
                     nav.replaceAll(OnBoardingScreen)
                 }
             } else {
-                showErrorPopup = true
+                nav.replaceAll(OnBoardingScreen)
             }
-        }
-        if (showErrorPopup) {
-            ForceUpdateDialog()
         }
         Box(
             modifier = Modifier.fillMaxSize().background(colors.background).navigationBarsPadding()
