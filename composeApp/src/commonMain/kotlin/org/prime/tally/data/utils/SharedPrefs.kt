@@ -162,6 +162,18 @@ object SharedPrefs {
             settings.remove(KEY)
         }
     }
+    object LoginVersion {
+        private const val KEY = "loginVersion"
+        fun save(login: Int) {
+            settings.putInt(KEY, login)
+        }
+        fun get(): Int? {
+            return settings.getIntOrNull(KEY)
+        }
+        fun clear() {
+            settings.remove(KEY)
+        }
+    }
 
 
     object LastSync {

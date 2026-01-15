@@ -41,10 +41,14 @@ import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.expect.readFileBytes
+import org.prime.tally.data.utils.MOBILE_VERSION
+import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.screen.auth.LoginScreen
 import org.prime.tally.ui.screen.auth.OnBoardingScreen
 import org.prime.tally.ui.screen.auth.SignUpScreen
 import org.prime.tally.ui.screen.home.Dashboard
+import org.prime.tally.ui.shared.composables.ForceUpdateDialog
+import org.prime.tally.ui.shared.composables.TallyResultDialog
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.splashImage
 
@@ -54,21 +58,29 @@ object SplashScreen : Screen {
         val nav = LocalNavigator.currentOrThrow
         val colors = MaterialTheme.colorScheme
         val type = MaterialTheme.typography
-
+        var showErrorPopup by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
             delay(2000)
-
-            val fileBytes = readFileBytes()
-            if (fileBytes != null) {
-                DatabaseHolder.init(fileBytes)
-                nav.replaceAll(Dashboard)
+            if (SharedPrefs.LoginVersion.get() == null || SharedPrefs.LoginVersion.get() == MOBILE_VERSION) {
+                SharedPrefs.LoginVersion.save(MOBILE_VERSION)
+                val fileBytes = readFileBytes()
+                if (fileBytes != null) {
+                    DatabaseHolder.init(fileBytes)
+                    nav.replaceAll(Dashboard)
+                } else {
+                    nav.replaceAll(OnBoardingScreen)
+                }
             } else {
-                nav.replaceAll(OnBoardingScreen)
+                showErrorPopup = true
             }
-
         }
-        Box(modifier = Modifier.fillMaxSize().background(colors.background).navigationBarsPadding()) {
+        if (showErrorPopup) {
+            ForceUpdateDialog()
+        }
+        Box(
+            modifier = Modifier.fillMaxSize().background(colors.background).navigationBarsPadding()
+        ) {
             Column(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally,

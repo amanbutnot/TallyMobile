@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -162,6 +163,37 @@ fun TallyResultDialog(
         }
     }
 }
+
+@Composable
+fun ForceUpdateDialog() {
+    AlertDialog(
+        onDismissRequest = {},
+        confirmButton = {},
+        dismissButton = {},
+        icon = {
+            Icon(
+                imageVector = Icons.Rounded.SystemUpdate,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+        },
+        title = {
+            Text(
+                text = "Update Required",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Text(
+                text = "You’re using an outdated version of the app. Please update to the latest version to continue.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        shape = RoundedCornerShape(28.dp),
+        tonalElevation = 6.dp
+    )
+}
+
 
 
 @Composable
