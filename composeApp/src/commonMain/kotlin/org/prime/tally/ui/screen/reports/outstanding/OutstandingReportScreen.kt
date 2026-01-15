@@ -1,6 +1,7 @@
 package org.prime.tally.ui.screen.reports.outstanding
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,13 +15,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -64,6 +72,8 @@ import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.BillPayableList
 import org.tally.BillReceivableList
+import org.tally.LedgerGroupMaster
+import kotlin.collections.contains
 import kotlin.math.absoluteValue
 
 data class OutstandingReportScreen(
@@ -73,6 +83,7 @@ data class OutstandingReportScreen(
     val cm1: String? = null
 ) :
     Screen {
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val db = DatabaseHolder.instance
@@ -97,6 +108,92 @@ data class OutstandingReportScreen(
         val filterAccounts = if (perms?.FilterAccounts == "Y") 1L else 0L
         val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
         val excludeGuids = perms?.ConfigAccounts.parseToStringList()
+        val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+        var showGroupFilterSheet by remember { mutableStateOf(false) }
+        var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
+        val productGroups = remember { db.ledgerGroupMasterQueries.selectAll().executeAsList() }
+
+
+
+        if (showGroupFilterSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showGroupFilterSheet = false },
+                sheetState = bottomSheetState
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "Filter by Group",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        TextButton(onClick = {
+                            selectedGroups = productGroups.mapNotNull { it.Name }
+                        }) {
+                            Text("Select All")
+                        }
+                        TextButton(onClick = { selectedGroups = emptyList() }) {
+                            Text("Clear")
+                        }
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    LazyColumn {
+                        items(productGroups) { group ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        val currentSelection = selectedGroups.toMutableList()
+                                        group.Name?.let {
+                                            if (currentSelection.contains(it)) {
+                                                currentSelection.remove(it)
+                                            } else {
+                                                currentSelection.add(it)
+                                            }
+                                        }
+                                        selectedGroups = currentSelection
+                                    }
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = group.Name in selectedGroups,
+                                    onCheckedChange = { isChecked ->
+                                        val currentSelection = selectedGroups.toMutableList()
+                                        group.Name?.let { name ->
+                                            if (isChecked) {
+                                                currentSelection.add(name)
+                                            } else {
+                                                currentSelection.remove(name)
+                                            }
+                                        }
+                                        selectedGroups = currentSelection
+                                    }
+                                )
+                                Text(
+                                    group.Name ?: "",
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                    Button(
+                        onClick = { showGroupFilterSheet = false },
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(top = 8.dp)
+                    ) {
+                        Text("Apply")
+                    }
+                }
+            }
+        }
+
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
@@ -115,7 +212,7 @@ data class OutstandingReportScreen(
                                 cm1 = it.cm1,
                                 dueDate = it.dueDate,
                                 d1 = it.d1,
-                                adjustmentAmount = it.adjustmentAmount
+                                adjustmentAmount = it.adjustmentAmount, GroupName = it.GroupName
                             )
                         }
 
@@ -149,7 +246,7 @@ data class OutstandingReportScreen(
                                 cm1 = it.cm1,
                                 dueDate = it.dueDate,
                                 d1 = it.d1,
-                                adjustmentAmount = it.adjustmentAmount
+                                adjustmentAmount = it.adjustmentAmount, GroupName = it.GroupName
                             )
                         }
 
@@ -178,12 +275,18 @@ data class OutstandingReportScreen(
             if (showSearchBar) focusRequester.requestFocus()
         }
 
-        val filteredReceivableList = if (searchQuery.isEmpty()) {
-            receivableList.filter { it.adjustmentAmount?.toDouble() !=0.0 }
+        val groupFilteredReceivableList = if (selectedGroups.isEmpty()) {
             receivableList
         } else {
-            val startsWith = receivableList.filter {
-                it.adjustmentAmount?.toDouble()!=0.0
+            receivableList.filter { it.GroupName in selectedGroups }
+        }
+
+        val filteredReceivableList = if (searchQuery.isEmpty()) {
+            groupFilteredReceivableList.filter { it.adjustmentAmount?.toDouble() != 0.0 }
+            groupFilteredReceivableList
+        } else {
+            val startsWith = groupFilteredReceivableList.filter {
+                it.adjustmentAmount?.toDouble() != 0.0
                 if (selectedOption == "Name") {
                     it.cm1?.startsWith(searchQuery, ignoreCase = true) == true
                 } else {
@@ -191,8 +294,8 @@ data class OutstandingReportScreen(
                 }
             }
 
-            val contains = receivableList.filter {
-                it.adjustmentAmount?.toDouble()!=0.0
+            val contains = groupFilteredReceivableList.filter {
+                it.adjustmentAmount?.toDouble() != 0.0
                 if (selectedOption == "Name") {
                     val value = it.cm1
                     value?.contains(searchQuery, ignoreCase = true) == true &&
@@ -207,11 +310,17 @@ data class OutstandingReportScreen(
             startsWith + contains
         }
 
-        val filteredPayableList = if (searchQuery.isEmpty()) {
-            payableList.filter { it.adjustmentAmount?.toDouble()!=0.0 }
+        val groupFilteredPayableList = if (selectedGroups.isEmpty()) {
+            payableList
         } else {
-            val startsWith = payableList.filter {
-                it.adjustmentAmount?.toDouble()!=0.0
+            payableList.filter { it.GroupName in selectedGroups }
+        }
+
+        val filteredPayableList = if (searchQuery.isEmpty()) {
+            groupFilteredPayableList.filter { it.adjustmentAmount?.toDouble() != 0.0 }
+        } else {
+            val startsWith = groupFilteredPayableList.filter {
+                it.adjustmentAmount?.toDouble() != 0.0
                 if (selectedOption == "Name") {
                     it.cm1?.startsWith(searchQuery, ignoreCase = true) == true
                 } else {
@@ -219,8 +328,8 @@ data class OutstandingReportScreen(
                 }
             }
 
-            val contains = payableList.filter {
-                it.adjustmentAmount?.toDouble()!=0.0
+            val contains = groupFilteredPayableList.filter {
+                it.adjustmentAmount?.toDouble() != 0.0
                 if (selectedOption == "Name") {
                     val value = it.cm1
                     value?.contains(searchQuery, ignoreCase = true) == true &&
@@ -237,15 +346,15 @@ data class OutstandingReportScreen(
 
         // Calculate totals
         val totalRefAmt = if (name == "Bill Receivable") {
-            receivableList.sumOf { it.d1?.absoluteValue ?: 0.0 }
+            groupFilteredReceivableList.sumOf { it.d1?.absoluteValue ?: 0.0 }
         } else {
-            payableList.sumOf { it.d1?.absoluteValue ?: 0.0 }
+            groupFilteredPayableList.sumOf { it.d1?.absoluteValue ?: 0.0 }
         }
 
         val totalPendingAmt = if (name == "Bill Receivable") {
-            receivableList.sumOf { it.adjustmentAmount?.toDouble()?.absoluteValue ?: 0.0 }
+            groupFilteredReceivableList.sumOf { it.adjustmentAmount?.toDouble()?.absoluteValue ?: 0.0 }
         } else {
-            payableList.sumOf { it.adjustmentAmount?.toDouble()?.absoluteValue ?: 0.0 }
+            groupFilteredPayableList.sumOf { it.adjustmentAmount?.toDouble()?.absoluteValue ?: 0.0 }
         }
 
         // Ledger balance type
@@ -277,7 +386,8 @@ data class OutstandingReportScreen(
                             vchType = item.vchType ?: "",
                             refNo = item.billNumber ?: "",
                             refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
-                            pendingAmount = item.adjustmentAmount?.absoluteValue?.toDouble()?.formatToAmtDec()
+                            pendingAmount = item.adjustmentAmount?.absoluteValue?.toDouble()
+                                ?.formatToAmtDec()
                                 ?.toDouble() ?: 0.0,
                             due = "Y",
                             dueDate = item.dueDate ?: "",
@@ -297,7 +407,8 @@ data class OutstandingReportScreen(
                         vchType = item.vchType ?: "",
                         refNo = item.billNumber ?: "",
                         refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
-                        pendingAmount = item.adjustmentAmount?.absoluteValue?.toDouble()?.formatToAmtDec()
+                        pendingAmount = item.adjustmentAmount?.absoluteValue?.toDouble()
+                            ?.formatToAmtDec()
                             ?.toDouble() ?: 0.0,
                         due = "Y",
                         dueDate = item.dueDate ?: "",
@@ -314,7 +425,8 @@ data class OutstandingReportScreen(
                         vchType = item.vchType ?: "",
                         refNo = item.billNumber ?: "",
                         refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
-                        pendingAmount = item.adjustmentAmount?.absoluteValue?.toDouble()?.formatToAmtDec()
+                        pendingAmount = item.adjustmentAmount?.absoluteValue?.toDouble()
+                            ?.formatToAmtDec()
                             ?.toDouble() ?: 0.0,
                         due = "Y",
                         dueDate = item.dueDate ?: "",
@@ -488,11 +600,26 @@ data class OutstandingReportScreen(
                             }
                         }
                         Spacer(Modifier.height(6.dp))
-                        Text(
-                            "From ${Tdate(startDate)}  →  To ${Tdate(endDate)}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                "From ${Tdate(startDate)}  →  To ${Tdate(endDate)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(onClick = { showGroupFilterSheet = true }) {
+                                    Text("Group Filter")
+                                }
+                            }
+                        }
+
 
                         Spacer(Modifier.padding(vertical = 8.dp))
 
@@ -585,7 +712,10 @@ data class OutstandingReportScreen(
                                                     )
                                                     println(item.adjustmentAmount)
                                                     TableCell(
-                                                        "Pending: ${item.adjustmentAmount?.absoluteValue?.toDouble()?.formatToAmtDec()}",
+                                                        "Pending: ${
+                                                            item.adjustmentAmount?.absoluteValue?.toDouble()
+                                                                ?.formatToAmtDec()
+                                                        }",
                                                         1f,
                                                         textAlign = TextAlign.End,
                                                         isHeader = false

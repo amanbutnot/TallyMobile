@@ -13,6 +13,7 @@ import org.prime.tally.business.repository.AuthRepository
 import org.prime.tally.data.expect.deleteDbFile
 import org.prime.tally.data.model.CompanyList
 import org.prime.tally.data.model.ForgotResponse
+import org.prime.tally.data.utils.MOBILE_VERSION
 import org.prime.tally.data.utils.SharedPrefs
 
 
@@ -101,6 +102,7 @@ class AuthViewModel : ViewModel() {
 
                         // token + fileId
                         if (!loginData.token.isBlank() && loginData.C9.isNotBlank()) {
+                            SharedPrefs.LoginVersion.save(MOBILE_VERSION)
                             SharedPrefs.Token.clear()
                             SharedPrefs.FileId.clear()
                             SharedPrefs.DistributorData.clear()
