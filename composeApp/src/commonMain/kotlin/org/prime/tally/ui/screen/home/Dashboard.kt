@@ -12,9 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,6 +42,7 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.utils.SharedPrefs
+import org.prime.tally.ui.screen.auth.SelectCompanyScreen
 import org.prime.tally.ui.screen.home.tabs.HomeTab
 import org.prime.tally.ui.screen.home.tabs.MastersTab
 import org.prime.tally.ui.screen.home.tabs.ReportingTab
@@ -54,18 +59,55 @@ object Dashboard : Screen {
         val db = DatabaseHolder.instance
         val queries = db.companyInformationQueries
         val list = queries.selectAll().executeAsList()
+        val loginData = SharedPrefs.LoginData.get()
+        val hasCompanies = loginData?.list != null
 
         TabNavigator(HomeTab) { tabNavigator ->
             Scaffold(
                 topBar = {
                     TopAppBar(
                         title = {
-                            Text(
-                                CompanyName(),
-                                color = colors.onBackground,
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium)
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .then(
+                                        if (hasCompanies) {
+                                            Modifier.clickable {
+                                                nav.push(
+                                                    SelectCompanyScreen(
+                                                        loginData!!.username,
+                                                        loginData.password,
+                                                        loginData.list
+                                                    )
+                                                )
+                                            }
+                                        } else Modifier
+                                    )
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    CompanyName(),
+                                    color = if (hasCompanies)
+                                        colors.onBackground
+                                    else
+                                        colors.onBackground.copy(alpha = 0.7f),
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                )
+
+                                if (hasCompanies) {
+                                    Spacer(Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = Icons.Rounded.KeyboardArrowDown,
+                                        contentDescription = null,
+                                        tint = colors.onBackground.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
                         },
+
                         actions = {
                             IconButton(onClick = { nav.push(GoogleDriveDownloadScreen) }) {
                                 Icon(

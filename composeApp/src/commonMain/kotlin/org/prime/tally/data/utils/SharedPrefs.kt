@@ -3,8 +3,11 @@ package org.prime.tally.data.utils
 import com.russhwolf.settings.Settings
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.prime.tally.data.model.CompanyList
 import org.prime.tally.data.model.Distributor
+import org.prime.tally.data.model.LoginRequest
 import org.prime.tally.data.model.LoginResponse
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -26,6 +29,30 @@ object SharedPrefs {
             settings.remove(KEY)
         }
     }
+
+    object LoginData {
+        private const val KEY = "login_request"
+        fun save(login: LoginDataModel) {
+            val json = Json.encodeToString(login)
+            settings.putString(KEY, json)
+        }
+
+        fun get(): LoginDataModel? {
+            val stored = settings.getStringOrNull(KEY) ?: return null
+            return runCatching { Json.decodeFromString<LoginDataModel>(stored) }.getOrNull()
+        }
+
+        fun clear() {
+            settings.remove(KEY)
+        }
+    }
+
+    @Serializable
+    data class LoginDataModel(
+        val username: String,
+        val password: String,
+        val list: CompanyList
+    )
 
     object FileId {
         private const val KEY = "fileId"
@@ -162,14 +189,17 @@ object SharedPrefs {
             settings.remove(KEY)
         }
     }
+
     object LoginVersion {
         private const val KEY = "loginVersion"
         fun save(login: Int) {
             settings.putInt(KEY, login)
         }
+
         fun get(): Int? {
             return settings.getIntOrNull(KEY)
         }
+
         fun clear() {
             settings.remove(KEY)
         }
