@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.prime.tally.ui.shared.composables.TallySearchBar
+import smartSearch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,18 +54,11 @@ fun <T> BottomSheetItem(
 
 
     val filteredList = remember(list, query) {
-        if (query.isBlank()) {
-            list
-        } else {
-            val startsWith = list.filter { item ->
-                item.toString().startsWith(query, ignoreCase = true)
-            }
-            val contains = list.filter { item ->
-                !item.toString().startsWith(query, ignoreCase = true) &&
-                        item.toString().contains(query, ignoreCase = true)
-            }
-            startsWith + contains
-        }
+        smartSearch(
+            list = list,
+            query = query,
+            selectors = listOf { it.toString() }
+        )
     }
 
 
