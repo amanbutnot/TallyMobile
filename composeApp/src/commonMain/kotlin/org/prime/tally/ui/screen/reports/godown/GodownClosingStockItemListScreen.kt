@@ -42,6 +42,7 @@ import org.prime.tally.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.tally.ui.shared.reportsShared.TallyReportLazyList
 import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.GodownWiseOnEnterList
+import smartSearch
 import kotlin.math.absoluteValue
 
 data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
@@ -81,16 +82,12 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
                 focusRequester.requestFocus()
             }
         }
-        val filteredList = if (searchQuery.isEmpty()) {
-            list
-        } else {
-            list.filter {
-                it.Item_Name?.startsWith(
-                    searchQuery,
-                    ignoreCase = true
-                ) == true
-            }
-        }
+        val filteredList = smartSearch(
+            list = list,
+            query = searchQuery,
+            selectors = listOf { it.Item_Name }
+        )
+
         val rows: List<Quadruple<String, String, String, String>> = filteredList.map { item ->
             Quadruple(
                 item.Item_Name ?: "",

@@ -48,6 +48,7 @@ import org.prime.tally.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.tally.ui.shared.reportsShared.TallyReportLazyList
 import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.TrialBalanceList
+import smartSearch
 import kotlin.math.absoluteValue
 
 object TrialBalanceScreen : Screen {
@@ -158,21 +159,12 @@ object TrialBalanceScreen : Screen {
                 focusRequester.requestFocus()
             }
         }
-        val filteredList = if (searchQuery.isEmpty()) {
-            list
-        } else {
-            val startsWith = list.filter {
-                it.CM1?.startsWith(searchQuery, ignoreCase = true) == true
-            }
+        val filteredList = smartSearch(
+            list = list,
+            query = searchQuery,
+            selectors = listOf { it.CM1 }
+        )
 
-            val contains = list.filter {
-                val value = it.CM1
-                value?.contains(searchQuery, ignoreCase = true) == true &&
-                        value?.startsWith(searchQuery, ignoreCase = true) == false
-            }
-
-            startsWith + contains
-        }
 
 
 

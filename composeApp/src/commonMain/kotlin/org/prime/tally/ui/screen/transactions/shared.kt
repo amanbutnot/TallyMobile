@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.prime.tally.ui.shared.composables.TallySearchBar
 import org.tally.LedgerMaster
+import smartSearch
 
 
 @Composable
@@ -188,24 +189,19 @@ fun TransactionBottomSheet(
     bottomSheetState: SheetState,
     title: String = "Select Account",
     itemContent: @Composable ((String) -> Unit)? = null
-) {
+)
+{
     var query by remember { mutableStateOf("") }
 
 
     val filteredList = remember(list, query) {
-        if (query.isBlank()) {
-            list
-        } else {
-            val startsWith = list.filter { item ->
-                item.toString().startsWith(query, ignoreCase = true)
-            }
-            val contains = list.filter { item ->
-                !item.toString().startsWith(query, ignoreCase = true) &&
-                        item.toString().contains(query, ignoreCase = true)
-            }
-            startsWith + contains
-        }
+        smartSearch(
+            list = list,
+            query = query,
+            selectors = listOf { it.toString() }
+        )
     }
+
 
 
     if (showBottomSheet) {
@@ -364,24 +360,19 @@ fun TransactionBottomSheetThree(
     bottomSheetState: SheetState,
     title: String = "Select Account",
     itemContent: @Composable ((String) -> Unit)? = null
-) {
+)
+{
     var query by remember { mutableStateOf("") }
 
 
     val filteredList = remember(list, query) {
-        if (query.isBlank()) {
-            list
-        } else {
-            val startsWith = list.filter { item ->
-                item.toString().startsWith(query, ignoreCase = true)
-            }
-            val contains = list.filter { item ->
-                !item.toString().startsWith(query, ignoreCase = true) &&
-                        item.toString().contains(query, ignoreCase = true)
-            }
-            startsWith + contains
-        }
+        smartSearch(
+            list = list,
+            query = query,
+            selectors = listOf { it.toString() }
+        )
     }
+
 
 
     if (showBottomSheet) {
@@ -539,24 +530,19 @@ fun TransactionOneBottomSheet(
     bottomSheetState: SheetState,
     title: String = "Select Account",
     itemContent: @Composable ((String) -> Unit)? = null
-) {
+)
+{
     var query by remember { mutableStateOf("") }
 
 
     val filteredList = remember(list, query) {
-        if (query.isBlank()) {
-            list
-        } else {
-            val startsWith = list.filter { item ->
-                item.startsWith(query, ignoreCase = true)
-            }
-            val contains = list.filter { item ->
-                !item.startsWith(query, ignoreCase = true) &&
-                        item.contains(query, ignoreCase = true)
-            }
-            startsWith + contains
-        }
+        smartSearch(
+            list = list,
+            query = query,
+            selectors = listOf { it }
+        )
     }
+
 
 
     if (showBottomSheet) {
@@ -719,18 +705,11 @@ fun TransactionLedgerBottomSheet(
     var query by remember { mutableStateOf("") }
 
     val filteredList = remember(list, query) {
-        if (query.isBlank()) {
-            list
-        } else {
-            val startsWith = list.filter { item ->
-                item.Name?.startsWith(query, ignoreCase = true) == true
-            }
-            val contains = list.filter { item ->
-                item.Name?.contains(query, ignoreCase = true) == true &&
-                        (item.Name?.startsWith(query, ignoreCase = true) == false)
-            }
-            startsWith + contains
-        }
+        smartSearch(
+            list = list,
+            query = query,
+            selectors = listOf { it.Name }
+        )
     }
 
     if (showBottomSheet) {

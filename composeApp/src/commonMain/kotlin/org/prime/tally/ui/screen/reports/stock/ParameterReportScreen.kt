@@ -44,6 +44,7 @@ import org.prime.tally.data.expect.formatToAmtDec
 import org.prime.tally.data.expect.formatToQtyDec
 import org.prime.tally.ui.printing.threeHeaderHtml
 import org.prime.tally.ui.screen.reports.productReport.ProductReportScreen
+import org.prime.tally.ui.shared.composables.GroupFilterBottomSheet
 import org.prime.tally.ui.shared.composables.MenuItemData
 import org.prime.tally.ui.shared.composables.TallyCircularLoader
 import org.prime.tally.ui.shared.composables.TallyLoadingDialog
@@ -58,6 +59,7 @@ import org.prime.tally.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.tally.ui.shared.reportsShared.TallyReportLazyList
 import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductParamStockList
+import smartSearch
 import kotlin.math.absoluteValue
 
 object ParameterReportScreen : Screen {
@@ -107,21 +109,11 @@ object ParameterReportScreen : Screen {
             list.filter { it.GroupName in selectedGroups }
         }
 
-        val filteredList = if (searchQuery.isEmpty()) {
-            groupFilteredList
-        } else {
-            val startsWith = groupFilteredList.filter {
-                it.ProductName?.startsWith(searchQuery, ignoreCase = true) == true
-            }
-
-            val contains = groupFilteredList.filter {
-                val value = it.ProductName
-                value?.contains(searchQuery, ignoreCase = true) == true &&
-                        !value.startsWith(searchQuery, ignoreCase = true)
-            }
-
-            startsWith + contains
-        }
+        val filteredList = smartSearch(
+            list = groupFilteredList,
+            query = searchQuery,
+            selectors = listOf { it.ProductName }
+        )
 
 
         val rows: List<Triple<String, String, String>> = filteredList.map { item ->
@@ -183,71 +175,17 @@ object ParameterReportScreen : Screen {
         }
 
         if (showGroupFilterSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showGroupFilterSheet = false },
-                sheetState = bottomSheetState
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Filter by Group", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp))
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        TextButton(onClick = { selectedGroups = productGroups.mapNotNull { it.Name } }) {
-                            Text("Select All")
-                        }
-                        TextButton(onClick = { selectedGroups = emptyList() }) {
-                            Text("Clear")
-                        }
-                    }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-                    LazyColumn {
-                        items(productGroups, key = {it.GUID!!}) { group ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        val currentSelection = selectedGroups.toMutableList()
-                                        group.Name?.let {
-                                            if (currentSelection.contains(it)) {
-                                                currentSelection.remove(it)
-                                            } else {
-                                                currentSelection.add(it)
-                                            }
-                                        }
-                                        selectedGroups = currentSelection
-                                    }
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(
-                                    checked = group.Name in selectedGroups,
-                                    onCheckedChange = { isChecked ->
-                                        val currentSelection = selectedGroups.toMutableList()
-                                        group.Name?.let { name ->
-                                            if (isChecked) {
-                                                currentSelection.add(name)
-                                            } else {
-                                                currentSelection.remove(name)
-                                            }
-                                        }
-                                        selectedGroups = currentSelection
-                                    }
-                                )
-                                Text(group.Name ?: "", modifier = Modifier.padding(start = 8.dp))
-                            }
-                        }
-                    }
-                    Button(
-                        onClick = { showGroupFilterSheet = false },
-                        modifier = Modifier
-                            .align(Alignment.End)
-                            .padding(top = 8.dp)
-                    ) {
-                        Text("Apply")
-                    }
-                }
-            }
+            GroupFilterBottomSheet(
+                show = showGroupFilterSheet,
+                items = productGroups,
+                selectedItems = selectedGroups,
+                itemNameSelector = { it.Name },
+                onSelectedItemsChange = { selectedGroups = it },
+                onDismiss = { showGroupFilterSheet = false },
+                bottomSheetState = bottomSheetState
+            )
         }
+
 
 
         TallyReportScaffold(

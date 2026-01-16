@@ -61,6 +61,7 @@ import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.LedgerOpeningBalance
 import org.tally.LedgerReportList
+import smartSearch
 import kotlin.math.absoluteValue
 
 data class LedgerReportScreen(val accountName: String, val startDate: String, val endDate: String) :
@@ -113,31 +114,18 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
             if (showSearchBar) focusRequester.requestFocus()
         }
 
-        val filteredList = if (searchQuery.isEmpty()) {
-            list
-        } else {
-            val startsWith = list.filter {
+        val filteredList = smartSearch(
+            list = list,
+            query = searchQuery,
+            selectors = listOf { item ->
                 if (selectedOption == "Name") {
-                    it.AccountName?.startsWith(searchQuery, ignoreCase = true) == true
+                    item.AccountName
                 } else {
-                    it.VOUCHERNUMBER?.startsWith(searchQuery, ignoreCase = true) == true
+                    item.VOUCHERNUMBER
                 }
             }
+        )
 
-            val contains = list.filter {
-                if (selectedOption == "Name") {
-                    val value = it.AccountName
-                    value?.contains(searchQuery, ignoreCase = true) == true &&
-                            value?.startsWith(searchQuery, ignoreCase = true) == false
-                } else {
-                    val value = it.VOUCHERNUMBER
-                    value?.contains(searchQuery, ignoreCase = true) == true &&
-                            value?.startsWith(searchQuery, ignoreCase = true) == false
-                }
-            }
-
-            startsWith + contains
-        }
 
 
         // Calculate totals and closing balance

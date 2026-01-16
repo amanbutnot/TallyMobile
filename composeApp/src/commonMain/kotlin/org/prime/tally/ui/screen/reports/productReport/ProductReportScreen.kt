@@ -56,6 +56,7 @@ import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.printing.productReportHtml
+import org.prime.tally.ui.shared.composables.GroupFilterBottomSheet
 import org.prime.tally.ui.shared.composables.MenuItemData
 import org.prime.tally.ui.shared.composables.TallyCircularLoader
 import org.prime.tally.ui.shared.composables.TallyLoadingDialog
@@ -68,6 +69,7 @@ import org.prime.tally.ui.shared.reportsShared.ReportColumn
 import org.prime.tally.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductStockList
+import smartSearch
 
 data class ProductReportScreen(val productGuid: String? = null, val isMain: Boolean) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -132,31 +134,14 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
             list.filter { it.GroupName in selectedGroups }
         }
 
-        val filteredList = if (searchQuery.isEmpty()) {
-            groupFilteredList
-        } else {
-            val startsWith = groupFilteredList.filter {
-                it.ProductName?.startsWith(
-                    searchQuery,
-                    ignoreCase = true
-                ) == true || it.GodownName?.startsWith(searchQuery, ignoreCase = true) == true
-            }
-
-            val contains = groupFilteredList.filter {
-                val product = it.ProductName
-                val godown = it.GodownName
-
-                (product?.contains(searchQuery, ignoreCase = true) == true || godown?.contains(
-                    searchQuery,
-                    ignoreCase = true
-                ) == true) && (product?.startsWith(
-                    searchQuery,
-                    ignoreCase = true
-                ) != true && godown?.startsWith(searchQuery, ignoreCase = true) != true)
-            }
-
-            startsWith + contains
-        }
+        val filteredList = smartSearch(
+            list = groupFilteredList,
+            query = searchQuery,
+            selectors = listOf(
+                { it.ProductName },
+                { it.GodownName }
+            )
+        )
 
 
         if (shareLoading) {
@@ -188,71 +173,17 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
         }
 
         if (showGroupFilterSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showGroupFilterSheet = false },
-                sheetState = bottomSheetState
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Filter by Group", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp))
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        TextButton(onClick = { selectedGroups = productGroups.mapNotNull { it.Name } }) {
-                            Text("Select All")
-                        }
-                        TextButton(onClick = { selectedGroups = emptyList() }) {
-                            Text("Clear")
-                        }
-                    }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-                    LazyColumn {
-                        items(productGroups) { group ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        val currentSelection = selectedGroups.toMutableList()
-                                        group.Name?.let {
-                                            if (currentSelection.contains(it)) {
-                                                currentSelection.remove(it)
-                                            } else {
-                                                currentSelection.add(it)
-                                            }
-                                        }
-                                        selectedGroups = currentSelection
-                                    }
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(
-                                    checked = group.Name in selectedGroups,
-                                    onCheckedChange = { isChecked ->
-                                        val currentSelection = selectedGroups.toMutableList()
-                                        group.Name?.let { name ->
-                                            if (isChecked) {
-                                                currentSelection.add(name)
-                                            } else {
-                                                currentSelection.remove(name)
-                                            }
-                                        }
-                                        selectedGroups = currentSelection
-                                    }
-                                )
-                                Text(group.Name ?: "", modifier = Modifier.padding(start = 8.dp))
-                            }
-                        }
-                    }
-                    Button(
-                        onClick = { showGroupFilterSheet = false },
-                        modifier = Modifier
-                            .align(Alignment.End)
-                            .padding(top = 8.dp)
-                    ) {
-                        Text("Apply")
-                    }
-                }
-            }
+            GroupFilterBottomSheet(
+                show = showGroupFilterSheet,
+                items = productGroups,
+                selectedItems = selectedGroups,
+                itemNameSelector = { it.Name }, // assuming productGroups is List<ProductGroup>
+                onSelectedItemsChange = { selectedGroups = it },
+                onDismiss = { showGroupFilterSheet = false },
+                bottomSheetState = bottomSheetState
+            )
         }
+
 
         TallyReportScaffold(
             title = "Barcode Report",

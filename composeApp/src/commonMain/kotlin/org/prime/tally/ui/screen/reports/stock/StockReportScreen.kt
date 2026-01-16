@@ -1,6 +1,5 @@
 package org.prime.tally.ui.screen.reports.stock
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,17 +7,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -33,11 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.text.PlatformTextStyle
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -45,9 +33,11 @@ import kotlinx.coroutines.launch
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.expect.formatToAmtDec
 import org.prime.tally.data.expect.formatToQtyDec
+import org.prime.tally.data.utils.SharedPrefs
 import org.prime.tally.ui.printing.Quadruple
 import org.prime.tally.ui.printing.fourHeaderHtml
 import org.prime.tally.ui.screen.reports.productReport.ProductReportScreen
+import org.prime.tally.ui.shared.composables.GroupFilterBottomSheet
 import org.prime.tally.ui.shared.composables.MenuItemData
 import org.prime.tally.ui.shared.composables.TallyCircularLoader
 import org.prime.tally.ui.shared.composables.TallyLoadingDialog
@@ -62,6 +52,7 @@ import org.prime.tally.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.tally.ui.shared.reportsShared.TallyReportLazyList
 import org.prime.tally.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductStockItemList
+import smartSearch
 import kotlin.math.absoluteValue
 
 object StockReportScreen : Screen {
@@ -111,22 +102,15 @@ object StockReportScreen : Screen {
         } else {
             list.filter { it.GroupName in selectedGroups }
         }
+        val filteredList = smartSearch(
+            list = groupFilteredList,
+            query = searchQuery,
+            selectors = listOf(
+                { it.ProductName },
+            )
+        )
 
-        val filteredList = if (searchQuery.isEmpty()) {
-            groupFilteredList
-        } else {
-            val startsWith = groupFilteredList.filter {
-                it.ProductName?.startsWith(searchQuery, ignoreCase = true) == true
-            }
 
-            val contains = groupFilteredList.filter {
-                val value = it.ProductName
-                value?.contains(searchQuery, ignoreCase = true) == true &&
-                        !value.startsWith(searchQuery, ignoreCase = true)
-            }
-
-            startsWith + contains
-        }
         val totalQty = filteredList.sumOf { it.Value1?.toDouble() ?: 0.0 }
         val totalAmt = filteredList.sumOf { it.Value3?.toDouble() ?: 0.0 }
         val rows: List<Quadruple<String, String, String, String>> = filteredList.map { item ->
@@ -185,72 +169,15 @@ object StockReportScreen : Screen {
             TallyLoadingDialog("Generating Report")
         }
 
-        if (showGroupFilterSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showGroupFilterSheet = false },
-                sheetState = bottomSheetState
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Filter by Group", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp))
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        TextButton(onClick = { selectedGroups = productGroups.mapNotNull { it.Name } }) {
-                            Text("Select All")
-                        }
-                        TextButton(onClick = { selectedGroups = emptyList() }) {
-                            Text("Clear")
-                        }
-                    }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-                    LazyColumn {
-                        items(productGroups) { group ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        val currentSelection = selectedGroups.toMutableList()
-                                        group.Name?.let {
-                                            if (currentSelection.contains(it)) {
-                                                currentSelection.remove(it)
-                                            } else {
-                                                currentSelection.add(it)
-                                            }
-                                        }
-                                        selectedGroups = currentSelection
-                                    }
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(
-                                    checked = group.Name in selectedGroups,
-                                    onCheckedChange = { isChecked ->
-                                        val currentSelection = selectedGroups.toMutableList()
-                                        group.Name?.let { name ->
-                                            if (isChecked) {
-                                                currentSelection.add(name)
-                                            } else {
-                                                currentSelection.remove(name)
-                                            }
-                                        }
-                                        selectedGroups = currentSelection
-                                    }
-                                )
-                                Text(group.Name ?: "", modifier = Modifier.padding(start = 8.dp))
-                            }
-                        }
-                    }
-                    Button(
-                        onClick = { showGroupFilterSheet = false },
-                        modifier = Modifier
-                            .align(Alignment.End)
-                            .padding(top = 8.dp)
-                    ) {
-                        Text("Apply")
-                    }
-                }
-            }
-        }
+        GroupFilterBottomSheet(
+            show = showGroupFilterSheet,
+            items = productGroups, // can be any list
+            selectedItems = selectedGroups,
+            itemNameSelector = { it.Name },
+            onSelectedItemsChange = { selectedGroups = it },
+            onDismiss = { showGroupFilterSheet = false },
+            bottomSheetState = bottomSheetState
+        )
 
 
         TallyReportScaffold(
@@ -297,7 +224,10 @@ object StockReportScreen : Screen {
                                 modifier = Modifier.focusRequester(focusRequester)
                             )
                         }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
                             TextButton(onClick = { showGroupFilterSheet = true }) {
                                 Text("Group Filter")
                             }
@@ -363,6 +293,7 @@ object StockReportScreen : Screen {
                                     textAlign = TextAlign.End,
                                     isHeader = false
                                 )
+                                if(SharedPrefs.Permissions.get()?.FilterAmount=="N" || SharedPrefs.Permissions.get()?.FilterAmount==null)
                                 TableCell(
                                     text = item.Value3?.toDouble()?.formatToAmtDec() ?: "-",
                                     weight = column4Weight,

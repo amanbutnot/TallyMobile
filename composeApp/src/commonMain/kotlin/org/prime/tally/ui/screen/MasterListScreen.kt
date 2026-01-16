@@ -62,6 +62,7 @@ import org.tally.LedgerMaster
 import org.tally.ProductGroupMaster
 import org.tally.ProductUnitMaster
 import org.tally.Products
+import smartSearch
 
 data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -136,21 +137,15 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
                     )
 
                     val filteredItems = remember(allItems.value, searchQuery) {
-                        if (searchQuery.isEmpty()) {
-                            allItems.value
-                        } else {
-                            val startsWith = allItems.value.filter {
-                                val name = getMasterItemData(it).first
-                                name?.startsWith(searchQuery, ignoreCase = true) == true
+                        smartSearch(
+                            list = allItems.value,
+                            query = searchQuery,
+                            selectors = listOf { item ->
+                                getMasterItemData(item).first
                             }
-                            val contains = allItems.value.filter {
-                                val name = getMasterItemData(it).first
-                                name?.contains(searchQuery, ignoreCase = true) == true &&
-                                        name?.startsWith(searchQuery, ignoreCase = true) == false
-                            }
-                            startsWith + contains
-                        }
+                        )
                     }
+
 
 
                     LazyColumn(
