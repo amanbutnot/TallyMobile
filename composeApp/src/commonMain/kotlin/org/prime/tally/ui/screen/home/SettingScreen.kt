@@ -143,7 +143,7 @@ object SettingScreen : Screen {
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    if(userRole()== ROLE.DISTRIBUTOR){
+                    if (userRole() == ROLE.DISTRIBUTOR) {
                         Text(
                             text = "Distributor Management",
                             style = MaterialTheme.typography.titleSmall.copy(
@@ -321,6 +321,7 @@ object SettingScreen : Screen {
                             SharedPrefs.FileId.clear()
                             SharedPrefs.DistributorData.clear()
                             SharedPrefs.Permissions.clear()
+                            SharedPrefs.LoginData.clear()
                             deleteDbFile()
                             nav.replaceAll(OnBoardingScreen)
                         },

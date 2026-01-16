@@ -182,6 +182,13 @@ object LoginScreen : Screen {
                                     onSuccess = {
                                         nav.push(GoogleDriveDownloadScreen)
                                     }, onListSuccess = { companyList ->
+                                        SharedPrefs.LoginData.save(
+                                            SharedPrefs.LoginDataModel(
+                                                username = email,
+                                                password = password,
+                                                list = companyList,
+                                            )
+                                        )
                                         nav.push(SelectCompanyScreen(email, password, companyList))
                                     }
                                 )
