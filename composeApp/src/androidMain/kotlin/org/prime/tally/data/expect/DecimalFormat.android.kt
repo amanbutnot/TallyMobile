@@ -6,7 +6,8 @@ import kotlin.math.pow
 actual fun Double.formatToQtyDec(num: Int): String {
     return this.toBigDecimal()
         .setScale(num, java.math.RoundingMode.DOWN)
-        .toPlainString().replace(",","")
+        .toPlainString()
+        //.replace(",","")
 }
 
 actual fun Double.formatToAmtDec(num: Int): String {
@@ -21,5 +22,6 @@ actual fun Double.formatToAmtDec(num: Int): String {
         isGroupingUsed = true
     }
 
-    return formatter.format(bd).replace(",","")
+    return formatter.format(bd)
+        //.replace(",","")
 }
