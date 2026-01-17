@@ -132,3 +132,33 @@ WHERE V.CM2 IN ('New Ref', 'Advance')
 
 ORDER BY V.DATE, V.CM1;
 
+
+outstandingGroupList:
+SELECT
+    Vouchers_BILLALLOCATIONS.CM1 AS Party,
+    CASE
+        WHEN :mode = 0 THEN SUM(D1) * -1
+        WHEN :mode = 1 THEN SUM(D1)
+    END AS PenAmt
+FROM Vouchers_BILLALLOCATIONS
+WHERE BILLID IN (
+    SELECT BILLID
+    FROM Vouchers_BILLALLOCATIONS
+    WHERE CM2 IN ('New Ref', 'Advance')
+      AND (
+            (:mode = 0 AND D1 < 0)
+         OR (:mode = 1 AND D1 > 0)
+      )
+      AND DATE >= ?
+      AND DATE <= ?
+      AND (:filterCm3 = 0 OR Vouchers_BILLALLOCATIONS.CM3 IN :cm3)
+      AND CM1 IN (
+          SELECT Name
+          FROM LedgerMaster
+          WHERE GroupCode = ?
+            AND (:excludeFilter = 0 OR GUID NOT IN ?)
+      )
+)
+GROUP BY CM1
+HAVING SUM(D1) <> 0
+ORDER BY CM1;

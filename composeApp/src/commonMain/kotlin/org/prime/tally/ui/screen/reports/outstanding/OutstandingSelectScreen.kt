@@ -4,7 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -18,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -51,7 +56,7 @@ object OutstandingSelectScreen : Screen {
                     .padding(paddingValues)
             ) {
                 Text(
-                    text = "Outstanding",
+                    text = "Account wise",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Medium,
                     color = colors.onBackground,
@@ -59,47 +64,100 @@ object OutstandingSelectScreen : Screen {
                 )
 
 
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
+                Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    item{
-                            ReportButton(
-                                icon = Icons.Default.AccountBalance,
-                                title = "Bill Receivable",
-                                onClick = {
-                                    salesmanPermission(
-                                        "D8",
-                                        accessDeniedBlock = {  showDeniedDialog = true  },
-                                        successBlock = {nav.push(
-                                            OutstandingFilterScreen("Bill Receivable")
-                                        )}
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
+                )
+                {
+                    ReportButton(
+                        icon = Icons.Default.AccountBalance,
+                        modifier = Modifier.weight(1f),
+                        title = "Bill Receivable",
+                        onClick = {
+                            salesmanPermission(
+                                "D8",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav.push(
+                                        OutstandingFilterScreen("Bill Receivable")
                                     )
-
                                 }
                             )
 
-                    }
-                    item{
-                            ReportButton(
-                                icon = Icons.Default.AssignmentLate,
-                                title = "Bill Payable",
-                                onClick = {
-                                    salesmanPermission(
-                                        "D9",
-                                        accessDeniedBlock = {  showDeniedDialog = true  },
-                                        successBlock = {   nav.push(
-                                            OutstandingFilterScreen("Bill Payable")
-                                        )}
+                        }
+                    )
+                    ReportButton(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.AssignmentLate,
+                        title = "Bill Payable",
+                        onClick = {
+                            salesmanPermission(
+                                "D9",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav.push(
+                                        OutstandingFilterScreen("Bill Payable")
                                     )
-
                                 }
                             )
 
-                    }
+                        }
+                    )
+
+
+                }
+                Spacer(Modifier.height(24.dp))
+                Text(
+                    text = "Group Wise",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = colors.onBackground,
+                    modifier = Modifier.padding(20.dp).padding(bottom = 8.dp),
+                )
+
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
+                )
+                {
+                    ReportButton(
+                        icon = Icons.Default.AccountBalance,
+                        modifier = Modifier.weight(1f),
+                        title = "Bill Receivable",
+                        onClick = {
+                            salesmanPermission(
+                                "D8",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav.push(
+                                        OutstandingGroupFilterScreen("Bill Receivable")
+                                    )
+                                }
+                            )
+
+                        }
+                    )
+                    ReportButton(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.AssignmentLate,
+                        title = "Bill Payable",
+                        onClick = {
+                            salesmanPermission(
+                                "D9",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {
+                                    nav.push(
+                                        OutstandingGroupFilterScreen("Bill Payable")
+                                    )
+                                }
+                            )
+
+                        }
+                    )
+
 
                 }
 
@@ -107,4 +165,5 @@ object OutstandingSelectScreen : Screen {
         }
 
 
-    }}
+    }
+}
