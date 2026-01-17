@@ -21,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Report
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -73,15 +74,21 @@ import org.prime.tally.business.viewmodel.attendance.AttendanceViewModel
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.model.attendance.AttendanceRequest
 import org.prime.tally.data.utils.SharedPrefs
+import org.prime.tally.ui.screen.reports.ledger.LedgerReportFilterScreen
+import org.prime.tally.ui.screen.reports.ledger.LedgerReportScreen
+import org.prime.tally.ui.screen.reports.outstanding.OutstandingDisFilterScreen
+import org.prime.tally.ui.screen.reports.outstanding.OutstandingReportScreen
 import org.prime.tally.ui.screen.transactions.SelectLedgerRow
 import org.prime.tally.ui.screen.transactions.TransactionBottomSheet
 import org.prime.tally.ui.shared.composables.TallyButton
 import org.prime.tally.ui.shared.composables.TallyLoadingDialog
 import org.prime.tally.ui.shared.composables.TallyResultDialog
 import org.prime.tally.ui.shared.composables.TallyScaffold
+import org.prime.tally.ui.shared.globalShared.StartDate
 import org.prime.tally.ui.shared.globalShared.getLedgerMasters
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.math.acos
 
 data class AttendanceScreen(
     val lat: Double, val lon: Double, val address: String, val isAttendance: Boolean
@@ -114,7 +121,7 @@ data class AttendanceScreen(
         val list = getLedgerMasters(db)
 
         val lastAttendanceDate = SharedPrefs.AttendanceDate.get()
-        val lastCheckInOutDate = SharedPrefs.CheckInOutDate.get()
+        var lastCheckInOutDate by remember { mutableStateOf(SharedPrefs.CheckInOutDate.get()) }
 
         val buttonName = if (isAttendance) {
             if (isCheckIn(lastAttendanceDate)) "Check In" else "Check Out"
@@ -135,12 +142,12 @@ data class AttendanceScreen(
 
                 Column(
                     modifier = Modifier.fillMaxSize().background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    colors.surface, colors.surfaceVariant.copy(alpha = 0.3f)
-                                )
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                colors.surface, colors.surfaceVariant.copy(alpha = 0.3f)
                             )
-                        ).verticalScroll(scrollState).padding(paddingValues)
+                        )
+                    ).verticalScroll(scrollState).padding(paddingValues)
                         .padding(horizontal = 8.dp, vertical = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
@@ -183,6 +190,38 @@ data class AttendanceScreen(
                                 lineHeight = typography.bodyMedium.lineHeight
                             )
                         }
+                    }
+                    if (!isCheckIn(lastCheckInOutDate)) {
+                        ElegantCard(
+                            icon = Icons.Default.Report,
+                            title = "Reports",
+                            iconTint = colors.secondary,
+                            content = {
+                                //TODO: make it go to the filter screen instead
+                                TallyButton(
+                                    label = "Account Ledger",
+                                    backgroundColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    onClick = { nav.push(LedgerReportScreen(
+                                        accountName = selectedAccount,
+                                        startDate = StartDate(),
+                                        endDate = CurrentDate()
+                                    )) }
+                                )
+                                TallyButton(
+                                    label = "Bill Receivable",
+                                    backgroundColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    onClick = { nav.push(OutstandingReportScreen(
+                                        name = "Bill Receivable",
+                                        startDate = StartDate(),
+                                        endDate = CurrentDate(),
+                                        cm1 = selectedAccount
+                                    )) }
+                                )
+                            }
+                        )
+
                     }
 
 
@@ -243,11 +282,12 @@ data class AttendanceScreen(
                                 )
                             }
 
+
                             capturedFile?.let { file ->
                                 Surface(
                                     modifier = Modifier.fillMaxWidth().shadow(
-                                            elevation = 8.dp, shape = RoundedCornerShape(16.dp)
-                                        ),
+                                        elevation = 8.dp, shape = RoundedCornerShape(16.dp)
+                                    ),
                                     shape = RoundedCornerShape(16.dp),
 
                                     ) {
@@ -277,46 +317,48 @@ data class AttendanceScreen(
                                         //ATTENDANCE
                                         viewModel.sendAttendance(
                                             attendanceRequest = AttendanceRequest(
-                                            LoginID = "Admin",
-                                            TranType = 1,
-                                            RecType = if (isCheckIn(lastAttendanceDate)) 1 else 2,
-                                            C2 = lat.toString(),
-                                            C3 = lon.toString(),
-                                            C4 = address,
-                                            C5 = capturedFileInBytes
-                                        ), onSuccess = {
-                                            if (isCheckIn(lastAttendanceDate)) {
-                                                SharedPrefs.AttendanceDate.save(CurrentDate())
-                                            } else {
-                                                SharedPrefs.AttendanceDate.clear()
-                                            }
-                                            showAlert = true
+                                                LoginID = "Admin",
+                                                TranType = 1,
+                                                RecType = if (isCheckIn(lastAttendanceDate)) 1 else 2,
+                                                C2 = lat.toString(),
+                                                C3 = lon.toString(),
+                                                C4 = address,
+                                                C5 = capturedFileInBytes
+                                            ), onSuccess = {
+                                                if (isCheckIn(lastAttendanceDate)) {
+                                                    SharedPrefs.AttendanceDate.save(CurrentDate())
+                                                } else {
+                                                    SharedPrefs.AttendanceDate.clear()
+                                                }
+                                                showAlert = true
 
-                                        })
+                                            })
                                     } else {
                                         // CHECK IN CHECK OUT
                                         viewModel.sendAttendance(
                                             attendanceRequest = AttendanceRequest(
-                                            LoginID = "Admin",
-                                            TranType = 2,
-                                            RecType = if (isCheckIn(lastCheckInOutDate)) 1 else 2,
-                                            C1 = selectedAccount,
-                                            C2 = lat.toString(),
-                                            C3 = lon.toString(),
-                                            C4 = address,
-                                            C5 = capturedFileInBytes
-                                        ), onSuccess = {
-                                            if (isCheckIn(lastCheckInOutDate)) {
-                                                SharedPrefs.CheckInOutDate.save(CurrentDate())
-                                                SharedPrefs.CheckInOutLedger.save(
-                                                    selectedAccount
-                                                )
-                                            } else {
-                                                SharedPrefs.CheckInOutDate.clear()
-                                                SharedPrefs.CheckInOutLedger.clear()
-                                            }
-                                            showAlert = true
-                                        })
+                                                LoginID = "Admin",
+                                                TranType = 2,
+                                                RecType = if (isCheckIn(lastCheckInOutDate)) 1 else 2,
+                                                C1 = selectedAccount,
+                                                C2 = lat.toString(),
+                                                C3 = lon.toString(),
+                                                C4 = address,
+                                                C5 = capturedFileInBytes
+                                            ), onSuccess = {
+                                                if (isCheckIn(lastCheckInOutDate)) {
+                                                    SharedPrefs.CheckInOutDate.save(CurrentDate())
+                                                    lastCheckInOutDate = CurrentDate()
+                                                    SharedPrefs.CheckInOutLedger.save(
+                                                        selectedAccount
+                                                    )
+                                                } else {
+                                                    SharedPrefs.CheckInOutDate.clear()
+                                                    lastCheckInOutDate = null
+                                                    SharedPrefs.CheckInOutLedger.clear()
+                                                }
+                                                showAlert = true
+                                            })
                                     }
 
 
@@ -340,7 +382,31 @@ data class AttendanceScreen(
         if (showAlert) {
             TallyResultDialog(
                 state.message ?: "Error",
-                onDone = { if (state.success) nav.pop() else showAlert = false },
+                onDone = {
+                    if (!state.success) {
+                        showAlert = false
+                        return@TallyResultDialog
+                    }
+
+                    // Always clear image
+                    capturedFile = null
+                    capturedFileInBytes = ""
+                    showAlert = false
+
+                    // ATTENDANCE: always pop
+                    if (isAttendance) {
+                        nav.pop()
+                        return@TallyResultDialog
+                    }
+
+                    // CHECK IN / CHECK OUT:
+                    // Pop only if it was CHECK OUT
+                    val wasCheckOut = isCheckIn(lastCheckInOutDate)
+
+                    if (wasCheckOut) {
+                        nav.pop()
+                    }
+                },
                 isSuccess = state.success
             )
         }
@@ -360,11 +426,11 @@ private fun ElegantCard(
 
     Card(
         modifier = modifier.fillMaxWidth().shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(20.dp),
-                ambientColor = iconTint.copy(alpha = 0.1f),
-                spotColor = iconTint.copy(alpha = 0.1f)
-            ), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(
+            elevation = 4.dp,
+            shape = RoundedCornerShape(20.dp),
+            ambientColor = iconTint.copy(alpha = 0.1f),
+            spotColor = iconTint.copy(alpha = 0.1f)
+        ), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(
             containerColor = colors.surface
         ), elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {

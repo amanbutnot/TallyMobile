@@ -143,7 +143,7 @@ object SettingScreen : Screen {
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    if (userRole() == ROLE.DISTRIBUTOR) {
+                    if (userRole()==ROLE.ADMIN) {
                         Text(
                             text = "Distributor Management",
                             style = MaterialTheme.typography.titleSmall.copy(
