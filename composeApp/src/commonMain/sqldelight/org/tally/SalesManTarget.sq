@@ -1,0 +1,39 @@
+CREATE TABLE SalesManTarget (
+  SalesmanName TEXT,
+  TrMonth TEXT,
+  TrYear TEXT,
+  Tr1 REAL,
+  Tr2 REAL,
+  Tr3 REAL,
+  Tr4 REAL,
+  Tr5 REAL
+);
+
+
+
+getSalesmanTargets:
+SELECT
+    SalesManTarget.SalesmanName,
+    SalesManTarget.TrMonth,
+    SalesManTarget.TrYear,
+    SalesManTarget.Tr1 AS TargetQty,
+    SalesManTarget.Tr2 AS TargetAmt,
+    SUM(Vouchers_StockItems.D1 * -1) AS AchQty,
+    SUM(Vouchers_StockItems.D3 * -1) AS AchAmt
+FROM SalesManTarget
+LEFT JOIN Vouchers_StockItems
+    ON SalesManTarget.SalesmanName = Vouchers_StockItems.CM4
+WHERE
+    SalesManTarget.TrMonth = :trMonth
+    AND SalesManTarget.TrYear = :trYear
+    AND Vouchers_StockItems.DATE >= :fromDate
+    AND Vouchers_StockItems.DATE <= :toDate
+    AND VchType = 'Sales'
+    AND (:salesmanName IS NULL OR SalesManTarget.SalesmanName = :salesmanName)
+GROUP BY
+    SalesManTarget.SalesmanName,
+    SalesManTarget.TrMonth,
+    SalesManTarget.TrYear,
+    SalesManTarget.Tr1,
+    SalesManTarget.Tr2
+ORDER BY SalesmanName;
