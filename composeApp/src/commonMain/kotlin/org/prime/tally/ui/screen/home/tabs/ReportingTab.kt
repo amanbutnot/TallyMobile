@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.ProductionQuantityLimits
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -50,15 +51,14 @@ import cafe.adriel.voyager.navigator.internal.BackHandler
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
-import org.prime.tally.data.enums.MasterEnums
 import org.prime.tally.data.model.salesmanPermission
-import org.prime.tally.ui.screen.MasterListScreen
 import org.prime.tally.ui.screen.home.Dashboard
 import org.prime.tally.ui.screen.reports.godown.GodownClosingStockListScreen
 import org.prime.tally.ui.screen.reports.ledger.LedgerReportFilterScreen
 import org.prime.tally.ui.screen.reports.outstanding.OutstandingSelectScreen
 import org.prime.tally.ui.screen.reports.productReport.ProductReportScreen
 import org.prime.tally.ui.screen.reports.registers.RegisterSelectScreen
+import org.prime.tally.ui.screen.reports.salesman.SalesmanTargetFilterScreen
 import org.prime.tally.ui.screen.reports.stock.ParameterReportScreen
 import org.prime.tally.ui.screen.reports.stock.StockReportScreen
 import org.prime.tally.ui.screen.reports.trialBalance.TrialBalanceScreen
@@ -106,7 +106,8 @@ object ReportingTab : Tab {
                 Report.ParameterReport,
 //                Report.PendingOrders,
 //                Report.Quotations,
-                Report.GoDownWiseClosingStock
+                Report.GoDownWiseClosingStock,
+                Report.SalesmanWise,
             )
 
             LazyVerticalGrid(
@@ -126,20 +127,27 @@ object ReportingTab : Tab {
                                 Report.Ledger -> {
                                     salesmanPermission(
                                         "D7",
-                                        accessDeniedBlock = {  showDeniedDialog = true  },
-                                        successBlock = { nav?.push(LedgerReportFilterScreen())}
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = { nav?.push(LedgerReportFilterScreen()) }
                                     )
                                 }
+
                                 Report.Outstanding -> nav?.push(OutstandingSelectScreen)
                                 Report.PendingOrders -> nav?.push(Dashboard)
                                 Report.Quotations -> nav?.push(Dashboard)
-                                Report.ProductStock-> nav?.push(ProductReportScreen(null, isMain = true))
+                                Report.ProductStock -> nav?.push(
+                                    ProductReportScreen(
+                                        null,
+                                        isMain = true
+                                    )
+                                )
+
                                 Report.Registers -> nav?.push(RegisterSelectScreen)
                                 Report.StockReport -> {
                                     salesmanPermission(
                                         "D11",
-                                        accessDeniedBlock = {  showDeniedDialog = true  },
-                                        successBlock = {   nav?.push(StockReportScreen)}
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = { nav?.push(StockReportScreen) }
                                     )
 
                                 }
@@ -147,30 +155,38 @@ object ReportingTab : Tab {
                                 Report.ParameterReport -> {
                                     salesmanPermission(
                                         "D11",
-                                        accessDeniedBlock = {  showDeniedDialog = true  },
-                                        successBlock = {   nav?.push(ParameterReportScreen)}
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = { nav?.push(ParameterReportScreen) }
                                     )
 
                                 }
+
                                 Report.TrialBalance -> {
                                     salesmanPermission(
                                         "D10",
-                                        accessDeniedBlock = {  showDeniedDialog = true  },
-                                        successBlock = {    nav?.push(TrialBalanceScreen)}
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = { nav?.push(TrialBalanceScreen) }
                                     )
 
                                 }
+
                                 Report.GoDownWiseClosingStock -> {
 
 
                                     salesmanPermission(
                                         "D12",
-                                        accessDeniedBlock = {  showDeniedDialog = true  },
-                                        successBlock = {  nav?.push(
-                                            GodownClosingStockListScreen
-                                        )}
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
+                                            nav?.push(
+                                                GodownClosingStockListScreen
+                                            )
+                                        }
                                     )
 
+                                }
+
+                                Report.SalesmanWise -> {
+                                    nav?.push(SalesmanTargetFilterScreen)
                                 }
 
                             }
@@ -245,4 +261,5 @@ sealed class Report(val title: String, val icon: ImageVector) {
     object GoDownWiseClosingStock : Report("Godown Wise Closing Stock", Icons.Default.Description)
     object ProductStock : Report("Barcode Report", Icons.Default.QrCodeScanner)
     object ParameterReport : Report("Parameter Report", Icons.Default.ProductionQuantityLimits)
+    object SalesmanWise : Report("Salesman Wise Target", Icons.Default.TrackChanges)
 }

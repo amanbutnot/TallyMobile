@@ -253,7 +253,7 @@ data class OutstandingGroupListScreen(
                                     isHeader = false
                                 )
                             }
-                        )
+                        )   
                     }
                 }
             })

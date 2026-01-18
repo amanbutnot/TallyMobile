@@ -30,8 +30,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
 import kotlinx.datetime.number
+import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import org.prime.tally.ui.shared.globalShared.Tdate
 import kotlin.time.Clock
@@ -183,3 +188,35 @@ fun CurrentDate(): String {
     val today = now.toLocalDateTime(TimeZone.currentSystemDefault()).date
     return today.toString()
 }
+
+
+
+fun getMonthRange(monthName: String, year: Int): Pair<String, String> {
+    val month = when (monthName.take(3).lowercase()) {
+        "jan" -> Month.JANUARY
+        "feb" -> Month.FEBRUARY
+        "mar" -> Month.MARCH
+        "apr" -> Month.APRIL
+        "may" -> Month.MAY
+        "jun" -> Month.JUNE
+        "jul" -> Month.JULY
+        "aug" -> Month.AUGUST
+        "sep" -> Month.SEPTEMBER
+        "oct" -> Month.OCTOBER
+        "nov" -> Month.NOVEMBER
+        "dec" -> Month.DECEMBER
+        else -> error("Invalid month: $monthName")
+    }
+
+    val start = LocalDate(year, month, 1)
+
+    val end = start
+        .plus(1, DateTimeUnit.MONTH)
+        .minus(1, DateTimeUnit.DAY)
+
+    return start.toString() to end.toString() // yyyy-MM-dd
+}
+
+
+fun isLeapYear(year: Int): Boolean =
+    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
