@@ -219,6 +219,17 @@ data class AttendanceScreen(
                                         cm1 = selectedAccount
                                     )) }
                                 )
+                                TallyButton(
+                                    label = "Bill Payable",
+                                    backgroundColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    onClick = { nav.push(OutstandingReportScreen(
+                                        name = "Bill Payable",
+                                        startDate = StartDate(),
+                                        endDate = CurrentDate(),
+                                        cm1 = selectedAccount
+                                    )) }
+                                )
                             }
                         )
 
