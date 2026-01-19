@@ -371,8 +371,9 @@ data class SaleScreen(
                                                         taxable = taxable,
                                                         gstAmt = gstAmount,
                                                         net = net,
-                                                        guid = product.GUID ?: pendingSelectedProductGUID
-                                                        ?: ""
+                                                        guid = product.GUID
+                                                            ?: pendingSelectedProductGUID
+                                                            ?: ""
                                                     )
                                                     editingItem = null
                                                 },
@@ -637,20 +638,22 @@ data class SaleScreen(
                                         Narration = narration, TransactionID = tranId
                                     ),
                                     onSuccess = {
-                                        println(InventoryVoucherRequest(
-                                            billing_guid = selectedLedgerGUID,
-                                            vch_type = vchType,
-                                            billing_name = selectedLedger,
-                                            billing_mobile = "",
-                                            billing_state = "",
-                                            billing_country = "",
-                                            billing_address = "",
-                                            taxType = if (taxType == TaxType.EXTRA) 1 else 2,
-                                            items = billingItems,
-                                            sundries = selectedSundries,
-                                            TranDate = selectedDate,
-                                            Narration = narration, TransactionID = tranId
-                                        ))
+                                        println(
+                                            InventoryVoucherRequest(
+                                                billing_guid = selectedLedgerGUID,
+                                                vch_type = vchType,
+                                                billing_name = selectedLedger,
+                                                billing_mobile = "",
+                                                billing_state = "",
+                                                billing_country = "",
+                                                billing_address = "",
+                                                taxType = if (taxType == TaxType.EXTRA) 1 else 2,
+                                                items = billingItems,
+                                                sundries = selectedSundries,
+                                                TranDate = selectedDate,
+                                                Narration = narration, TransactionID = tranId
+                                            )
+                                        )
                                         showResultDialog = true
                                     },
                                     url = if (isEdit) "updateInventory" else "addInventoryVch"
@@ -1110,7 +1113,7 @@ fun ExpandedItemEditor(
                     BorderedInput(
                         value = qtyText,
                         onValueChange = { new ->
-                            qtyText = new.filter { it.isDigit() }.ifEmpty { "0" }
+                            qtyText = new.filter { it.isDigit() }.ifEmpty { "" }
 
                             // Recalculate amount when qty changes and amount was manually entered
                             if (isAmountManuallyEntered && amountText.isNotBlank()) {
