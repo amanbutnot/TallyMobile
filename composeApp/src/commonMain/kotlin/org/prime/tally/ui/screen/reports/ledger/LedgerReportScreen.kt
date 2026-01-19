@@ -46,6 +46,7 @@ import kotlinx.coroutines.withContext
 import org.prime.tally.data.expect.DatabaseHolder
 import org.prime.tally.data.expect.formatToAmtDec
 import org.prime.tally.data.expect.formatToQtyDec
+import org.prime.tally.data.expect.stringToDouble
 import org.prime.tally.ui.printing.LedgerRow
 import org.prime.tally.ui.printing.accountLedgerHtml
 import org.prime.tally.ui.shared.composables.MenuItemData
@@ -243,7 +244,7 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                             TextAlign.Start
                         ),
                         ReportColumn(
-                            "Closing: ${closingBalance.absoluteValue.formatToAmtDec()} $closingBalanceType",
+                            "Closing: ${closingBalance.absoluteValue.formatToAmtDec().stringToDouble()} $closingBalanceType",
                             columnBigWeight,
                             TextAlign.End
                         ),
@@ -421,7 +422,7 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                                     }
                                 }
                             } else {
-                                var bal = openingBalance?.OpeningBal?.formatToAmtDec()?.toDouble() ?: 0.0
+                                var bal = openingBalance?.OpeningBal?.formatToAmtDec()?.stringToDouble() ?: 0.0
                                 items(filteredList) { item ->
                                     bal += (item.D2 ?: 0.0) - (item.D3 ?: 0.0)
                                     val balType = if (bal >= 0) "Cr" else "Dr"
