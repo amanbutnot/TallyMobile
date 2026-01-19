@@ -100,7 +100,7 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
 
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(
-                                text = "Account",
+                                text = "Account Group",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -127,7 +127,7 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = selectedAccount.ifEmpty { "Select an account" },
+                                        text = selectedAccount.ifEmpty { "Select an account group" },
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = if (selectedAccount.isEmpty())
                                             MaterialTheme.colorScheme.onSurfaceVariant
@@ -205,7 +205,7 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
                                 }
                             },
                             onDismiss = { showBottomSheet = false },
-                            bottomSheetState = state
+                            bottomSheetState = state,title="Select Account Group"
                         )
                     }
                 }
