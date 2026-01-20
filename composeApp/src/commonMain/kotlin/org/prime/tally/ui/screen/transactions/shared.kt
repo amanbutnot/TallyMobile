@@ -54,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import org.prime.tally.data.model.transactions.SundryItem
 import org.prime.tally.ui.shared.composables.TallySearchBar
 import org.tally.LedgerMaster
 import smartSearch
@@ -842,6 +843,173 @@ fun TransactionLedgerBottomSheet(
                                 } else {
                                     Text(
                                         text = ledger.Name ?: "",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TransactionSundryBottomSheet(
+    showBottomSheet: Boolean,
+    list: List<SundryItem>,
+    onSelected: (SundryItem) -> Unit,
+    onDismiss: () -> Unit,
+    bottomSheetState: SheetState,
+    title: String = "Select Account",
+    itemContent: @Composable ((SundryItem) -> Unit)? = null
+) {
+    var query by remember { mutableStateOf("") }
+
+    val filteredList = remember(list, query) {
+        smartSearch(
+            list = list,
+            query = query,
+            selectors = listOf { it.name }
+        )
+    }
+
+    if (showBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { onDismiss() },
+            sheetState = bottomSheetState,
+            dragHandle = null,
+            sheetGesturesEnabled = false,
+            containerColor = MaterialTheme.colorScheme.surface,
+            tonalElevation = 0.dp,
+            modifier = Modifier.fillMaxHeight()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+            ) {
+
+                // Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    IconButton(onClick = { onDismiss() }) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                HorizontalDivider(
+                    Modifier.padding(bottom = 12.dp),
+                    DividerDefaults.Thickness,
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+
+                // Search
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    TallySearchBar(
+                        searchQuery = query,
+                        onQueryChange = { query = it },
+                    )
+                }
+
+                // List
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+
+                ) {
+
+                    // Result count
+                    if (query.isNotBlank()) {
+                        item {
+                            Text(
+                                text = "${filteredList.size} result${if (filteredList.size != 1) "s" else ""}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+
+                    // Empty state
+                    if (filteredList.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 48.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+                                    Text(
+                                        text = if (query.isBlank()) "No items available" else "No results found",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Items
+                    items(filteredList) { ledger ->
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    onSelected(ledger)
+                                    onDismiss()
+                                },
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                if (itemContent != null) {
+                                    itemContent(ledger)
+                                } else {
+                                    Text(
+                                        text = ledger.name,
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = MaterialTheme.colorScheme.onSurface,
                                         maxLines = 2,
