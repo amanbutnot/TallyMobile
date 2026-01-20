@@ -85,8 +85,8 @@ import org.prime.tally.data.model.transactions.SundryItem
 import org.prime.tally.ui.screen.transactions.SelectLedgerRow
 import org.prime.tally.ui.screen.transactions.TallyNarrationField
 import org.prime.tally.ui.screen.transactions.TransactionBottomSheet
-import org.prime.tally.ui.screen.transactions.TransactionBottomSheetThree
 import org.prime.tally.ui.screen.transactions.TransactionOneBottomSheet
+import org.prime.tally.ui.screen.transactions.TransactionSundryBottomSheet
 import org.prime.tally.ui.shared.composables.MenuItemData
 import org.prime.tally.ui.shared.composables.TallyAlertBox
 import org.prime.tally.ui.shared.composables.TallyButton
@@ -115,7 +115,7 @@ data class InvoiceItem(
     var name: String,
     val price: Double,
     val listPrice: Double,
-    val qty: Int = 1,
+    val qty: Int = 0,
     val priceType: Int = 0,
     val discountPercentage: Double,
     //sdfasdfasdfadsfsadf
@@ -249,13 +249,19 @@ data class SaleScreen(
                 }
             }
         }
+        val sundriesTotal = selectedSundries.fold(0.0) { runningTotal, sundry ->
+            val baseAmount = itemsTotal + runningTotal
 
+            val sundryValue = if (sundry.i2 == 1) {
+                baseAmount * (sundry.amount / 100.0)
+            } else {
+                sundry.amount
+            }
 
-        val sundriesTotal = selectedSundries.sumOf {
-            when (it.i1) {
-                1 -> it.amount
-                0 -> -it.amount
-                else -> 0.0
+            when (sundry.i1) {
+                0 -> runningTotal - sundryValue
+                1 -> runningTotal + sundryValue
+                else -> runningTotal + sundryValue
             }
         }
 
@@ -355,7 +361,7 @@ data class SaleScreen(
                                     if (pending != null) {
                                         val product = itemsList.find { it.Name == pending.name }
                                         if (product != null) {
-                                            ExpandedItemEditor(
+                                            ExpandedItemEditor1(
                                                 name = product.Name ?: pending.name,
                                                 defaultListPrice = pending.listPrice,
                                                 initialQuantity = pending.qty,
@@ -384,7 +390,7 @@ data class SaleScreen(
                                                 gstPercentage = gstPercent
                                             )
                                         } else {
-                                            ExpandedItemEditor(
+                                            ExpandedItemEditor1(
                                                 name = pending.name,
                                                 defaultListPrice = pending.listPrice,
                                                 initialDiscount = pending.discountPercentage,
@@ -450,19 +456,37 @@ data class SaleScreen(
                                 }
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    var cumulativeTotal = itemsTotal
+
                                     selectedSundries.forEachIndexed { index, sundry ->
                                         SundryCard(
                                             index = index,
                                             sundry = sundry,
+                                            runningTotal = cumulativeTotal,
                                             onAmountChange = { newAmount ->
-                                                selectedSundries = selectedSundries.map {
-                                                    if (it.name == sundry.name) it.copy(amount = newAmount) else it
+                                                selectedSundries = selectedSundries.mapIndexed { i, it ->
+                                                    if (i == index) it.copy(amount = newAmount) else it
                                                 }
                                             },
                                             onRemove = {
                                                 selectedSundries = selectedSundries - sundry
                                             }
                                         )
+
+                                        // Update cumulative total for next iteration
+                                        val sundryValue = if (sundry.i2 == 1) {
+                                            // It's a percentage - calculate based on current total
+                                            cumulativeTotal * (sundry.amount / 100.0)
+                                        } else {
+                                            // It's a fixed amount
+                                            sundry.amount
+                                        }
+
+                                        cumulativeTotal = when (sundry.i1) {
+                                            0 -> cumulativeTotal - sundryValue  // Subtract
+                                            1 -> cumulativeTotal + sundryValue  // Add
+                                            else -> cumulativeTotal + sundryValue
+                                        }
                                     }
 
                                     if (selectedSundries.isNotEmpty()) {
@@ -524,20 +548,25 @@ data class SaleScreen(
                         show = showSundrySheet,
                         title = "Select Sundry",
                         options = busyLedgerList.map {
-                            Triple(
-                                it.Name ?: "",
-                                it.GUID ?: "",
-                                it.I1?.toInt() ?: 0
+                            SundryItem(
+                                name = it.Name.toString(),
+                                amount = 0.0,
+                                guid = it.GUID.toString(),
+                                i1 = it.I1?.toInt() ?: 0,
+                                i2 = it.I2?.toInt() ?: 0,
+                                d2 = it.D2?.toInt() ?: 0
                             )
                         },
-                        onSelect = { sundryName, GUID, i1 ->
-                            if (!selectedSundries.any { it.name == sundryName }) {
+                        onSelect = { item ->
+                            if (!selectedSundries.any { it.name == item.name }) {
                                 selectedSundries =
                                     selectedSundries + SundryItem(
-                                        sundryName,
+                                        item.name,
                                         0.0,
-                                        guid = GUID,
-                                        i1 = i1
+                                        guid = item.guid,
+                                        i1 = item.i1,
+                                        i2 = item.i2,
+                                        d2 = item.d2
                                     )
                             }
                         },
@@ -552,7 +581,13 @@ data class SaleScreen(
                         onSelect = { sundryName, GUID ->
                             if (!selectedSundries.any { it.name == sundryName }) {
                                 selectedSundries =
-                                    selectedSundries + SundryItem(sundryName, 0.0, guid = GUID)
+                                    selectedSundries + SundryItem(
+                                        sundryName, 0.0, guid = GUID,
+                                        //TODO:MAKE IT WORK FOR TALLY
+                                        i1 = 0,
+                                        i2 = 0,
+                                        d2 = 0
+                                    )
                             }
                         },
                         onDismiss = { showSundrySheet = false }
@@ -737,16 +772,16 @@ fun SelectionSheetTwo(
 fun SelectionSheetThree(
     show: Boolean,
     title: String,
-    options: List<Triple<String, String, Int>>,
-    onSelect: (String, String, Int) -> Unit,
+    options: List<SundryItem>,
+    onSelect: (SundryItem) -> Unit,
     onDismiss: () -> Unit
 ) {
-    TransactionBottomSheetThree(
+    TransactionSundryBottomSheet(
         showBottomSheet = show,
         list = options,
         onSelected = { it ->
             it.let {
-                onSelect(it.first, it.second, it.third)
+                onSelect(it)
 
             }
             onDismiss()
@@ -1294,13 +1329,36 @@ fun ExpandedItemEditor(
     }
 }
 
+// SundryCard Component
 @Composable
 fun SundryCard(
     sundry: SundryItem,
     onAmountChange: (Double) -> Unit,
     onRemove: () -> Unit,
-    index: Int
+    index: Int,
+    runningTotal: Double
 ) {
+    val isPercentage = sundry.i2 == 1
+
+    var textValue by remember(sundry.name) {
+        mutableStateOf(sundry.d2?.takeIf { it.toDouble() != 0.0 }?.toString() ?: "")
+    }
+
+    LaunchedEffect(sundry.amount) {
+        val amountStr = if (sundry.amount == 0.0) "" else sundry.amount.toString()
+        if (amountStr != textValue) {
+            textValue = amountStr
+        }
+    }
+
+    val displayValue = textValue.toDoubleOrNull() ?: 0.0
+
+    val calculatedAmount = if (isPercentage) {
+        runningTotal * (displayValue / 100.0)
+    } else {
+        displayValue
+    }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.small,
@@ -1313,29 +1371,42 @@ fun SundryCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
                 Text(
-                    text = "${(index + 1)}. ",
+                    text = "${index + 1}. ",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                Text(
-                    text = sundry.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
+                Column {
+                    Text(
+                        text = sundry.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    if (displayValue != 0.0) {
+                        Text(
+                            text = if (isPercentage) {
+                                "${if (sundry.i1 == 0) "-" else "+"}${formatTwo(calculatedAmount)}"
+                            } else {
+                                "${if (sundry.i1 == 0) "-" else "+"}${formatTwo(displayValue)}"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.weight(1f)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Surface(
                     modifier = Modifier.width(110.dp),
@@ -1346,16 +1417,11 @@ fun SundryCard(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
                     ) {
-                        Text(
-                            text = "",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(end = 4.dp)
-                        )
                         BasicTextField(
-                            value = if (sundry.amount == 0.0) "" else sundry.amount.toString(),
+                            value = textValue,
                             onValueChange = { newValue ->
                                 if (newValue.isEmpty()) {
+                                    textValue = ""
                                     onAmountChange(0.0)
                                 } else {
                                     val filtered = newValue.filter { it.isDigit() || it == '.' }
@@ -1366,7 +1432,17 @@ fun SundryCard(
                                     } else {
                                         filtered
                                     }
-                                    onAmountChange(validInput.toDoubleOrNull() ?: 0.0)
+
+                                    textValue = validInput
+                                    val parsedValue = validInput.toDoubleOrNull() ?: 0.0
+
+                                    val finalValue = if (isPercentage) {
+                                        parsedValue.coerceIn(0.0, 100.0)
+                                    } else {
+                                        parsedValue
+                                    }
+
+                                    onAmountChange(finalValue)
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -1378,19 +1454,35 @@ fun SundryCard(
                             ),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             decorationBox = { innerTextField ->
-                                if (sundry.amount == 0.0) {
-                                    Text(
-                                        text = "0.00",
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                                alpha = 0.5f
-                                            ),
-                                            textAlign = TextAlign.End
-                                        ),
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        if (textValue.isEmpty()) {
+                                            Text(
+                                                text = if (isPercentage) "0%" else "0.00",
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                        alpha = 0.5f
+                                                    ),
+                                                    textAlign = TextAlign.End
+                                                ),
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+                                        }
+                                        innerTextField()
+                                    }
+                                    if (isPercentage && textValue.isNotEmpty()) {
+                                        Text(
+                                            text = "%",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.padding(start = 2.dp)
+                                        )
+                                    }
                                 }
-                                innerTextField()
                             }
                         )
                     }
@@ -1411,7 +1503,6 @@ fun SundryCard(
         }
     }
 }
-
 @Composable
 fun SubtotalRow(label: String, amount: Double) {
     HorizontalDivider(
@@ -1717,6 +1808,264 @@ fun TransactionItemBottomList(
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ExpandedItemEditor1(
+    name: String,
+    defaultListPrice: Double,
+    gstPercentage: Double,
+    initialQuantity: Int? = 0, // allow null
+    taxType: TaxType,
+    initialDiscount: Double,
+    onAdd: (qty: Int, unitPrice: Double, discount: Double, listPriceText: Double, taxable: Double, gstAmount: Double, net: Double) -> Unit,
+    onCancel: () -> Unit
+) {
+    var qtyN by remember { mutableStateOf(if (initialQuantity == 0) "" else initialQuantity.toString()) } // blank if 0
+    var listPriceN by remember { mutableStateOf("$defaultListPrice") }
+    var discountN by remember { mutableStateOf("$initialDiscount") }
+    var amountN by remember { mutableStateOf("") }
+
+    val priceN by remember {
+        derivedStateOf {
+            val lp = listPriceN.toDoubleOrNull() ?: 0.0
+            val dis = discountN.toDoubleOrNull() ?: 0.0
+            val disAmt = lp * (dis / 100)
+            (lp - disAmt).toString()
+        }
+    }
+
+    val calculatedAmount by remember {
+        derivedStateOf {
+            val q = qtyN.toDoubleOrNull() ?: 0.0
+            val p = priceN.toDoubleOrNull() ?: 0.0
+            (q * p).toString()
+        }
+    }
+
+    // Keep amountN in sync
+    LaunchedEffect(calculatedAmount) {
+        amountN = calculatedAmount
+    }
+
+    val qtyValue = qtyN.toIntOrNull() // null if blank or invalid
+    val isAddEnabled = qtyValue != null && qtyValue > 0
+
+    val taxableAmount: Double
+    val gstAmount: Double
+    val netAmount: Double
+
+    if (taxType == TaxType.EXTRA) {
+        val q = qtyValue?.toDouble() ?: 0.0
+        taxableAmount = priceN.toDouble() * q
+        gstAmount = taxableAmount * gstPercentage / 100.0
+        netAmount = taxableAmount + gstAmount
+    } else {
+        val q = qtyValue?.toDouble() ?: 0.0
+        val grossAmount = priceN.toDouble() * q
+        taxableAmount = if (gstPercentage == 0.0) grossAmount else (grossAmount * 100.0 / (100.0 + gstPercentage))
+        gstAmount = grossAmount - taxableAmount
+        netAmount = grossAmount
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Configure item before adding",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = onCancel, modifier = Modifier.size(28.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Inputs
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Qty",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    BorderedInput(
+                        value = qtyN,
+                        onValueChange = { input ->
+                            // allow only digits
+                            qtyN = input.filter { it.isDigit() }
+                        },
+                        keyboardType = KeyboardType.Number
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "List Price.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    BorderedInput(
+                        value = listPriceN,
+                        onValueChange = { listPriceN = it },
+                        keyboardType = KeyboardType.Decimal
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Discount",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    BorderedInput(
+                        value = discountN,
+                        onValueChange = { input ->
+                            val filtered = input.filter { it.isDigit() || it == '.' }
+                            val number = filtered.toDoubleOrNull()
+                            discountN = when {
+                                filtered.isEmpty() -> ""
+                                number == null -> discountN
+                                number > 100.0 -> "100"
+                                else -> filtered
+                            }
+                        },
+                        keyboardType = KeyboardType.Decimal
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Amount",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    BorderedInput(
+                        value = amountN,
+                        onValueChange = {
+                            amountN = it
+                            val amt = amountN.toDoubleOrNull() ?: 0.0
+                            val q = qtyValue?.toDouble() ?: 1.0
+                            discountN = "0.0"
+                            listPriceN = if (q != 0.0) (amt / q).toString() else "0.0"
+                        },
+                        keyboardType = KeyboardType.Decimal
+                    )
+                }
+            }
+
+            // Amount summary
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Taxable",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = " ${formatTwo(taxableAmount)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "GST %",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${formatTwo(gstPercentage)}%",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "GST Amt",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = " ${formatTwo(gstAmount)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Net",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = " ${formatTwo(netAmount)}",
+                        style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Actions
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onCancel) {
+                    Text("Cancel")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = {
+                        onAdd(
+                            qtyValue!!,
+                            (listPriceN.toDoubleOrNull() ?: 0.0) * (1 - (discountN.toDoubleOrNull()
+                                ?: 0.0) / 100),
+                            discountN.toDoubleOrNull() ?: 0.0,
+                            listPriceN.toDoubleOrNull() ?: 0.0,
+                            taxableAmount,
+                            gstAmount,
+                            netAmount
+                        )
+                    },
+                    enabled = isAddEnabled
+                ) {
+                    Text("Add")
                 }
             }
         }
