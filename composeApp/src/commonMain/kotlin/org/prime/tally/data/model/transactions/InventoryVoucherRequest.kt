@@ -16,15 +16,17 @@ data class InventoryVoucherRequest(
     val items: List<BillingItem>,
     val sundries: List<SundryItem>,
     val Narration: String,
-    val TransactionID:Int?=null
+    val TransactionID: Int? = null
 )
 
 @Serializable
 data class SundryItem(
     val name: String,
     val amount: Double = 0.0,
-    val guid:String,
-    val i1: Int?=null
+    val guid: String,
+    val i1: Int,
+    val i2: Int,
+    val d2: Int,
 )
 
 
@@ -38,10 +40,10 @@ data class BillingItem(
     val discount_amt: Double? = null,
     val tax_rate1: Double,
     val tax_rate2: Double,
-    val taxable:Double,
+    val taxable: Double,
     val gstAmt: Double,
-    val net:Double,
-    val guid:String
+    val net: Double,
+    val guid: String
 )
 
 
