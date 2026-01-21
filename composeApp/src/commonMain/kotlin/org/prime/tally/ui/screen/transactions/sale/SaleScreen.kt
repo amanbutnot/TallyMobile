@@ -28,7 +28,9 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
@@ -383,11 +385,15 @@ data class SaleScreen(
                                                     )
                                                     editingItem = null
                                                 },
-                                                onCancel = {
+                                                onBack = {
                                                     selectedItems = selectedItems + pending
                                                     editingItem = null
                                                 },
-                                                gstPercentage = gstPercent
+                                                gstPercentage = 18.0,
+                                                onCancel = {
+                                                    selectedItems = selectedItems - pending
+                                                    editingItem = null
+                                                }
                                             )
                                         } else {
                                             ExpandedItemEditor1(
@@ -410,11 +416,15 @@ data class SaleScreen(
                                                     )
                                                     editingItem = null
                                                 },
-                                                onCancel = {
+                                                onBack = {
                                                     selectedItems = selectedItems + pending
                                                     editingItem = null
                                                 },
-                                                gstPercentage = gstPercent
+                                                gstPercentage = 18.0,
+                                                onCancel = {
+                                                    selectedItems = selectedItems - pending
+                                                    editingItem = null
+                                                }
                                             )
                                         }
                                     }
@@ -463,10 +473,15 @@ data class SaleScreen(
                                             index = index,
                                             sundry = sundry,
                                             runningTotal = cumulativeTotal,
-                                            onAmountChange = { newAmount ->
-                                                selectedSundries = selectedSundries.mapIndexed { i, it ->
-                                                    if (i == index) it.copy(amount = newAmount) else it
-                                                }
+                                            onAmountChange = { newAmount, rate, srno ->
+                                                selectedSundries =
+                                                    selectedSundries.mapIndexed { i, it ->
+                                                        if (i == index) it.copy(
+                                                            amount = newAmount,
+                                                            rate = rate,
+                                                            srno = srno
+                                                        ) else it
+                                                    }
                                             },
                                             onRemove = {
                                                 selectedSundries = selectedSundries - sundry
@@ -554,7 +569,10 @@ data class SaleScreen(
                                 guid = it.GUID.toString(),
                                 i1 = it.I1?.toInt() ?: 0,
                                 i2 = it.I2?.toInt() ?: 0,
-                                d2 = it.D2?.toInt() ?: 0
+                                d2 = it.D2?.toInt() ?: 0,
+                                //TODO: FIX TH IS
+                                rate = 0.0,
+                                srno = 0
                             )
                         },
                         onSelect = { item ->
@@ -566,7 +584,9 @@ data class SaleScreen(
                                         guid = item.guid,
                                         i1 = item.i1,
                                         i2 = item.i2,
-                                        d2 = item.d2
+                                        d2 = item.d2,
+                                        rate = item.rate,
+                                        srno = item.srno
                                     )
                             }
                         },
@@ -586,7 +606,8 @@ data class SaleScreen(
                                         //TODO:MAKE IT WORK FOR TALLY
                                         i1 = 0,
                                         i2 = 0,
-                                        d2 = 0
+                                        d2 = 0, rate = 0.0,
+                                        srno = 0
                                     )
                             }
                         },
@@ -1333,7 +1354,7 @@ fun ExpandedItemEditor(
 @Composable
 fun SundryCard(
     sundry: SundryItem,
-    onAmountChange: (Double) -> Unit,
+    onAmountChange: (Double, Double, Int) -> Unit, // Now returns (amount, rate, srno)
     onRemove: () -> Unit,
     index: Int,
     runningTotal: Double
@@ -1359,6 +1380,8 @@ fun SundryCard(
         displayValue
     }
 
+    // Calculate rate: if percentage, return the percentage value, else 0.0
+    val rate = if (isPercentage) displayValue else 0.0
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.small,
@@ -1422,7 +1445,7 @@ fun SundryCard(
                             onValueChange = { newValue ->
                                 if (newValue.isEmpty()) {
                                     textValue = ""
-                                    onAmountChange(0.0)
+                                    onAmountChange(0.0, 0.0, index)
                                 } else {
                                     val filtered = newValue.filter { it.isDigit() || it == '.' }
                                     val dotCount = filtered.count { it == '.' }
@@ -1442,7 +1465,9 @@ fun SundryCard(
                                         parsedValue
                                     }
 
-                                    onAmountChange(finalValue)
+
+                                    val finalRate = if (isPercentage) finalValue else 0.0
+                                    onAmountChange(finalValue, finalRate, index)
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -1503,6 +1528,7 @@ fun SundryCard(
         }
     }
 }
+
 @Composable
 fun SubtotalRow(label: String, amount: Double) {
     HorizontalDivider(
@@ -1823,7 +1849,7 @@ fun ExpandedItemEditor1(
     taxType: TaxType,
     initialDiscount: Double,
     onAdd: (qty: Int, unitPrice: Double, discount: Double, listPriceText: Double, taxable: Double, gstAmount: Double, net: Double) -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit, onBack: () -> Unit
 ) {
     var qtyN by remember { mutableStateOf(if (initialQuantity == 0) "" else initialQuantity.toString()) } // blank if 0
     var listPriceN by remember { mutableStateOf("$defaultListPrice") }
@@ -1867,7 +1893,8 @@ fun ExpandedItemEditor1(
     } else {
         val q = qtyValue?.toDouble() ?: 0.0
         val grossAmount = priceN.toDouble() * q
-        taxableAmount = if (gstPercentage == 0.0) grossAmount else (grossAmount * 100.0 / (100.0 + gstPercentage))
+        taxableAmount =
+            if (gstPercentage == 0.0) grossAmount else (grossAmount * 100.0 / (100.0 + gstPercentage))
         gstAmount = grossAmount - taxableAmount
         netAmount = grossAmount
     }
@@ -1901,9 +1928,9 @@ fun ExpandedItemEditor1(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(onClick = onCancel, modifier = Modifier.size(28.dp)) {
+                IconButton(onClick = onBack, modifier = Modifier.size(28.dp)) {
                     Icon(
-                        imageVector = Icons.Default.Close,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Close",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
