@@ -23,6 +23,8 @@ data class InventoryVoucherRequest(
 data class SundryItem(
     val name: String,
     val amount: Double = 0.0,
+    val rate: Double,
+    val srno: Int,
     val guid: String,
     val i1: Int,
     val i2: Int,

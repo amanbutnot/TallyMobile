@@ -1,27 +1,25 @@
 package org.prime.tally.ui.screen.home.tabs
 
 import CurrentDate
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -34,7 +32,6 @@ import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Cases
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationCity
@@ -120,7 +117,6 @@ object HomeTab : Tab {
         val perms = SharedPrefs.Permissions.get()
 
 
-
         val filterBroker = if (perms?.FilterBroker == "Y") 1L else 0L
         val configBroker =
             if (filterBroker == 1L) perms?.ConfigBroker.parseToStringList() else emptyList()
@@ -136,22 +132,22 @@ object HomeTab : Tab {
             GroupCode = groupCodes,
             excludeFilter = filterAccounts,
             GUID = excludeGuids,
-            GroupCode_ =groupCodes,
+            GroupCode_ = groupCodes,
             GUID_ = excludeGuids
         ).executeAsList()
 
-        val filteredReportList = reportList.map { report ->
-            val newRepType = when (report.RecType) {
-                1L -> "Pending Receivables"
-                2L -> "Pending Payables"
-                3L -> "Sales Summary"
-                4L -> "Purchase Overview"
-                5L -> "Customer Receipts"
-                6L -> "Vendor Payments"
-                else -> report.RepType
+        val filteredReportList = reportList
+            .filter { report -> report.RecType !in listOf(4L, 6L) }
+            .map { report ->
+                val newRepType = when (report.RecType) {
+                    1L -> "Pending Receivables"
+                    2L -> "Pending Payables"
+                    3L -> "Sales Summary"
+                    5L -> "Customer Receipts"
+                    else -> report.RepType
+                }
+                report.copy(RepType = newRepType)
             }
-            report.copy(RepType = newRepType)
-        }
 
         Column(
             modifier = Modifier
@@ -160,7 +156,7 @@ object HomeTab : Tab {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         )
         {
-            if (userRole()==ROLE.DISTRIBUTOR) {
+            if (userRole() == ROLE.DISTRIBUTOR) {
                 HeadingTitle("Hi, ${SharedPrefs.DistributorData.get()?.UserName ?: "User"}")
             }
             CompanyInfoCard(
@@ -169,158 +165,124 @@ object HomeTab : Tab {
                 financialYear = Tdate(StartDate()),
                 gstNo = compInfo.T4.toString()
             )
-            Spacer(Modifier.height(8.dp))
+        //    Spacer(Modifier.height(8.dp))
             LastSyncedCard(
                 lastSyncDateTime = SharedPrefs.LastSync.get().toString()
             )
-            if (userRole()==ROLE.ADMIN || userRole()==ROLE.SALESMAN) {
+            if (userRole() == ROLE.ADMIN || userRole() == ROLE.SALESMAN) {
                 HeadingTitle("Data")
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 {
-                    filteredReportList.chunked(3).take(2).forEach { rowItems ->
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 8.dp),
-                        )
-                        {
-                            items(rowItems) { item ->
+                    filteredReportList.take(6).chunked(2).forEach { rowItems ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            rowItems.forEach { item ->
                                 DashboardCard(
                                     name = item.RepType,
                                     amount = when (item.RecType) {
                                         1L -> {
                                             if (hasSalesmanPermission("D8")) {
-                                                if (item.PenAmt != null) item.PenAmt.absoluteValue.formatToAmtDec() else "-"
-
-                                            } else {
-                                                "X"
-
-                                            }
+                                                item.PenAmt?.absoluteValue?.formatToAmtDec() ?: "-"
+                                            } else "X"
                                         }
 
                                         2L -> {
                                             if (hasSalesmanPermission("D9")) {
-                                                if (item.PenAmt != null) item.PenAmt.absoluteValue.formatToAmtDec() else "-"
-
-                                            } else {
-                                                "X"
-
-                                            }
+                                                item.PenAmt?.absoluteValue?.formatToAmtDec() ?: "-"
+                                            } else "X"
                                         }
 
                                         3L -> {
                                             if (hasSalesmanPermission("D13")) {
-                                                if (item.PenAmt != null) item.PenAmt.absoluteValue.formatToAmtDec() else "-"
-
-                                            } else {
-                                                "X"
-
-                                            }
+                                                item.PenAmt?.absoluteValue?.formatToAmtDec() ?: "-"
+                                            } else "X"
                                         }
 
-                                        4L -> {
-                                            if (hasSalesmanPermission("D14")) {
-                                                if (item.PenAmt != null) item.PenAmt.absoluteValue.formatToAmtDec() else "-"
-
-                                            } else {
-                                                "X"
-
-                                            }
-                                        }
-
+//                                        4L -> {
+//                                            if (hasSalesmanPermission("D14")) {
+//                                                item.PenAmt?.absoluteValue?.formatToAmtDec() ?: "-"
+//                                            } else "X"
+//                                        }
 
                                         5L -> {
                                             if (hasSalesmanPermission("D15")) {
-                                                if (item.PenAmt != null) item.PenAmt.absoluteValue.formatToAmtDec() else "-"
-
-                                            } else {
-                                                "X"
-
-                                            }
+                                                item.PenAmt?.absoluteValue?.formatToAmtDec() ?: "-"
+                                            } else "X"
                                         }
 
-                                        6L -> {
-                                            if (hasSalesmanPermission("D16")) {
-                                                if (item.PenAmt != null) item.PenAmt.absoluteValue.formatToAmtDec() else "-"
+//                                        6L -> {
+//                                            if (hasSalesmanPermission("D16")) {
+//                                                item.PenAmt?.absoluteValue?.formatToAmtDec() ?: "-"
+//                                            } else "X"
+//                                        }
 
-                                            } else {
-                                                "X"
-
-                                            }
-                                        }
-
-                                        else -> {
-                                            if (item.PenAmt != null) item.PenAmt.absoluteValue.formatToAmtDec() else "-"
-
-                                        }
+                                        else -> item.PenAmt?.absoluteValue?.formatToAmtDec() ?: "-"
                                     },
                                     onClick = {
                                         when (item.RecType) {
-                                            1L ->
-                                                salesmanPermission(
-                                                    flag = "D8",
-                                                    accessDeniedBlock = { showDeniedDialog = true },
-                                                    successBlock = {
-                                                        nav?.push(
-                                                            OutstandingReportScreen(
-                                                                name = "Bill Receivable",
-                                                                startDate = StartDate(),
-                                                                endDate = CurrentDate(),
-                                                                cm1 = ""
-                                                            )
+                                            1L -> salesmanPermission(
+                                                flag = "D8",
+                                                accessDeniedBlock = { showDeniedDialog = true },
+                                                successBlock = {
+                                                    nav?.push(
+                                                        OutstandingReportScreen(
+                                                            name = "Bill Receivable",
+                                                            startDate = StartDate(),
+                                                            endDate = CurrentDate(),
+                                                            cm1 = ""
                                                         )
-                                                    }
-                                                )
+                                                    )
+                                                }
+                                            )
 
-
-                                            2L ->
-                                                salesmanPermission(
-                                                    flag = "D9",
-                                                    accessDeniedBlock = { showDeniedDialog = true },
-                                                    successBlock = {
-                                                        nav?.push(
-                                                            OutstandingReportScreen(
-                                                                name = "Bill Payable",
-                                                                startDate = StartDate(),
-                                                                endDate = CurrentDate(),
-                                                                cm1 = ""
-                                                            )
+                                            2L -> salesmanPermission(
+                                                flag = "D9",
+                                                accessDeniedBlock = { showDeniedDialog = true },
+                                                successBlock = {
+                                                    nav?.push(
+                                                        OutstandingReportScreen(
+                                                            name = "Bill Payable",
+                                                            startDate = StartDate(),
+                                                            endDate = CurrentDate(),
+                                                            cm1 = ""
                                                         )
-                                                    }
-                                                )
+                                                    )
+                                                }
+                                            )
 
-
-                                            3L ->
-                                                salesmanPermission(
-                                                    flag = "D13",
-                                                    accessDeniedBlock = { showDeniedDialog = true },
-                                                    successBlock = {
-                                                        nav?.push(
-                                                            RegisterReportScreen(
-                                                                name = "Sales",
-                                                                startDate = StartDate(),
-                                                                endDate = CurrentDate()
-                                                            )
+                                            3L -> salesmanPermission(
+                                                flag = "D13",
+                                                accessDeniedBlock = { showDeniedDialog = true },
+                                                successBlock = {
+                                                    nav?.push(
+                                                        RegisterReportScreen(
+                                                            name = "Sales",
+                                                            startDate = StartDate(),
+                                                            endDate = CurrentDate()
                                                         )
-                                                    }
-                                                )
+                                                    )
+                                                }
+                                            )
 
-
-                                            4L ->
-
-                                                salesmanPermission(
-                                                    flag = "D14",
-                                                    accessDeniedBlock = { showDeniedDialog = true },
-                                                    successBlock = {
-                                                        nav?.push(
-                                                            RegisterReportScreen(
-                                                                name = "Purchase",
-                                                                startDate = StartDate(),
-                                                                endDate = CurrentDate()
-                                                            )
-                                                        )
-                                                    }
-                                                )
+//                                            4L -> salesmanPermission(
+//                                                flag = "D14",
+//                                                accessDeniedBlock = { showDeniedDialog = true },
+//                                                successBlock = {
+//                                                    nav?.push(
+//                                                        RegisterReportScreen(
+//                                                            name = "Purchase",
+//                                                            startDate = StartDate(),
+//                                                            endDate = CurrentDate()
+//                                                        )
+//                                                    )
+//                                                }
+//                                            )
 
                                             5L -> salesmanPermission(
                                                 flag = "D15",
@@ -336,31 +298,36 @@ object HomeTab : Tab {
                                                 }
                                             )
 
-                                            6L -> salesmanPermission(
-                                                flag = "D16",
-                                                accessDeniedBlock = { showDeniedDialog = true },
-                                                successBlock = {
-                                                    nav?.push(
-                                                        RegisterReportScreen(
-                                                            name = "Payment",
-                                                            startDate = StartDate(),
-                                                            endDate = CurrentDate()
-                                                        )
-                                                    )
-                                                }
-                                            )
+//                                            6L -> salesmanPermission(
+//                                                flag = "D16",
+//                                                accessDeniedBlock = { showDeniedDialog = true },
+//                                                successBlock = {
+//                                                    nav?.push(
+//                                                        RegisterReportScreen(
+//                                                            name = "Payment",
+//                                                            startDate = StartDate(),
+//                                                            endDate = CurrentDate()
+//                                                        )
+//                                                    )
+//                                                }
+//                                            )
                                         }
-                                    }
+                                    },
+                                    modifier = Modifier.weight(1f)
                                 )
                             }
-                        }
 
+                            // Add spacer if odd number of items in last row
+                            if (rowItems.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
 
                 HeadingTitle("Create")
                 ExpandableGrid()
-            } else if(userRole() == ROLE.DISTRIBUTOR){
+            } else if (userRole() == ROLE.DISTRIBUTOR) {
                 Spacer(Modifier.height(8.dp))
                 HeadingTitle("Quick Actions")
 
@@ -388,7 +355,7 @@ object HomeTab : Tab {
                         }
                     )
                 }
-            }else{
+            } else {
                 HeadingTitle("Create")
                 ExpandableGrid()
             }
@@ -486,318 +453,237 @@ fun ReportActionCard(
 
 @Composable
 fun ExpandableGrid() {
-    var expanded by remember { mutableStateOf(false) }
     val nav = LocalNavigator.currentOrThrow.parent
     val scope = rememberCoroutineScope()
+
     var showLocationPopup by remember { mutableStateOf(false) }
     var showLoading by remember { mutableStateOf(false) }
-
-    if (showLocationPopup) {
-        AlertDialog(
-            onDismissRequest = { showLocationPopup = false },
-            title = { Text("Location is Off") },
-            text = { Text("Please enable location to continue.") },
-            confirmButton = {
-                Button(onClick = { showLocationPopup = false }) {
-                    Text("OK")
-                }
-            }
-        )
-    }
-
     var showDeniedDialog by remember { mutableStateOf(false) }
-
-    if (showDeniedDialog) {
-        PermissionDeniedDialog { showDeniedDialog = false }
-    }
-    if (showLoading) {
-        TallyLoadingDialog("Getting Location")
-    }
 
 
     val cardList = listOf(
+        "Sale Order" to Icons.Default.Description,
+        "Sale Invoice" to Icons.Default.ShoppingCart,
+        "Sale Return" to Icons.Default.ShoppingCart,
         "Receipt" to Icons.Default.Receipt,
         "Payment" to Icons.Default.Payment,
         "Journal" to Icons.Default.AddShoppingCart,
-        "Sale Order" to Icons.Default.Description,
-        "Sale Invoice" to Icons.Default.ShoppingCart,
-
-        "Check In/Out" to Icons.Default.LocationCity,
-        "Attendance" to Icons.Default.LocationOn,
-
-        "Sale Return" to Icons.Default.ShoppingCart,
+        "Contra" to Icons.Default.Payment,
         "Purchase Order" to Icons.Default.AddShoppingCart,
         "Purchase Invoice" to Icons.Default.ShoppingCart,
         "Purchase Return" to Icons.Default.Receipt,
-        //   "Stock Transfer" to Icons.Default.Payment,
-        "Contra" to Icons.Default.Payment
+        "Check In/Out" to Icons.Default.LocationCity,
+        "Attendance" to Icons.Default.LocationOn
     )
 
-    val displayList = if (expanded) {
-        cardList + ("Show Less" to Icons.Default.ExpandLess)
-    } else {
-        cardList.take(5) + ("Show More" to Icons.Default.ExpandMore)
-    }
-
-
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
-        modifier = Modifier
-            .heightIn(max = 400.dp)
-            .padding(8.dp).animateContentSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    Column(
+        modifier = Modifier.padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(displayList.size) { index ->
-            val name = displayList[index]
+        cardList.chunked(3).forEach { rowItems ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Max),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rowItems.forEach { item ->
+                    Box(modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                    ) {
+                        CreateCard(
+                            name = item.first,
+                            icon = item.second,
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .clickable {
+                                    when (item.first) {
 
+                                        "Receipt" -> salesmanPermission(
+                                            "D17",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(SingleEntryReceipt(item.first, vchType = 14))
+                                            })
 
-            CreateCard(
-                name = name.first,
-                icon = name.second,
-                modifier = Modifier.clickable {
-                    when (name.first) {
-                        "Show More" -> expanded = true
-                        "Show Less" -> expanded = false
+                                        "Payment" -> salesmanPermission(
+                                            "D18",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(SingleEntryReceipt(item.first, vchType = 19))
+                                            })
 
-                        "Receipt" -> {
-                            salesmanPermission(
-                                "D17",
-                                accessDeniedBlock = { showDeniedDialog = true },
-                                successBlock = {
-                                    nav?.push(
-                                        SingleEntryReceipt(
-                                            name.first,
-                                            vchType = 14
-                                        )
-                                    )
-                                }
-                            )
+                                        "Journal" -> salesmanPermission(
+                                            "D19",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(SingleEntryReceipt(item.first, vchType = 16))
+                                            })
 
-                        }
+                                        "Sale Order" -> salesmanPermission(
+                                            "D20",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(SaleScreen(item.first, vchType = 12))
+                                            })
 
-                        "Payment" -> {
-                            salesmanPermission(
-                                "D18",
-                                accessDeniedBlock = { showDeniedDialog = true },
-                                successBlock = {
-                                    nav?.push(
-                                        SingleEntryReceipt(
-                                            name.first,
-                                            vchType = 19
-                                        )
-                                    )
-                                }
-                            )
+                                        "Sale Invoice" -> salesmanPermission(
+                                            "D21",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(SaleScreen(item.first, vchType = 9))
+                                            })
 
-                        }
+                                        "Check In/Out" -> salesmanPermission(
+                                            "D22",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                scope.launch {
+                                                    showLoading = true
+                                                    try {
+                                                        val locator = Locator.mobile()
+                                                        val geolocator = Geolocator(locator)
 
-                        "Journal" -> {
-                            salesmanPermission(
-                                "D19",
-                                accessDeniedBlock = { showDeniedDialog = true },
-                                successBlock = {
-                                    nav?.push(
-                                        SingleEntryReceipt(
-                                            name.first,
-                                            vchType = 16
-                                        )
-                                    )
-                                }
-                            )
+                                                        val result = withTimeoutOrNull(30000) {
+                                                            geolocator.current(Priority.HighAccuracy)
+                                                        }
 
-                        }
+                                                        when (result) {
+                                                            is GeolocatorResult.Success -> {
+                                                                val c = result.data.coordinates
+                                                                val address = getPlaceFromCoordinates(
+                                                                    c.latitude,
+                                                                    c.longitude
+                                                                )?.let { formatAddress(it) }
+                                                                    ?: "Address not found"
 
-                        "Sale Order" -> {
-                            salesmanPermission(
-                                "D20",
-                                accessDeniedBlock = { showDeniedDialog = true },
-                                successBlock = {
-                                    nav?.push(
-                                        SaleScreen(
-                                            name.first,
-                                            vchType = 12
-                                        )
-                                    )
-                                }
-                            )
+                                                                nav?.push(
+                                                                    AttendanceScreen(
+                                                                        c.latitude,
+                                                                        c.longitude,
+                                                                        address,
+                                                                        isAttendance = false
+                                                                    )
+                                                                )
+                                                            }
 
-                        }
-
-                        "Sale Return" -> salesmanPermission(
-                            "D24",
-                            accessDeniedBlock = { showDeniedDialog = true },
-                            successBlock = {
-                                nav?.push(
-                                    SaleScreen(
-                                        name.first,
-                                        vchType = 3
-                                    )
-                                )
-                            }
-                        )
-
-                        "Sale Invoice" -> {
-                            salesmanPermission(
-                                "D21",
-                                accessDeniedBlock = { showDeniedDialog = true },
-                                successBlock = {
-                                    nav?.push(
-                                        SaleScreen(
-                                            name.first,
-                                            vchType = 9
-                                        )
-                                    )
-                                }
-                            )
-
-                        }
-
-                        "Check In/Out" -> {
-                            salesmanPermission(
-                                "D22",
-                                accessDeniedBlock = { showDeniedDialog = true },
-                                successBlock = {
-                                    scope.launch {
-                                        showLoading = true
-                                        try {
-                                            val locator = Locator.mobile()
-                                            val geolocator = Geolocator(locator)
-
-                                            // Try with timeout to prevent indefinite waiting
-                                            val result =
-                                                withTimeoutOrNull(30000) { // 30 second timeout
-                                                    geolocator.current(Priority.HighAccuracy)
+                                                            else -> showLocationPopup = true
+                                                        }
+                                                    } finally {
+                                                        showLoading = false
+                                                    }
                                                 }
+                                            })
 
-                                            when (result) {
-                                                is GeolocatorResult.Success -> {
-                                                    val c = result.data.coordinates
-                                                    val lat = c.latitude
-                                                    val lon = c.longitude
-                                                    val place = getPlaceFromCoordinates(lat, lon)
-                                                    val address = place?.let { formatAddress(it) }
-                                                        ?: "Address not found"
-                                                    nav?.push(
-                                                        AttendanceScreen(
-                                                            lat, lon, address,
-                                                            isAttendance = false
-                                                        )
-                                                    )
-                                                }
+                                        "Attendance" -> salesmanPermission(
+                                            "D23",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                scope.launch {
+                                                    showLoading = true
+                                                    try {
+                                                        val locator = Locator.mobile()
+                                                        val geolocator = Geolocator(locator)
 
-                                                is GeolocatorResult.Error, null -> {
-                                                    showLocationPopup = true
+                                                        val result = withTimeoutOrNull(30000) {
+                                                            geolocator.current(Priority.HighAccuracy)
+                                                        }
+
+                                                        when (result) {
+                                                            is GeolocatorResult.Success -> {
+                                                                val c = result.data.coordinates
+                                                                val address = getPlaceFromCoordinates(
+                                                                    c.latitude,
+                                                                    c.longitude
+                                                                )?.let { formatAddress(it) }
+                                                                    ?: "Address not found"
+
+                                                                nav?.push(
+                                                                    AttendanceScreen(
+                                                                        c.latitude,
+                                                                        c.longitude,
+                                                                        address,
+                                                                        isAttendance = true
+                                                                    )
+                                                                )
+                                                            }
+
+                                                            else -> showLocationPopup = true
+                                                        }
+                                                    } finally {
+                                                        showLoading = false
+                                                    }
                                                 }
-                                            }
-                                        } finally {
-                                            showLoading = false
-                                        }
+                                            })
+
+                                        "Sale Return" -> salesmanPermission(
+                                            "D24",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(SaleScreen(item.first, vchType = 3))
+                                            })
+
+                                        "Purchase Order" -> salesmanPermission(
+                                            "D25",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(SaleScreen(item.first, vchType = 13))
+                                            })
+
+                                        "Purchase Invoice" -> salesmanPermission(
+                                            "D26",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(SaleScreen(item.first, vchType = 2))
+                                            })
+
+                                        "Purchase Return" -> salesmanPermission(
+                                            "D27",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(SaleScreen(item.first, vchType = 10))
+                                            })
+
+                                        "Contra" -> salesmanPermission(
+                                            "D28",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(SingleEntryReceipt(item.first, vchType = 15))
+                                            })
                                     }
                                 }
-                            )
-                        }
-
-                        "Attendance" -> {
-                            salesmanPermission(
-                                "D23",
-                                accessDeniedBlock = { showDeniedDialog = true },
-                                successBlock = {
-                                    scope.launch {
-                                        showLoading = true
-                                        try {
-                                            val locator = Locator.mobile()
-                                            val geolocator = Geolocator(locator)
-
-                                            // Try with timeout to prevent indefinite waiting
-                                            val result =
-                                                withTimeoutOrNull(30000) { // 30 second timeout
-                                                    geolocator.current(Priority.HighAccuracy)
-                                                }
-
-                                            when (result) {
-                                                is GeolocatorResult.Success -> {
-                                                    val c = result.data.coordinates
-                                                    val lat = c.latitude
-                                                    val lon = c.longitude
-                                                    val place = getPlaceFromCoordinates(lat, lon)
-                                                    val address = place?.let { formatAddress(it) }
-                                                        ?: "Address not found"
-                                                    nav?.push(
-                                                        AttendanceScreen(
-                                                            lat, lon, address,
-                                                            isAttendance = true
-                                                        )
-                                                    )
-                                                }
-
-                                                is GeolocatorResult.Error, null -> {
-                                                    showLocationPopup = true
-                                                }
-                                            }
-                                        } finally {
-                                            showLoading = false
-                                        }
-                                    }
-                                }
-                            )
-                        }
-
-                        "Purchase Order" -> salesmanPermission(
-                            "D25",
-                            accessDeniedBlock = { showDeniedDialog = true },
-                            successBlock = {
-                                nav?.push(
-                                    SaleScreen(
-                                        name.first,
-                                        vchType = 13
-                                    )
-                                )
-                            }
                         )
+                    }
+                }
 
-                        "Purchase Invoice" -> salesmanPermission(
-                            "D26",
-                            accessDeniedBlock = { showDeniedDialog = true },
-                            successBlock = {
-                                nav?.push(
-                                    SaleScreen(
-                                        name.first,
-                                        vchType = 2
-                                    )
-                                )
-                            }
-                        )
-
-                        "Purchase Return" -> salesmanPermission(
-                            "D27",
-                            accessDeniedBlock = { showDeniedDialog = true },
-                            successBlock = {
-                                nav?.push(
-                                    SaleScreen(
-                                        name.first,
-                                        vchType = 10
-                                    )
-                                )
-                            }
-                        )
-                        // "Stock Transfer" -> nav?.push(SaleScreen(name = name.first, vchType = 7))
-                        "Contra" -> salesmanPermission(
-                            "D28",
-                            accessDeniedBlock = { showDeniedDialog = true },
-                            successBlock = {
-                                nav?.push(
-                                    SingleEntryReceipt(
-                                        name.first,
-                                        vchType = 15
-                                    )
-                                )
-                            }
-                        )
+                // Fill empty slots if row has less than 3 items (keeps grid aligned)
+                repeat(3 - rowItems.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+        if (showLocationPopup) {
+            AlertDialog(
+                onDismissRequest = { showLocationPopup = false },
+                title = { Text("Location is Off") },
+                text = { Text("Please enable location to continue.") },
+                confirmButton = {
+                    Button(onClick = { showLocationPopup = false }) {
+                        Text("OK")
                     }
                 }
             )
         }
+
+        if (showDeniedDialog) {
+            PermissionDeniedDialog { showDeniedDialog = false }
+        }
+
+        if (showLoading) {
+            TallyLoadingDialog("Getting Location")
+        }
+
     }
 }
 
@@ -817,59 +703,51 @@ private fun HeadingTitle(title: String) {
 fun DashboardCard(
     name: String,
     amount: String,
-    modifier: Modifier = Modifier, onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
 ) {
     Card(
+        onClick = onClick,
         modifier = modifier
             .width(140.dp)
-            .height(100.dp) // increased height for 2-line names
-            .padding(4.dp).clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
+            .wrapContentHeight(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
-        )
+            1.dp,
+            MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center // centers both vertically and horizontally
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(8.dp)
-            ) {
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.15.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center, // ensures multi-line is centered
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+            Text(
+                text = name,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
 
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = amount,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Medium,
-                        letterSpacing = (-0.25).sp
-                    ),
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center
-                )
-            }
+            Text(
+                text = amount,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
+
 
 
 @Composable

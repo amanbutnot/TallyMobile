@@ -138,7 +138,7 @@ private fun BarChartLine(height: Dp, modifier: Modifier = Modifier) {
                     bottomEnd = 0.dp
                 )
             )
-//            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-            .background(Color(0xfff56013).copy(alpha = 1f))
+     .background(MaterialTheme.colorScheme.primary.copy(alpha = 1f))
+       //     .background(Color(0xfff56013).copy(alpha = 1f))
     )
 }

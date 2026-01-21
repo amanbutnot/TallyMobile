@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -94,7 +95,7 @@ object Dashboard : Screen {
                                         colors.onBackground.copy(alpha = 0.7f),
                                     style = MaterialTheme.typography.titleLarge.copy(
                                         fontWeight = FontWeight.Medium
-                                    )
+                                    ), maxLines = 1, overflow = TextOverflow.Ellipsis
                                 )
 
                                 if (hasCompanies) {
