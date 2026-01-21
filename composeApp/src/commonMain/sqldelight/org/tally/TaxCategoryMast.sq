@@ -1,0 +1,15 @@
+CREATE TABLE Tax_Category_Mast (
+    Name TEXT NOT NULL,
+    GUID TEXT NOT NULL PRIMARY KEY,
+    IGST REAL NOT NULL,
+    CGST REAL NOT NULL,
+    SGST REAL NOT NULL,
+    AppDate TEXT NOT NULL
+);
+selectTaxRate:
+SELECT IGST AS TaxRate
+FROM Tax_Category_Mast
+WHERE GUID = :guid
+  AND AppDate <= :appDate
+ORDER BY AppDate DESC
+LIMIT 1;
