@@ -1,0 +1,154 @@
+package org.prime.easykarobar.ui.screen.reports.registers
+
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ListAlt
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AssignmentLate
+import androidx.compose.material.icons.filled.Scale
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.easykarobar.data.model.salesmanPermission
+import org.prime.easykarobar.ui.screen.home.tabs.ReportButton
+import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
+import org.prime.easykarobar.ui.shared.composables.TallyScaffold
+
+object RegisterSelectScreen : Screen {
+    @Composable
+    override fun Content() {
+        val colors = MaterialTheme.colorScheme
+        val nav = LocalNavigator.currentOrThrow
+        var showDeniedDialog by remember { mutableStateOf(false) }
+
+        if (showDeniedDialog) {
+            PermissionDeniedDialog { showDeniedDialog = false }
+        }
+        TallyScaffold(
+            "Register Select",
+            onBack = { nav.pop() },
+            showEditIcon = false,
+            onEditClick = {}
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier.fillMaxSize().background(colors.background)
+                    .padding(paddingValues)
+            ) {
+                Text(
+                    text = "Registers",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = colors.onBackground,
+                    modifier = Modifier.padding(20.dp).padding(bottom = 8.dp),
+                )
+
+                val reports = listOf(
+                    Registers.Sales,
+                    Registers.Purchase,
+                    Registers.Receipt,
+                    Registers.Payment,
+                    //  Registers.SaleReturn,
+                    //  Registers.PurchaseReturn
+                )
+
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(reports) { report ->
+                        ReportButton(
+                            icon = report.icon,
+                            title = report.title,
+                            onClick = {
+                                //TODO: add appropriate screens
+                                when (report) {
+                                    Registers.Sales -> {
+
+                                        salesmanPermission(
+                                            "D13",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Sales.title)) }
+                                        )
+
+                                    }
+
+                                    Registers.Purchase -> {
+                                        salesmanPermission(
+                                            "D14",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Purchase.title)) }
+                                        )
+
+                                    }
+
+                                    Registers.Receipt -> {
+                                        salesmanPermission(
+                                            "D15",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Receipt.title)) }
+                                        )
+
+                                    }
+
+                                    Registers.Payment -> {
+                                        salesmanPermission(
+                                            "D16",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Payment.title)) }
+                                        )
+
+
+                                    }
+
+                                    Registers.SaleReturn -> nav.push(RegisterFilterScreen(Registers.SaleReturn.title))
+                                    Registers.PurchaseReturn -> nav.push(
+                                        RegisterFilterScreen(
+                                            Registers.PurchaseReturn.title
+                                        )
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
+
+            }
+        }
+
+
+    }
+}
+
+
+sealed class Registers(val title: String, val icon: ImageVector) {
+    object Sales : Registers("Sales", Icons.Default.AccountBalance)
+    object Purchase : Registers("Purchase", Icons.Default.AssignmentLate)
+    object Receipt : Registers("Receipt", Icons.Default.Scale)
+    object Payment : Registers("Payment", Icons.AutoMirrored.Default.ListAlt)
+    object SaleReturn : Registers("Sale Return", Icons.AutoMirrored.Default.ListAlt)
+    object PurchaseReturn : Registers("Purchase Return", Icons.AutoMirrored.Default.ListAlt)
+
+}

@@ -1,0 +1,277 @@
+package org.prime.easykarobar.ui.screen.auth
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.easykarobar.ui.shared.composables.TallyButton
+import org.prime.easykarobar.ui.shared.composables.TallyScaffold
+
+object VerifyOtpScreen : Screen {
+    @Composable
+    override fun Content() {
+        val colors = MaterialTheme.colorScheme
+        val type = MaterialTheme.typography
+        val nav = LocalNavigator.currentOrThrow
+
+        var otpText by remember { mutableStateOf("") }
+        var isLoading by remember { mutableStateOf(false) }
+
+        TallyScaffold(
+            title = "Verify OTP",
+            onBack = { nav.pop() },
+            showEditIcon = false,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(colors.background),
+                contentAlignment = Alignment.Center
+            ) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = colors.surfaceContainerHigh),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Icon
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .background(
+                                    color = colors.primary.copy(alpha = 0.1f),
+                                    shape = RoundedCornerShape(20.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Lock,
+                                contentDescription = "Lock icon",
+                                tint = colors.primary,
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
+
+                        Spacer(Modifier.height(24.dp))
+
+                        // Title
+                        Text(
+                            text = "OTP Verification",
+                            style = type.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = colors.onSurface
+                            )
+                        )
+
+                        Spacer(Modifier.height(8.dp))
+
+                        // Subtitle
+                        Text(
+                            text = "Enter the 6-digit code sent to your mobile number",
+                            style = type.bodyMedium.copy(color = colors.onSurfaceVariant),
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(Modifier.height(32.dp))
+
+                        // OTP Display Field
+                        OtpDisplayField(
+                            value = otpText,
+                            colors = colors
+                        )
+
+                        Spacer(Modifier.height(32.dp))
+
+                        // Number Keypad
+                        NumberKeypad(
+                            onNumberClick = { number ->
+                                if (otpText.length < 6) {
+                                    otpText += number
+                                }
+                            },
+                            onBackspace = {
+                                if (otpText.isNotEmpty()) {
+                                    otpText = otpText.dropLast(1)
+                                }
+                            },
+                            colors = colors
+                        )
+
+                        Spacer(Modifier.height(24.dp))
+
+                        // Verify Button
+                        TallyButton(
+                            label = if (isLoading) "Verifying..." else "Verify OTP",
+                            onClick = {
+                                if (otpText.length == 6) {
+                                    isLoading = true
+                                    // TODO: Verify OTP logic
+                                }
+                            },
+                            backgroundColor = colors.primary,
+                            contentColor = colors.onPrimary,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = otpText.length == 6 && !isLoading
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun OtpDisplayField(
+    value: String,
+    colors: ColorScheme,
+    maxLength: Int = 6
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(70.dp)
+            .background(
+                color = colors.surface,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .border(
+                width = 2.dp,
+                color = if (value.length == maxLength) colors.primary
+                else colors.outline.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .padding(horizontal = 24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = value.padEnd(maxLength, '•'),
+            style = MaterialTheme.typography.headlineLarge.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 32.sp,
+                letterSpacing = 16.sp,
+                color = colors.onSurface
+            ),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+fun NumberKeypad(
+    onNumberClick: (String) -> Unit,
+    onBackspace: () -> Unit,
+    colors: ColorScheme
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Row 1: 1, 2, 3
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            KeypadButton("1", onNumberClick, colors, Modifier.weight(1f))
+            KeypadButton("2", onNumberClick, colors, Modifier.weight(1f))
+            KeypadButton("3", onNumberClick, colors, Modifier.weight(1f))
+        }
+
+        // Row 2: 4, 5, 6
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            KeypadButton("4", onNumberClick, colors, Modifier.weight(1f))
+            KeypadButton("5", onNumberClick, colors, Modifier.weight(1f))
+            KeypadButton("6", onNumberClick, colors, Modifier.weight(1f))
+        }
+
+        // Row 3: 7, 8, 9
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            KeypadButton("7", onNumberClick, colors, Modifier.weight(1f))
+            KeypadButton("8", onNumberClick, colors, Modifier.weight(1f))
+            KeypadButton("9", onNumberClick, colors, Modifier.weight(1f))
+        }
+
+        // Row 4: Empty, 0, Backspace
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Spacer(Modifier.weight(1f))
+            KeypadButton("0", onNumberClick, colors, Modifier.weight(1f))
+
+            // Backspace button
+            FilledTonalIconButton(
+                onClick = onBackspace,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = colors.surfaceContainerHighest.copy(alpha = 0.6f),
+                    contentColor = colors.error
+                )
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.Backspace,
+                    contentDescription = "Backspace",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun KeypadButton(
+    number: String,
+    onClick: (String) -> Unit,
+    colors: ColorScheme,
+    modifier: Modifier = Modifier
+) {
+    FilledTonalButton(
+        onClick = { onClick(number) },
+        modifier = modifier.height(56.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.filledTonalButtonColors(
+            containerColor = colors.surfaceContainerHighest.copy(alpha = 0.6f),
+            contentColor = colors.onSurface
+        )
+    ) {
+        Text(
+            text = number,
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp
+            )
+        )
+    }
+}

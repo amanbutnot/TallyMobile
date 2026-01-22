@@ -118,15 +118,15 @@ kotlin {
 }
 
 android {
-    namespace = "org.prime.tally"
+    namespace = "org.prime.easykarobar"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "org.prime.tally"
+        applicationId = "org.prime.easykarobar"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
         val sdf = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US)
         sdf.timeZone = TimeZone.getTimeZone("Asia/Kolkata")
         val buildDateTime = sdf.format(Date())
@@ -162,7 +162,7 @@ sqldelight {
         create("TallyDatabase") {
             verifyMigrations.set(false)
             deriveSchemaFromMigrations.set(false)
-            packageName.set("org.tally")
+            packageName.set("org.prime.easykarobar")
         }
     }
 }
