@@ -1,10 +1,12 @@
-package org.prime.tally.ui.screen.transactions.sale
+package org.prime.easykarobar.ui.screen.transactions.sale
 
 import CurrentDate
 import TallyDatePickerRow
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,7 +32,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
@@ -53,7 +54,6 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -66,8 +66,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -79,28 +81,25 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import org.prime.tally.business.viewmodel.transactions.InventoryVoucherViewModel
-import org.prime.tally.data.expect.DatabaseHolder
-import org.prime.tally.data.model.transactions.BillingItem
-import org.prime.tally.data.model.transactions.InventoryVoucherRequest
-import org.prime.tally.data.model.transactions.SundryItem
-import org.prime.tally.ui.screen.transactions.SelectLedgerRow
-import org.prime.tally.ui.screen.transactions.TallyNarrationField
-import org.prime.tally.ui.screen.transactions.TransactionBottomSheet
-import org.prime.tally.ui.screen.transactions.TransactionOneBottomSheet
-import org.prime.tally.ui.screen.transactions.TransactionSundryBottomSheet
-import org.prime.tally.ui.shared.composables.MenuItemData
-import org.prime.tally.ui.shared.composables.TallyAlertBox
-import org.prime.tally.ui.shared.composables.TallyButton
-import org.prime.tally.ui.shared.composables.TallyCircularLoader
-import org.prime.tally.ui.shared.composables.TallyLoadingDialog
-import org.prime.tally.ui.shared.composables.TallyReportScaffold
-import org.prime.tally.ui.shared.composables.TallyResultDialog
-import org.prime.tally.ui.shared.composables.TallySearchBar
-import org.prime.tally.ui.shared.globalShared.Tdate
-import org.prime.tally.ui.shared.globalShared.getItemMasters
-import org.prime.tally.ui.shared.globalShared.getLedgerMasters
-import org.prime.tally.ui.shared.globalShared.isBusy
+import org.prime.easykarobar.business.viewmodel.transactions.InventoryVoucherViewModel
+import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.model.transactions.BillingItem
+import org.prime.easykarobar.data.model.transactions.InventoryVoucherRequest
+import org.prime.easykarobar.data.model.transactions.SundryItem
+import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
+import org.prime.easykarobar.ui.screen.transactions.TallyNarrationField
+import org.prime.easykarobar.ui.shared.composables.MenuItemData
+import org.prime.easykarobar.ui.shared.composables.TallyAlertBox
+import org.prime.easykarobar.ui.shared.composables.TallyButton
+import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
+import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
+import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
+import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
+import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
+import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
+import org.prime.easykarobar.ui.shared.globalShared.isBusy
 import org.tally.Products
 import kotlin.math.abs
 import kotlin.math.round
@@ -124,6 +123,8 @@ data class InvoiceItem(
     val taxable: Double,
     val gstAmt: Double,
     val net: Double,
+//    val salePrice:Double,
+//    val purchasePrice: Double,
     // GUID for the selected product (not shown in UI, sent to backend)
     val guid: String = ""
 ) {
@@ -146,6 +147,9 @@ data class SaleScreen(
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
+
+        val isSale = name in listOf("Sale Order", "Sale Invoice", "Sale Return")
+
         val db = DatabaseHolder.instance
         val nav = LocalNavigator.currentOrThrow
 
@@ -246,7 +250,19 @@ data class SaleScreen(
                         taxable = it.item_amount.toDouble(),
                         gstAmt = it.taxamt1.toDouble(),
                         net = it.total_amt.toDouble()
-                        // guid will default to "" if backend item doesn't include guid in this DTO
+                    )
+                }
+                // PRE-POPULATE SUNDRIES SECTION
+                selectedSundries = data.sundries.map { s ->
+                    SundryItem(
+                        name = s.name,
+                        amount = s.amount,
+                        guid = s.guid ?: "",
+                        i1 = s.i1 ?: 0,
+                        i2 = s.i2 ?: 0,
+                        d2 = s.d2 ?: 0,
+                        rate = s.rate ?: 0.0,
+                        srno = s.srno ?: 0
                     )
                 }
             }
@@ -276,7 +292,7 @@ data class SaleScreen(
         LaunchedEffect(pendingSelectedProductName) {
             pendingSelectedProductName?.let { name ->
                 val prod = itemsList.find { it.Name == name }
-                val price = prod?.SalesPrice ?: 0.0
+                val price = if(isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
                 editingItem =
                     InvoiceItem(
                         name = name, price = price, qty = 1, discountPercentage = 0.0,
@@ -360,12 +376,14 @@ data class SaleScreen(
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     val pending = editingItem
+                                    val product = itemsList.find { it.Name == pending?.name }
                                     if (pending != null) {
-                                        val product = itemsList.find { it.Name == pending.name }
                                         if (product != null) {
                                             ExpandedItemEditor1(
                                                 name = product.Name ?: pending.name,
-                                                defaultListPrice = pending.listPrice,
+                                                defaultListPrice = if (pending.listPrice == 0.0) if (isSale) product.SalesPrice
+                                                    ?: 0.0 else product.PurcPrice
+                                                    ?: 0.0 else pending.listPrice,
                                                 initialQuantity = pending.qty,
                                                 initialDiscount = pending.discountPercentage,
                                                 taxType = taxType,
@@ -428,7 +446,6 @@ data class SaleScreen(
                                             )
                                         }
                                     }
-
                                     selectedItems.forEachIndexed { index, item ->
                                         CompactItemCard(
                                             index = index,
@@ -740,100 +757,6 @@ fun SmallAddButton(label: String, onClick: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SelectionSheet(
-    show: Boolean,
-    title: String,
-    options: List<String>,
-    onSelect: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    TransactionOneBottomSheet(
-        showBottomSheet = show,
-        list = options,
-        onSelected = {
-            onSelect(it)
-            onDismiss()
-        },
-        onDismiss = { onDismiss() },
-        bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        title = title
-    )
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SelectionSheetTwo(
-    show: Boolean,
-    title: String,
-    options: List<Pair<String, String>>,
-    onSelect: (String, String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    TransactionBottomSheet(
-        showBottomSheet = show,
-        list = options,
-        onSelected = { it ->
-            it.let {
-                onSelect(it.first, it.second)
-
-            }
-            onDismiss()
-        },
-        onDismiss = { onDismiss() },
-        bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        title = title
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SelectionSheetThree(
-    show: Boolean,
-    title: String,
-    options: List<SundryItem>,
-    onSelect: (SundryItem) -> Unit,
-    onDismiss: () -> Unit
-) {
-    TransactionSundryBottomSheet(
-        showBottomSheet = show,
-        list = options,
-        onSelected = { it ->
-            it.let {
-                onSelect(it)
-
-            }
-            onDismiss()
-        },
-        onDismiss = { onDismiss() },
-        bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        title = title
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SelectionSheetItem(
-    show: Boolean,
-    title: String,
-    options: List<Products>,
-    onSelect: (Products) -> Unit,
-    onDismiss: () -> Unit
-) {
-    TransactionItemBottomList(
-        showBottomSheet = show,
-        list = options,
-        onSelected = {
-            onSelect(it)
-            onDismiss()
-        },
-        onDismiss = { onDismiss() },
-        bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        title = title
-    )
-}
 
 @Composable
 fun SectionCard(
@@ -1052,304 +975,6 @@ fun QuantitySelector(
     }
 }
 
-@Composable
-fun ExpandedItemEditor(
-    name: String,
-    defaultListPrice: Double,
-    gstPercentage: Double,
-    initialQuantity: Int = 1,
-    initialDiscount: Double = 0.0,
-    taxType: TaxType,
-    onAdd: (qty: Int, unitPrice: Double, discount: Double, listPriceText: Double, taxable: Double, gstAmount: Double, net: Double) -> Unit,
-    onCancel: () -> Unit
-) {
-    var qtyText by rememberSaveable { mutableStateOf(initialQuantity.toString()) }
-    var priceText by rememberSaveable { mutableStateOf("") }
-    var amountText by rememberSaveable { mutableStateOf("") }
-    var listPriceText by rememberSaveable { mutableStateOf("") }
-    var discountText by rememberSaveable { mutableStateOf("") }
-
-    // Track if user has manually entered amount
-    var isAmountManuallyEntered by rememberSaveable { mutableStateOf(false) }
-
-    if (defaultListPrice != 0.0 && listPriceText.isEmpty()) {
-        listPriceText = defaultListPrice.toString()
-    }
-    if (initialDiscount != 0.0 && discountText.isEmpty()) {
-        discountText = initialDiscount.toString()
-    }
-
-    fun parseDoubleSafe(s: String): Double {
-        val filtered = s.filter { it.isDigit() || it == '.' }
-        val dotCount = filtered.count { it == '.' }
-        val valid = if (dotCount > 1) {
-            filtered.substringBefore('.') + "." + filtered.substringAfter('.').replace(".", "")
-        } else filtered
-        return valid.toDoubleOrNull() ?: 0.0
-    }
-
-    val qty = parseDoubleSafe(qtyText).toInt().coerceAtLeast(0)
-    val listPrice = parseDoubleSafe(if (listPriceText == "") "0.0" else listPriceText)
-    val discount = parseDoubleSafe(if (discountText == "") "0.0" else discountText)
-
-    val computedUnit = listPrice * (1 - discount / 100)
-
-    val enteredUnit = if (priceText.isBlank()) computedUnit else parseDoubleSafe(priceText)
-
-    val taxableAmount: Double
-    val gstAmount: Double
-    val netAmount: Double
-
-    if (taxType == TaxType.EXTRA) {
-        taxableAmount = enteredUnit * qty
-        gstAmount = taxableAmount * gstPercentage / 100.0
-        netAmount = taxableAmount + gstAmount
-    } else {
-        val grossAmount = enteredUnit * qty
-        taxableAmount =
-            if (gstPercentage == 0.0) grossAmount else (grossAmount * 100.0 / (100.0 + gstPercentage))
-        gstAmount = grossAmount - taxableAmount
-        netAmount = grossAmount
-    }
-
-    val unitPriceToStore = enteredUnit
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        tonalElevation = 1.dp
-    )
-    {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        )
-        {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            )
-            {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Configure item before adding",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                IconButton(onClick = onCancel, modifier = Modifier.size(28.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            )
-            {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Qty",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    BorderedInput(
-                        value = qtyText,
-                        onValueChange = { new ->
-                            qtyText = new.filter { it.isDigit() }.ifEmpty { "" }
-
-                            // Recalculate amount when qty changes and amount was manually entered
-                            if (isAmountManuallyEntered && amountText.isNotBlank()) {
-                                val newQty = parseDoubleSafe(qtyText).toInt().coerceAtLeast(1)
-                                val amount = parseDoubleSafe(amountText)
-                                listPriceText = if (newQty > 0) formatTwo(amount / newQty) else ""
-                                priceText = listPriceText
-                            }
-                        },
-                        keyboardType = KeyboardType.Number
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "List Price.",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    BorderedInput(
-                        value = listPriceText,
-                        onValueChange = { new ->
-                            listPriceText = new.filter { it.isDigit() || it == '.' }
-                            // Reset amount manual entry flag when list price is directly edited
-                            isAmountManuallyEntered = false
-                            priceText = ""
-                        },
-                        keyboardType = KeyboardType.Decimal
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Discount",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    BorderedInput(
-                        value = discountText,
-                        onValueChange = { new ->
-                            val raw = new.filter { it.isDigit() || it == '.' }
-                            val value = raw.toDoubleOrNull() ?: 0.0
-                            val clamped = value.coerceAtMost(100.0)
-                            discountText = if (raw.isEmpty()) "" else clamped.toString()
-
-                            // If discount is changed after amount entry, reset the flag
-                            if (isAmountManuallyEntered) {
-                                isAmountManuallyEntered = false
-                                priceText = ""
-                            }
-                        },
-                        keyboardType = KeyboardType.Decimal
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Amount",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    BorderedInput(
-                        value = if (isAmountManuallyEntered && amountText.isNotBlank()) {
-                            amountText
-                        } else {
-                            priceText.ifBlank { formatTwo(computedUnit * qty) }
-                        },
-                        onValueChange = { new ->
-                            val filtered = new.filter { it.isDigit() || it == '.' }
-                            amountText = filtered
-
-                            // When amount is entered, set discount to 0 and calculate list price
-                            if (filtered.isNotBlank()) {
-                                isAmountManuallyEntered = true
-                                discountText = "0"
-
-                                val amount = parseDoubleSafe(filtered)
-                                val currentQty = parseDoubleSafe(qtyText).toInt().coerceAtLeast(1)
-
-                                listPriceText = if (currentQty > 0) {
-                                    formatTwo(amount / currentQty)
-                                } else {
-                                    ""
-                                }
-                                priceText = listPriceText
-                            } else {
-                                isAmountManuallyEntered = false
-                                priceText = ""
-                            }
-                        },
-                        keyboardType = KeyboardType.Decimal
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            )
-            {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Taxable",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = " ${formatTwo(taxableAmount)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "GST %",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "${formatTwo(gstPercentage)}%",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "GST Amt",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = " ${formatTwo(gstAmount)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Net",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = " ${formatTwo(netAmount)}",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onCancel) {
-                    Text("Cancel")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(onClick = {
-                    val finalQty = qty.coerceAtLeast(0)
-
-                    if (finalQty > 0) {
-                        onAdd(
-                            finalQty,
-                            unitPriceToStore,
-                            discount,
-                            listPrice,
-                            taxableAmount,
-                            gstAmount,
-                            netAmount
-                        )
-                    }
-                }) {
-                    Text("Add")
-                }
-            }
-        }
-    }
-}
-
 // SundryCard Component
 @Composable
 fun SundryCard(
@@ -1445,7 +1070,7 @@ fun SundryCard(
                             onValueChange = { newValue ->
                                 if (newValue.isEmpty()) {
                                     textValue = ""
-                                    onAmountChange(0.0, 0.0, index)
+                                    onAmountChange(0.0, 0.0, index+1)
                                 } else {
                                     val filtered = newValue.filter { it.isDigit() || it == '.' }
                                     val dotCount = filtered.count { it == '.' }
@@ -1460,14 +1085,14 @@ fun SundryCard(
                                     val parsedValue = validInput.toDoubleOrNull() ?: 0.0
 
                                     val finalValue = if (isPercentage) {
-                                        parsedValue.coerceIn(0.0, 100.0)
+                                        rate
                                     } else {
                                         parsedValue
                                     }
 
 
                                     val finalRate = if (isPercentage) finalValue else 0.0
-                                    onAmountChange(finalValue, finalRate, index)
+                                    onAmountChange(finalValue, finalRate, index+1)
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -1643,8 +1268,32 @@ fun TaxTypeOption(
 fun BorderedInput(
     value: String,
     onValueChange: (String) -> Unit,
-    keyboardType: KeyboardType = KeyboardType.Text, isEnabled: Boolean = true
+    keyboardType: KeyboardType = KeyboardType.Text,
+    isEnabled: Boolean = true
 ) {
+    // Maintain internal TextFieldValue to handle selection
+    var textFieldValue by remember { mutableStateOf(TextFieldValue(value)) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+
+    // Sync external value changes
+    LaunchedEffect(value) {
+        if (value != textFieldValue.text) {
+            textFieldValue = textFieldValue.copy(text = value, selection = TextRange(value.length))
+        }
+    }
+
+    // Select all text when focused
+    LaunchedEffect(isFocused) {
+        val endRange = if (isFocused) textFieldValue.text.length else 0
+        textFieldValue = textFieldValue.copy(
+            selection = TextRange(
+                start = 0,
+                end = endRange
+            )
+        )
+    }
+
     Box(
         modifier = Modifier
             .border(
@@ -1655,8 +1304,11 @@ fun BorderedInput(
             .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
         BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
+            value = textFieldValue,
+            onValueChange = {
+                textFieldValue = it
+                onValueChange(it.text)
+            },
             enabled = isEnabled,
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
@@ -1664,11 +1316,11 @@ fun BorderedInput(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             ),
+            interactionSource = interactionSource,
             modifier = Modifier.fillMaxWidth()
         )
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
