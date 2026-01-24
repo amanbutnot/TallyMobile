@@ -52,3 +52,44 @@ ORDER BY Name;
 selectAll:
 SELECT * FROM Products
 ORDER BY Name;
+
+-- Distributor
+productCategoriesForDis:
+SELECT Name,GUID FROM ProductGroupMaster ORDER BY Name;
+
+getProductsForDis:
+SELECT
+    GUID AS product_id,
+    GUID AS hospital_id,
+    Name AS product_name,
+    GroupCode AS category_id,
+    UnitCode AS unit_id,
+    SalesPrice AS sales_price,
+    MRP,
+    PurcPrice AS purchase_price,
+    SaleDisc AS discount,
+
+    (
+        SELECT IGST
+        FROM Tax_Category_Mast
+        WHERE Tax_Category_Mast.GUID = Products.TaxCategoryCode
+          AND AppDate <= '2025-04-01'
+        ORDER BY AppDate DESC
+        LIMIT 1
+    ) AS gst_tax_percentage,
+
+    Name AS product_description,
+    '' AS created_at,
+    '' AS updated_at,
+
+    ROUND(
+        CASE
+            WHEN IFNULL(SaleDisc, 0) = 0 THEN SalesPrice
+            ELSE SalesPrice - (SalesPrice * SaleDisc / 100.0)
+        END,
+        2
+    ) AS discounted_price
+
+FROM Products
+WHERE (:groupCode IS NULL OR GroupCode = :groupCode)
+ORDER BY Name;
