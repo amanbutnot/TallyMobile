@@ -164,6 +164,7 @@ data class SaleScreen(
 
         var showLedgerSheet by rememberSaveable { mutableStateOf(false) }
         var showItemSheet by rememberSaveable { mutableStateOf(false) }
+        var showWarningMessage by rememberSaveable { mutableStateOf(false) }
         var showSundrySheet by rememberSaveable { mutableStateOf(false) }
         var showResultDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -262,7 +263,7 @@ data class SaleScreen(
                         i2 = s.i2 ?: 0,
                         d2 = s.d2 ?: 0,
                         rate = s.rate ?: 0.0,
-                        srno = s.srno ?: 0
+                        srno = s.srno ?: 0, percentValue = s.percentValue
                     )
                 }
             }
@@ -292,7 +293,7 @@ data class SaleScreen(
         LaunchedEffect(pendingSelectedProductName) {
             pendingSelectedProductName?.let { name ->
                 val prod = itemsList.find { it.Name == name }
-                val price = if(isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
+                val price = if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
                 editingItem =
                     InvoiceItem(
                         name = name, price = price, qty = 1, discountPercentage = 0.0,
@@ -490,13 +491,14 @@ data class SaleScreen(
                                             index = index,
                                             sundry = sundry,
                                             runningTotal = cumulativeTotal,
-                                            onAmountChange = { newAmount, rate, srno ->
+                                            onAmountChange = { newAmount, rate, srno, valueToBeSent ->
                                                 selectedSundries =
                                                     selectedSundries.mapIndexed { i, it ->
                                                         if (i == index) it.copy(
                                                             amount = newAmount,
                                                             rate = rate,
-                                                            srno = srno
+                                                            srno = srno,
+                                                            percentValue = valueToBeSent
                                                         ) else it
                                                     }
                                             },
@@ -589,7 +591,7 @@ data class SaleScreen(
                                 d2 = it.D2?.toInt() ?: 0,
                                 //TODO: FIX TH IS
                                 rate = 0.0,
-                                srno = 0
+                                srno = 0, percentValue = 0.0
                             )
                         },
                         onSelect = { item ->
@@ -603,7 +605,7 @@ data class SaleScreen(
                                         i2 = item.i2,
                                         d2 = item.d2,
                                         rate = item.rate,
-                                        srno = item.srno
+                                        srno = item.srno, percentValue = item.percentValue
                                     )
                             }
                         },
@@ -624,7 +626,7 @@ data class SaleScreen(
                                         i1 = 0,
                                         i2 = 0,
                                         d2 = 0, rate = 0.0,
-                                        srno = 0
+                                        srno = 0, percentValue = 0.0
                                     )
                             }
                         },
@@ -670,73 +672,98 @@ data class SaleScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
+                        fun createO() {
+                            val billingItems = selectedItems.map { item ->
+                                val prod = itemsList.find { it.Name == item.name }
+                                BillingItem(
+                                    product_id = prod?.ID?.toString() ?: "",
+                                    product_name = item.name,
+                                    quantity = item.qty,
+                                    list_price = item.listPrice,
+                                    discount_percent = item.discountPercentage,
+                                    discount_amt = null,
+                                    tax_rate1 = gstPercent,
+                                    tax_rate2 = 0.0,
+                                    taxable = item.taxable,
+                                    net = item.net,
+                                    gstAmt = item.gstAmt,
+                                    // include the pending item GUID so backend receives it
+                                    guid = item.guid
+                                )
+                            }
 
+
+                            viewmodel.createEditInventoryResponse(
+                                inventoryVoucherRequest = InventoryVoucherRequest(
+                                    billing_guid = selectedLedgerGUID,
+                                    vch_type = vchType,
+                                    billing_name = selectedLedger,
+                                    billing_mobile = "",
+                                    billing_state = "",
+                                    billing_country = "",
+                                    billing_address = "",
+                                    taxType = if (taxType == TaxType.EXTRA) 1 else 2,
+                                    items = billingItems,
+                                    sundries = selectedSundries,
+                                    TranDate = selectedDate,
+                                    Narration = narration,
+                                    TransactionID = tranId,
+                                    total_amt = grandTotal
+                                ),
+                                onSuccess = {
+                                    println(
+                                        InventoryVoucherRequest(
+                                            billing_guid = selectedLedgerGUID,
+                                            vch_type = vchType,
+                                            billing_name = selectedLedger,
+                                            billing_mobile = "",
+                                            billing_state = "",
+                                            billing_country = "",
+                                            billing_address = "",
+                                            taxType = if (taxType == TaxType.EXTRA) 1 else 2,
+                                            items = billingItems,
+                                            sundries = selectedSundries,
+                                            TranDate = selectedDate,
+                                            Narration = narration,
+                                            TransactionID = tranId,
+                                            total_amt = grandTotal
+                                        )
+                                    )
+                                    showResultDialog = true
+                                },
+                                url = if (isEdit) "updateInventory" else "addInventoryVch"
+                            )
+                        }
 
                         TallyButton(
 
                             onClick = {
 
-                                val billingItems = selectedItems.map { item ->
-                                    val prod = itemsList.find { it.Name == item.name }
-                                    BillingItem(
-                                        product_id = prod?.ID?.toString() ?: "",
-                                        product_name = item.name,
-                                        quantity = item.qty,
-                                        list_price = item.listPrice,
-                                        discount_percent = item.discountPercentage,
-                                        discount_amt = null,
-                                        tax_rate1 = gstPercent,
-                                        tax_rate2 = 0.0,
-                                        taxable = item.taxable,
-                                        net = item.net,
-                                        gstAmt = item.gstAmt,
-                                        // include the pending item GUID so backend receives it
-                                        guid = item.guid
-                                    )
+                                if (grandTotal < 0.0) {
+                                    showWarningMessage = true
+                                } else {
+                                    createO()
                                 }
 
-                                viewmodel.createEditInventoryResponse(
-                                    inventoryVoucherRequest = InventoryVoucherRequest(
-                                        billing_guid = selectedLedgerGUID,
-                                        vch_type = vchType,
-                                        billing_name = selectedLedger,
-                                        billing_mobile = "",
-                                        billing_state = "",
-                                        billing_country = "",
-                                        billing_address = "",
-                                        taxType = if (taxType == TaxType.EXTRA) 1 else 2,
-                                        items = billingItems,
-                                        sundries = selectedSundries,
-                                        TranDate = selectedDate,
-                                        Narration = narration, TransactionID = tranId
-                                    ),
-                                    onSuccess = {
-                                        println(
-                                            InventoryVoucherRequest(
-                                                billing_guid = selectedLedgerGUID,
-                                                vch_type = vchType,
-                                                billing_name = selectedLedger,
-                                                billing_mobile = "",
-                                                billing_state = "",
-                                                billing_country = "",
-                                                billing_address = "",
-                                                taxType = if (taxType == TaxType.EXTRA) 1 else 2,
-                                                items = billingItems,
-                                                sundries = selectedSundries,
-                                                TranDate = selectedDate,
-                                                Narration = narration, TransactionID = tranId
-                                            )
-                                        )
-                                        showResultDialog = true
-                                    },
-                                    url = if (isEdit) "updateInventory" else "addInventoryVch"
-                                )
                             },
                             enabled = selectedLedger.isNotEmpty() && selectedItems.isNotEmpty(),
                             label = if (isEdit) "Update" else "Create Invoice",
                             backgroundColor = MaterialTheme.colorScheme.primary
                         )
-
+                        if (showWarningMessage) {
+                            TallyAlertBox(
+                                title = "Warning",
+                                message = "Do you want to save negative voucher??",
+                                confirmButtonText = "Yes",
+                                cancelButtonText = "No",
+                                onConfirm = {
+                                    showWarningMessage = false
+                                    createO()
+                                },
+                                onCancel = { showWarningMessage = false },
+                                onDismiss = { showWarningMessage = false },
+                            )
+                        }
                     }
                 }
             }
@@ -979,7 +1006,7 @@ fun QuantitySelector(
 @Composable
 fun SundryCard(
     sundry: SundryItem,
-    onAmountChange: (Double, Double, Int) -> Unit, // Now returns (amount, rate, srno)
+    onAmountChange: (Double, Double, Int, Double) -> Unit, // Now returns (amount, rate, srno)
     onRemove: () -> Unit,
     index: Int,
     runningTotal: Double
@@ -1070,7 +1097,7 @@ fun SundryCard(
                             onValueChange = { newValue ->
                                 if (newValue.isEmpty()) {
                                     textValue = ""
-                                    onAmountChange(0.0, 0.0, index+1)
+                                    onAmountChange(0.0, 0.0, index + 1, 0.0)
                                 } else {
                                     val filtered = newValue.filter { it.isDigit() || it == '.' }
                                     val dotCount = filtered.count { it == '.' }
@@ -1092,7 +1119,12 @@ fun SundryCard(
 
 
                                     val finalRate = if (isPercentage) finalValue else 0.0
-                                    onAmountChange(finalValue, finalRate, index+1)
+                                    onAmountChange(
+                                        finalValue,
+                                        finalRate,
+                                        index + 1,
+                                        calculatedAmount
+                                    )
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
