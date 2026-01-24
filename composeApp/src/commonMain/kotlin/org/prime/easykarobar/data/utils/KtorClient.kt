@@ -16,9 +16,9 @@ object KtorClient {
             })
         }
         install(HttpTimeout){
-            requestTimeoutMillis = 60_000    // total request time
-            connectTimeoutMillis = 30_000    // connection phase
-            socketTimeoutMillis = 60_000     // waiting for data
+            requestTimeoutMillis = 120_000    // total request time
+            connectTimeoutMillis = 120_000    // connection phase
+            socketTimeoutMillis = 120_000     // waiting for data
         }
 
 

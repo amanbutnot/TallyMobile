@@ -85,6 +85,7 @@ import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.attendance.AttendanceScreen
 import org.prime.easykarobar.ui.screen.attendance.formatAddress
 import org.prime.easykarobar.ui.screen.attendance.getPlaceFromCoordinates
+import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen
 import org.prime.easykarobar.ui.screen.home.ROLE
 import org.prime.easykarobar.ui.screen.home.userRole
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportFilterScreen
@@ -362,6 +363,15 @@ object HomeTab : Tab {
                         icon = Icons.Default.Cases,
                         onClick = {
                             nav?.push(LedgerReportFilterScreen(showAccount = false))
+                        }
+                    )
+                    // Second Card - Ledger
+                    ReportActionCard(
+                        title = "Shop for Products",
+                        description = "Shop for products",
+                        icon = Icons.Default.ShoppingCart,
+                        onClick = {
+                            nav?.push(ShoppingScreen)
                         }
                     )
                 }
