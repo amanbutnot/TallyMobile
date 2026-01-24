@@ -1,6 +1,6 @@
 package org.prime.easykarobar.data.expect
 
-import org.tally.TallyDatabase
+import org.prime.easykarobar.TallyDatabase
 
 actual fun initializeDatabase(byteArray: ByteArray): TallyDatabase {
     val driver = DriverFactory().createDriver(byteArray)

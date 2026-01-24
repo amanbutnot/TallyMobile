@@ -5,8 +5,8 @@ import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.refTo
+import org.prime.easykarobar.TallyDatabase
 import org.prime.easykarobar.data.utils.DB_FILE_NAME
-import org.tally.TallyDatabase
 import platform.Foundation.NSApplicationSupportDirectory
 import platform.Foundation.NSBundle
 import platform.Foundation.NSData
