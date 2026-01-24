@@ -78,6 +78,7 @@ kotlin {
             //For base64 and byte conversion
             implementation(libs.okio) // or latest
 
+
             //Material Icons
             implementation(libs.material.icons.extended)
 
@@ -110,6 +111,7 @@ kotlin {
         }
         nativeMain.dependencies {
             implementation(libs.ktor.client.darwin)
+         //   implementation(libs.okio.zip)
 
             //SqlDelight
             implementation(libs.native.driver)
