@@ -17,6 +17,7 @@ data class InventoryVoucherRequest(
     val sundries: List<SundryItem>,
     val Narration: String,
     val TransactionID: Int? = null
+    ,val total_amt: Double
 )
 
 @Serializable
@@ -24,6 +25,7 @@ data class SundryItem(
     val name: String,
     val amount: Double = 0.0,
     val rate: Double,
+    val percentValue: Double,
     val srno: Int,
     val guid: String,
     val i1: Int,

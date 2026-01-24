@@ -106,7 +106,7 @@ class AuthViewModel : ViewModel() {
                             SharedPrefs.Token.clear()
                             SharedPrefs.FileId.clear()
                             SharedPrefs.DistributorData.clear()
-                            deleteDbFile()
+                         //   deleteDbFile()
 
                             SharedPrefs.Token.save(loginData.token)
                             SharedPrefs.FileId.save(loginData.C9)
