@@ -1,5 +1,11 @@
 package org.prime.easykarobar.ui.screen.distributor.order
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -30,7 +37,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.ImageNotSupported
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -85,6 +95,7 @@ import org.prime.easykarobar.ui.shared.globalShared.getProductImage
 import org.tally.GetProductsForDis
 import org.tally.ProductCategoriesForDis
 import tallymobile.composeapp.generated.resources.Res
+import tallymobile.composeapp.generated.resources.category_placeholder
 import tallymobile.composeapp.generated.resources.splashImage
 
 
@@ -131,8 +142,7 @@ object ShoppingScreen : Screen {
                 .background(MaterialTheme.colorScheme.background).systemBarsPadding()
         ) {
             TopHeader(
-                searchQuery = searchQuery,
-                onSearchQueryChange = { searchQuery = it },
+
                 onOrdersClick = {
                     nav.push(MyOrdersScreen)
                 },
@@ -141,7 +151,9 @@ object ShoppingScreen : Screen {
                     nav.push(CartScreen(cartViewModel))
 
                 },
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
+                toggle = cartViewModel.showImage.value,
+                onToggle = { cartViewModel.changeShowImage(it) }
             )
 
 
@@ -160,7 +172,7 @@ object ShoppingScreen : Screen {
                                     cartViewModel, productCode = category.GUID?.toDouble() ?: 0.0
                                 )
                             )
-                        }, product = filteredProducts
+                        }, product = filteredProducts,viewModel = cartViewModel
                     )
                 }
 
@@ -194,7 +206,7 @@ object ShoppingScreen : Screen {
         }
         if (showProductInfo.value) {
             selectedProduct.value?.let {
-                ShowProductInfo(showProductInfo, it)
+                ShowProductInfo(showProductInfo, it,cartViewModel)
 
             }
         }
@@ -202,153 +214,165 @@ object ShoppingScreen : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun ShowProductInfo(showProductInfo: MutableState<Boolean>, product: GetProductsForDis) {
+    fun ShowProductInfo(
+        showProductInfo: MutableState<Boolean>,
+        product: GetProductsForDis,
+        cartViewModel: CartViewModel
+    ) {
         val colorScheme = MaterialTheme.colorScheme
-        val sheetState = rememberModalBottomSheetState(
-            skipPartiallyExpanded = true
-        )
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val showImage = cartViewModel.showImage.value
 
         ModalBottomSheet(
             onDismissRequest = { showProductInfo.value = false },
             sheetState = sheetState,
             containerColor = colorScheme.surface,
-            tonalElevation = 4.dp,
+            tonalElevation = 2.dp,
             dragHandle = {
                 Surface(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                    shape = RoundedCornerShape(16.dp)
+                    modifier = Modifier.padding(vertical = 10.dp),
+                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(100)
                 ) {
-                    Box(
-                        modifier = Modifier.size(width = 32.dp, height = 4.dp)
-                    )
+                    Box(Modifier.size(width = 36.dp, height = 4.dp))
                 }
-            }) {
+            }
+        ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)
-                    .verticalScroll(
-                        rememberScrollState()
-                    )
-                    .padding(bottom = 20.dp), horizontalAlignment = Alignment.CenterHorizontally
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                horizontalAlignment = Alignment.Start
             ) {
-                Card(
-                    modifier = Modifier.fillMaxWidth().wrapContentHeight(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+
+                val fullUrl = getProductImage(
+                    storeId = SharedPrefs.User.get()?.ID.toString(),
+                    guid = product.product_id.toString()
+                )
+
+                // --- Image collapses fully when OFF
+                AnimatedVisibility(
+                    visible = showImage,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
                 ) {
-                    val fullUrl = getProductImage(
-                        storeId = SharedPrefs.User.get()?.ID.toString(),
-                        guid = product.product_id.toString()
-                    )
-                    AsyncImage(
-                        model = fullUrl,
-                        contentDescription = product.product_name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.FillBounds
-                    )
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = colorScheme.surfaceVariant.copy(alpha = 0.25f)
+                        ),
+                        elevation = CardDefaults.cardElevation(0.dp)
+                    ) {
+                        AsyncImage(
+                            model = fullUrl,
+                            contentDescription = product.product_name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                if (showImage) Spacer(Modifier.height(20.dp))
 
+                // --- Product title (clear visual anchor)
                 Text(
-                    text = product.product_name.toString(),
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = colorScheme.onSurface,
+                    text = product.product_name.orEmpty(),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 28.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(10.dp))
 
-                Text(
-                    text = product.product_description.toString(),
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        lineHeight = 20.sp
-                    ),
-                    color = colorScheme.onSurfaceVariant,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
+                // --- Description (secondary, readable, not overpowering)
+                if (!product.product_description.isNullOrBlank()) {
+                    Text(
+                        text = product.product_description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.height(18.dp))
+                }
 
-                Spacer(modifier = Modifier.height(20.dp))
-
+                // --- Price block (clean, compact, intentional)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = colorScheme.primaryContainer.copy(alpha = 0.4f)
+                        containerColor = colorScheme.primaryContainer.copy(alpha = 0.35f)
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    shape = RoundedCornerShape(8.dp)
+                    elevation = CardDefaults.cardElevation(0.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    text = "₹${product.sales_price}",
-                                    style = MaterialTheme.typography.headlineSmall.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    color = colorScheme.primary
-                                )
-                                if (product.MRP != product.sales_price) {
-                                    Text(
-                                        text = "${product.MRP}",
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            textDecoration = TextDecoration.LineThrough
-                                        ),
-                                        color = colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
+                        Column {
+                            Text(
+                                text = "₹${product.sales_price}",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = colorScheme.primary
+                            )
 
-                            if (product.discount.toString() != "0") {
-                                Surface(
-                                    color = colorScheme.secondary, shape = RoundedCornerShape(20.dp)
-                                ) {
-                                    Text(
-                                        text = "${product.discount}% OFF",
-                                        style = MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        color = colorScheme.onSecondary,
-                                        modifier = Modifier.padding(
-                                            horizontal = 12.dp, vertical = 6.dp
-                                        )
-                                    )
-                                }
+                            if (product.MRP != product.sales_price) {
+                                Text(
+                                    text = "₹${product.MRP}",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        textDecoration = TextDecoration.LineThrough
+                                    ),
+                                    color = colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        if (product.discount.toString() != "0") {
+                            Surface(
+                                color = colorScheme.secondary,
+                                shape = RoundedCornerShape(50)
+                            ) {
+                                Text(
+                                    text = "${product.discount}% OFF",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = colorScheme.onSecondary,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                                )
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(Modifier.height(28.dp))
 
+                // --- Close button (neutral, not shouting)
                 OutlinedButton(
                     onClick = { showProductInfo.value = false },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = colorScheme.onSurface
-                    ),
-                    border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.5f)),
-                    shape = RoundedCornerShape(8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.4f))
                 ) {
                     Text(
-                        text = "Close", style = MaterialTheme.typography.labelLarge.copy(
-                            fontWeight = FontWeight.Medium
-                        )
+                        text = "Close",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium
                     )
                 }
+
+                Spacer(Modifier.height(12.dp))
             }
         }
     }
@@ -357,14 +381,14 @@ object ShoppingScreen : Screen {
     @OptIn(InternalVoyagerApi::class)
     @Composable
     fun TopHeader(
-        searchQuery: String,
-        onSearchQueryChange: (String) -> Unit,
+        toggle: Boolean,
+        onToggle: (Boolean) -> Unit,
         onOrdersClick: () -> Unit,
         onCartClick: () -> Unit,
         modifier: Modifier = Modifier
     ) {
         val cartViewModel: CartViewModel = viewModel { CartViewModel() }
-
+        val nav = LocalNavigator.currentOrThrow
 
 
         Column(
@@ -375,6 +399,12 @@ object ShoppingScreen : Screen {
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                IconButton(onClick = { nav.pop() }) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        ""
+                    )
+                }
 
                 Text(
                     "Products",
@@ -383,6 +413,12 @@ object ShoppingScreen : Screen {
                     modifier = Modifier.fillMaxWidth().weight(2f)
                 )
 
+                ToggleIconButton(
+                    isOn = toggle,
+                    onToggle = { onToggle(it) },
+                    modifier = Modifier.weight(0.5f)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
 
                 Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.End) {
                     IconButton(
@@ -429,6 +465,39 @@ object ShoppingScreen : Screen {
 
     }
 
+    @Composable
+    fun ToggleIconButton(
+        isOn: Boolean,
+        onToggle: (Boolean) -> Unit,
+        modifier: Modifier = Modifier
+    ) {
+        // Animate background and icon color for smooth transition
+        val backgroundColor by animateColorAsState(
+            targetValue = if (isOn) MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)
+            else MaterialTheme.colorScheme.onError.copy(alpha = 0.05f)
+        )
+        val iconTint by animateColorAsState(
+            targetValue = if (isOn) MaterialTheme.colorScheme.secondary
+            else MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+        )
+
+        IconButton(
+            onClick = { onToggle(!isOn) },
+            modifier = modifier
+                .size(48.dp) // professional button size
+                .background(backgroundColor, CircleShape)
+                .clip(CircleShape)
+        ) {
+            Icon(
+                imageVector = if (isOn) Icons.Default.Image else Icons.Default.ImageNotSupported,
+                contentDescription = if (isOn) "With Image" else "Without Image",
+                tint = iconTint,
+                modifier = Modifier.size(24.dp) // icon size proportional to button
+            )
+        }
+    }
+
+
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun SearchField(
@@ -469,7 +538,8 @@ object ShoppingScreen : Screen {
     private fun CategoryGrid(
         categories: List<ProductCategoriesForDis>,
         onCategoryClick: (ProductCategoriesForDis) -> Unit,
-        product: List<GetProductsForDis>
+        product: List<GetProductsForDis>,
+        viewModel: CartViewModel
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -485,22 +555,28 @@ object ShoppingScreen : Screen {
             val nonEmptyCategories = categories
 
 
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(if (nonEmptyCategories.size > 3) 240.dp else 120.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .heightIn(max = 240.dp)
             ) {
-                items(nonEmptyCategories) { category ->
-                    CategoryCard(
-                        category = category,
-                        onClick = { onCategoryClick(category) },
-                        product = product
-                    )
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(nonEmptyCategories) { category ->
+                        CategoryCard(
+                            category = category,
+                            onClick = { onCategoryClick(category) },
+                            product = product,
+                            viewModel = viewModel
+                        )
+                    }
                 }
             }
+
         }
     }
 
@@ -509,32 +585,56 @@ object ShoppingScreen : Screen {
     private fun CategoryCard(
         category: ProductCategoriesForDis,
         onClick: () -> Unit,
-        product: List<GetProductsForDis>
+        product: List<GetProductsForDis>,
+        viewModel: CartViewModel
     ) {
+        val showImage = viewModel.showImage.value
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp).clickable { onClick() },
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .clickable { onClick() },
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val fullUrl =
-                getCategoryImage(SharedPrefs.User.get()?.ID.toString(), category.GUID.toString())
-            AsyncImage(
-                model = fullUrl,
-                contentDescription = category.Name,
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop,
-                onLoading = {}
+
+            val fullUrl = getCategoryImage(
+                SharedPrefs.User.get()?.ID.toString(),
+                category.GUID.toString()
             )
+
+            // --- Image only when enabled (no wasted space)
+            AnimatedVisibility(
+                visible = showImage,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                AsyncImage(
+                    model = fullUrl,
+                    contentDescription = category.Name,
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop,
+                    fallback = painterResource(Res.drawable.splashImage),
+                    error = painterResource(Res.drawable.category_placeholder)
+                )
+            }
+
+            if (showImage) Spacer(Modifier.height(8.dp))
+
+            // --- Better styled text
             Text(
-                text = category.Name.toString(),
-                style = MaterialTheme.typography.titleSmall,
+                text = category.Name.orEmpty(),
+                style = if (showImage)
+                    MaterialTheme.typography.titleSmall
+                else
+                    MaterialTheme.typography.titleMedium, // slightly stronger in compact mode
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
+                lineHeight = 18.sp,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
@@ -592,7 +692,7 @@ object ShoppingScreen : Screen {
                     contentPadding = PaddingValues(end = 16.dp)
                 ) {
                     val filteredProducts =
-                        product.take(5)
+                        filteredProducts.take(5)
                     items(filteredProducts) { item ->
                         ItemCard(
                             viewModel = cartViewModel,
@@ -621,64 +721,90 @@ object ShoppingScreen : Screen {
         onButtonClick: () -> Unit,
         viewModel: CartViewModel
     ) {
+        val showImage = viewModel.showImage.value
+        val inCart = viewModel.isProductInCart(item)
+
         Card(
-            modifier = Modifier.width(160.dp).clickable { onItemClick() },
+            modifier = Modifier
+                .width(160.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { onItemClick() },
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(80.dp).background(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(8.dp)
-                    ).border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(8.dp)
-                    ), contentAlignment = Alignment.Center
+            Column(modifier = Modifier.padding(12.dp)) {
+
+                val fullUrl = getProductImage(
+                    storeId = SharedPrefs.User.get()?.ID.toString(),
+                    guid = item.product_id.toString()
+                )
+
+                // --- Image only when enabled (no dead space)
+                AnimatedVisibility(
+                    visible = showImage,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
                 ) {
-                    val fullUrl = getProductImage(
-                        storeId = SharedPrefs.User.get()?.ID.toString(),
-                        guid = item.product_id.toString()
-                    )
-                    AsyncImage(
-                        model = fullUrl.toString(),
-                        contentDescription = item.product_name,
-                        modifier = Modifier.wrapContentSize().clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop,
-                        onError = { println(it.result.throwable) },
-                        filterQuality = FilterQuality.Medium,
-                        fallback = painterResource(Res.drawable.splashImage)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(90.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f))
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                RoundedCornerShape(10.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AsyncImage(
+                            model = fullUrl,
+                            contentDescription = item.product_name,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(6.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Fit,
+                            fallback = painterResource(Res.drawable.splashImage),
+                            onError = { println(it.result.throwable) }
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                if (showImage) Spacer(Modifier.height(8.dp))
 
+                // --- Product name (stronger hierarchy)
                 Text(
-                    text = item.product_name.toString(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 1,
+                    text = item.product_name.orEmpty(),
+                    style = if (showImage)
+                        MaterialTheme.typography.bodyMedium
+                    else
+                        MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    lineHeight = 18.sp,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Text(
-                    text = item.product_description.toString(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+                // --- Description (lighter visual weight)
+                if (!item.product_description.isNullOrBlank()) {
+                    Text(
+                        text = item.product_description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(Modifier.height(6.dp))
 
+                // --- Price (visually separated but not screaming)
                 Text(
                     text = item.sales_price.toString(),
                     style = MaterialTheme.typography.bodyMedium,
@@ -686,32 +812,38 @@ object ShoppingScreen : Screen {
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
 
+                // --- Button that doesn't look like a warning when in cart
                 Button(
-                    onClick = { onButtonClick() },
+                    onClick = onButtonClick,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-
-                        containerColor = if (viewModel.isProductInCart(item)) MaterialTheme.colorScheme.error.copy(
-                            alpha = 0.4f
-                        ) else MaterialTheme.colorScheme.primary
-                    ),
                     shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp)
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (inCart)
+                            MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
+                        else
+                            MaterialTheme.colorScheme.primary,
+                        contentColor = if (inCart)
+                            MaterialTheme.colorScheme.error
+                        else
+                            MaterialTheme.colorScheme.onPrimary
+                    )
                 ) {
                     Icon(
-                        imageVector = if (viewModel.isProductInCart(item)) Icons.Default.Remove else Icons.Default.ShoppingCart,
-                        contentDescription = "Add to cart",
+                        imageVector = if (inCart) Icons.Default.Remove else Icons.Default.ShoppingCart,
+                        contentDescription = null,
                         modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(Modifier.width(6.dp))
                     Text(
-                        text = if (viewModel.isProductInCart(item)) "Remove Item" else " Add to Cart ",
+                        text = if (inCart) "Remove" else "Add to cart",
                         fontSize = 12.sp
                     )
                 }
             }
         }
     }
+
 }

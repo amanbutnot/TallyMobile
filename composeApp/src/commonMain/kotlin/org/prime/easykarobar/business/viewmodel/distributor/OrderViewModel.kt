@@ -144,8 +144,12 @@ class CartViewModel : ViewModel() {
     private val _cartItems = mutableStateListOf<CartItem>()
     val cartItems: List<CartItem> get() = _cartItems
 
+    private val _showImage = mutableStateOf(true)
+    val showImage: State<Boolean> = _showImage
+
     fun addProduct(product: GetProductsForDis) {
-        val existingItem = _cartItems.find { it.product.product_id.toString() == product.product_id.toString() }
+        val existingItem =
+            _cartItems.find { it.product.product_id.toString() == product.product_id.toString() }
         if (existingItem != null) {
             existingItem.quantity.value++
         } else {
@@ -164,6 +168,7 @@ class CartViewModel : ViewModel() {
         }
     }
 
+
     fun isProductInCart(product: GetProductsForDis): Boolean {
         return _cartItems.any { it.product.product_id == product.product_id }
     }
@@ -178,6 +183,14 @@ class CartViewModel : ViewModel() {
 
     fun emptyList() {
         _cartItems.clear()
+    }
+
+    fun showImage(): Boolean {
+        return _showImage.value
+    }
+
+    fun changeShowImage(bool: Boolean) {
+        _showImage.value = bool
     }
 
     fun incrementProduct(product: GetProductsForDis) {
