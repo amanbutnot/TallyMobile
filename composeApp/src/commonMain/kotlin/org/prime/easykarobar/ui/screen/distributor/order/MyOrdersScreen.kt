@@ -81,7 +81,8 @@ import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
 import org.prime.easykarobar.data.model.CancelOrderRequest
 import org.prime.easykarobar.data.model.Order
 import org.prime.easykarobar.data.model.OrderItem
-import org.prime.easykarobar.data.model.OrderStatus
+import org.prime.easykarobar.data.model.ORDERSTATUS
+import org.prime.easykarobar.data.model.OrderItemList
 import org.prime.easykarobar.data.model.StatusHistory
 import org.prime.easykarobar.data.utils.BASE_URL
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
@@ -90,6 +91,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
+import org.prime.easykarobar.ui.shared.globalShared.Tdate
 
 object MyOrdersScreen : Screen {
     @Composable
@@ -101,6 +103,12 @@ object MyOrdersScreen : Screen {
 
         LaunchedEffect(Unit) {
             viewModel.listOrders()
+        }
+
+        if(listState.isLoading){
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                TallyCircularLoader()
+            }
         }
 
         TallyScaffold(
@@ -120,12 +128,8 @@ object MyOrdersScreen : Screen {
                             icon = Icons.Default.ShoppingCart,
                             title = "No Orders",
                             onAddClick = { })
-                    }
-                } else if (listState.isLoading) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        TallyCircularLoader()
-                    }
-                } else MyOrderContent(
+                    }}
+                else MyOrderContent(
                     list = it, paddingValues = paddingValues, viewModel
                 )
             }
@@ -220,15 +224,15 @@ fun MyOrderContent(
 
             1 -> {
 
-                list.filter { it.order_status == OrderStatus.Cancelled }
+                list.filter { it.OrderStatus == ORDERSTATUS.Cancelled }
             }
 
             2 -> {
-                list.filter { it.order_status == OrderStatus.InDispatched }
+                list.filter { it.OrderStatus == ORDERSTATUS.InDispatched }
             }
 
             3 -> {
-                list.filter { it.order_status == OrderStatus.Delivered }
+                list.filter { it.OrderStatus == ORDERSTATUS.Delivered }
             }
 
 
@@ -257,7 +261,7 @@ fun MyOrderContent(
                     },
                     order = order,
                     onCancelOrder = {
-                        selectedId = order.ID.toString()
+                        selectedId = order.id.toString()
                         showCancelDialog = true
                     }
                 )
@@ -322,6 +326,7 @@ fun MyOrderContent(
             message = cancelState.message ?: "Error Occurred", onDone = {
                 reloadData = true
                 viewModel.clearCancelMessage()
+                showCancelDialog = false
 
             }, isSuccess = cancelState.success, confirmText = "Ok"
         )
@@ -383,23 +388,23 @@ private fun StatusHistoryCard(historyItem: List<StatusHistory>) {
                 {
                     Text(
                         text = historyItem.status
-                            .replace("_", " ")
-                            .lowercase()
-                            .split(" ")
-                            .joinToString(" ") { word ->
+                            ?.replace("_", " ")
+                            ?.lowercase()
+                            ?.split(" ")
+                            ?.joinToString(" ") { word ->
                                 word.replaceFirstChar { it.uppercase() }
-                            },
+                            }?:"",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = historyItem.created_at,
+                        text = historyItem.created_at.toString(),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
-                if (historyItem.remarks.isNotEmpty()) {
+                if (historyItem.remarks.toString().isNotEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Remarks: ${historyItem.remarks}",
@@ -454,7 +459,7 @@ fun OrderCard(
                         Spacer(modifier = Modifier.height(2.dp))
 
                         Text(
-                            text = "Order #${order.OrderID}",
+                            text = "Order #${order.order_no}",
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.Medium
                             ),
@@ -466,7 +471,7 @@ fun OrderCard(
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                     ) {
                         Text(
-                            text = "${order.order_status}",
+                            text = "${order.OrderStatus}",
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                             color = MaterialTheme.colorScheme.primary
@@ -487,27 +492,17 @@ fun OrderCard(
                     modifier = Modifier.padding(10.dp)
                 ) {
                     OrderField(
-                        icon = Icons.Default.Edit, label = "Remarks", value = order.remarks
+                        icon = Icons.Default.Edit, label = "Remarks", value = order.Remarks
                     )
                     OrderField(
                         icon = Icons.Default.CalendarMonth,
                         label = "Order Date",
-                        value = order.order_date
+                        value = Tdate(order.created_at.take(10))
                     )
                     OrderField(
                         icon = Icons.Default.Person,
                         label = "Billing Name",
                         value = order.billing_name
-                    )
-                    OrderField(
-                        icon = Icons.Default.Home,
-                        label = "Address",
-                        value = order.billing_address
-                    )
-                    OrderField(
-                        icon = Icons.Default.Phone,
-                        label = "Mobile",
-                        value = order.billing_mobile
                     )
                 }
             }
@@ -674,18 +669,18 @@ fun OrderCard(
                                     icon = Icons.Default.CalendarMonth
                                 )
 
-                                if (order.cancelled_by.isNotEmpty()) {
+                                if (order.cancelled_by.toString().isNotEmpty()) {
                                     CancellationField(
                                         label = "Cancelled by",
-                                        value = order.cancelled_by,
+                                        value = order.cancelled_by.toString(),
                                         icon = Icons.Default.Person
                                     )
                                 }
 
-                                if (order.cancellation_remarks.isNotEmpty()) {
+                                if (order.cancellation_remarks.toString().isNotEmpty()) {
                                     CancellationField(
                                         label = "Reason",
-                                        value = order.cancellation_remarks,
+                                        value = order.cancellation_remarks.toString(),
                                         icon = Icons.Default.Info
                                     )
                                 }
@@ -744,7 +739,7 @@ fun OrderField(icon: ImageVector, label: String, value: String) {
 }
 
 @Composable
-fun OrderItemRow(item: OrderItem, serialNumber: Int) {
+fun OrderItemRow(item: OrderItemList, serialNumber: Int) {
     Row(
         modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
     ) {
@@ -765,23 +760,23 @@ fun OrderItemRow(item: OrderItem, serialNumber: Int) {
         }
 
         Spacer(modifier = Modifier.width(8.dp))
-
-        Surface(
-            shape = RoundedCornerShape(8.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.size(36.dp).border(
-                1.dp,
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                RoundedCornerShape(8.dp)
-            )
-        ) {
-            AsyncImage(
-                model = "$BASE_URL${item.profile_picture}",
-                contentDescription = "Item Image",
-                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
-        }
+//
+//        Surface(
+//            shape = RoundedCornerShape(8.dp),
+//            color = MaterialTheme.colorScheme.surfaceVariant,
+//            modifier = Modifier.size(36.dp).border(
+//                1.dp,
+//                MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+//                RoundedCornerShape(8.dp)
+//            )
+//        ) {
+//            AsyncImage(
+//                model = "$BASE_URL${item.ima}",
+//                contentDescription = "Item Image",
+//                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)),
+//                contentScale = ContentScale.Crop
+//            )
+//        }
 
         Spacer(modifier = Modifier.width(8.dp))
 
@@ -793,7 +788,7 @@ fun OrderItemRow(item: OrderItem, serialNumber: Int) {
                 color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
             ) {
                 Text(
-                    text = "ID: ${item.item_id}",
+                    text = "ID: ${item.product_name}",
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontWeight = FontWeight.Medium
@@ -809,24 +804,17 @@ fun OrderItemRow(item: OrderItem, serialNumber: Int) {
             ) {
                 ItemDetailChip(
                     label = "Qty",
-                    value = item.quantity,
+                    value = item.quantity.toString(),
                     color = MaterialTheme.colorScheme.secondary
                 )
 
                 ItemDetailChip(
                     label = "Amount",
-                    value = "₹${item.net_amount}",
+                    value = "${item.nett_price}",
                     color = MaterialTheme.colorScheme.primary
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            ItemDetailChip(
-                label = "Packing",
-                value = "₹${item.packing_charges}",
-                color = MaterialTheme.colorScheme.onBackground
-            )
         }
     }
 }

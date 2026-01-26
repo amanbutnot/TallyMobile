@@ -8,6 +8,7 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlinx.serialization.Serializable
 import org.prime.easykarobar.data.model.ApiResponse
 import org.prime.easykarobar.data.model.CancelOrderRequest
 import org.prime.easykarobar.data.model.CancelOrderResponse
@@ -40,7 +41,7 @@ object OrderRepository {
     suspend fun cancelOrder(cancelOrderRequest: CancelOrderRequest): ApiResponse<CancelOrderResponse>? {
         val token = SharedPrefs.Token.get()
         return try {
-            val res = KtorClient.client.post("$BASE_URL/Transactions/addDistributors.php") {
+            val res = KtorClient.client.post("$BASE_URL/Transactions/cancelOrder.php") {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
                 setBody(cancelOrderRequest)
@@ -56,9 +57,10 @@ object OrderRepository {
     suspend fun listOrders(): ApiResponse<List<Order>>? {
         val token = SharedPrefs.Token.get()
         return try {
-            val res = KtorClient.client.get("$BASE_URL/QuickClinic/orders/listOfOrders.php") {
+            val res = KtorClient.client.post("$BASE_URL/Transactions/listOfDistributorOrders.php") {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
+               setBody(ListRequest(SharedPrefs.DistributorData.get()?.ledger_GUID.toString()) )
             }
             println(res.bodyAsText())
             res.body()
@@ -72,3 +74,7 @@ object OrderRepository {
 
 
 
+@Serializable
+data class ListRequest(
+    val billing_guid:String
+)
