@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -31,7 +30,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.core.annotation.InternalVoyagerApi
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -40,6 +38,7 @@ import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen.ItemCard
 import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen.SearchField
 import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen.ShowProductInfo
+import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen.ToggleIconButton
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.tally.GetProductsForDis
@@ -127,7 +126,7 @@ data class AllProductScreen(
             }
             if (showProductInfo.value) {
                 selectedProduct.value?.let {
-                    ShowProductInfo(showProductInfo, it)
+                    ShowProductInfo(showProductInfo, it, viewModel)
 
                 }
             }
@@ -135,20 +134,16 @@ data class AllProductScreen(
     }
 }
 
-@OptIn(InternalVoyagerApi::class)
 @Composable
 fun TopHeaderAllProducts(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onOrdersClick: () -> Unit,
     onCartClick: () -> Unit,
-    modifier: Modifier = Modifier, cartViewModel: CartViewModel
+    modifier: Modifier = Modifier,
+    cartViewModel: CartViewModel
 ) {
-    val tabNav = LocalNavigator.current
-
-    Column(
-        modifier = modifier
-    ) {
+    Column(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Start,
@@ -158,14 +153,25 @@ fun TopHeaderAllProducts(
             SearchField(
                 query = searchQuery,
                 onQueryChange = onSearchQueryChange,
-                modifier = Modifier.fillMaxWidth().weight(2f)
+                modifier = Modifier.weight(1f)
             )
 
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
 
-            Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.End) {
+                ToggleIconButton(
+                    isOn = cartViewModel.showImage.value,
+                    onToggle = { cartViewModel.changeShowImage(it) }
+                )
+
                 IconButton(
-                    onClick = onOrdersClick, modifier = Modifier.background(
-                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f), CircleShape
+                    onClick = onOrdersClick,
+                    modifier = Modifier.background(
+                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f),
+                        CircleShape
                     )
                 ) {
                     Icon(
@@ -175,22 +181,19 @@ fun TopHeaderAllProducts(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
-
                 BadgedBox(
                     badge = {
-                        if (cartViewModel.getTotalProductCount() > 0) {
-                            Badge(
-                                containerColor = MaterialTheme.colorScheme.error,
-                                contentColor = MaterialTheme.colorScheme.onError
-                            ) {
-                                Text("${cartViewModel.getTotalProductCount()}")
-                            }
+                        val count = cartViewModel.getTotalProductCount()
+                        if (count > 0) {
+                            Badge { Text("$count") }
                         }
-                    }) {
+                    }
+                ) {
                     IconButton(
-                        onClick = onCartClick, modifier = Modifier.background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape
+                        onClick = onCartClick,
+                        modifier = Modifier.background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            CircleShape
                         )
                     ) {
                         Icon(
@@ -200,9 +203,7 @@ fun TopHeaderAllProducts(
                         )
                     }
                 }
-
             }
         }
     }
-
 }

@@ -23,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.ShoppingBag
-import androidx.compose.material.icons.filled.TextDecrease
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -61,15 +60,14 @@ import org.prime.easykarobar.business.viewmodel.distributor.CartItem
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
 import org.prime.easykarobar.data.model.CreateOrderRequest
-import org.prime.easykarobar.data.utils.BASE_URL
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
 import org.prime.easykarobar.ui.shared.composables.TallyAlertBox
-import org.prime.easykarobar.ui.shared.composables.TallyButton
+import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
+import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
-import kotlin.text.toDouble
 
 data class CartScreen(val viewModel: CartViewModel) : Screen {
     @Composable
@@ -92,7 +90,7 @@ data class CartScreen(val viewModel: CartViewModel) : Screen {
                     EmptyListPlaceholder(
                         icon = Icons.Default.ShoppingBag,
                         title = "No Items in cart",
-                        onAddClick = { }
+                        onAddClick = { nav.pop()}
                     )
                 } else {
                     CartContent(viewModel.getAllProducts(), viewModel)
@@ -118,7 +116,7 @@ private fun CartContent(
 
         item {
             Spacer(modifier = Modifier.height(4.dp))
-            CartSummary(products = list)
+            CartSummary(products = list, cartViewModel = viewModel)
         }
     }
 }
@@ -321,7 +319,7 @@ private fun CartProductItem(
 }
 
 @Composable
-private fun CartSummary(products: List<CartItem>) {
+private fun CartSummary(products: List<CartItem>,cartViewModel: CartViewModel) {
 
     val totalMrp = products.sumOf {
         val mrp = it.product.MRP ?: 0.0
@@ -347,7 +345,6 @@ private fun CartSummary(products: List<CartItem>) {
 
 
     val orderViewModel: OrderViewModel = viewModel { OrderViewModel() }
-    val cartViewModel: CartViewModel = viewModel { CartViewModel() }
     var remarks by remember { mutableStateOf("") }
     val orderDataState by orderViewModel.createOrderState
     val nav = LocalNavigator.currentOrThrow
@@ -572,7 +569,7 @@ private fun CartSummary(products: List<CartItem>) {
                 productName = product.product_name.toString(),
                 quantity = quantity,
                 price = product.sales_price?.toDouble() ?: (0.0 * quantity),
-                discount_percent = product.discount?.toDouble()?:0.0,
+                discount_percent = product.discount?.toDouble() ?: 0.0,
                 tax_amount = product.gst_tax_percentage.toDouble(),
                 net_amount = product.sales_price?.toDouble() ?: (0.0 * quantity)
             )
@@ -596,6 +593,20 @@ private fun CartSummary(products: List<CartItem>) {
             },
             onCancel = { showConfirmDialog = false },
             onDismiss = { showConfirmDialog = false },
+        )
+    }
+    if(orderDataState.isLoading){
+        TallyLoadingDialog("Creating your order")
+    }
+    if (orderDataState.success) {
+        TallyResultDialog(
+            message = "${orderDataState.message}\n${if (orderDataState.success) orderDataState.data?.VoucherNumber else ""}",
+            onDone = {
+                cartViewModel.emptyList()
+                nav.pop()
+            },
+            isSuccess = orderDataState.success,
+            confirmText = "Ok"
         )
     }
 
