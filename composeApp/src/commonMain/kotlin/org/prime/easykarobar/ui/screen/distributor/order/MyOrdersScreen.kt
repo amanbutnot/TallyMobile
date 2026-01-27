@@ -78,6 +78,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
+import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.CancelOrderRequest
 import org.prime.easykarobar.data.model.Order
 import org.prime.easykarobar.data.model.OrderItem
@@ -105,7 +106,7 @@ object MyOrdersScreen : Screen {
             viewModel.listOrders()
         }
 
-        if(listState.isLoading){
+        if (listState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 TallyCircularLoader()
             }
@@ -128,8 +129,8 @@ object MyOrdersScreen : Screen {
                             icon = Icons.Default.ShoppingCart,
                             title = "No Orders",
                             onAddClick = { })
-                    }}
-                else MyOrderContent(
+                    }
+                } else MyOrderContent(
                     list = it, paddingValues = paddingValues, viewModel
                 )
             }
@@ -393,7 +394,7 @@ private fun StatusHistoryCard(historyItem: List<StatusHistory>) {
                             ?.split(" ")
                             ?.joinToString(" ") { word ->
                                 word.replaceFirstChar { it.uppercase() }
-                            }?:"",
+                            } ?: "",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -554,6 +555,7 @@ fun OrderCard(
                             )
                         }
                     }
+                    //CartSummary(products = list, cartViewModel = viewModel, showOnly = false)
                 }
             }
 
@@ -788,7 +790,7 @@ fun OrderItemRow(item: OrderItemList, serialNumber: Int) {
                 color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
             ) {
                 Text(
-                    text = "ID: ${item.product_name}",
+                    text = "${item.product_name}",
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontWeight = FontWeight.Medium
@@ -802,15 +804,23 @@ fun OrderItemRow(item: OrderItemList, serialNumber: Int) {
             Row(
                 modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                ItemDetailChip(
-                    label = "Qty",
-                    value = item.quantity.toString(),
-                    color = MaterialTheme.colorScheme.secondary
-                )
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    ItemDetailChip(
+                        label = "Qty",
+                        value = item.quantity.toString(),
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    ItemDetailChip(
+                        label = "Unit",
+                        value = item.UnitName.toString(),
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+
+                }
 
                 ItemDetailChip(
                     label = "Amount",
-                    value = "${item.nett_price}",
+                    value = item.nett_price.toDouble().formatToAmtDec(),
                     color = MaterialTheme.colorScheme.primary
                 )
             }

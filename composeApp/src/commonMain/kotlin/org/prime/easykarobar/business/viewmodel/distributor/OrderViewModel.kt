@@ -158,16 +158,8 @@ class CartViewModel : ViewModel() {
     }
 
     fun removeProduct(product: GetProductsForDis) {
-        val existingItem = _cartItems.find { it.product.product_id == product.product_id }
-        if (existingItem != null) {
-            if (existingItem.quantity.value > 1) {
-                existingItem.quantity.value--
-            } else {
-                _cartItems.remove(existingItem)
-            }
-        }
+        _cartItems.removeAll { it.product.product_id == product.product_id }
     }
-
 
     fun isProductInCart(product: GetProductsForDis): Boolean {
         return _cartItems.any { it.product.product_id == product.product_id }
@@ -193,12 +185,23 @@ class CartViewModel : ViewModel() {
         _showImage.value = bool
     }
 
-    fun incrementProduct(product: GetProductsForDis) {
+    fun increaseQuantity(product: GetProductsForDis) {
         addProduct(product)
     }
 
-    fun decrementProduct(product: GetProductsForDis) {
-        removeProduct(product)
+    fun decreaseQuantity(product: GetProductsForDis) {
+        val existingItem = _cartItems.find { it.product.product_id == product.product_id }
+        if (existingItem != null) {
+            if (existingItem.quantity.value > 1) {
+                existingItem.quantity.value--
+            } else {
+                _cartItems.remove(existingItem)
+            }
+        }
+    }
+    
+    fun getProductQuantity(product: GetProductsForDis): Int {
+        return _cartItems.find { it.product.product_id == product.product_id }?.quantity?.value ?: 0
     }
 }
 

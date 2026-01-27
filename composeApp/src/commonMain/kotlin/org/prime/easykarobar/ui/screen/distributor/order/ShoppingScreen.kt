@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -38,7 +39,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.ImageNotSupported
 import androidx.compose.material.icons.filled.Remove
@@ -89,6 +92,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.globalShared.getCategoryImage
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
@@ -140,6 +144,7 @@ object ShoppingScreen : Screen {
         Column(
             modifier = Modifier.fillMaxSize()
                 .background(MaterialTheme.colorScheme.background).systemBarsPadding()
+                .navigationBarsPadding()
         ) {
             TopHeader(
 
@@ -172,7 +177,7 @@ object ShoppingScreen : Screen {
                                     cartViewModel, productCode = category.GUID?.toDouble() ?: 0.0
                                 )
                             )
-                        }, product = filteredProducts,viewModel = cartViewModel
+                        }, product = filteredProducts, viewModel = cartViewModel
                     )
                 }
 
@@ -206,7 +211,16 @@ object ShoppingScreen : Screen {
         }
         if (showProductInfo.value) {
             selectedProduct.value?.let {
-                ShowProductInfo(showProductInfo, it,cartViewModel)
+                ShowProductInfo(
+                    showProductInfo = showProductInfo, product = it, cartViewModel = cartViewModel,
+                    onButtonClick = {
+                        if (cartViewModel.isProductInCart(it)) {
+                            cartViewModel.removeProduct(it)
+                        } else {
+                            cartViewModel.addProduct(it)
+                        }
+                    },
+                )
 
             }
         }
@@ -217,8 +231,9 @@ object ShoppingScreen : Screen {
     fun ShowProductInfo(
         showProductInfo: MutableState<Boolean>,
         product: GetProductsForDis,
-        cartViewModel: CartViewModel
-    ) {
+        cartViewModel: CartViewModel, onButtonClick: () -> Unit,
+
+        ) {
         val colorScheme = MaterialTheme.colorScheme
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val showImage = cartViewModel.showImage.value
@@ -242,7 +257,7 @@ object ShoppingScreen : Screen {
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                    .padding(horizontal = 20.dp, vertical = 12.dp).navigationBarsPadding(),
                 horizontalAlignment = Alignment.Start
             ) {
 
@@ -321,7 +336,7 @@ object ShoppingScreen : Screen {
                     ) {
                         Column {
                             Text(
-                                text = "₹${product.sales_price}",
+                                text = "${product.sales_price?.formatToAmtDec()}",
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = colorScheme.primary
@@ -329,7 +344,7 @@ object ShoppingScreen : Screen {
 
                             if (product.MRP != product.sales_price) {
                                 Text(
-                                    text = "₹${product.MRP}",
+                                    text = "${product.MRP?.formatToAmtDec()}",
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         textDecoration = TextDecoration.LineThrough
                                     ),
@@ -355,6 +370,34 @@ object ShoppingScreen : Screen {
                 }
 
                 Spacer(Modifier.height(28.dp))
+                val inCart = cartViewModel.isProductInCart(product)
+                Button(
+                    onClick = onButtonClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (inCart)
+                            MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
+                        else
+                            MaterialTheme.colorScheme.primary,
+                        contentColor = if (inCart)
+                            MaterialTheme.colorScheme.error
+                        else
+                            MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(
+                        imageVector = if (inCart) Icons.Default.Remove else Icons.Default.ShoppingCart,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = if (inCart) "Remove" else "Add to cart",
+                        fontSize = 12.sp
+                    )
+                }
 
                 // --- Close button (neutral, not shouting)
                 OutlinedButton(
@@ -723,11 +766,13 @@ object ShoppingScreen : Screen {
     ) {
         val showImage = viewModel.showImage.value
         val inCart = viewModel.isProductInCart(item)
+        val quantity = viewModel.getProductQuantity(item)
 
         Card(
             modifier = Modifier
                 .width(160.dp)
                 .clip(RoundedCornerShape(12.dp))
+                .border(0.4.dp, MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(12.dp))
                 .clickable { onItemClick() },
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
@@ -806,7 +851,7 @@ object ShoppingScreen : Screen {
 
                 // --- Price (visually separated but not screaming)
                 Text(
-                    text = item.sales_price.toString(),
+                    text = item.sales_price?.formatToAmtDec().toString(),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -815,32 +860,53 @@ object ShoppingScreen : Screen {
                 Spacer(Modifier.height(10.dp))
 
                 // --- Button that doesn't look like a warning when in cart
-                Button(
-                    onClick = onButtonClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (inCart)
-                            MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
-                        else
-                            MaterialTheme.colorScheme.primary,
-                        contentColor = if (inCart)
-                            MaterialTheme.colorScheme.error
-                        else
-                            MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
-                    Icon(
-                        imageVector = if (inCart) Icons.Default.Remove else Icons.Default.ShoppingCart,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = if (inCart) "Remove" else "Add to cart",
-                        fontSize = 12.sp
-                    )
+                if (inCart) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { viewModel.decreaseQuantity(item) }) {
+                            Icon(
+                                imageVector = Icons.Default.HorizontalRule,
+                                contentDescription = "Remove",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Text(
+                            text = quantity.toString(),
+                            fontSize = 12.sp
+                        )
+                        IconButton(onClick = { viewModel.increaseQuantity(item) }) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                } else {
+                    Button(
+                        onClick = onButtonClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(vertical = 8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = "Add to cart",
+                            fontSize = 12.sp
+                        )
+                    }
                 }
             }
         }
