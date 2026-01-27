@@ -144,6 +144,7 @@ fun DistributorList(
     viewModel: DistributorViewModel
 ) {
     var showInactiveDialog by remember { mutableStateOf(false) }
+    var showResultDialog by remember { mutableStateOf(false) }
     var pass by remember { mutableStateOf("") }
     var selectedDistributor by remember { mutableStateOf<DistributorRequest?>(null) }
 
@@ -216,25 +217,22 @@ fun DistributorList(
         }
     }
 
-    // --- LOADER ---
     if (state.isLoading) {
         TallyCircularLoader()
     }
 
-    // --- SUCCESS / ERROR RESULT ---
-    if (state.success || state.error != null) {
+    if (showResultDialog) {
         TallyResultDialog(
             message = state.message ?: "Error",
             onDone = {
                 // CLOSE ONLY THIS DIALOG
-
+showResultDialog = false
             },
             isSuccess = state.success,
             confirmText = "Okay"
         )
     }
 
-    // --- INACTIVE CONFIRM DIALOG ---
     if (showInactiveDialog) {
         TallyAlertBox(
             title = "Deactivate Distributor",
@@ -250,6 +248,7 @@ fun DistributorList(
                 viewModel.updateDistributor(dist.copy(status = "inactive", password = pass)) {
                     showInactiveDialog = false
                     pass = "" // clear password
+                    showResultDialog = true
                 }
             },
             onCancel = {

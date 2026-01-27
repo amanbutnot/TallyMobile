@@ -103,7 +103,7 @@ data class CreateDistributorScreen(
                 state.message ?: "Created",
                 onDone = { showSuccessDialog = false },
                 isSuccess = state.success,
-                confirmText = "Try Again"
+                confirmText = "Done"
             )
         }
         TallyScaffold(
