@@ -69,6 +69,7 @@ data class AllProductScreen(
                     EmptyListPlaceholder(
                         icon = Icons.Default.Inbox,
                         title = "No products",
+                        showAddButton = false,
                         onAddClick = { }
                     )
                 } else {
@@ -126,7 +127,17 @@ data class AllProductScreen(
             }
             if (showProductInfo.value) {
                 selectedProduct.value?.let {
-                    ShowProductInfo(showProductInfo, it, viewModel)
+                    ShowProductInfo(
+                        showProductInfo = showProductInfo,
+                        product = it,
+                        cartViewModel = viewModel,
+                        onButtonClick = {
+                            if (viewModel.isProductInCart(it)) {
+                                viewModel.removeProduct(it)
+                            } else {
+                                viewModel.addProduct(it)
+                            }
+                        })
 
                 }
             }

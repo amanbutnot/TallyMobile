@@ -59,6 +59,7 @@ import coil3.compose.AsyncImage
 import org.prime.easykarobar.business.viewmodel.distributor.CartItem
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
+import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.CreateOrderRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
@@ -116,7 +117,7 @@ private fun CartContent(
 
         item {
             Spacer(modifier = Modifier.height(4.dp))
-            CartSummary(products = list, cartViewModel = viewModel)
+            CartSummary(products = list, cartViewModel = viewModel, showOnly = false)
         }
     }
 }
@@ -202,7 +203,7 @@ private fun CartProductItem(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "${product.product.discounted_price}",
+                            text = "${product.product.discounted_price?.formatToAmtDec()}",
                             style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -211,7 +212,7 @@ private fun CartProductItem(
                         Spacer(modifier = Modifier.width(6.dp))
 
                         Text(
-                            text = "${product.product.MRP}",
+                            text = "${product.product.MRP?.formatToAmtDec()}",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 textDecoration = TextDecoration.LineThrough,
                                 fontSize = 12.sp
@@ -220,7 +221,7 @@ private fun CartProductItem(
                         )
                     }
 
-                    if (product.product.discount.toString() != "0") {
+                    if (product.product.discount.toString() != "0.0") {
                         Spacer(modifier = Modifier.height(3.dp))
                         Box(
                             modifier = Modifier
@@ -231,7 +232,7 @@ private fun CartProductItem(
                                 .padding(horizontal = 6.dp, vertical = 1.dp)
                         ) {
                             Text(
-                                text = "${product.product.discount}% OFF",
+                                text = "${product.product.discount?.formatToAmtDec()}% OFF",
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Medium
@@ -258,7 +259,7 @@ private fun CartProductItem(
                                 ),
                                 shape = MaterialShapes.Arch.toShape()
                             )
-                            .clickable { viewModel.removeProduct(product.product) },
+                            .clickable { viewModel.decreaseQuantity(product.product) },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -319,7 +320,7 @@ private fun CartProductItem(
 }
 
 @Composable
-private fun CartSummary(products: List<CartItem>,cartViewModel: CartViewModel) {
+private fun CartSummary(products: List<CartItem>,cartViewModel: CartViewModel,showOnly: Boolean) {
 
     val totalMrp = products.sumOf {
         val mrp = it.product.MRP ?: 0.0
@@ -405,7 +406,7 @@ private fun CartSummary(products: List<CartItem>,cartViewModel: CartViewModel) {
 
             SummaryRow(
                 label = "Items (${products.size})",
-                value = "${totalMrp}",
+                value = totalMrp.formatToAmtDec(),
                 textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
             )
 
@@ -413,7 +414,7 @@ private fun CartSummary(products: List<CartItem>,cartViewModel: CartViewModel) {
 
             SummaryRow(
                 label = "Discount",
-                value = "-${totalSavings}",
+                value = "-${totalSavings?.formatToAmtDec()}",
                 textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
                 valueColor = MaterialTheme.colorScheme.primary
             )
@@ -422,7 +423,7 @@ private fun CartSummary(products: List<CartItem>,cartViewModel: CartViewModel) {
 
             SummaryRow(
                 label = "Subtotal",
-                value = "${totalDiscountedPrice}",
+                value = "${totalDiscountedPrice?.formatToAmtDec()}",
                 textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
             )
 
@@ -430,7 +431,7 @@ private fun CartSummary(products: List<CartItem>,cartViewModel: CartViewModel) {
 
             SummaryRow(
                 label = "GST",
-                value = "${totalGst}",
+                value = "${totalGst?.formatToAmtDec()}",
                 textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
                 // valueColor = MaterialTheme.colorScheme.tertiary
             )
@@ -453,7 +454,7 @@ private fun CartSummary(products: List<CartItem>,cartViewModel: CartViewModel) {
 
             SummaryRow(
                 label = "Total Amount",
-                value = "${finalTotal}",
+                value = "${finalTotal?.formatToAmtDec()}",
                 textStyle = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp),
                 fontWeight = FontWeight.Bold,
                 valueColor = MaterialTheme.colorScheme.primary
@@ -498,7 +499,7 @@ private fun CartSummary(products: List<CartItem>,cartViewModel: CartViewModel) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "🎉 You saved ${totalSavings} on this order!",
+                        text = "🎉 You saved ${totalSavings?.formatToAmtDec()} on this order!",
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
@@ -508,57 +509,65 @@ private fun CartSummary(products: List<CartItem>,cartViewModel: CartViewModel) {
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp)
-            )
-            {
-                TallyTextField(
-                    value = remarks,
-                    onValueChange = { remarks = it },
-                    placeholder = "Your Remarks",
-                    isPassword = false,
-                    isNumber = false,
-                    label = "Remarks", modifier = Modifier.fillMaxWidth()
+            if(!showOnly){
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 24.dp)
                 )
+                {
+                    TallyTextField(
+                        value = remarks,
+                        onValueChange = { remarks = it },
+                        placeholder = "Your Remarks",
+                        isPassword = false,
+                        isNumber = false,
+                        label = "Remarks", modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
             }
+
         }
 
         Spacer(modifier = Modifier.height(12.dp))
     }
 
-    Button(
-        onClick = {
-            showConfirmDialog = true
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(44.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary
-        ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
+    if(!showOnly){
+        Button(
+            onClick = {
+                showConfirmDialog = true
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.ShoppingBag,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = "Confirm Order",
-                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ShoppingBag,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Confirm Order",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+            }
         }
+
     }
+
     if (showConfirmDialog) {
         val itemsList = products.map { cartItem ->
             val product = cartItem.product
