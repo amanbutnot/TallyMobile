@@ -367,8 +367,8 @@ object HomeTab : Tab {
                     )
                     // Second Card - Ledger
                     ReportActionCard(
-                        title = "Shop for Products",
-                        description = "Shop for products",
+                        title = "Raise Order",
+                        description = "Create and place a new order",
                         icon = Icons.Default.ShoppingCart,
                         onClick = {
                             nav?.push(ShoppingScreen)
@@ -1032,26 +1032,14 @@ fun InfoStatCard(
             .background(colors.surface)
             .padding(12.dp)
     ) {
-        // Top-right icon
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(colors.primary.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center
-        ) {
-            CompositionLocalProvider(LocalContentColor provides colors.primary) {
-                iconContent()
-            }
-        }
+
 
         // Compact content
         Column(
             verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .padding(end = 40.dp)
+                //.padding(end = 40.dp)
         ) {
             Text(
                 text = title,
