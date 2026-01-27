@@ -811,9 +811,9 @@ object ShoppingScreen : Screen {
                             contentDescription = item.product_name,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(6.dp)
+                              //  .padding(6.dp)
                                 .clip(RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.Fit,
+                            contentScale = ContentScale.Crop,
                             fallback = painterResource(Res.drawable.splashImage),
                             onError = { println(it.result.throwable) }
                         )
@@ -835,17 +835,6 @@ object ShoppingScreen : Screen {
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // --- Description (lighter visual weight)
-                if (!item.product_description.isNullOrBlank()) {
-                    Text(
-                        text = item.product_description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-                }
 
                 Spacer(Modifier.height(6.dp))
 
