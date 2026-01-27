@@ -184,8 +184,8 @@ object LoginScreen : Screen {
                                     }, onListSuccess = { companyList ->
                                         SharedPrefs.LoginData.save(
                                             SharedPrefs.LoginDataModel(
-                                                username = email,
-                                                password = password,
+                                                username = email.trim(),
+                                                password = password.trim(),
                                                 list = companyList,
                                             )
                                         )
