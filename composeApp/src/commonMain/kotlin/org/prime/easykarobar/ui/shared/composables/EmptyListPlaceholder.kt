@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 fun EmptyListPlaceholder(
     icon: ImageVector,
     title: String,
-    onAddClick: () -> Unit
+    onAddClick: () -> Unit,showAddButton:Boolean = true
 ) {
     Column(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
@@ -48,23 +48,25 @@ fun EmptyListPlaceholder(
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(Modifier.height(24.dp))
+if(showAddButton){
+    Button(
+        onClick = onAddClick,
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        )
+    ) {
+        Icon(
+            imageVector = Icons.Default.Add,
+            contentDescription = "Add",
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Add")
+    }
 
-        Button(
-            onClick = onAddClick,
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Add",
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Add")
-        }
+}
 
 
     }
