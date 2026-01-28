@@ -54,6 +54,28 @@ class AuthViewModel : ViewModel() {
         }
     }
 
+    fun sendOtp(onSuccess: () -> Unit, number: String, message: String) {
+        viewModelScope.launch {
+
+            _validateState.value = DataState(isLoading = true)
+
+            val res = AuthRepository.sendOtp(number, message)
+
+            if (res?.statuscode == 200) {
+                _validateState.value = DataState(
+                    success = true, message = res.message, isLoading = false
+                )
+                onSuccess()
+            } else {
+                _validateState.value = DataState(
+                    success = false,
+                    isLoading = false,
+                    error = res?.message ?: "Error Occurred. Please try again."
+                )
+            }
+        }
+    }
+
     fun resetPassword(username: String, id: Int, onSuccess: () -> Unit) {
         viewModelScope.launch {
 
@@ -80,8 +102,7 @@ class AuthViewModel : ViewModel() {
         loginRequest: LoginRequest,
         onSuccess: () -> Unit,
         onListSuccess: (CompanyList) -> Unit
-    )
-    {
+    ) {
         val json = Json {
             ignoreUnknownKeys = true
         }
@@ -106,7 +127,7 @@ class AuthViewModel : ViewModel() {
                             SharedPrefs.Token.clear()
                             SharedPrefs.FileId.clear()
                             SharedPrefs.DistributorData.clear()
-                         //   deleteDbFile()
+                            //   deleteDbFile()
 
                             SharedPrefs.Token.save(loginData.token)
                             SharedPrefs.FileId.save(loginData.C9)
