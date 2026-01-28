@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -85,7 +86,7 @@ data class CartScreen(val viewModel: CartViewModel) : Screen {
         ) { paddingValues ->
             Column(
                 modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-                    .padding(paddingValues)
+                    .padding(paddingValues).navigationBarsPadding()
             ) {
                 if (state.isEmpty()) {
                     EmptyListPlaceholder(
@@ -320,7 +321,7 @@ private fun CartProductItem(
 }
 
 @Composable
-private fun CartSummary(products: List<CartItem>,cartViewModel: CartViewModel,showOnly: Boolean) {
+fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel?=null, showOnly: Boolean) {
 
     val totalMrp = products.sumOf {
         val mrp = it.product.MRP ?: 0.0
@@ -611,7 +612,7 @@ private fun CartSummary(products: List<CartItem>,cartViewModel: CartViewModel,sh
         TallyResultDialog(
             message = "${orderDataState.message}\n${if (orderDataState.success) orderDataState.data?.VoucherNumber else ""}",
             onDone = {
-                cartViewModel.emptyList()
+                cartViewModel?.emptyList()
                 nav.pop()
             },
             isSuccess = orderDataState.success,
@@ -648,4 +649,67 @@ private fun SummaryRow(
             color = valueColor
         )
     }
+}
+
+data class CartSummaryItem(
+    val productId: Int,
+    val name: String,
+    val mrp: Double,
+    val salesPrice: Double,
+    val discountedPrice: Double,
+    val discountPercent: Double,
+    val gstPercent: Double,
+    val quantity: Int
+)
+fun CartItem.toSummaryItem(): CartSummaryItem {
+    val p = product
+
+    return CartSummaryItem(
+        productId = p.hospital_id?.toInt() ?: 0,
+        name = p.product_name.orEmpty(),
+        mrp = p.MRP ?: 0.0,
+        salesPrice = p.sales_price ?: 0.0,
+        discountedPrice = p.discounted_price ?: 0.0,
+        discountPercent = p.discount ?: 0.0,
+        gstPercent = p.gst_tax_percentage ?: 0.0,
+        quantity = quantity.value
+    )
+}
+@Composable
+fun CartSummaryShow(
+    items: List<CartSummaryItem>,
+) {
+    val totalMrp = items.sumOf { it.mrp * it.quantity }
+    val totalDiscounted = items.sumOf { it.discountedPrice * it.quantity }
+    val totalSavings = totalMrp - totalDiscounted
+    val totalGst = items.sumOf {
+        ((it.discountedPrice * it.gstPercent) / 100.0) * it.quantity
+    }
+    val finalTotal = totalDiscounted + totalGst
+
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+
+            Text("Order Summary", fontWeight = FontWeight.Bold)
+
+            SummaryRow("Items (${items.size})", totalMrp.formatToAmtDec(),  textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp))
+            SummaryRow("Discount", "-${totalSavings.formatToAmtDec()}",  textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp))
+            SummaryRow("Subtotal", totalDiscounted.formatToAmtDec(),  textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp))
+            SummaryRow("GST", totalGst.formatToAmtDec(),  textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp))
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SummaryRow(
+                label = "Total Amount",
+                value = finalTotal.formatToAmtDec(),
+                fontWeight = FontWeight.Bold,  textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+            )
+
+        }
+    }
+
 }
