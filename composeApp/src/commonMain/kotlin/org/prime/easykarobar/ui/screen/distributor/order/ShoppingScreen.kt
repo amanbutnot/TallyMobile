@@ -12,7 +12,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -584,48 +586,46 @@ object ShoppingScreen : Screen {
         product: List<GetProductsForDis>,
         viewModel: CartViewModel
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp)
-        ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+
             Text(
                 text = "Categories",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            val nonEmptyCategories = categories
+            // Split list into chunks of 2 (each column has 2 items)
+            val columns = categories.chunked(2)
 
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 240.dp)
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(nonEmptyCategories) { category ->
-                        CategoryCard(
-                            category = category,
-                            onClick = { onCategoryClick(category) },
-                            product = product,
-                            viewModel = viewModel
-                        )
+                items(columns) { columnItems ->
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.width(160.dp) // control column width
+                    ) {
+                        columnItems.forEach { category ->
+                            CategoryCard(
+                                category = category,
+                                onClick = { onCategoryClick(category) },
+                                product = product,
+                                viewModel = viewModel
+                            )
+                        }
                     }
                 }
             }
-
         }
     }
 
 
+
+
     @Composable
     private fun CategoryCard(
+        modifier: Modifier=Modifier,
         category: ProductCategoriesForDis,
         onClick: () -> Unit,
         product: List<GetProductsForDis>,
@@ -634,7 +634,7 @@ object ShoppingScreen : Screen {
         val showImage = viewModel.showImage.value
 
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
                 .padding(horizontal = 12.dp, vertical = 10.dp)
                 .clip(RoundedCornerShape(14.dp))
@@ -772,7 +772,11 @@ object ShoppingScreen : Screen {
             modifier = Modifier
                 .width(160.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .border(0.4.dp, MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(12.dp))
+                .border(
+                    0.4.dp,
+                    MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(12.dp)
+                )
                 .clickable { onItemClick() },
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
@@ -811,7 +815,7 @@ object ShoppingScreen : Screen {
                             contentDescription = item.product_name,
                             modifier = Modifier
                                 .fillMaxSize()
-                              //  .padding(6.dp)
+                                //  .padding(6.dp)
                                 .clip(RoundedCornerShape(8.dp)),
                             contentScale = ContentScale.Crop,
                             fallback = painterResource(Res.drawable.splashImage),
@@ -851,7 +855,11 @@ object ShoppingScreen : Screen {
                 // --- Button that doesn't look like a warning when in cart
                 if (inCart) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().border(
+                            1.dp,
+                            MaterialTheme.colorScheme.primary,
+                            RoundedCornerShape(12.dp)
+                        ),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
