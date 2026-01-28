@@ -69,6 +69,7 @@ SELECT
     PurcPrice AS purchase_price,
     SaleDisc AS discount,
 
+COALESCE(
     (
         SELECT IGST
         FROM Tax_Category_Mast
@@ -76,7 +77,9 @@ SELECT
           AND AppDate <= '2025-04-01'
         ORDER BY AppDate DESC
         LIMIT 1
-    ) AS gst_tax_percentage,
+    ),
+    0
+) AS gst_tax_percentage,
 
     Name AS product_description,
     '' AS created_at,
