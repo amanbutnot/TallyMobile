@@ -77,6 +77,8 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
+import org.prime.easykarobar.business.viewmodel.distributor.CartItem
+import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.CancelOrderRequest
@@ -93,6 +95,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.tally.GetProductsForDis
 
 object MyOrdersScreen : Screen {
     @Composable
@@ -143,7 +146,9 @@ object MyOrdersScreen : Screen {
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MyOrderContent(
-    list: List<Order>, paddingValues: PaddingValues, viewModel: OrderViewModel
+    list: List<Order>,
+    paddingValues: PaddingValues,
+    viewModel: OrderViewModel,
 ) {
 
     val cancelState by viewModel.cancelOrderState
@@ -423,7 +428,9 @@ private fun StatusHistoryCard(historyItem: List<StatusHistory>) {
 
 @Composable
 fun OrderCard(
-    order: Order, onCancelOrder: () -> Unit, onHistoryClick: () -> Unit
+    order: Order,
+    onCancelOrder: () -> Unit,
+    onHistoryClick: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -555,7 +562,23 @@ fun OrderCard(
                             )
                         }
                     }
-                    //CartSummary(products = list, cartViewModel = viewModel, showOnly = false)
+//                    Spacer(Modifier.height(12.dp))
+//
+//                    val list = order.items.map {
+//                        CartSummaryItem(
+//                            productId = it.product_id.toInt(),
+//                            name = it.product_name,
+//                            mrp = order.total_amount.toDouble(),
+//                            salesPrice = it.list_price.toDouble(),
+//                            discountedPrice = it.discount_amt.toDouble(),
+//                            discountPercent = it.discount_percent.toDouble(),
+//                            gstPercent = it.discount_percent.toDouble(),
+//                            quantity = it.quantity
+//                        )
+//                    }
+//                    CartSummaryShow(
+//                        items = list,
+//                    )
                 }
             }
 
