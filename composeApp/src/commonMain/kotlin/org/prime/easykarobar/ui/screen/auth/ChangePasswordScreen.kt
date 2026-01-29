@@ -1,6 +1,5 @@
 package org.prime.easykarobar.ui.screen.auth
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,19 +37,19 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
-import kotlin.random.Random
 
-object ForgotPasswordScreen : Screen {
+data class ChangePasswordScreen(val number: String) : Screen {
     @Composable
     override fun Content() {
         val colors = MaterialTheme.colorScheme
         val type = MaterialTheme.typography
 
-        var number by remember { mutableStateOf("") }
+        var password by remember { mutableStateOf("") }
+        var confirmPassword by remember { mutableStateOf("") }
         val nav = LocalNavigator.currentOrThrow
 
         val authViewModel: AuthViewModel = viewModel { AuthViewModel() }
-        val validateState by authViewModel.validateState
+        val validateState by authViewModel.resetState
 
         if (validateState.isLoading) {
             TallyLoadingDialog(
@@ -68,7 +67,7 @@ object ForgotPasswordScreen : Screen {
         }
 
         TallyScaffold(
-            title = "Forgot Password",
+            title = "Change Password",
             onBack = { nav.pop() },
             showEditIcon = false,
         ) {
@@ -112,7 +111,7 @@ object ForgotPasswordScreen : Screen {
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = "Enter your mobile number and we’ll send you an otp to reset your password.",
+                            text = "Enter your new password.",
                             style = type.bodyMedium.copy(color = colors.onSurfaceVariant)
                         )
 
@@ -120,30 +119,40 @@ object ForgotPasswordScreen : Screen {
 
 
                         TallyTextField(
-                            value = number,
-                            onValueChange = { number = it },
-                            placeholder = "Enter your mobile number",
-                            isPassword = false,
-                            isNumber = true,
-                            label = "Mobile Number",
+                            value = password,
+                            onValueChange = { password = it },
+                            placeholder = "Enter your password",
+                            isPassword = true,
+                            isNumber = false,
+                            label = "Password",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(Modifier.height(12.dp))
+
+
+                        TallyTextField(
+                            value = confirmPassword,
+                            onValueChange = { confirmPassword = it },
+                            placeholder = "Enter your password again",
+                            isPassword = true,
+                            isNumber = false,
+                            label = "Confirm Password",
                             modifier = Modifier.fillMaxWidth()
                         )
 
                         Spacer(Modifier.height(16.dp))
                         TallyButton(
-                            label = "Get Otp",
+                            label = "Change Password",
                             onClick = {
-                                val otp = (100_000..999_999).random()
-                                authViewModel.validateMobile(username = number) {
-                                    authViewModel.sendOtp(
-                                        number = number,
-                                        message = "Your Easy Karobar password reset OTP is $otp. Please do not share it with anyone.",
+                                    authViewModel.resetPassword(
+                                        password = password, id = number,
                                         onSuccess = {
-                                            nav.push(VerifyOtpScreen(otp.toString(),number))
+                                            nav.push(OnBoardingScreen)
                                         })
-                                }
+
                             },
                             backgroundColor = colors.primary,
+                            enabled = (password == confirmPassword) && password.isNotEmpty() && confirmPassword.isNotEmpty(),
                             contentColor = colors.onPrimary,
                             modifier = Modifier.fillMaxWidth()
                         )

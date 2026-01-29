@@ -19,9 +19,10 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.ui.shared.composables.TallyButton
+import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 
-object VerifyOtpScreen : Screen {
+data class VerifyOtpScreen(val otp: String,val number: String) : Screen {
     @Composable
     override fun Content() {
         val colors = MaterialTheme.colorScheme
@@ -30,6 +31,8 @@ object VerifyOtpScreen : Screen {
 
         var otpText by remember { mutableStateOf("") }
         var isLoading by remember { mutableStateOf(false) }
+        var showErrorDialog by remember { mutableStateOf(false) }
+
 
         TallyScaffold(
             title = "Verify OTP",
@@ -128,13 +131,25 @@ object VerifyOtpScreen : Screen {
                             onClick = {
                                 if (otpText.length == 6) {
                                     isLoading = true
-                                    // TODO: Verify OTP logic
+                                    if (otpText == otp) {
+                                        nav.replace(ChangePasswordScreen(number))
+                                    } else {
+                                        showErrorDialog = true
+                                        isLoading = false
+                                    }
                                 }
                             },
                             backgroundColor = colors.primary,
                             contentColor = colors.onPrimary,
                             modifier = Modifier.fillMaxWidth(),
                             enabled = otpText.length == 6 && !isLoading
+                        )
+                    }
+                    if (showErrorDialog) {
+                        TallyResultDialog(
+                            "Your otp is incorrect. Try Again",
+                            onDone = { showErrorDialog = false },
+                            isSuccess = false,
                         )
                     }
                 }

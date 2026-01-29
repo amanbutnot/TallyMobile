@@ -246,3 +246,31 @@ data class ForgotResponse(
     val ID: Int,
     val FirstName: String
 )
+@Serializable
+data class ResetRequest(
+    val MobileNo: String,
+    val NewPassword: String
+)
+
+@Serializable
+data class WhatsAppSendResponse(
+    val success: Boolean,
+    val message: String,
+    val reportId: Long,
+    val messageId: String,
+    val status: String,
+    val results: List<ResultItem>,
+    val subscription: Subscription
+)
+
+@Serializable
+data class ResultItem(
+    val messageId: String,
+    val status: String
+)
+
+@Serializable
+data class Subscription(
+    val sms_count: Int,
+    val expires_at: String
+)

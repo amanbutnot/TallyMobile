@@ -10,7 +10,6 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import org.prime.easykarobar.data.model.LoginRequest
 import org.prime.easykarobar.data.model.LoginResponse
 import org.prime.easykarobar.business.repository.AuthRepository
-import org.prime.easykarobar.data.expect.deleteDbFile
 import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.ForgotResponse
 import org.prime.easykarobar.data.utils.MOBILE_VERSION
@@ -61,7 +60,7 @@ class AuthViewModel : ViewModel() {
 
             val res = AuthRepository.sendOtp(number, message)
 
-            if (res?.statuscode == 200) {
+            if (res?.success == true) {
                 _validateState.value = DataState(
                     success = true, message = res.message, isLoading = false
                 )
@@ -76,17 +75,18 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    fun resetPassword(username: String, id: Int, onSuccess: () -> Unit) {
+    fun resetPassword(password: String, id: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
 
             _resetState.value = DataState(isLoading = true)
 
-            val res = AuthRepository.resetPassword(id, username)
+            val res = AuthRepository.resetPassword(id, password)
 
             if (res?.statuscode == 200) {
                 _resetState.value = DataState(
-                    success = true, message = res.message, isLoading = false, data = res.data
+                    success = true, message = res.message, isLoading = false
                 )
+                onSuccess()
             } else {
                 _resetState.value = DataState(
                     success = false,
