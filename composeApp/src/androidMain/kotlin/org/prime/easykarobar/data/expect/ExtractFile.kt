@@ -3,6 +3,7 @@ package org.prime.easykarobar.data.expect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.util.zip.ZipInputStream
 
 actual class ZipExtractor actual constructor() {
