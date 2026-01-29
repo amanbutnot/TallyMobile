@@ -56,6 +56,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -150,9 +151,6 @@ object ShoppingScreen : Screen {
         ) {
             TopHeader(
 
-                onOrdersClick = {
-                    nav.push(MyOrdersScreen)
-                },
                 onCartClick = {
                     println(cartViewModel.getAllProducts())
                     nav.push(CartScreen(cartViewModel))
@@ -344,7 +342,7 @@ object ShoppingScreen : Screen {
                                 color = colorScheme.primary
                             )
 
-                            if (product.MRP != product.sales_price) {
+                            if (product.MRP != product.sales_price && product.MRP!=0.0) {
                                 Text(
                                     text = "${product.MRP?.formatToAmtDec()}",
                                     style = MaterialTheme.typography.bodySmall.copy(
@@ -355,7 +353,7 @@ object ShoppingScreen : Screen {
                             }
                         }
 
-                        if (product.discount.toString() != "0") {
+                        if (product.MRP!=0.0) {
                             Surface(
                                 color = colorScheme.secondary,
                                 shape = RoundedCornerShape(50)
@@ -428,7 +426,6 @@ object ShoppingScreen : Screen {
     fun TopHeader(
         toggle: Boolean,
         onToggle: (Boolean) -> Unit,
-        onOrdersClick: () -> Unit,
         onCartClick: () -> Unit,
         modifier: Modifier = Modifier
     ) {
@@ -463,20 +460,6 @@ object ShoppingScreen : Screen {
                     onToggle = { onToggle(it) },
                     modifier = Modifier.weight(0.5f)
                 )
-                Spacer(modifier = Modifier.width(4.dp))
-
-                Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.End) {
-                    IconButton(
-                        onClick = onOrdersClick, modifier = Modifier.background(
-                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f), CircleShape
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Archive,
-                            contentDescription = "Your Orders",
-                            tint = MaterialTheme.colorScheme.secondary
-                        )
-                    }
 
                     Spacer(modifier = Modifier.width(12.dp))
 
@@ -597,6 +580,8 @@ object ShoppingScreen : Screen {
 
             // Split list into chunks of 2 (each column has 2 items)
             val columns = categories.chunked(2)
+            HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+
 
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -617,6 +602,7 @@ object ShoppingScreen : Screen {
                     }
                 }
             }
+            HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
         }
     }
 
@@ -909,4 +895,3 @@ object ShoppingScreen : Screen {
         }
     }
 
-}

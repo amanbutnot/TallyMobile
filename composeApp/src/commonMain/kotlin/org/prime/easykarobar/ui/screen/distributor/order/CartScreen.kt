@@ -92,7 +92,7 @@ data class CartScreen(val viewModel: CartViewModel) : Screen {
                     EmptyListPlaceholder(
                         icon = Icons.Default.ShoppingBag,
                         title = "No Items in cart",
-                        onAddClick = { nav.pop()}
+                        onAddClick = { nav.pop() }
                     )
                 } else {
                     CartContent(viewModel.getAllProducts(), viewModel)
@@ -212,14 +212,17 @@ private fun CartProductItem(
 
                         Spacer(modifier = Modifier.width(6.dp))
 
-                        Text(
-                            text = "${product.product.MRP?.formatToAmtDec()}",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                textDecoration = TextDecoration.LineThrough,
-                                fontSize = 12.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                        )
+                        if(product.product.MRP!=0.0){
+                            Text(
+                                text = "${product.product.MRP?.formatToAmtDec()}",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    textDecoration = TextDecoration.LineThrough,
+                                    fontSize = 12.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+
+                        }
                     }
 
                     if (product.product.discount.toString() != "0.0") {
@@ -321,12 +324,18 @@ private fun CartProductItem(
 }
 
 @Composable
-fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel?=null, showOnly: Boolean) {
+fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel? = null, showOnly: Boolean) {
 
+//    val totalMrp = products.sumOf {
+//        val mrp = it.product.MRP ?: 0.0
+//        mrp * it.quantity.value
+//    }
     val totalMrp = products.sumOf {
-        val mrp = it.product.MRP ?: 0.0
+        val mrp = if (it.product.MRP == 0.0) it.product.sales_price?:0.0 else it.product.MRP?:0.0
         mrp * it.quantity.value
+
     }
+
 
     val totalDiscountedPrice = products.sumOf {
         val discounted = it.product.discounted_price ?: 0.0
@@ -413,14 +422,16 @@ fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel?=null, sh
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            SummaryRow(
-                label = "Discount",
-                value = "-${totalSavings?.formatToAmtDec()}",
-                textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
-                valueColor = MaterialTheme.colorScheme.primary
-            )
+            if(totalSavings!=0.0){
+                SummaryRow(
+                    label = "Discount",
+                    value = "-${totalSavings?.formatToAmtDec()}",
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                    valueColor = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
-            Spacer(modifier = Modifier.height(8.dp))
 
             SummaryRow(
                 label = "Subtotal",
@@ -510,7 +521,7 @@ fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel?=null, sh
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            if(!showOnly){
+            if (!showOnly) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -534,7 +545,7 @@ fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel?=null, sh
         Spacer(modifier = Modifier.height(12.dp))
     }
 
-    if(!showOnly){
+    if (!showOnly) {
         Button(
             onClick = {
                 showConfirmDialog = true
@@ -605,7 +616,7 @@ fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel?=null, sh
             onDismiss = { showConfirmDialog = false },
         )
     }
-    if(orderDataState.isLoading){
+    if (orderDataState.isLoading) {
         TallyLoadingDialog("Creating your order")
     }
     if (orderDataState.success) {
@@ -661,6 +672,7 @@ data class CartSummaryItem(
     val gstPercent: Double,
     val quantity: Int
 )
+
 fun CartItem.toSummaryItem(): CartSummaryItem {
     val p = product
 
@@ -675,11 +687,12 @@ fun CartItem.toSummaryItem(): CartSummaryItem {
         quantity = quantity.value
     )
 }
+
 @Composable
 fun CartSummaryShow(
     items: List<CartSummaryItem>,
 ) {
-    val totalMrp = items.sumOf { it.mrp * it.quantity }
+    val totalMrp = items.sumOf { (if (it.mrp == 0.0) it.salesPrice else it.mrp) * it.quantity }
     val totalDiscounted = items.sumOf { it.discountedPrice * it.quantity }
     val totalSavings = totalMrp - totalDiscounted
     val totalGst = items.sumOf {
@@ -696,17 +709,34 @@ fun CartSummaryShow(
 
             Text("Order Summary", fontWeight = FontWeight.Bold)
 
-            SummaryRow("Items (${items.size})", totalMrp.formatToAmtDec(),  textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp))
-            SummaryRow("Discount", "-${totalSavings.formatToAmtDec()}",  textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp))
-            SummaryRow("Subtotal", totalDiscounted.formatToAmtDec(),  textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp))
-            SummaryRow("GST", totalGst.formatToAmtDec(),  textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp))
+            SummaryRow(
+                "Items (${items.size})",
+                totalMrp.formatToAmtDec(),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+            )
+            SummaryRow(
+                "Discount",
+                "-${totalSavings.formatToAmtDec()}",
+                textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+            )
+            SummaryRow(
+                "Subtotal",
+                totalDiscounted.formatToAmtDec(),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+            )
+            SummaryRow(
+                "GST",
+                totalGst.formatToAmtDec(),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             SummaryRow(
                 label = "Total Amount",
                 value = finalTotal.formatToAmtDec(),
-                fontWeight = FontWeight.Bold,  textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+                fontWeight = FontWeight.Bold,
+                textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
             )
 
         }

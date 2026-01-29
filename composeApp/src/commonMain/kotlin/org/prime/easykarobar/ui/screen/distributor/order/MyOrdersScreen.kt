@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -182,7 +183,7 @@ fun MyOrderContent(
     var selectedStatusHistory by remember { mutableStateOf<List<StatusHistory>?>(null) }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(paddingValues)
+        modifier = Modifier.fillMaxSize().padding(paddingValues).navigationBarsPadding()
     ) {
         FlowRow(
             Modifier

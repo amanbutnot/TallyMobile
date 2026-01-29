@@ -35,10 +35,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
-import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen.ItemCard
-import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen.SearchField
 import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen.ShowProductInfo
-import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen.ToggleIconButton
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.tally.GetProductsForDis

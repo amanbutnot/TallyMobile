@@ -37,6 +37,8 @@ import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.ShoppingBasket
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.AlertDialog
@@ -85,6 +87,7 @@ import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.attendance.AttendanceScreen
 import org.prime.easykarobar.ui.screen.attendance.formatAddress
 import org.prime.easykarobar.ui.screen.attendance.getPlaceFromCoordinates
+import org.prime.easykarobar.ui.screen.distributor.order.MyOrdersScreen
 import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen
 import org.prime.easykarobar.ui.screen.home.ROLE
 import org.prime.easykarobar.ui.screen.home.userRole
@@ -372,6 +375,14 @@ object HomeTab : Tab {
                         icon = Icons.Default.ShoppingCart,
                         onClick = {
                             nav?.push(ShoppingScreen)
+                        }
+                    )  // Second Card - Ledger
+                    ReportActionCard(
+                        title = "View Order",
+                        description = "View your orders",
+                        icon = Icons.Default.ShoppingBasket,
+                        onClick = {
+                            nav?.push(MyOrdersScreen)
                         }
                     )
                 }
