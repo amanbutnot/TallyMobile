@@ -67,25 +67,19 @@ import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TableCell
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
-import org.tally.BillPayableList
-import org.tally.BillReceivableList
 import smartSearch
-import kotlin.collections.contains
 import kotlin.math.absoluteValue
 
 data class OutstandingReportScreen(
-    val name: String,
-    val startDate: String,
-    val endDate: String,
-    val cm1: String? = null
+    val name: String, val startDate: String, val endDate: String, val cm1: String? = null
 ) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val db = DatabaseHolder.instance
 
-        var receivableList by remember { mutableStateOf<List<BillReceivableList>>(emptyList()) }
-        var payableList by remember { mutableStateOf<List<BillPayableList>>(emptyList()) }
+        var receivableList by remember { mutableStateOf<List<DataList>>(emptyList()) }
+        var payableList by remember { mutableStateOf<List<DataList>>(emptyList()) }
         var isLoading by remember { mutableStateOf(true) }
         var showSearchBar by remember { mutableStateOf(false) }
         var shareLoading by remember { mutableStateOf(false) }
@@ -117,9 +111,11 @@ data class OutstandingReportScreen(
                         receivableList = db.voucherBillAllocationsQueries.billReceivableLedgerList(
                             DATE = startDate,
                             DATE_ = endDate,
-                            CM1 = cm1, filterCm3 = filterBroker, cm3 = configBroker
+                            CM1 = cm1,
+                            filterCm3 = filterBroker,
+                            cm3 = configBroker
                         ).executeAsList().map {
-                            BillReceivableList(
+                            DataList(
                                 VCH_GUID = it.VCH_GUID,
                                 date = it.date,
                                 vchType = it.vchType,
@@ -142,7 +138,117 @@ data class OutstandingReportScreen(
                             GroupCode = groupCodes,
                             excludeFilter = filterAccounts,
                             GUID = excludeGuids
-                        ).executeAsList()
+                        ).executeAsList().map {
+                            DataList(
+                                VCH_GUID = it.VCH_GUID,
+                                date = it.date,
+                                vchType = it.vchType,
+                                billNumber = it.billNumber,
+                                cm1 = it.cm1,
+                                dueDate = it.dueDate,
+                                d1 = it.d1,
+                                adjustmentAmount = it.adjustmentAmount,
+                                GroupName = it.GroupName
+                            )
+                        }
+                    }
+                }
+                if (name == "Pending Sale Order") {
+                    if (cm1 != "") {
+                        receivableList = db.vouchersPendingOrderQueries.pendingPurchaseOrderLedgerList(
+                            DATE = startDate,
+                            DATE_ = endDate,
+                            CM1 = cm1,
+                            filterCm3 = filterBroker,
+                            cm3 = configBroker
+                        ).executeAsList().map {
+                            DataList(
+                                VCH_GUID = it.VCH_GUID,
+                                date = it.date,
+                                vchType = it.vchType,
+                                billNumber = it.billNumber,
+                                cm1 = it.cm1,
+                                dueDate = it.dueDate,
+                                d1 = it.d1,
+                                adjustmentAmount = it.adjustmentAmount,
+                                GroupName = it.GroupName,
+                                itemName = it.ItemName
+                            )
+                        }
+                    } else {
+                        println(outstandingFilter())
+                        receivableList = db.vouchersPendingOrderQueries.pendingPurchaseOrderList(
+                            DATE = startDate,
+                            DATE_ = endDate,
+                            filterCm3 = filterBroker,
+                            cm3 = configBroker,
+                            groupFilter = filterAGRP,
+                            GroupCode = groupCodes,
+                            excludeFilter = filterAccounts,
+                            GUID = excludeGuids
+                        ).executeAsList().map {
+                            DataList(
+                                VCH_GUID = it.VCH_GUID,
+                                date = it.date,
+                                vchType = it.vchType,
+                                billNumber = it.billNumber,
+                                cm1 = it.cm1,
+                                dueDate = it.dueDate,
+                                d1 = it.d1,
+                                adjustmentAmount = it.adjustmentAmount,
+                                GroupName = it.GroupName,
+                                itemName = it.ItemName
+                            )
+                        }
+                    }
+                }
+                if (name == "Pending Purchase Order") {
+                    if (cm1 != "") {
+                        payableList = db.vouchersPendingOrderQueries.pendingSaleOrderLedgerList(
+                            DATE = startDate,
+                            DATE_ = endDate,
+                            CM1 = cm1,
+                            filterCm3 = filterBroker,
+                            cm3 = configBroker
+                        ).executeAsList().map {
+                            DataList(
+                                VCH_GUID = it.VCH_GUID,
+                                date = it.date,
+                                vchType = it.vchType,
+                                billNumber = it.billNumber,
+                                cm1 = it.cm1,
+                                dueDate = it.dueDate,
+                                d1 = it.d1,
+                                adjustmentAmount = it.adjustmentAmount,
+                                GroupName = it.GroupName,
+                                itemName = it.ItemName
+                            )
+                        }
+                    } else {
+                        println(outstandingFilter())
+                        payableList = db.vouchersPendingOrderQueries.pendingSaleOrderList(
+                            DATE = startDate,
+                            DATE_ = endDate,
+                            filterCm3 = filterBroker,
+                            cm3 = configBroker,
+                            groupFilter = filterAGRP,
+                            GroupCode = groupCodes,
+                            excludeFilter = filterAccounts,
+                            GUID = excludeGuids
+                        ).executeAsList().map {
+                            DataList(
+                                VCH_GUID = it.VCH_GUID,
+                                date = it.date,
+                                vchType = it.vchType,
+                                billNumber = it.billNumber,
+                                cm1 = it.cm1,
+                                dueDate = it.dueDate,
+                                d1 = it.d1,
+                                adjustmentAmount = it.adjustmentAmount,
+                                GroupName = it.GroupName,
+                                itemName = it.ItemName
+                            )
+                        }
                     }
                 }
                 if (name == "Bill Payable") {
@@ -150,9 +256,11 @@ data class OutstandingReportScreen(
                         payableList = db.voucherBillAllocationsQueries.billPayableLedgerList(
                             DATE = startDate,
                             DATE_ = endDate,
-                            CM1 = cm1, filterCm3 = filterBroker, cm3 = configBroker
+                            CM1 = cm1,
+                            filterCm3 = filterBroker,
+                            cm3 = configBroker
                         ).executeAsList().map {
-                            BillPayableList(
+                            DataList(
                                 VCH_GUID = it.VCH_GUID,
                                 date = it.date,
                                 vchType = it.vchType,
@@ -174,7 +282,19 @@ data class OutstandingReportScreen(
                             GroupCode = groupCodes,
                             excludeFilter = filterAccounts,
                             GUID = excludeGuids
-                        ).executeAsList()
+                        ).executeAsList().map {
+                            DataList(
+                                VCH_GUID = it.VCH_GUID,
+                                date = it.date,
+                                vchType = it.vchType,
+                                billNumber = it.billNumber,
+                                cm1 = it.cm1,
+                                dueDate = it.dueDate,
+                                d1 = it.d1,
+                                adjustmentAmount = it.adjustmentAmount,
+                                GroupName = it.GroupName
+                            )
+                        }
                     }
                 }
                 withContext(Dispatchers.Main) {
@@ -200,8 +320,7 @@ data class OutstandingReportScreen(
             query = searchQuery,
             selectors = listOf { item ->
                 if (selectedOption == "Name") item.cm1 else item.billNumber
-            }
-        )
+            })
 
         val groupFilteredPayableList = if (selectedGroups.isEmpty()) {
             payableList
@@ -214,8 +333,7 @@ data class OutstandingReportScreen(
             query = searchQuery,
             selectors = listOf { item ->
                 if (selectedOption == "Name") item.cm1 else item.billNumber
-            }
-        )
+            })
 
         // Calculate totals based on filtered data
         val totalRefAmt = if (name == "Bill Receivable") {
@@ -225,7 +343,9 @@ data class OutstandingReportScreen(
         }
 
         val totalPendingAmt = if (name == "Bill Receivable") {
-            groupFilteredReceivableList.sumOf { it.adjustmentAmount?.toDouble()?.absoluteValue ?: 0.0 }
+            groupFilteredReceivableList.sumOf {
+                it.adjustmentAmount?.toDouble()?.absoluteValue ?: 0.0
+            }
         } else {
             groupFilteredPayableList.sumOf { it.adjustmentAmount?.toDouble()?.absoluteValue ?: 0.0 }
         }
@@ -287,34 +407,24 @@ data class OutstandingReportScreen(
 
         val menuItems = listOf(
             MenuItemData(
-                title = "Download",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "${name.replace(" ", "_")}_Report",
-                            htmlContent = generateOutstandingHtml(),
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
+            title = "Download", icon = Icons.Default.Download, onClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "${name.replace(" ", "_")}_Report",
+                        htmlContent = generateOutstandingHtml(),
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it })
                 }
-            ),
-            MenuItemData(
-                title = "Share",
-                icon = Icons.Default.Share,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "${name.replace(" ", "_")}_Report",
-                            htmlContent = generateOutstandingHtml(),
-                            action = PdfAction.Share,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
+            }), MenuItemData(
+            title = "Share", icon = Icons.Default.Share, onClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "${name.replace(" ", "_")}_Report",
+                        htmlContent = generateOutstandingHtml(),
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it })
                 }
-            )
-        )
+            }))
 
         if (shareLoading) {
             TallyLoadingDialog("Generating Report")
@@ -343,30 +453,24 @@ data class OutstandingReportScreen(
                     columns = listOf(
                         ReportColumn(
                             "Rows: ${
-                                if (name == "Bill Receivable") {
+                                if (name == "Bill Receivable"|| name == "Pending Sale Order") {
                                     filteredReceivableList.count()
                                 } else filteredPayableList.count()
-                            }",
-                            1f,
-                            TextAlign.Start
+                            }", 1f, TextAlign.Start
                         ),
                         ReportColumn(
                             "Vch Amt: ${
-                                if (name == "Bill Receivable") {
+                                if (name == "Bill Receivable" || name == "Pending Sale Order") {
                                     filteredReceivableList.sumOf { it.d1 ?: 0.0 }.absoluteValue.formatToAmtDec()
                                 } else filteredPayableList.sumOf { it.d1 ?: 0.0 }.absoluteValue.formatToAmtDec()
-                            }",
-                            1f,
-                            TextAlign.End
+                            }", 1f, TextAlign.End
                         ),
                         ReportColumn(
                             "Pen Amt: ${
-                                if (name == "Bill Receivable") {
+                                if (name == "Bill Receivable" || name =="Pending Sale Order") {
                                     filteredReceivableList.sumOf { it.adjustmentAmount?.toDouble() ?: 0.0 }.absoluteValue.formatToAmtDec()
                                 } else filteredPayableList.sumOf { it.adjustmentAmount?.toDouble() ?: 0.0 }.absoluteValue.formatToAmtDec()
-                            }",
-                            1f,
-                            TextAlign.End
+                            }", 1f, TextAlign.End
                         ),
                     ),
                 )
@@ -374,16 +478,13 @@ data class OutstandingReportScreen(
             content = { paddingValues ->
                 if (isLoading) {
                     Box(
-                        Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        Modifier.fillMaxSize(), contentAlignment = Alignment.Center
                     ) {
                         TallyCircularLoader()
                     }
                 } else {
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues)
+                        modifier = Modifier.fillMaxSize().padding(paddingValues)
                             .padding(horizontal = 8.dp)
                     ) {
                         if (showSearchBar) {
@@ -404,22 +505,17 @@ data class OutstandingReportScreen(
                                         }
                                         DropdownMenu(
                                             expanded = expanded,
-                                            onDismissRequest = { expanded = false }
-                                        ) {
-                                            DropdownMenuItem(
-                                                text = { Text("Name") },
-                                                onClick = {
-                                                    selectedOption = "Name"
-                                                    expanded = false
-                                                }
-                                            )
+                                            onDismissRequest = { expanded = false }) {
+                                            DropdownMenuItem(text = { Text("Name") }, onClick = {
+                                                selectedOption = "Name"
+                                                expanded = false
+                                            })
                                             DropdownMenuItem(
                                                 text = { Text("Bill No.") },
                                                 onClick = {
                                                     selectedOption = "Bill No."
                                                     expanded = false
-                                                }
-                                            )
+                                                })
                                         }
                                     }
                                 }
@@ -427,9 +523,7 @@ data class OutstandingReportScreen(
                                 TallySearchBar(
                                     searchQuery = searchQuery,
                                     onQueryChange = { searchQuery = it },
-                                    modifier = Modifier
-                                        .focusRequester(focusRequester)
-                                        .weight(2f)
+                                    modifier = Modifier.focusRequester(focusRequester).weight(2f)
                                         .padding(start = 8.dp)
                                 )
                             }
@@ -461,7 +555,7 @@ data class OutstandingReportScreen(
                         Spacer(Modifier.padding(vertical = 8.dp))
 
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            if (name == "Bill Receivable") {
+                            if (name == "Bill Receivable" || name =="Pending Sale Order") {
                                 if (filteredReceivableList.isEmpty()) {
                                     item {
                                         Box(
@@ -478,8 +572,7 @@ data class OutstandingReportScreen(
                                 } else {
                                     items(filteredReceivableList) { item ->
                                         Card(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
+                                            modifier = Modifier.fillMaxWidth()
                                                 .padding(vertical = 4.dp).clickable {
                                                     nav.push(
                                                         LedgerReportItemScreen(
@@ -489,18 +582,15 @@ data class OutstandingReportScreen(
                                                             guid = item.VCH_GUID.toString()
                                                         )
                                                     )
-                                                },
-                                            colors = CardDefaults.cardColors(
+                                                }, colors = CardDefaults.cardColors(
                                                 containerColor = MaterialTheme.colorScheme.surface
-                                            ),
-                                            elevation = CardDefaults.cardElevation(
+                                            ), elevation = CardDefaults.cardElevation(
                                                 defaultElevation = 1.5.dp
                                             )
                                         ) {
                                             Column(
                                                 modifier = Modifier.padding(
-                                                    horizontal = 16.dp,
-                                                    vertical = 10.dp
+                                                    horizontal = 16.dp, vertical = 10.dp
                                                 )
                                             ) {
                                                 Row(
@@ -523,6 +613,16 @@ data class OutstandingReportScreen(
 
                                                 Spacer(Modifier.height(4.dp))
 
+                                                if(item.itemName!=null){
+                                                    Row {
+                                                        TableCell(
+                                                            item.itemName,
+                                                            1f,
+                                                            textAlign = TextAlign.Start,
+                                                            isHeader = false
+                                                        )
+                                                    }
+                                                }
                                                 Row {
                                                     TableCell(
                                                         item.cm1.toString(),
@@ -558,8 +658,7 @@ data class OutstandingReportScreen(
                                                     TableCell(
                                                         "Due: ${Tdate(item.dueDate.toString())} (${
                                                             DueDays(
-                                                                endDate,
-                                                                item.dueDate.toString()
+                                                                endDate, item.dueDate.toString()
                                                             ) + " Days"
                                                         })",
                                                         1f,
@@ -571,7 +670,7 @@ data class OutstandingReportScreen(
                                         }
                                     }
                                 }
-                            } else {
+                            } else if (name == "Bill Payable" || name =="Pending Purchase Order") {
                                 if (filteredPayableList.isEmpty()) {
                                     item {
                                         Box(
@@ -588,8 +687,7 @@ data class OutstandingReportScreen(
                                 } else {
                                     items(filteredPayableList) { item ->
                                         Card(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
+                                            modifier = Modifier.fillMaxWidth()
                                                 .padding(vertical = 4.dp).clickable {
                                                     nav.push(
                                                         LedgerReportItemScreen(
@@ -599,18 +697,15 @@ data class OutstandingReportScreen(
                                                             guid = item.VCH_GUID.toString()
                                                         )
                                                     )
-                                                },
-                                            colors = CardDefaults.cardColors(
+                                                }, colors = CardDefaults.cardColors(
                                                 containerColor = MaterialTheme.colorScheme.surface
-                                            ),
-                                            elevation = CardDefaults.cardElevation(
+                                            ), elevation = CardDefaults.cardElevation(
                                                 defaultElevation = 1.5.dp
                                             )
                                         ) {
                                             Column(
                                                 modifier = Modifier.padding(
-                                                    horizontal = 16.dp,
-                                                    vertical = 10.dp
+                                                    horizontal = 16.dp, vertical = 10.dp
                                                 )
                                             ) {
                                                 Row {
@@ -629,6 +724,16 @@ data class OutstandingReportScreen(
                                                             1f,
                                                             textAlign = TextAlign.End,
                                                             isHeader = true
+                                                        )
+                                                    }
+                                                }
+                                                if(item.itemName!=null){
+                                                    Row {
+                                                        TableCell(
+                                                            item.itemName,
+                                                            1f,
+                                                            textAlign = TextAlign.Start,
+                                                            isHeader = false
                                                         )
                                                     }
                                                 }
@@ -654,7 +759,10 @@ data class OutstandingReportScreen(
                                                         isHeader = false
                                                     )
                                                     TableCell(
-                                                        "Pending: ${item.adjustmentAmount?.absoluteValue?.toDouble()?.formatToAmtDec()}",
+                                                        "Pending: ${
+                                                            item.adjustmentAmount?.absoluteValue?.toDouble()
+                                                                ?.formatToAmtDec()
+                                                        }",
                                                         1f,
                                                         textAlign = TextAlign.End,
                                                         isHeader = false
@@ -665,8 +773,7 @@ data class OutstandingReportScreen(
                                                     TableCell(
                                                         "Due: ${Tdate(item.dueDate.toString())} (${
                                                             DueDays(
-                                                                endDate,
-                                                                item.dueDate.toString()
+                                                                endDate, item.dueDate.toString()
                                                             ) + " Days"
                                                         })",
                                                         1f,
@@ -682,7 +789,19 @@ data class OutstandingReportScreen(
                         }
                     }
                 }
-            }
-        )
+            })
     }
 }
+
+data class DataList(
+    val VCH_GUID: String?,
+    val date: String?,
+    val vchType: String?,
+    val billNumber: String?,
+    val cm1: String?,
+    val dueDate: String?,
+    val d1: Double?,
+    val adjustmentAmount: Double?,
+    val GroupName: String?,
+    val itemName: String? = null  // Add this field
+)
