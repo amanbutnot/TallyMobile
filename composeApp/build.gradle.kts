@@ -106,6 +106,13 @@ kotlin {
             implementation(libs.compass.geolocation)
             implementation(libs.compass.geolocation.mobile)
 
+//            //Scan Barcode
+//            implementation("io.github.ismai117:KScan:0.5.0")
+//
+//            //Easy Permission
+//            implementation("network.chaintech:cmp-easy-permission:1.0.3")
+
+
 
 
         }
