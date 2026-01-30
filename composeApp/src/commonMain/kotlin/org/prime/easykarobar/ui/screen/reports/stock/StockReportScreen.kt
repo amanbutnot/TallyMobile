@@ -195,12 +195,14 @@ object StockReportScreen : Screen {
                             TextAlign.Start
                         ),
                         ReportColumn(
-                            totalQty.absoluteValue.formatToQtyDec(),
+                            if (SharedPrefs.Permissions.get()?.FilterQty == "False" || SharedPrefs.Permissions.get()?.FilterQty == null)
+                                totalQty.absoluteValue.formatToQtyDec() else "",
                             column2Weight,
-                            TextAlign.End
+                            TextAlign.Start
                         ),
                         ReportColumn(
-                            totalAmt.absoluteValue.formatToAmtDec(),
+                            if (SharedPrefs.Permissions.get()?.FilterAmount == "False" || SharedPrefs.Permissions.get()?.FilterAmount == null)
+                                totalAmt.absoluteValue.formatToAmtDec() else "",
                             column3Weight,
                             TextAlign.End
                         )
@@ -287,15 +289,21 @@ object StockReportScreen : Screen {
 //                                    textAlign = TextAlign.End,
 //                                    isHeader = false
 //                                )
+
+
                                 TableCell(
-                                    text = item.Value1?.toDouble()?.formatToQtyDec() ?: "-",
+                                    text = if (SharedPrefs.Permissions.get()?.FilterQty == "False" || SharedPrefs.Permissions.get()?.FilterQty == null) item.Value1
+                                        ?.formatToQtyDec() ?: "-" else "",
                                     weight = column3Weight,
                                     textAlign = TextAlign.End,
                                     isHeader = false
                                 )
-                                if(SharedPrefs.Permissions.get()?.FilterAmount=="N" || SharedPrefs.Permissions.get()?.FilterAmount==null)
+
+
+
                                 TableCell(
-                                    text = item.Value3?.toDouble()?.formatToAmtDec() ?: "-",
+                                    text = if (SharedPrefs.Permissions.get()?.FilterAmount == "False" || SharedPrefs.Permissions.get()?.FilterAmount == null) item.Value3
+                                        ?.formatToAmtDec() ?: "-" else "",
                                     weight = column4Weight,
                                     textAlign = TextAlign.End,
                                     isHeader = false
