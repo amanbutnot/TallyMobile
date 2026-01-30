@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Money
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Receipt
@@ -49,9 +50,13 @@ import cafe.adriel.voyager.navigator.internal.BackHandler
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
+//import network.chaintech.cmpeasypermission.PermissionState
+//import network.chaintech.cmpeasypermission.RequestPermission
+//import network.chaintech.cmpeasypermission.ui.DialogParams
 import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.ui.screen.attendance.AttendanceListScreen
 import org.prime.easykarobar.ui.screen.transactions.SingleEntryFilterScreen
+import org.prime.easykarobar.ui.screen.transactions.barcode.BarcodeScreen
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 
 object TransactionTab : Tab {
@@ -67,6 +72,23 @@ object TransactionTab : Tab {
         val tabNav = LocalTabNavigator.current
         val nav = LocalNavigator.currentOrThrow.parent
         val colors = MaterialTheme.colorScheme
+        var requestCameraPermission by remember { mutableStateOf(false) }
+        var isGrantedCamera by remember { mutableStateOf<Boolean?>(null) }
+
+//        if (requestCameraPermission) {
+//            RequestPermission(
+//                permission = PermissionState.CAMERA,
+//                openSetting = true,
+//                deniedDialogTitle = "App requires access to your camera",
+//                deniedDialogDesc = "App requires access to your camera",
+//                isGranted = { isGranted ->
+//                    isGrantedCamera = isGranted
+//                    requestCameraPermission = false
+//                    nav?.push(BarcodeScreen)
+//                },
+//            )
+//        }
+
 
         val entryList = listOf(
             TransactionType("Receipt", Icons.Default.Receipt),
@@ -84,7 +106,8 @@ object TransactionTab : Tab {
             TransactionType("Purchase Order", Icons.Default.Money),
             TransactionType("Purchase Return", Icons.Default.Work),
             TransactionType("Purchase Invoice", Icons.Default.Work),
-            TransactionType("Stock Transfer", Icons.Default.Work)
+            TransactionType("Stock Transfer", Icons.Default.Work),
+            TransactionType("Scan Barcode", Icons.Default.BarChart)
         )
 
         BackHandler(true) {
@@ -228,6 +251,16 @@ object TransactionTab : Tab {
                             )
                         )
 
+                        7 -> {
+                            if (isGrantedCamera == true) {
+                                nav?.push(
+                                    BarcodeScreen
+                                )
+                            } else {
+                                requestCameraPermission = true
+                            }
+                        }
+
                     }
                 }
             )
@@ -299,8 +332,8 @@ object TransactionTab : Tab {
                             )
 
                         }
-                        4 ->
-                        {
+
+                        4 -> {
                             salesmanPermission(
                                 "D22",
                                 accessDeniedBlock = { showDeniedDialog = true },
@@ -317,9 +350,7 @@ object TransactionTab : Tab {
                         }
 
 
-                        5 ->
-
-                        {
+                        5 -> {
                             salesmanPermission(
                                 "D23",
                                 accessDeniedBlock = { showDeniedDialog = true },
