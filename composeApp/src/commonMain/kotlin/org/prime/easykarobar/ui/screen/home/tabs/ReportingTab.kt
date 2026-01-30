@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.ProductionQuantityLimits
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.ShoppingCartCheckout
 import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,6 +56,7 @@ import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.screen.reports.godown.GodownClosingStockListScreen
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportFilterScreen
+import org.prime.easykarobar.ui.screen.reports.order.OrderReportSelectScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingSelectScreen
 import org.prime.easykarobar.ui.screen.reports.productReport.ProductReportScreen
 import org.prime.easykarobar.ui.screen.reports.registers.RegisterSelectScreen
@@ -108,6 +110,7 @@ object ReportingTab : Tab {
 //                Report.Quotations,
                 Report.GoDownWiseClosingStock,
                 Report.SalesmanWise,
+                Report.Order,
             )
 
             LazyVerticalGrid(
@@ -189,6 +192,10 @@ object ReportingTab : Tab {
                                     nav?.push(SalesmanTargetFilterScreen)
                                 }
 
+                                Report.Order -> {
+                                    nav?.push(OrderReportSelectScreen)
+                                }
+
                             }
                         }
                     )
@@ -262,4 +269,5 @@ sealed class Report(val title: String, val icon: ImageVector) {
     object ProductStock : Report("Barcode Report", Icons.Default.QrCodeScanner)
     object ParameterReport : Report("Parameter Report", Icons.Default.ProductionQuantityLimits)
     object SalesmanWise : Report("Salesman Wise Target", Icons.Default.TrackChanges)
+    object Order : Report("Order Report", Icons.Default.ShoppingCartCheckout)
 }
