@@ -80,6 +80,7 @@ data class Permissions(
     val FilterBroker: String?=null,
     val ConfigBroker: String?=null,
     val FilterAmount: String?=null,
+    val FilterQty: String?=null,
     val D1: Int,
     val D2: Int,
     val D3: Int,
