@@ -7,6 +7,7 @@ import java.util.TimeZone
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
+ //   alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlin.serialization)
@@ -15,6 +16,14 @@ plugins {
 }
 
 kotlin {
+//    cocoapods {
+//        version = "1.0.0"   // ← REQUIRED, any valid semver
+//        summary = "Easy Karobar shared module"
+//        homepage = "https://example.com"
+//        ios.deploymentTarget = "14.1"
+//
+//        pod("SSZipArchive", "2.4.3")
+//    }
     androidTarget {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)

@@ -3,7 +3,6 @@ package org.prime.easykarobar.business.repository
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.header
-import io.ktor.client.request.headers
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import org.prime.easykarobar.data.model.ApiResponse
@@ -27,19 +26,14 @@ object GoogleDriveRepository {
             null
         }
     }
-
-    suspend fun downloadGoogleDriveFile(fileId: String, accessToken: String): ByteArray? {
-        return try {
-            val res = client.get("https://www.googleapis.com/drive/v3/files/$fileId?alt=media") {
-                headers {
-                    append("Authorization", "Bearer $accessToken")
-                }
-            }
-            res.body()
-        } catch (e: Exception) {
-            print(e.message)
-            null
-        }
-    }
-
 }
+
+
+
+// commonMain
+expect suspend fun downloadAndExtractGoogleDriveFile(
+    fileId: String,
+    accessToken: String,
+    destinationPath: String,
+
+): Result<String>

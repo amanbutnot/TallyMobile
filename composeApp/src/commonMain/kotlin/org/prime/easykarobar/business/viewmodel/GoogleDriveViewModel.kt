@@ -4,9 +4,13 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.prime.easykarobar.data.model.DriveTokenResponse
 import org.prime.easykarobar.business.repository.GoogleDriveRepository
+import org.prime.easykarobar.business.repository.downloadAndExtractGoogleDriveFile
 
 class GoogleDriveViewModel : ViewModel() {
 
@@ -41,30 +45,6 @@ class GoogleDriveViewModel : ViewModel() {
         }
     }
 
-
-    fun downloadDriveFile(fileId: String, accessToken: String, onSuccess: (ByteArray) -> Unit) {
-        viewModelScope.launch {
-            _driveState.value = ProfileState(isLoading = true)
-
-            val fileBytes = GoogleDriveRepository.downloadGoogleDriveFile(fileId, accessToken)
-
-            if (fileBytes != null) {
-                _downloadState.value = ProfileState(
-                    success = true,
-                    data = fileBytes,
-                    message = "File downloaded successfully"
-                )
-                print("FILE DOWNLOADED SUCCESSFULLY")
-                onSuccess(fileBytes)
-            } else {
-                _downloadState.value = ProfileState(
-                    success = false,
-                    error = "Failed to download file"
-                )
-            }
-        }
-    }
-
     data class ProfileState<T>(
         val success: Boolean = false,
         val isLoading: Boolean = false,
@@ -72,4 +52,68 @@ class GoogleDriveViewModel : ViewModel() {
         val error: String? = null,
         val message: String? = null
     )
+}
+
+data class DownloadProfileState(
+    val isLoading: Boolean = false,
+    val success: Boolean = false,
+    val data: Any? = null,
+    val message: String? = null,
+    val error: String? = null,
+)
+
+class GDownloadViewModel : ViewModel() {
+
+    private val _driveState = MutableStateFlow(DownloadProfileState())
+    val driveState: StateFlow<DownloadProfileState> = _driveState.asStateFlow()
+
+    private val _downloadState = MutableStateFlow(DownloadProfileState())
+    val downloadState: StateFlow<DownloadProfileState> = _downloadState.asStateFlow()
+
+    fun downloadAndExtractDatabase(
+        fileId: String,
+        accessToken: String,
+        destinationPath: String,
+        onSuccess: (String) -> Unit  // Returns extracted database path
+    ) {
+        viewModelScope.launch {
+            try {
+                _driveState.value = DownloadProfileState(isLoading = true)
+
+                val result = downloadAndExtractGoogleDriveFile(
+                    fileId = fileId,
+                    accessToken = accessToken,
+                    destinationPath = destinationPath,
+                )
+
+                result.onSuccess { dbPath ->
+                    _downloadState.value = DownloadProfileState(
+                        success = true,
+                        data = dbPath,
+                        message = "Database downloaded and extracted successfully"
+                    )
+                    // Keep the last progress visible
+                    _driveState.value = _driveState.value.copy(isLoading = false)
+
+                    println("DATABASE READY at: $dbPath")
+                    onSuccess(dbPath)
+                }
+
+                result.onFailure { error ->
+                    _downloadState.value = DownloadProfileState(
+                        success = false,
+                        error = error.message ?: "Failed to download/extract database"
+                    )
+                    _driveState.value = DownloadProfileState(isLoading = false)
+                }
+
+            } catch (e: Exception) {
+                _downloadState.value = DownloadProfileState(
+                    success = false,
+                    error = e.message ?: "Failed to process database"
+                )
+                _driveState.value = DownloadProfileState(isLoading = false)
+            }
+        }
+    }
 }
