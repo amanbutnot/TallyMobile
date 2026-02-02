@@ -241,6 +241,13 @@ object TrialBalanceScreen : Screen {
                                         endDate = CurrentDate()
                                     )
                                 )
+                            }, key = { item ->
+                                buildString {
+                                    append(item.CM1)
+                                    append('|')
+                                    append(item.ClsnBal)
+
+                                }
                             },
                             content = { item ->
                                 val debitAmount =

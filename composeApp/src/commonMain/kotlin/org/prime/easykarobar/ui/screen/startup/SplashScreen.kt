@@ -49,19 +49,38 @@ object SplashScreen : Screen {
         val type = MaterialTheme.typography
 
         LaunchedEffect(Unit) {
+            println(">>> LaunchedEffect started")
+
             delay(2000)
-            if (SharedPrefs.LoginVersion.get() == MOBILE_VERSION) {
+            println(">>> Delay completed")
+
+            val loginVersion = SharedPrefs.LoginVersion.get()
+            println(">>> LoginVersion = $loginVersion")
+
+            if (loginVersion == MOBILE_VERSION) {
+                println(">>> LoginVersion matches MOBILE_VERSION")
+
                 val fileBytes = readFileBytes()
+                println(">>> readFileBytes() returned: ${fileBytes?.size ?: "null"}")
+
                 if (fileBytes != null) {
+                    println(">>> Initializing database with ${fileBytes.size} bytes")
                     DatabaseHolder.init(fileBytes)
+
+                    println(">>> Navigating to Dashboard")
                     nav.replaceAll(Dashboard)
                 } else {
+                    println(">>> File bytes null, navigating to OnBoardingScreen")
                     nav.replaceAll(OnBoardingScreen)
                 }
             } else {
+                println(">>> LoginVersion mismatch, navigating to OnBoardingScreen")
                 nav.replaceAll(OnBoardingScreen)
             }
+
+            println(">>> LaunchedEffect finished")
         }
+
         Box(
             modifier = Modifier.fillMaxSize().background(colors.background).navigationBarsPadding()
         ) {

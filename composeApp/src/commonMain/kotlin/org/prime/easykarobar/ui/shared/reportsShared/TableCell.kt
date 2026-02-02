@@ -92,14 +92,14 @@ fun TallyReportHeaderCard(
 fun <T> TallyReportLazyList(
     items: List<T>,
     modifier: Modifier = Modifier,
-    onItemClick: (T) -> Unit = {},
+    onItemClick: (T) -> Unit = {},key: (T) -> Any,
     content: @Composable RowScope.(T) -> Unit
 ) {
     val state = rememberLazyListState()
     LazyColumn(
         modifier = modifier.fillMaxSize(), state = state
     ) {
-        items(items = items) { item ->
+        items(items = items, key = key) { item ->
             Card(
                 modifier = Modifier
                     .fillMaxWidth()

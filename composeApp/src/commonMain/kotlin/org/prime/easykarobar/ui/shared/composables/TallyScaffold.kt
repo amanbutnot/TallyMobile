@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
@@ -92,8 +93,10 @@ fun TallyReportScaffold(
     showBottomBar: Boolean = false,
     bottomBarContent: @Composable () -> Unit = {},
     showSearchAction: Boolean = false,
+    showBarcodeIcon: Boolean = false,
     showBurgerMenu: Boolean = false,
     onSearchClick: (() -> Unit)? = null,
+    onBarcodeClick: (() -> Unit)? = null,
     menuItems: List<MenuItemData> = emptyList()
 ) {
     val nav = LocalNavigator.currentOrThrow
@@ -130,6 +133,15 @@ fun TallyReportScaffold(
                 },
                 actions = {
                     Row {
+                        if(showBarcodeIcon){
+                            IconButton(onClick = { onBarcodeClick?.invoke() }) {
+                                Icon(
+                                    Icons.Default.QrCodeScanner,
+                                    contentDescription = "Search",
+                                    tint = colors.onSurface
+                                )
+                            }
+                        }
                         if (showSearchAction) {
                             IconButton(onClick = { onSearchClick?.invoke() }) {
                                 Icon(

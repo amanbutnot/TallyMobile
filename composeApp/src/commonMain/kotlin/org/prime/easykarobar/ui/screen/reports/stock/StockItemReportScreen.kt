@@ -221,7 +221,17 @@ data class StockItemReportScreen(val itemName: String?) : Screen {
                         )
                         TallyReportLazyList(
                             items = filteredList,
-                            onItemClick = { },
+                            onItemClick = { }, key = { item ->
+                                buildString {
+                                    append(item.Item_Godown)
+                                    append('|')
+                                    append(item.Item_Unit)
+                                    append('|')
+                                    append(item.Item_Qty)
+                                    append('|')
+                                    append(item.Item_Amt)
+                                }
+                            },
                             content = { item ->
                                 TableCell(
                                     text = item.Item_Godown ?: "",
