@@ -83,6 +83,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.prime.easykarobar.business.viewmodel.transactions.InventoryVoucherViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.rememberBarcodeScanner
 import org.prime.easykarobar.data.model.transactions.BillingItem
 import org.prime.easykarobar.data.model.transactions.InventoryVoucherRequest
 import org.prime.easykarobar.data.model.transactions.SundryItem
@@ -308,8 +309,38 @@ data class SaleScreen(
             }
         }
 
+        var showEmptyBarcode by remember { mutableStateOf(false) }
+        val barcodeScannerLauncher = rememberBarcodeScanner(onResult = { text ->
+            val product = db.productsQueries.getItemByName(text.toString()).executeAsOneOrNull()
+            if (product == null) {
+                showEmptyBarcode = true
+            } else {
+                selectedItems = selectedItems + InvoiceItem(
+                    name = product.Name.toString(),
+                    price = product.SalesPrice ?: 0.0,
+                    qty = 1,
+                    discountPercentage = 0.0,
+                    listPrice = 0.0,
+                    taxable = 0.0,
+                    gstAmt = 0.0,
+                    net = 0.0,
+                    guid = product.GUID ?: pendingSelectedProductGUID ?: ""
+                )
+            }
+        })
+
+        if (showEmptyBarcode) {
+            TallyResultDialog(
+                message = "Barcode not found",
+                onDone = { showEmptyBarcode = false },
+                isSuccess = false
+            )
+        }
+
         TallyReportScaffold(
             showBurgerMenu = isEdit,
+            showBarcodeIcon = !isEdit,
+            onBarcodeClick = { barcodeScannerLauncher.launch() },
             menuItems = listOf(
                 MenuItemData(Icons.Default.Download, "Download", {}),
                 MenuItemData(Icons.Default.Share, "Share", {}),
