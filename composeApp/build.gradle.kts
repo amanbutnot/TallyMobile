@@ -51,6 +51,10 @@ kotlin {
             //SqlDelight
             implementation(libs.android.driver)
 
+            //Barcode
+            implementation(libs.gms.play.services.code.scanner)
+
+
             //html to pdf
             implementation("com.itextpdf:html2pdf:6.2.1")
             implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
@@ -86,6 +90,7 @@ kotlin {
 
             //For base64 and byte conversion
             implementation(libs.okio) // or latest
+         //   implementation(libs.okio.zip) // or latest
 
 
             //Material Icons
@@ -106,6 +111,8 @@ kotlin {
 
             //Coil Image loading
             implementation(libs.coil.compose)
+            implementation("io.coil-kt.coil3:coil-network-ktor3:3.3.0")
+
 
 
             implementation(libs.compass.geocoder)

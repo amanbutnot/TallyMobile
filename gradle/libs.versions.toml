@@ -22,11 +22,12 @@ kotlinxDatetime = "0.7.1"
 lifecycleViewmodelCompose = "2.8.2"
 materialIconsExtended = "1.7.3"
 multiplatformSettingsNoArg = "1.3.0"
-okio = "3.16.0"
+okio = "3.16.4"
 voyager = "1.1.0-beta03"
 ktor = "3.3.1"
 compass = "2.4.1"
 okio-zip = "0.10.0"
+gms-code-scanner = "16.1.0"
 
 [libraries]
 android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "androidDriver" }
@@ -68,6 +69,7 @@ ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negoti
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
+gms-play-services-code-scanner = { group = "com.google.android.gms", name = "play-services-code-scanner", version.ref = "gms-code-scanner" }
 
 compass-geocoder = { module = "dev.jordond.compass:geocoder", version.ref = "compass" }
 compass-geocoder-mobile = { module = "dev.jordond.compass:geocoder-mobile", version.ref = "compass" }
