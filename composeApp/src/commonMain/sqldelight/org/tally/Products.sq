@@ -31,9 +31,21 @@ CREATE TABLE Products (
 -- ledger.sq
 
 
-getItemByName:
-SELECT * FROM Products
-WHERE Name = ? COLLATE NOCASE;
+ getItemByName:
+SELECT *
+FROM Products
+WHERE GUID IN (
+    SELECT MasterCode1
+    FROM Product_Param_Stock
+    WHERE BCN = :itemName
+      COLLATE NOCASE
+)
+UNION ALL
+SELECT *
+FROM Products
+WHERE Name= :itemName
+  COLLATE NOCASE;
+
 
 -- All filters
 selectAllFilterAGRP:
