@@ -461,7 +461,6 @@ val DayOfWeek.isoDayNumber: Int
         DayOfWeek.FRIDAY -> 5
         DayOfWeek.SATURDAY -> 6
         DayOfWeek.SUNDAY -> 7
-        else -> throw IllegalStateException("Unknown day of week")
     }
 
 data class GenerateReportData(

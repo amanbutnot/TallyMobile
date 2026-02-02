@@ -249,6 +249,16 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                                     )
                                 )
 
+                            }, key = { item ->
+                                buildString {
+                                    append(item.DATE)
+                                    append('|')
+                                    append(item.D1)
+                                    append('|')
+                                    append(item.VOUCHERNUMBER)
+                                    append('|')
+                                    append(item.CM1)
+                                }
                             },
                             content = { item ->
                                 TableCell(

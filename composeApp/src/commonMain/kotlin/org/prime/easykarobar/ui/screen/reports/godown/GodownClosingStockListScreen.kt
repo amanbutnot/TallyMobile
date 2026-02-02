@@ -225,6 +225,14 @@ object GodownClosingStockListScreen : Screen {
                             items = filteredList,
                             onItemClick = { item ->
                                 nav.push(GodownClosingStockItemListScreen(item.Item_Godown))
+                            },  key = { item ->
+                                buildString {
+                                    append(item.Item_Godown)
+                                    append('|')
+                                    append(item.Item_Qty)
+                                    append('|')
+                                    append(item.Item_Amt)
+                                }
                             },
                             content = { item ->
                                 TableCell(

@@ -92,7 +92,7 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
             Quadruple(
                 item.Item_Name ?: "",
                 item.Item_Unit ?: "",
-                item.Item_Qty?.formatToQtyDec()?:"0.0",
+                item.Item_Qty?.formatToQtyDec() ?: "0.0",
                 item.Item_Amt?.absoluteValue?.formatToAmtDec() ?: ""
             )
         }
@@ -218,6 +218,16 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
                         TallyReportLazyList(
                             items = filteredList,
                             onItemClick = {
+                            }, key = { item ->
+                                buildString {
+                                    append(item.Item_Name)
+                                    append('|')
+                                    append(item.Item_Unit)
+                                    append('|')
+                                    append(item.Item_Qty)
+                                    append('|')
+                                    append(item.Item_Amt)
+                                }
                             },
                             content = { item ->
                                 TableCell(

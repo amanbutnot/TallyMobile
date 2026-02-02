@@ -237,6 +237,12 @@ data class OutstandingGroupListScreen(
                                         cm1 = item.Party
                                     )
                                 )
+                            }, key = { item ->
+                                buildString {
+                                    append(item.Party)
+                                    append('|')
+                                    append(item.PenAmt)
+                                }
                             },
                             content = { item ->
 

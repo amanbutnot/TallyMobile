@@ -267,7 +267,17 @@ object ParameterReportScreen : Screen {
                                 )
 
                             },
-
+                            key = { item ->
+                                buildString {
+                                    append(item.ProductName)
+                                    append('|')
+                                    append(item.GroupName)
+                                    append('|')
+                                    append(item.mvalue1)
+                                    append('|')
+                                    append(item.MasterCode1)
+                                }
+                            },
                             content = { item ->
                                 TableCell(
                                     text = item.ProductName ?: "",
