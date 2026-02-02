@@ -30,6 +30,11 @@ CREATE TABLE Products (
 
 -- ledger.sq
 
+
+getItemByName:
+SELECT * FROM Products
+WHERE Name = ? COLLATE NOCASE;
+
 -- All filters
 selectAllFilterAGRP:
 SELECT * FROM Products
