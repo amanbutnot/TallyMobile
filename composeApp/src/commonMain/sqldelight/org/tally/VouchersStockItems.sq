@@ -69,14 +69,20 @@ godownWiseClosingStockList:
 
  godownWiseOnEnterList:
 SELECT
-  CM1 AS Item_Name,
-  CM3 AS Item_Unit,
-  SUM(D1) AS Item_Qty,
-  SUM(D3) AS Item_Amt
-FROM Vouchers_StockItems
-WHERE CM2 = ?
-GROUP BY CM1, CM3
-ORDER BY CM1;
+    SUM(pps.Value1) AS Item_Qty,
+    SUM(pps.Value3) AS Item_Amt,
+    g.Name          AS Item_Godown,
+    ''              AS UnitName,
+    g.Name          AS GodownName,
+    p.Name          AS ItemName
+FROM ProductStock AS pps
+JOIN GodownMaster AS g
+    ON g.GUID = pps.MasterCode2
+LEFT JOIN Products AS p
+    ON p.GUID = pps.MasterCode1
+WHERE g.Name = ?
+GROUP BY g.GUID, p.GUID
+ORDER BY p.Name;
 
 ledgerStockItemList:
 SELECT SRNO,CM1 AS Item_Name,D1 AS Qty,CM3 AS Unit,D2 AS Rate,D4 AS Amt FROM Vouchers_StockItems WHERE VCH_GUID=? ORDER BY SRNO;
