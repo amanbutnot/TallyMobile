@@ -33,6 +33,8 @@ import kotlinx.coroutines.launch
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
+import org.prime.easykarobar.data.utils.showAmtToSalesman
+import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.threeHeaderHtml
 import org.prime.easykarobar.ui.screen.reports.productReport.ProductReportScreen
 import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheet
@@ -194,12 +196,12 @@ object ParameterReportScreen : Screen {
                             TextAlign.Start
                         ),
                         ReportColumn(
-                            totalQty.absoluteValue.formatToQtyDec(),
+                            if (showQtyToSalesman()) totalQty.absoluteValue.formatToQtyDec() else "",
                             column2Weight,
                             TextAlign.End
                         ),
                         ReportColumn(
-                            totalAmt.absoluteValue.formatToAmtDec(),
+                            if(showAmtToSalesman()) totalAmt.absoluteValue.formatToAmtDec() else "",
                             column3Weight,
                             TextAlign.End
                         )
@@ -223,7 +225,10 @@ object ParameterReportScreen : Screen {
                                 modifier = Modifier.focusRequester(focusRequester)
                             )
                         }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
                             TextButton(onClick = { showGroupFilterSheet = true }) {
                                 Text("Group Filter")
                             }
@@ -235,18 +240,15 @@ object ParameterReportScreen : Screen {
                                     column1Weight,
                                     TextAlign.Start
                                 ),
-//                                ReportColumn(
-//                                    "Unit",
-//                                    column2Weight,
-//                                    TextAlign.End
-//                                ),
                                 ReportColumn(
-                                    "Qty",
+                                    if (showQtyToSalesman())
+                                        "Qty" else "",
                                     column3Weight,
                                     TextAlign.End
                                 ),
                                 ReportColumn(
-                                    "Amount",
+                                    if(showAmtToSalesman())
+                                    "Amount" else "",
                                     column4Weight,
                                     TextAlign.End
                                 )
@@ -294,7 +296,9 @@ object ParameterReportScreen : Screen {
 //                                    isHeader = false
 //                                )
                                 TableCell(
-                                    text = item.mvalue1?.formatToQtyDec() ?: "-",
+                                    text = if (showQtyToSalesman()) {
+                                        item.mvalue1?.formatToQtyDec() ?: "-"
+                                    } else "",
                                     weight = column3Weight,
                                     textAlign = TextAlign.End,
                                     isHeader = false

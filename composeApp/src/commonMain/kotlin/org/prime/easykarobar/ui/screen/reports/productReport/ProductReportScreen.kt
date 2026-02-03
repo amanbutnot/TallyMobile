@@ -51,6 +51,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.productReportHtml
 import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheet
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
@@ -147,22 +148,23 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
 
         val menuItems = listOf(
             MenuItemData(
-            title = "Download", icon = Icons.Default.Download, onClick = {
-                scope.launch {
-                    handlePdfAction(
-                        fileName = "Product Report", htmlContent = productReportHtml(
-                            rows = list
-                        ), action = PdfAction.Download, onLoadingChange = { shareLoading = it })
-                }
-            }), MenuItemData(
-            title = "Share", icon = Icons.Default.Share, onClick = {
-                scope.launch {
-                    handlePdfAction(
-                        fileName = "Barcode Report", htmlContent = productReportHtml(
-                            rows = list
-                        ), action = PdfAction.Download, onLoadingChange = { shareLoading = it })
-                }
-            }))
+                title = "Download", icon = Icons.Default.Download, onClick = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = "Product Report", htmlContent = productReportHtml(
+                                rows = list
+                            ), action = PdfAction.Download, onLoadingChange = { shareLoading = it })
+                    }
+                }), MenuItemData(
+                title = "Share", icon = Icons.Default.Share, onClick = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = "Barcode Report", htmlContent = productReportHtml(
+                                rows = list
+                            ), action = PdfAction.Download, onLoadingChange = { shareLoading = it })
+                    }
+                })
+        )
 
         if (shareLoading) {
             TallyLoadingDialog("Generating Report")
@@ -215,65 +217,14 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                                 modifier = Modifier.focusRequester(focusRequester)
                             )
                         }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
                             TextButton(onClick = { showGroupFilterSheet = true }) {
                                 Text("Group Filter")
                             }
                         }
-//                        if (isMain) {
-//                            LazyColumn(modifier = Modifier.fillMaxSize()) {
-//                                items(filteredList) {
-//                                    Column(
-//                                        modifier = Modifier
-//                                            .fillMaxWidth()
-//                                            .padding(horizontal = 16.dp)
-//                                            .padding(top = 16.dp, bottom = 20.dp)
-//                                    ) {
-//                                        Text(
-//                                            text = it.ProductName.toString(),
-//                                            style = MaterialTheme.typography.headlineLarge,
-//                                            fontWeight = FontWeight.Bold,
-//                                            modifier = Modifier.padding(bottom = 8.dp)
-//                                        )
-//
-//                                        Row(
-//                                            modifier = Modifier.fillMaxWidth(),
-//                                            horizontalArrangement = Arrangement.SpaceBetween
-//                                        ) {
-//                                            Text(
-//                                                text = it.C1.toString(),
-//                                                style = MaterialTheme.typography.bodyMedium,
-//                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-//                                            )
-//                                            Text(
-//                                                text = it.C2.toString(),
-//                                                style = MaterialTheme.typography.bodyMedium,
-//                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-//                                            )
-//                                            Text(
-//                                                text = it.C3.toString(),
-//                                                style = MaterialTheme.typography.bodyMedium,
-//                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-//                                            )
-//                                            Text(
-//                                                text = it.Value1.toString(),
-//                                                style = MaterialTheme.typography.bodyMedium,
-//                                                fontWeight = FontWeight.SemiBold,
-//                                                color = MaterialTheme.colorScheme.primary
-//                                            )
-//                                        }
-//                                    }
-//
-//                                    HorizontalDivider(
-//                                        modifier = Modifier.padding(horizontal = 16.dp),
-//                                        thickness = 1.dp,
-//                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-//                                    )
-//
-//                                    Spacer(modifier = Modifier.height(4.dp))
-//                                }
-//                            }
-//                        } else {
                         val groupId = filteredList.groupBy { it.ProductName }
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
                             groupId.forEach { (name, items) ->
@@ -290,7 +241,9 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                                             modifier = Modifier.padding(bottom = 8.dp)
                                         )
                                         Text(
-                                            text = "Total: ${items.sumOf { it.Value1 ?: 0.0 }}",
+                                            text = if (showQtyToSalesman()) {
+                                                "Total: " + items.sumOf { it.Value1 ?: 0.0 }
+                                            } else "",
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.Bold,
                                             modifier = Modifier.padding(bottom = 8.dp)
@@ -324,7 +277,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                             Text(
-                                                text = it.Value1.toString(),
+                                                text = if (showQtyToSalesman()) it.Value1.toString() else "",
                                                 style = MaterialTheme.typography.bodyLarge,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = MaterialTheme.colorScheme.primary
