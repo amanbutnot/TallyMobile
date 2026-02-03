@@ -30,6 +30,8 @@ import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.data.utils.showAmtToSalesman
+import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.threeHeaderHtml
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
@@ -78,12 +80,16 @@ object GodownClosingStockListScreen : Screen {
         }
         val perms = SharedPrefs.Permissions.get()
         val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L
-        val godownCodes = if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
+        val godownCodes =
+            if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
 
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
-                list = db.vouchersStockItemsQueries.godownWiseClosingStockList(filterGodown,godownCodes).executeAsList()
+                list = db.vouchersStockItemsQueries.godownWiseClosingStockList(
+                    filterGodown,
+                    godownCodes
+                ).executeAsList()
                 withContext(Dispatchers.Main) {
                     isLoading = false
                 }
@@ -173,12 +179,14 @@ object GodownClosingStockListScreen : Screen {
                             TextAlign.Start
                         ),
                         ReportColumn(
-                            totalQty.absoluteValue.formatToQtyDec(),
+                            if (showQtyToSalesman())
+                                totalQty.absoluteValue.formatToQtyDec() else "",
                             column2Weight,
                             TextAlign.End
                         ),
                         ReportColumn(
-                            totalAmt.absoluteValue.formatToAmtDec(),
+                            if (showAmtToSalesman())
+                                totalAmt.absoluteValue.formatToAmtDec() else "",
                             column3Weight,
                             TextAlign.End
                         )
@@ -210,12 +218,14 @@ object GodownClosingStockListScreen : Screen {
                                     TextAlign.Start
                                 ),
                                 ReportColumn(
-                                    "Qty",
+                                    if (showQtyToSalesman())
+                                        "Qty" else "",
                                     column2Weight,
                                     TextAlign.End
                                 ),
                                 ReportColumn(
-                                    "Amount",
+                                    if (showAmtToSalesman())
+                                        "Amount" else "",
                                     column3Weight,
                                     TextAlign.End
                                 )
@@ -225,7 +235,7 @@ object GodownClosingStockListScreen : Screen {
                             items = filteredList,
                             onItemClick = { item ->
                                 nav.push(GodownClosingStockItemListScreen(item.Item_Godown))
-                            },  key = { item ->
+                            }, key = { item ->
                                 buildString {
                                     append(item.Item_Godown)
                                     append('|')
@@ -242,13 +252,17 @@ object GodownClosingStockListScreen : Screen {
                                 )
 
                                 TableCell(
-                                    text = item.Item_Qty?.formatToQtyDec() ?: "-",
+                                    text = if (showQtyToSalesman()) {
+                                        item.Item_Qty?.formatToQtyDec() ?: "-"
+                                    } else "",
                                     weight = column2Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false
                                 )
                                 TableCell(
-                                    text = item.Item_Amt?.formatToAmtDec() ?: "-",
+                                    text = if (showAmtToSalesman()) {
+                                        item.Item_Amt?.formatToAmtDec() ?: "-"
+                                    } else "",
                                     weight = column3Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false

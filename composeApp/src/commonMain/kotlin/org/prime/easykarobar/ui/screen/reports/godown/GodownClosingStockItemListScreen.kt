@@ -27,6 +27,8 @@ import kotlinx.coroutines.withContext
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
+import org.prime.easykarobar.data.utils.showAmtToSalesman
+import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.Quadruple
 import org.prime.easykarobar.ui.printing.fourHeaderHtml
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
@@ -85,13 +87,15 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
         val filteredList = smartSearch(
             list = list,
             query = searchQuery,
-            selectors = listOf { it.Item_Name }
+            selectors = listOf { it.ItemName }
         )
+
+        val filteredList1 = filteredList.filter { it.Item_Qty!=0.0 }
 
         val rows: List<Quadruple<String, String, String, String>> = filteredList.map { item ->
             Quadruple(
-                item.Item_Name ?: "",
-                item.Item_Unit ?: "",
+                item.ItemName ?: "",
+                item.UnitName ?: "",
                 item.Item_Qty?.formatToQtyDec() ?: "0.0",
                 item.Item_Amt?.absoluteValue?.formatToAmtDec() ?: ""
             )
@@ -160,13 +164,13 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
                             (column1Weight + column2Weight),
                             TextAlign.Start
                         ),
-                        ReportColumn(
-                            totalQty.absoluteValue.formatToQtyDec(),
+                        ReportColumn(if(showQtyToSalesman())
+                            totalQty.absoluteValue.formatToQtyDec() else "",
                             column3Weight,
                             TextAlign.End
                         ),
-                        ReportColumn(
-                            totalAmt.absoluteValue.formatToAmtDec(),
+                        ReportColumn(if(showAmtToSalesman())
+                            totalAmt.absoluteValue.formatToAmtDec() else "",
                             column4Weight,
                             TextAlign.End
                         )
@@ -202,13 +206,13 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
                                     column2Weight,
                                     TextAlign.End
                                 ),
-                                ReportColumn(
-                                    "Qty",
+                                ReportColumn(if(showQtyToSalesman())
+                                    "Qty" else "",
                                     column3Weight,
                                     TextAlign.End
                                 ),
-                                ReportColumn(
-                                    "Amount",
+                                ReportColumn(if(showAmtToSalesman())
+                                    "Amount" else "",
                                     column4Weight,
                                     TextAlign.End
                                 )
@@ -216,13 +220,13 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
                         )
 
                         TallyReportLazyList(
-                            items = filteredList,
+                            items = filteredList1,
                             onItemClick = {
                             }, key = { item ->
                                 buildString {
-                                    append(item.Item_Name)
+                                    append(item.ItemName)
                                     append('|')
-                                    append(item.Item_Unit)
+                                    append(item.UnitName)
                                     append('|')
                                     append(item.Item_Qty)
                                     append('|')
@@ -231,25 +235,27 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
                             },
                             content = { item ->
                                 TableCell(
-                                    text = item.Item_Name ?: "",
+                                    text = item.ItemName ?: "",
                                     weight = column1Weight,
                                     isHeader = false
                                 )
 
                                 TableCell(
-                                    text = item.Item_Unit ?: "",
+                                    text = item.UnitName ?: "",
                                     weight = column2Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false
                                 )
                                 TableCell(
-                                    text = item.Item_Qty?.formatToQtyDec() ?: "-",
+                                    text = if(showQtyToSalesman()) {
+                                        item.Item_Qty?.formatToQtyDec() ?: "-"
+                                    } else "",
                                     weight = column3Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false
                                 )
                                 TableCell(
-                                    text = item.Item_Amt?.formatToAmtDec() ?: "-",
+                                    text = if(showAmtToSalesman()){item.Item_Amt?.formatToAmtDec() ?: "-"} else "",
                                     weight = column4Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false

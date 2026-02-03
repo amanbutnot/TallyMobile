@@ -449,6 +449,9 @@ data class OutstandingReportScreen(
             showSearchAction = true,
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
+                val isOutstanding = (name == "Bill Payable" || name == "Bill Receivable")
+                val row1 = if(isOutstanding) "Vch Amt: " else "Total Qty:"
+                val row2 = if(isOutstanding) "Pen Amt: " else "Pen Qty:"
                 TallyReportBottomBar(
                     columns = listOf(
                         ReportColumn(
@@ -459,14 +462,14 @@ data class OutstandingReportScreen(
                             }", 1f, TextAlign.Start
                         ),
                         ReportColumn(
-                            "Vch Amt: ${
+                            "$row1 ${
                                 if (name == "Bill Receivable" || name == "Pending Sale Order") {
                                     filteredReceivableList.sumOf { it.d1 ?: 0.0 }.absoluteValue.formatToAmtDec()
                                 } else filteredPayableList.sumOf { it.d1 ?: 0.0 }.absoluteValue.formatToAmtDec()
                             }", 1f, TextAlign.End
                         ),
                         ReportColumn(
-                            "Pen Amt: ${
+                            "$row2 ${
                                 if (name == "Bill Receivable" || name =="Pending Sale Order") {
                                     filteredReceivableList.sumOf { it.adjustmentAmount?.toDouble() ?: 0.0 }.absoluteValue.formatToAmtDec()
                                 } else filteredPayableList.sumOf { it.adjustmentAmount?.toDouble() ?: 0.0 }.absoluteValue.formatToAmtDec()
