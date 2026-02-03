@@ -82,6 +82,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.prime.easykarobar.business.viewmodel.transactions.InventoryVoucherViewModel
+import org.prime.easykarobar.data.expect.BarcodeScannerLauncher
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.rememberBarcodeScanner
 import org.prime.easykarobar.data.model.transactions.BillingItem
@@ -97,6 +98,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
@@ -155,6 +157,7 @@ data class SaleScreen(
         val nav = LocalNavigator.currentOrThrow
 
         var selectedLedger by rememberSaveable { mutableStateOf("") }
+        var barcodeQty by rememberSaveable { mutableStateOf("") }
         var selectedLedgerGUID by rememberSaveable { mutableStateOf("") }
         var narration by rememberSaveable { mutableStateOf("") }
         var selectedDate by rememberSaveable { mutableStateOf(CurrentDate()) }
@@ -164,6 +167,7 @@ data class SaleScreen(
         var selectedSundries by remember { mutableStateOf<List<SundryItem>>(emptyList()) }
 
         var showLedgerSheet by rememberSaveable { mutableStateOf(false) }
+        var showQtyPopup by rememberSaveable { mutableStateOf(false) }
         var showItemSheet by rememberSaveable { mutableStateOf(false) }
         var showWarningMessage by rememberSaveable { mutableStateOf(false) }
         var showSundrySheet by rememberSaveable { mutableStateOf(false) }
@@ -184,6 +188,39 @@ data class SaleScreen(
         val scope = rememberCoroutineScope()
 
         var showDeleteDialog by remember { mutableStateOf(false) }
+        var showEmptyBarcode by remember { mutableStateOf(false) }
+        var scannerLauncher by remember {
+            mutableStateOf<BarcodeScannerLauncher?>(null)
+        }
+
+        scannerLauncher = rememberBarcodeScanner(
+            onResult = { text ->
+                val product = db.productsQueries
+                    .getItemByName(text?.trim())
+                    .executeAsOneOrNull()
+
+                if (product == null) {
+                    showEmptyBarcode = true
+                } else {
+                    showQtyPopup = false
+
+                    selectedItems = selectedItems + InvoiceItem(
+                        name = product.Name ?: "",
+                        price = product.SalesPrice ?: 0.0,
+                        qty = barcodeQty.toInt(),
+                        discountPercentage = 0.0,
+                        listPrice = 0.0,
+                        taxable = 0.0,
+                        gstAmt = 0.0,
+                        net = 0.0,
+                        guid = product.GUID ?: pendingSelectedProductGUID.orEmpty()
+                    )
+
+                    scannerLauncher?.launch()
+                }
+            }
+        )
+
 
 
 
@@ -213,6 +250,31 @@ data class SaleScreen(
                 },
                 onCancel = { showDeleteDialog = false },
                 onDismiss = { showDeleteDialog = false },
+            )
+        }
+
+        if (showQtyPopup) {
+            TallyAlertBox(
+                title = "Enter Quantity",
+                confirmButtonText = "OK",
+                cancelButtonText = "Cancel",
+                onConfirm = {
+
+                    scannerLauncher?.launch()
+
+                },
+                onCancel = { showQtyPopup = false },
+                onDismiss = { showQtyPopup = false },
+                content = {
+                    TallyTextField(
+                        value = barcodeQty,
+                        onValueChange = { barcodeQty = it },
+                        placeholder = "Enter Quantity",
+                        isPassword = false,
+                        isNumber = true,
+                        label = "Barcode Qty",
+                    )
+                }
             )
         }
 
@@ -309,25 +371,7 @@ data class SaleScreen(
             }
         }
 
-        var showEmptyBarcode by remember { mutableStateOf(false) }
-        val barcodeScannerLauncher = rememberBarcodeScanner(onResult = { text ->
-            val product = db.productsQueries.getItemByName(text.toString()).executeAsOneOrNull()
-            if (product == null) {
-                showEmptyBarcode = true
-            } else {
-                selectedItems = selectedItems + InvoiceItem(
-                    name = product.Name.toString(),
-                    price = product.SalesPrice ?: 0.0,
-                    qty = 1,
-                    discountPercentage = 0.0,
-                    listPrice = 0.0,
-                    taxable = 0.0,
-                    gstAmt = 0.0,
-                    net = 0.0,
-                    guid = product.GUID ?: pendingSelectedProductGUID ?: ""
-                )
-            }
-        })
+
 
         if (showEmptyBarcode) {
             TallyResultDialog(
@@ -340,7 +384,10 @@ data class SaleScreen(
         TallyReportScaffold(
             showBurgerMenu = isEdit,
             showBarcodeIcon = !isEdit,
-            onBarcodeClick = { barcodeScannerLauncher.launch() },
+            onBarcodeClick = {
+                showQtyPopup = true
+
+            },
             menuItems = listOf(
                 MenuItemData(Icons.Default.Download, "Download", {}),
                 MenuItemData(Icons.Default.Share, "Share", {}),

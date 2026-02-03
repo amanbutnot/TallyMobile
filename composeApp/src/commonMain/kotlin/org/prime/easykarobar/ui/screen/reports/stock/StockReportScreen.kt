@@ -34,6 +34,8 @@ import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.data.utils.showAmtToSalesman
+import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.Quadruple
 import org.prime.easykarobar.ui.printing.fourHeaderHtml
 import org.prime.easykarobar.ui.screen.reports.productReport.ProductReportScreen
@@ -195,13 +197,13 @@ object StockReportScreen : Screen {
                             TextAlign.Start
                         ),
                         ReportColumn(
-                            if (SharedPrefs.Permissions.get()?.FilterQty == "False" || SharedPrefs.Permissions.get()?.FilterQty == null)
+                            if (showQtyToSalesman())
                                 totalQty.absoluteValue.formatToQtyDec() else "",
                             column2Weight,
                             TextAlign.Start
                         ),
                         ReportColumn(
-                            if (SharedPrefs.Permissions.get()?.FilterAmount == "False" || SharedPrefs.Permissions.get()?.FilterAmount == null)
+                            if (showAmtToSalesman())
                                 totalAmt.absoluteValue.formatToAmtDec() else "",
                             column3Weight,
                             TextAlign.End
