@@ -1,13 +1,11 @@
-package org.prime.easykarobar.ui.screen.reports.order
+package org.prime.easykarobar.ui.screen.reports.pendingOrder
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
@@ -26,10 +24,8 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.ui.screen.home.tabs.ReportButton
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingFilterScreen
-import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingGroupFilterScreen
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 
