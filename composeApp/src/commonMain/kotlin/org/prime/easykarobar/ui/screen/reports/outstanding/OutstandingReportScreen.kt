@@ -175,31 +175,6 @@ data class OutstandingReportScreen(
                                 itemName = it.ItemName
                             )
                         }
-                    } else {
-                        println(outstandingFilter())
-                        receivableList = db.vouchersPendingOrderQueries.pendingPurchaseOrderList(
-                            DATE = startDate,
-                            DATE_ = endDate,
-                            filterCm3 = filterBroker,
-                            cm3 = configBroker,
-                            groupFilter = filterAGRP,
-                            GroupCode = groupCodes,
-                            excludeFilter = filterAccounts,
-                            GUID = excludeGuids
-                        ).executeAsList().map {
-                            DataList(
-                                VCH_GUID = it.VCH_GUID,
-                                date = it.date,
-                                vchType = it.vchType,
-                                billNumber = it.billNumber,
-                                cm1 = it.cm1,
-                                dueDate = it.dueDate,
-                                d1 = it.d1,
-                                adjustmentAmount = it.adjustmentAmount,
-                                GroupName = it.GroupName,
-                                itemName = it.ItemName
-                            )
-                        }
                     }
                 }
                 if (name == "Pending Purchase Order") {
@@ -210,31 +185,6 @@ data class OutstandingReportScreen(
                             CM1 = cm1,
                             filterCm3 = filterBroker,
                             cm3 = configBroker
-                        ).executeAsList().map {
-                            DataList(
-                                VCH_GUID = it.VCH_GUID,
-                                date = it.date,
-                                vchType = it.vchType,
-                                billNumber = it.billNumber,
-                                cm1 = it.cm1,
-                                dueDate = it.dueDate,
-                                d1 = it.d1,
-                                adjustmentAmount = it.adjustmentAmount,
-                                GroupName = it.GroupName,
-                                itemName = it.ItemName
-                            )
-                        }
-                    } else {
-                        println(outstandingFilter())
-                        payableList = db.vouchersPendingOrderQueries.pendingSaleOrderList(
-                            DATE = startDate,
-                            DATE_ = endDate,
-                            filterCm3 = filterBroker,
-                            cm3 = configBroker,
-                            groupFilter = filterAGRP,
-                            GroupCode = groupCodes,
-                            excludeFilter = filterAccounts,
-                            GUID = excludeGuids
                         ).executeAsList().map {
                             DataList(
                                 VCH_GUID = it.VCH_GUID,

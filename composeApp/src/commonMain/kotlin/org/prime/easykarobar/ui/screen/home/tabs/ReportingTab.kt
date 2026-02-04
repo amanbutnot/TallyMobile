@@ -56,7 +56,7 @@ import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.screen.reports.godown.GodownClosingStockListScreen
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportFilterScreen
-import org.prime.easykarobar.ui.screen.reports.order.OrderReportSelectScreen
+import org.prime.easykarobar.ui.screen.reports.pendingOrder.OrderReportSelectScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingSelectScreen
 import org.prime.easykarobar.ui.screen.reports.productReport.ProductReportScreen
 import org.prime.easykarobar.ui.screen.reports.registers.RegisterSelectScreen
