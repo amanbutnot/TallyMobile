@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -66,6 +67,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -189,9 +192,12 @@ data class SaleScreen(
 
         var showDeleteDialog by remember { mutableStateOf(false) }
         var showEmptyBarcode by remember { mutableStateOf(false) }
+        var displayItemName by remember { mutableStateOf("") }
+        var showAddMorePopup by remember { mutableStateOf(false) }
         var scannerLauncher by remember {
             mutableStateOf<BarcodeScannerLauncher?>(null)
         }
+        var focusedSundryGuid by remember { mutableStateOf<String?>(null) }
 
         scannerLauncher = rememberBarcodeScanner(
             onResult = { text ->
@@ -215,12 +221,26 @@ data class SaleScreen(
                         net = 0.0,
                         guid = product.GUID ?: pendingSelectedProductGUID.orEmpty()
                     )
-
-                    scannerLauncher?.launch()
+                    displayItemName = product.Name.toString()
+                    showAddMorePopup = true
                 }
             }
         )
 
+        if (showAddMorePopup) {
+            TallyAlertBox(
+                title = "Item Added Successfully (${displayItemName})",
+                message = "Do you want to add more?",
+                confirmButtonText = "Yes",
+                cancelButtonText = "No",
+                onConfirm = {
+                    showAddMorePopup = false
+                    scannerLauncher?.launch()
+                },
+                onCancel = { showAddMorePopup = false },
+                onDismiss = { showAddMorePopup = false },
+            )
+        }
 
 
 
@@ -450,7 +470,7 @@ data class SaleScreen(
                                 title = "ITEMS",
                                 count = selectedItems.size,
                                 headerAction = {
-                                    SmallAddButton(label = "Add Item") { showItemSheet = true }
+
                                 }
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -532,9 +552,10 @@ data class SaleScreen(
                                             gstPercentage = gstPercent,
                                             taxType = taxType,
                                             onQuantityChange = { newQty ->
-                                                selectedItems = selectedItems.map {
-                                                    if (it.name == item.name) it.copy(qty = newQty) else it
-                                                }
+                                                selectedItems =
+                                                    selectedItems.mapIndexed { index1, item1 ->
+                                                        if (index1 == index) item1.copy(qty = newQty) else item1
+                                                    }
                                             },
                                             onRemove = { selectedItems = selectedItems - item },
                                             onEdit = {
@@ -545,7 +566,15 @@ data class SaleScreen(
                                             }
                                         )
                                     }
-
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        SmallAddButton(label = "Add More Item") {
+                                            showItemSheet = true
+                                        }
+                                    }
                                     if (selectedItems.isNotEmpty()) {
                                         SubtotalRow("Subtotal", itemsTotal)
                                     }
@@ -556,9 +585,7 @@ data class SaleScreen(
                                 title = if (isBusy()) "SUNDRIES" else "Ledgers",
                                 count = selectedSundries.size,
                                 headerAction = {
-                                    SmallAddButton(label = if (isBusy()) "Add Sundry" else "Add Ledger") {
-                                        showSundrySheet = true
-                                    }
+
                                 }
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -582,7 +609,8 @@ data class SaleScreen(
                                             },
                                             onRemove = {
                                                 selectedSundries = selectedSundries - sundry
-                                            }
+                                            },  shouldFocus = sundry.guid == focusedSundryGuid,
+                                            onFocusConsumed = { focusedSundryGuid = null },
                                         )
 
                                         // Update cumulative total for next iteration
@@ -600,7 +628,15 @@ data class SaleScreen(
                                             else -> cumulativeTotal + sundryValue
                                         }
                                     }
-
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        SmallAddButton(label = if (isBusy()) "Add More Sundry" else "Add More Ledger") {
+                                            showSundrySheet = true
+                                        }
+                                    }
                                     if (selectedSundries.isNotEmpty()) {
                                         SubtotalRow("Subtotal", sundriesTotal)
                                     }
@@ -674,19 +710,22 @@ data class SaleScreen(
                         },
                         onSelect = { item ->
                             if (!selectedSundries.any { it.name == item.name }) {
-                                selectedSundries =
-                                    selectedSundries + SundryItem(
-                                        item.name,
-                                        0.0,
-                                        guid = item.guid,
-                                        i1 = item.i1,
-                                        i2 = item.i2,
-                                        d2 = item.d2,
-                                        rate = item.rate,
-                                        srno = item.srno, percentValue = item.percentValue
-                                    )
+                                val newItem = SundryItem(
+                                    item.name,
+                                    0.0,
+                                    guid = item.guid,
+                                    i1 = item.i1,
+                                    i2 = item.i2,
+                                    d2 = item.d2,
+                                    rate = item.rate,
+                                    srno = item.srno,
+                                    percentValue = item.percentValue
+                                )
+                                selectedSundries = selectedSundries + newItem
+                                focusedSundryGuid = newItem.guid   // 👈 THIS
                             }
-                        },
+                        }
+                        ,
                         onDismiss = { showSundrySheet = false }
                     )
                 } else {
@@ -697,17 +736,22 @@ data class SaleScreen(
                         options = ledgerList.map { Pair(it.Name ?: "", it.GUID ?: "") },
                         onSelect = { sundryName, GUID ->
                             if (!selectedSundries.any { it.name == sundryName }) {
-                                selectedSundries =
-                                    selectedSundries + SundryItem(
-                                        sundryName, 0.0, guid = GUID,
-                                        //TODO:MAKE IT WORK FOR TALLY
-                                        i1 = 0,
-                                        i2 = 0,
-                                        d2 = 0, rate = 0.0,
-                                        srno = 0, percentValue = 0.0
-                                    )
+                                val newItem = SundryItem(
+                                    sundryName,
+                                    0.0,
+                                    guid = GUID,
+                                    i1 = 0,
+                                    i2 = 0,
+                                    d2 = 0,
+                                    rate = 0.0,
+                                    srno = 0,
+                                    percentValue = 0.0
+                                )
+                                selectedSundries = selectedSundries + newItem
+                                focusedSundryGuid = GUID   // 👈 THIS
                             }
-                        },
+                        }
+                        ,
                         onDismiss = { showSundrySheet = false }
                     )
                 }
@@ -852,13 +896,18 @@ data class SaleScreen(
 
 @Composable
 fun SmallAddButton(label: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick) {
-        Text(
-            label,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Medium,
-            textDecoration = TextDecoration.Underline
-        )
+    Button(onClick = onClick) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "")
+            Text(
+                label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
 
@@ -1087,12 +1136,22 @@ fun SundryCard(
     onAmountChange: (Double, Double, Int, Double) -> Unit, // Now returns (amount, rate, srno)
     onRemove: () -> Unit,
     index: Int,
-    runningTotal: Double
+    runningTotal: Double,shouldFocus: Boolean,
+    onFocusConsumed: () -> Unit
 ) {
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(shouldFocus) {
+        if (shouldFocus) {
+            focusRequester.requestFocus()
+            onFocusConsumed()
+        }
+    }
+
     val isPercentage = sundry.i2 == 1
 
     var textValue by remember(sundry.name) {
-        mutableStateOf(sundry.d2?.takeIf { it.toDouble() != 0.0 }?.toString() ?: "")
+        mutableStateOf(sundry.d2.takeIf { it.toDouble() != 0.0 }?.toString() ?: "")
     }
 
     LaunchedEffect(sundry.amount) {
@@ -1205,7 +1264,7 @@ fun SundryCard(
                                     )
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                             singleLine = true,
                             textStyle = MaterialTheme.typography.bodyMedium.copy(
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -1607,256 +1666,244 @@ fun ExpandedItemEditor1(
     name: String,
     defaultListPrice: Double,
     gstPercentage: Double,
-    initialQuantity: Int? = 0, // allow null
+    initialQuantity: Int? = 0,
     taxType: TaxType,
     initialDiscount: Double,
-    onAdd: (qty: Int, unitPrice: Double, discount: Double, listPriceText: Double, taxable: Double, gstAmount: Double, net: Double) -> Unit,
-    onCancel: () -> Unit, onBack: () -> Unit
+    onAdd: (
+        qty: Int,
+        unitPrice: Double,
+        discount: Double,
+        listPrice: Double,
+        taxable: Double,
+        gstAmount: Double,
+        net: Double
+    ) -> Unit,
+    onCancel: () -> Unit,
+    onBack: () -> Unit
 ) {
-    var qtyN by remember { mutableStateOf(if (initialQuantity == 0) "" else initialQuantity.toString()) } // blank if 0
-    var listPriceN by remember { mutableStateOf("$defaultListPrice") }
-    var discountN by remember { mutableStateOf("$initialDiscount") }
+
+    var qtyN by remember { mutableStateOf(if (initialQuantity == 0) "" else initialQuantity.toString()) }
+    var listPriceN by remember { mutableStateOf(defaultListPrice.toString()) }
+    var discountN by remember { mutableStateOf(initialDiscount.toString()) }
     var amountN by remember { mutableStateOf("") }
 
-    val priceN by remember {
+    var editMode by remember { mutableStateOf(PriceEditMode.LIST_PRICE) }
+    var isAmountManuallyEdited by remember { mutableStateOf(false) }
+
+    val qtyValue = qtyN.toIntOrNull()?.takeIf { it > 0 } ?: 0
+
+    /* ------------------ CORE PRICE LOGIC ------------------ */
+
+    val unitPrice by remember {
         derivedStateOf {
-            val lp = listPriceN.toDoubleOrNull() ?: 0.0
-            val dis = discountN.toDoubleOrNull() ?: 0.0
-            val disAmt = lp * (dis / 100)
-            (lp - disAmt).toString()
+            when (editMode) {
+
+                PriceEditMode.LIST_PRICE,
+                PriceEditMode.DISCOUNT -> {
+                    val lp = listPriceN.toDoubleOrNull() ?: 0.0
+                    val dis = discountN.toDoubleOrNull() ?: 0.0
+                    lp - (lp * dis / 100.0)
+                }
+
+                PriceEditMode.AMOUNT -> {
+                    if (!isAmountManuallyEdited || qtyValue == 0) return@derivedStateOf 0.0
+
+                    val amt = amountN.toDoubleOrNull() ?: 0.0
+                    val price = amt / qtyValue
+
+                    // REQUIRED behavior
+                    discountN = "0"
+                    listPriceN = price.toString()
+
+                    price
+                }
+            }
         }
     }
 
-    val calculatedAmount by remember {
+    val amount by remember {
         derivedStateOf {
-            val q = qtyN.toDoubleOrNull() ?: 0.0
-            val p = priceN.toDoubleOrNull() ?: 0.0
-            (q * p).toString()
+            if (qtyValue > 0) unitPrice * qtyValue else 0.0
         }
     }
 
-    // Keep amountN in sync
-    LaunchedEffect(calculatedAmount) {
-        amountN = calculatedAmount
-    }
-
-    val qtyValue = qtyN.toIntOrNull() // null if blank or invalid
-    val isAddEnabled = qtyValue != null && qtyValue > 0
+    /* ------------------ TAX CALCULATION ------------------ */
 
     val taxableAmount: Double
     val gstAmount: Double
     val netAmount: Double
 
     if (taxType == TaxType.EXTRA) {
-        val q = qtyValue?.toDouble() ?: 0.0
-        taxableAmount = priceN.toDouble() * q
+        taxableAmount = amount
         gstAmount = taxableAmount * gstPercentage / 100.0
         netAmount = taxableAmount + gstAmount
     } else {
-        val q = qtyValue?.toDouble() ?: 0.0
-        val grossAmount = priceN.toDouble() * q
-        taxableAmount =
-            if (gstPercentage == 0.0) grossAmount else (grossAmount * 100.0 / (100.0 + gstPercentage))
-        gstAmount = grossAmount - taxableAmount
-        netAmount = grossAmount
+        if (gstPercentage == 0.0) {
+            taxableAmount = amount
+            gstAmount = 0.0
+            netAmount = amount
+        } else {
+            taxableAmount = amount * 100.0 / (100.0 + gstPercentage)
+            gstAmount = amount - taxableAmount
+            netAmount = amount
+        }
     }
+
+    val isAddEnabled = qtyValue > 0
+
+    /* ------------------ UI ------------------ */
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        tonalElevation = 1.dp
+        color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+
             // Header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
+                    Text(name, fontWeight = FontWeight.SemiBold)
                     Text(
-                        text = name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Configure item before adding",
+                        "Configure item before adding",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(onClick = onBack, modifier = Modifier.size(28.dp)) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Close",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                 }
             }
 
             // Inputs
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                // Qty
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Qty",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text("Qty", style = MaterialTheme.typography.labelSmall)
                     BorderedInput(
                         value = qtyN,
-                        onValueChange = { input ->
-                            // allow only digits
-                            qtyN = input.filter { it.isDigit() }
-                        },
+                        onValueChange = { qtyN = it.filter(Char::isDigit) },
                         keyboardType = KeyboardType.Number
                     )
                 }
 
+                // List Price
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "List Price.",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text("List Price", style = MaterialTheme.typography.labelSmall)
                     BorderedInput(
                         value = listPriceN,
-                        onValueChange = { listPriceN = it },
+                        onValueChange = {
+                            isAmountManuallyEdited = false
+                            editMode = PriceEditMode.LIST_PRICE
+                            listPriceN = it
+                        },
                         keyboardType = KeyboardType.Decimal
                     )
                 }
 
+                // Discount
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Discount",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text("Discount %", style = MaterialTheme.typography.labelSmall)
                     BorderedInput(
                         value = discountN,
-                        onValueChange = { input ->
-                            val filtered = input.filter { it.isDigit() || it == '.' }
-                            val number = filtered.toDoubleOrNull()
-                            discountN = when {
-                                filtered.isEmpty() -> ""
-                                number == null -> discountN
-                                number > 100.0 -> "100"
-                                else -> filtered
+                        onValueChange = {
+                            val filtered = it.filter { c -> c.isDigit() || c == '.' }
+                            val value = filtered.toDoubleOrNull()
+                            if (value == null || value <= 100.0) {
+                                isAmountManuallyEdited = false
+                                editMode = PriceEditMode.DISCOUNT
+                                discountN = filtered
                             }
                         },
                         keyboardType = KeyboardType.Decimal
                     )
                 }
 
+                // Amount
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Amount",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text("Amount", style = MaterialTheme.typography.labelSmall)
                     BorderedInput(
-                        value = amountN,
+                        value = if (isAmountManuallyEdited) amountN else formatTwo(amount),
                         onValueChange = {
+                            isAmountManuallyEdited = true
+                            editMode = PriceEditMode.AMOUNT
                             amountN = it
-                            val amt = amountN.toDoubleOrNull() ?: 0.0
-                            val q = qtyValue?.toDouble() ?: 1.0
-                            discountN = "0.0"
-                            listPriceN = if (q != 0.0) (amt / q).toString() else "0.0"
                         },
                         keyboardType = KeyboardType.Decimal
                     )
                 }
             }
 
-            // Amount summary
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Taxable",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = " ${formatTwo(taxableAmount)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "GST %",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "${formatTwo(gstPercentage)}%",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "GST Amt",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = " ${formatTwo(gstAmount)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Net",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = " ${formatTwo(netAmount)}",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+            // Summary
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SummaryCell("Taxable", taxableAmount)
+                SummaryCell("GST %", gstPercentage, suffix = "%")
+                SummaryCell("GST Amt", gstAmount)
+                SummaryCell("Net", netAmount, highlight = true)
             }
 
             // Actions
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onCancel) {
-                    Text("Cancel")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
+            Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                TextButton(onClick = onCancel) { Text("Cancel") }
+                Spacer(Modifier.width(8.dp))
                 Button(
+                    enabled = isAddEnabled,
                     onClick = {
                         onAdd(
-                            qtyValue!!,
-                            (listPriceN.toDoubleOrNull() ?: 0.0) * (1 - (discountN.toDoubleOrNull()
-                                ?: 0.0) / 100),
+                            qtyValue,
+                            unitPrice,
                             discountN.toDoubleOrNull() ?: 0.0,
                             listPriceN.toDoubleOrNull() ?: 0.0,
                             taxableAmount,
                             gstAmount,
                             netAmount
                         )
-                    },
-                    enabled = isAddEnabled
+                    }
                 ) {
                     Text("Add")
                 }
             }
         }
     }
+}
+
+
+@Composable
+fun RowScope.SummaryCell(
+    label: String,
+    value: Double,
+    suffix: String = "",
+    highlight: Boolean = false
+) {
+    Column(modifier = Modifier.weight(1f)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Text(
+            text = buildString {
+                append(formatTwo(value))
+                append(suffix)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (highlight) FontWeight.Bold else FontWeight.SemiBold,
+            color = if (highlight)
+                MaterialTheme.colorScheme.primary
+            else
+                MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+
+enum class PriceEditMode {
+    LIST_PRICE,
+    DISCOUNT,
+    AMOUNT
 }
