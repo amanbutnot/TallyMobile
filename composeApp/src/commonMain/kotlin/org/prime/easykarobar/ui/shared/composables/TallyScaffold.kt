@@ -89,7 +89,6 @@ fun TallyScaffold(
 @Composable
 fun TallyReportScaffold(
     title: String,
-    content: @Composable (PaddingValues) -> Unit,
     showBottomBar: Boolean = false,
     bottomBarContent: @Composable () -> Unit = {},
     showSearchAction: Boolean = false,
@@ -97,7 +96,8 @@ fun TallyReportScaffold(
     showBurgerMenu: Boolean = false,
     onSearchClick: (() -> Unit)? = null,
     onBarcodeClick: (() -> Unit)? = null,
-    menuItems: List<MenuItemData> = emptyList()
+    menuItems: List<MenuItemData> = emptyList(),
+    content: @Composable (PaddingValues) -> Unit
 ) {
     val nav = LocalNavigator.currentOrThrow
     val colors = MaterialTheme.colorScheme

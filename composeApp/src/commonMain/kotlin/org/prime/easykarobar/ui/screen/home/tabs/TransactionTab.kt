@@ -107,7 +107,7 @@ object TransactionTab : Tab {
             TransactionType("Purchase Return", Icons.Default.Work),
             TransactionType("Purchase Invoice", Icons.Default.Work),
             TransactionType("Stock Transfer", Icons.Default.Work),
-            TransactionType("Scan Barcode", Icons.Default.BarChart)
+      //      TransactionType("Scan Barcode", Icons.Default.BarChart)
         )
 
         BackHandler(true) {
