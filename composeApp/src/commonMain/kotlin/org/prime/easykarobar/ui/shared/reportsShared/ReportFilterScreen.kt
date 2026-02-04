@@ -53,6 +53,7 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.ui.screen.transactions.sale.SmallAddButton
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
@@ -70,6 +71,8 @@ fun ReportFilterScreen(
     showAccountSelect: Boolean,
     showDateRangeSelector: Boolean = false,
     buttonText: String = "Generate Report",
+    showAddButton: Boolean = false,
+    onAddButtonClick: () -> Unit = {},
     onGenerateClick: (GenerateReportData) -> Unit
 ) {
     val nav = LocalNavigator.currentOrThrow
@@ -169,7 +172,10 @@ fun ReportFilterScreen(
                                 modifier = Modifier.height(44.dp)
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                    modifier = Modifier.padding(
+                                        horizontal = 16.dp,
+                                        vertical = 12.dp
+                                    ),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
@@ -191,7 +197,10 @@ fun ReportFilterScreen(
                                 expanded = showDateRangeMenu,
                                 onDismissRequest = { showDateRangeMenu = false },
                                 modifier = Modifier
-                                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                                    .background(
+                                        MaterialTheme.colorScheme.surface,
+                                        RoundedCornerShape(16.dp)
+                                    )
                                     .padding(vertical = 6.dp)
                             ) {
                                 dateRanges.forEach { range ->
@@ -212,7 +221,9 @@ fun ReportFilterScreen(
                                                     .fillMaxWidth()
                                                     .background(
                                                         if (isSelected)
-                                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                                                            MaterialTheme.colorScheme.primary.copy(
+                                                                alpha = 0.1f
+                                                            )
                                                         else
                                                             MaterialTheme.colorScheme.surface,
                                                         RoundedCornerShape(10.dp)
@@ -229,7 +240,10 @@ fun ReportFilterScreen(
                                                 )
                                             }
                                         },
-                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                        contentPadding = PaddingValues(
+                                            horizontal = 8.dp,
+                                            vertical = 2.dp
+                                        )
                                     )
                                 }
                             }
@@ -309,6 +323,20 @@ fun ReportFilterScreen(
                                     .height(1.dp)
                                     .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                             )
+                        }
+                    }
+
+                    if (showAddButton) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            SmallAddButton(
+                                label = "Add New",
+                                onClick = { onAddButtonClick() },
+                            )
+
                         }
                     }
 
@@ -430,19 +458,23 @@ fun getDateRange(range: String): Pair<String, String> {
             val y = today.minus(1, DateTimeUnit.DAY)
             y to y
         }
+
         "Tomorrow" -> {
             val t = today.plus(1, DateTimeUnit.DAY)
             t to t
         }
+
         "This Week" -> {
             val start = today.minus(today.dayOfWeek.isoDayNumber - 1, DateTimeUnit.DAY)
             start to today
         }
+
         "Last Week" -> {
             val start = today.minus(today.dayOfWeek.isoDayNumber + 6, DateTimeUnit.DAY)
             val end = start.plus(6, DateTimeUnit.DAY)
             start to end
         }
+
         "Last 7 Days" -> today.minus(6, DateTimeUnit.DAY) to today
         "Last 30 Days" -> today.minus(29, DateTimeUnit.DAY) to today
         "This Month" -> today.minus(today.dayOfMonth - 1, DateTimeUnit.DAY) to today

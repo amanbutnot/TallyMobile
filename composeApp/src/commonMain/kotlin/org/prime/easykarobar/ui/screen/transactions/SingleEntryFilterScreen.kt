@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.easykarobar.ui.screen.transactions.sale.SaleScreen
 import org.prime.easykarobar.ui.shared.reportsShared.ReportFilterScreen
 
 data class SingleEntryFilterScreen(val name: String, val vchType: Int) : Screen {
@@ -16,6 +17,27 @@ data class SingleEntryFilterScreen(val name: String, val vchType: Int) : Screen 
             showEndDate = true,
             showAccountSelect = false,
             buttonText = "Show List",
+            showAddButton = true,
+            onAddButtonClick = {  when (vchType) {
+                14, 19, 16, 15 -> {
+                    nav.push(
+                        SingleEntryReceipt(
+                            vchType = vchType,
+                            name = name
+                        )
+                    )
+                }
+
+                12, 3, 9, 13, 10, 2, 7 -> {
+                    nav.push(
+                        SaleScreen(
+                            vchType = vchType,
+                            name = name
+                        )
+                    )
+                }
+
+            }},
             onGenerateClick = {
                 when (vchType) {
                     14, 19, 16, 15 -> {
