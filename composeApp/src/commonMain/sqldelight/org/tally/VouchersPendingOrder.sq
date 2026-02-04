@@ -18,37 +18,6 @@ CREATE TABLE Vouchers_PendingOrders (
     E2 TEXT
 );
 
-pendingSaleOrderList:
-SELECT
-    V.VCH_GUID,
-    V.DATE AS date,
-    V.VCHTYPE AS vchType,
-    V.BILLNUMBER AS billNumber,
-    V.CM1 AS cm1,
-    V.DUEDATE AS dueDate,
-    V.D1 AS d1,
-        V.ItemName,
-    Adj.AdjustmentAmount AS adjustmentAmount,lm.GroupName
-FROM Vouchers_PendingOrders AS V
-INNER JOIN (
-    SELECT BILLID, ROUND(SUM(D1),3) AS AdjustmentAmount
-    FROM Vouchers_PendingOrders
-    GROUP BY BILLID
-) AS Adj
-ON V.BILLID = Adj.BILLID
-LEFT JOIN LedgerMaster AS lm ON lm.Name = V.CM1
-WHERE V.CM2 IN ('New Ref', 'Advance')
-  AND V.D1 < 0
-  AND  V.DATE>=? AND V.DATE<=?
-  AND Adj.AdjustmentAmount < 0
- AND (:filterCm3 = 0 OR V.CM3 IN :cm3) AND CM1 IN (
- SELECT Name
-FROM LedgerMaster
- WHERE (:groupFilter = 0 OR GroupCode IN ?)
-AND (:excludeFilter = 0 OR GUID NOT IN ?)
-)
-ORDER BY V.DATE, V.CM1;
-
 pendingSaleOrderLedgerList:
 SELECT
     V.VCH_GUID,
@@ -75,39 +44,6 @@ WHERE V.CM2 IN ('New Ref', 'Advance')
   AND Adj.AdjustmentAmount < 0  AND (:filterCm3 = 0 OR V.CM3 IN :cm3)
 
 ORDER BY V.DATE, V.CM1;
-
-
-pendingPurchaseOrderList:
-SELECT
-    V.VCH_GUID,
-    V.DATE AS date,
-    V.VCHTYPE AS vchType,
-    V.BILLNUMBER AS billNumber,
-    V.CM1 AS cm1,
-    V.DUEDATE AS dueDate,
-    V.D1 AS d1,
-        V.ItemName,
-    Adj.AdjustmentAmount AS adjustmentAmount,lm.GroupName
-FROM Vouchers_PendingOrders AS V
-INNER JOIN (
-    SELECT BILLID, ROUND(SUM(D1),3) AS AdjustmentAmount
-    FROM Vouchers_PendingOrders
-    GROUP BY BILLID
-) AS Adj
-ON V.BILLID = Adj.BILLID
-LEFT JOIN LedgerMaster AS lm ON lm.Name = V.CM1
-WHERE V.CM2 IN ('New Ref', 'Advance')
-  AND V.D1 > 0
-  AND  V.DATE>=? AND V.DATE<=?
-  AND Adj.AdjustmentAmount > 0  AND (:filterCm3 = 0 OR V.CM3 IN :cm3) AND CM1 IN (
-                                                                      SELECT Name
-                                                                     FROM LedgerMaster
-                                                                      WHERE (:groupFilter = 0 OR GroupCode IN ?)
-                                                                     AND (:excludeFilter = 0 OR GUID NOT IN ?)
-                                                                     )
-
-ORDER BY V.DATE, V.CM1;
-
 
 pendingPurchaseOrderLedgerList:
 SELECT
@@ -141,105 +77,77 @@ ORDER BY V.DATE, V.CM1;
 
 --TOMORROW
 
--- pendingSaleOrderList:
--- SELECT
---     CM1 AS PartyName,
---     GroupName,
---     SUM(PendingQty) AS PendingQty
--- FROM (
---     SELECT
---         V.CM1,
---         lm.GroupName,
---         Adj.AdjustmentAmount AS PendingQty
---     FROM Vouchers_PendingOrders AS V
---     INNER JOIN (
---         SELECT
---             BILLID,
---             ROUND(SUM(D1), 3) AS AdjustmentAmount
---         FROM Vouchers_PendingOrders
---         GROUP BY BILLID
---     ) AS Adj
---         ON V.BILLID = Adj.BILLID
---     LEFT JOIN LedgerMaster AS lm
---         ON lm.Name = V.CM1
---     WHERE V.CM2 IN ('New Ref', 'Advance')
---       AND V.D1 > 0
---       AND V.DATE >= :fromDate
---       AND V.DATE <= :toDate
---       AND (:filterCm3 = 0 OR V.CM3 IN :cm3)
--- ) AS RPT
--- WHERE CM1 IN (
---     SELECT Name
---     FROM LedgerMaster
---     WHERE (:groupFilter = 0 OR GroupCode IN :groupCodes)
---       AND (:excludeFilter = 0 OR GUID NOT IN :excludeGuids)
--- )
--- GROUP BY CM1, GroupName
--- ORDER BY CM1, GroupName;
---
---
--- pendingSaleOrderLedgerList:
--- SELECT
---     V.VCH_GUID,
---     V.DATE AS date,
---     V.VCHTYPE AS vchType,
---     V.BILLNUMBER AS billNumber,
---     V.CM1 AS cm1,
---     V.DUEDATE AS dueDate,
---     V.D1 AS d1,
---         V.ItemName,
---     Adj.AdjustmentAmount AS adjustmentAmount,lm.GroupName
--- FROM Vouchers_PendingOrders AS V
--- INNER JOIN (
---     SELECT BILLID, ROUND(SUM(D1),3) AS AdjustmentAmount
---     FROM Vouchers_PendingOrders
---     GROUP BY BILLID
--- ) AS Adj
--- ON V.BILLID = Adj.BILLID
--- LEFT JOIN LedgerMaster AS lm ON lm.Name = V.CM1
--- WHERE V.CM2 IN ('New Ref', 'Advance')
---   AND V.D1 < 0
---   AND  V.DATE>=? AND V.DATE<=?
---   AND V.CM1 =?
---   AND Adj.AdjustmentAmount < 0  AND (:filterCm3 = 0 OR V.CM3 IN :cm3)
---
--- ORDER BY V.DATE, V.CM1;
---
---
--- pendingPurchaseOrderList:
--- SELECT
---     CM1 AS PartyName,
---     GroupName,
---     SUM(PendingQty) AS PendingQty
--- FROM (
---     SELECT
---         V.CM1,
---         lm.GroupName,
---         Adj.AdjustmentAmount AS PendingQty
---     FROM Vouchers_PendingOrders AS V
---     INNER JOIN (
---         SELECT
---             BILLID,
---             ROUND(SUM(D1), 3) AS AdjustmentAmount
---         FROM Vouchers_PendingOrders
---         GROUP BY BILLID
---     ) AS Adj
---         ON V.BILLID = Adj.BILLID
---     LEFT JOIN LedgerMaster AS lm
---         ON lm.Name = V.CM1
---     WHERE V.CM2 IN ('New Ref', 'Advance')
---       AND V.D1 > 0
---       AND V.DATE >= :fromDate
---       AND V.DATE <= :toDate
---       AND (:filterCm3 = 0 OR V.CM3 IN :cm3)
--- ) AS RPT
--- WHERE CM1 IN (
---     SELECT Name
---     FROM LedgerMaster
---     WHERE (:groupFilter = 0 OR GroupCode IN :groupCodes)
---       AND (:excludeFilter = 0 OR GUID NOT IN :excludeGuids)
--- )
--- GROUP BY CM1, GroupName
--- ORDER BY CM1, GroupName;
---
+pendingSaleOrderList:
+SELECT
+    CM1 AS PartyName,
+    GroupName,
+    SUM(PendingQty) AS PendingQty
+FROM (
+    SELECT
+        V.CM1,
+        lm.GroupName,
+        Adj.AdjustmentAmount AS PendingQty
+    FROM Vouchers_PendingOrders AS V
+    INNER JOIN (
+        SELECT
+            BILLID,
+            ROUND(SUM(D1), 3) AS AdjustmentAmount
+        FROM Vouchers_PendingOrders
+        GROUP BY BILLID
+    ) AS Adj
+        ON V.BILLID = Adj.BILLID
+    LEFT JOIN LedgerMaster AS lm
+        ON lm.Name = V.CM1
+    WHERE V.CM2 IN ('New Ref', 'Advance')
+      AND V.D1 > 0
+      AND V.DATE >= :fromDate
+      AND V.DATE <= :toDate
+      AND (:filterCm3 = 0 OR V.CM3 IN :cm3)
+) AS RPT
+WHERE CM1 IN (
+    SELECT Name
+    FROM LedgerMaster
+    WHERE (:groupFilter = 0 OR GroupCode IN :groupCodes)
+      AND (:excludeFilter = 0 OR GUID NOT IN :excludeGuids)
+)
+GROUP BY CM1, GroupName
+ORDER BY CM1, GroupName;
+
+
+pendingPurchaseOrderList:
+SELECT
+    CM1 AS PartyName,
+    GroupName,
+    SUM(PendingQty) AS PendingQty
+FROM (
+    SELECT
+        V.CM1,
+        lm.GroupName,
+        Adj.AdjustmentAmount AS PendingQty
+    FROM Vouchers_PendingOrders AS V
+    INNER JOIN (
+        SELECT
+            BILLID,
+            ROUND(SUM(D1), 3) AS AdjustmentAmount
+        FROM Vouchers_PendingOrders
+        GROUP BY BILLID
+    ) AS Adj
+        ON V.BILLID = Adj.BILLID
+    LEFT JOIN LedgerMaster AS lm
+        ON lm.Name = V.CM1
+    WHERE V.CM2 IN ('New Ref', 'Advance')
+      AND V.D1 > 0
+      AND V.DATE >= :fromDate
+      AND V.DATE <= :toDate
+      AND (:filterCm3 = 0 OR V.CM3 IN :cm3)
+) AS RPT
+WHERE CM1 IN (
+    SELECT Name
+    FROM LedgerMaster
+    WHERE (:groupFilter = 0 OR GroupCode IN :groupCodes)
+      AND (:excludeFilter = 0 OR GUID NOT IN :excludeGuids)
+)
+GROUP BY CM1, GroupName
+ORDER BY CM1, GroupName;
+
 
