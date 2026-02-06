@@ -2,6 +2,12 @@ package org.prime.easykarobar.ui.screen.transactions.sale
 
 import CurrentDate
 import TallyDatePickerRow
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,10 +39,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
@@ -74,7 +82,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -91,6 +98,7 @@ import org.prime.easykarobar.data.expect.rememberBarcodeScanner
 import org.prime.easykarobar.data.model.transactions.BillingItem
 import org.prime.easykarobar.data.model.transactions.InventoryVoucherRequest
 import org.prime.easykarobar.data.model.transactions.SundryItem
+import org.prime.easykarobar.data.model.transactions.TransportDetails
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
 import org.prime.easykarobar.ui.screen.transactions.TallyNarrationField
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
@@ -125,6 +133,8 @@ data class InvoiceItem(
     val qty: Int = 0,
     val priceType: Int = 0,
     val discountPercentage: Double,
+    val taxCategoryCode: Int,
+    val gstPercentage: Double,
     //sdfasdfasdfadsfsadf
     val taxable: Double,
     val gstAmt: Double,
@@ -199,6 +209,15 @@ data class SaleScreen(
         }
         var focusedSundryGuid by remember { mutableStateOf<String?>(null) }
 
+        var showTransportDetails by remember { mutableStateOf(isEdit) }
+        var transportName by remember { mutableStateOf("") }
+        var gstRrNo by remember { mutableStateOf("") }
+        var vehicleNo by remember { mutableStateOf("") }
+        var station by remember { mutableStateOf("") }
+        var pincode by remember { mutableStateOf("") }
+        var gstRrDate by remember { mutableStateOf(CurrentDate()) }
+
+
         scannerLauncher = rememberBarcodeScanner(
             onResult = { text ->
                 val product = db.productsQueries
@@ -219,7 +238,9 @@ data class SaleScreen(
                         taxable = 0.0,
                         gstAmt = 0.0,
                         net = 0.0,
-                        guid = product.GUID ?: pendingSelectedProductGUID.orEmpty()
+                        guid = product.GUID ?: pendingSelectedProductGUID.orEmpty(),
+                        gstPercentage = 0.0,
+                        taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0
                     )
                     displayItemName = product.Name.toString()
                     showAddMorePopup = true
@@ -299,13 +320,11 @@ data class SaleScreen(
         }
 
 
-        val gstPercent = 18.0
-
         val itemsTotal by derivedStateOf {
             selectedItems.sumOf { item ->
                 if (taxType == TaxType.EXTRA) {
                     val taxable = item.price * item.qty
-                    taxable + taxable * gstPercent / 100.0
+                    taxable + taxable * item.gstPercentage / 100.0
                 } else {
                     item.price * item.qty
                 }
@@ -333,7 +352,9 @@ data class SaleScreen(
                         discountPercentage = it.discount_percent.toDouble(),
                         taxable = it.item_amount.toDouble(),
                         gstAmt = it.taxamt1.toDouble(),
-                        net = it.total_amt.toDouble()
+                        net = it.total_amt.toDouble(), gstPercentage = it.tax_rate1.toDouble()
+                        //TODO: FIX IT LATER
+                        , taxCategoryCode = 0
                     )
                 }
                 // PRE-POPULATE SUNDRIES SECTION
@@ -341,14 +362,21 @@ data class SaleScreen(
                     SundryItem(
                         name = s.name,
                         amount = s.amount,
-                        guid = s.guid ?: "",
-                        i1 = s.i1 ?: 0,
-                        i2 = s.i2 ?: 0,
-                        d2 = s.d2 ?: 0,
-                        rate = s.rate ?: 0.0,
-                        srno = s.srno ?: 0, percentValue = s.percentValue
+                        guid = s.guid,
+                        i1 = s.i1,
+                        i2 = s.i2,
+                        d2 = s.d2,
+                        rate = s.rate,
+                        srno = s.srno, percentValue = s.percentValue
                     )
                 }
+
+                transportName = data.other_info.transportName
+                gstRrNo = data.other_info.gstNum
+                vehicleNo = data.other_info.vehicleNum
+                station = data.other_info.station
+                pincode = data.other_info.pincode
+                gstRrDate = data.other_info.grDate
             }
         }
         val sundriesTotal = selectedSundries.fold(0.0) { runningTotal, sundry ->
@@ -377,14 +405,33 @@ data class SaleScreen(
             pendingSelectedProductName?.let { name ->
                 val prod = itemsList.find { it.Name == name }
                 val price = if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
+                val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
+//                selectedItems = selectedItems + InvoiceItem(
+//                    name = name,
+//                    price = price,
+//                    qty = 1,
+//                    discountPercentage = 0.0,
+//                    listPrice = 0.0,
+//                    taxable = 0.0,
+//                    gstAmt = 0.0,
+//                    net = 0.0,
+//                    guid = pendingSelectedProductGUID ?: "",
+//                    gstPercentage = 0.0,
+//                    taxCategoryCode = taxCategoryCode.toInt()
+//                )
                 editingItem =
                     InvoiceItem(
-                        name = name, price = price, qty = 1, discountPercentage = 0.0,
+                        name = name,
+                        price = price,
+                        qty = 1,
+                        discountPercentage = 0.0,
                         listPrice = 0.0,
                         taxable = 0.0,
                         gstAmt = 0.0,
                         net = 0.0,
-                        guid = pendingSelectedProductGUID ?: ""
+                        guid = pendingSelectedProductGUID ?: "",
+                        gstPercentage = 0.0,
+                        taxCategoryCode = taxCategoryCode.toInt()
                     )
                 showItemSheet = false
                 pendingSelectedProductName = null
@@ -476,7 +523,20 @@ data class SaleScreen(
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     val pending = editingItem
                                     val product = itemsList.find { it.Name == pending?.name }
+
                                     if (pending != null) {
+                                        val gst = try {
+                                            db.taxCategoryMastQueries
+                                                .selectTaxRate(
+                                                    pending.taxCategoryCode.toString(),
+                                                    selectedDate
+                                                )
+                                                .executeAsOneOrNull()
+                                                ?: 18.0
+                                        } catch (e: Exception) {
+                                            println(e.message)
+                                            0.0
+                                        }
                                         if (product != null) {
                                             ExpandedItemEditor1(
                                                 name = product.Name ?: pending.name,
@@ -486,7 +546,7 @@ data class SaleScreen(
                                                 initialQuantity = pending.qty,
                                                 initialDiscount = pending.discountPercentage,
                                                 taxType = taxType,
-                                                onAdd = { qty, unitPrice, discount, listPriceText, taxable, gstAmount, net ->
+                                                onAdd = { qty, unitPrice, discount, listPriceText, taxable, gstAmount, net, gstPercentage ->
                                                     selectedItems = selectedItems + InvoiceItem(
                                                         name = product.Name ?: pending.name,
                                                         price = unitPrice,
@@ -498,7 +558,10 @@ data class SaleScreen(
                                                         net = net,
                                                         guid = product.GUID
                                                             ?: pendingSelectedProductGUID
-                                                            ?: ""
+                                                            ?: "",
+                                                        gstPercentage = gstPercentage,
+                                                        taxCategoryCode = product.TaxCategoryCode?.toInt()
+                                                            ?: 0
                                                     )
                                                     editingItem = null
                                                 },
@@ -506,7 +569,7 @@ data class SaleScreen(
                                                     selectedItems = selectedItems + pending
                                                     editingItem = null
                                                 },
-                                                gstPercentage = 18.0,
+                                                gstPercentage = gst,
                                                 onCancel = {
                                                     selectedItems = selectedItems - pending
                                                     editingItem = null
@@ -519,7 +582,7 @@ data class SaleScreen(
                                                 initialDiscount = pending.discountPercentage,
                                                 initialQuantity = pending.qty,
                                                 taxType = taxType,
-                                                onAdd = { qty, unitPrice, discount, listPriceText, taxable, gstAmount, net ->
+                                                onAdd = { qty, unitPrice, discount, listPriceText, taxable, gstAmount, net, gstPercentage ->
                                                     selectedItems = selectedItems + InvoiceItem(
                                                         name = pending.name,
                                                         price = unitPrice,
@@ -529,7 +592,10 @@ data class SaleScreen(
                                                         taxable = taxable,
                                                         gstAmt = gstAmount,
                                                         net = net,
-                                                        guid = pendingSelectedProductGUID ?: ""
+                                                        guid = pendingSelectedProductGUID ?: "",
+                                                        gstPercentage = gstPercentage,
+                                                        taxCategoryCode = product?.TaxCategoryCode?.toInt()
+                                                            ?: 0
                                                     )
                                                     editingItem = null
                                                 },
@@ -537,7 +603,7 @@ data class SaleScreen(
                                                     selectedItems = selectedItems + pending
                                                     editingItem = null
                                                 },
-                                                gstPercentage = 18.0,
+                                                gstPercentage = gst,
                                                 onCancel = {
                                                     selectedItems = selectedItems - pending
                                                     editingItem = null
@@ -549,7 +615,7 @@ data class SaleScreen(
                                         CompactItemCard(
                                             index = index,
                                             item = item,
-                                            gstPercentage = gstPercent,
+                                            gstPercentage = item.gstPercentage,
                                             taxType = taxType,
                                             onQuantityChange = { newQty ->
                                                 selectedItems =
@@ -571,7 +637,7 @@ data class SaleScreen(
                                         horizontalArrangement = Arrangement.Center,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        SmallAddButton(label = "Add More Item") {
+                                        SmallAddButton(label = "Add More Item", enabled = editingItem==null) {
                                             showItemSheet = true
                                         }
                                     }
@@ -609,7 +675,8 @@ data class SaleScreen(
                                             },
                                             onRemove = {
                                                 selectedSundries = selectedSundries - sundry
-                                            },  shouldFocus = sundry.guid == focusedSundryGuid,
+                                            },
+                                            shouldFocus = sundry.guid == focusedSundryGuid,
                                             onFocusConsumed = { focusedSundryGuid = null },
                                         )
 
@@ -659,6 +726,147 @@ data class SaleScreen(
                                 }
                             }
 
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Transport Details",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
+                                TextButton(
+                                    onClick = { showTransportDetails = !showTransportDetails }
+                                ) {
+                                    Icon(
+                                        imageVector = if (showTransportDetails) Icons.Default.RemoveCircleOutline else Icons.Default.AddCircleOutline,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (showTransportDetails) "Remove" else "Add",
+                                        style = MaterialTheme.typography.labelLarge
+                                    )
+                                }
+                            }
+
+                            AnimatedVisibility(
+                                visible = showTransportDetails,
+                                enter = fadeIn(animationSpec = tween(300)) + expandVertically(
+                                    animationSpec = tween(300)
+                                ),
+                                exit = fadeOut(animationSpec = tween(300)) + shrinkVertically(
+                                    animationSpec = tween(300)
+                                )
+                            ) {
+                                ElevatedCard(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp)
+                                        .padding(bottom = 16.dp),
+                                    colors = CardDefaults.elevatedCardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                    ),
+                                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        // Section Header
+                                        Text(
+                                            text = "Transportation Information",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+
+                                        HorizontalDivider(
+                                            color = MaterialTheme.colorScheme.outlineVariant,
+                                            thickness = 1.dp
+                                        )
+
+                                        // Transport Name - Full Width
+                                        TallyTextField(
+                                            value = transportName,
+                                            onValueChange = { transportName = it },
+                                            label = "Transport Name",
+                                            placeholder = "Enter transport name",
+                                            isPassword = false,
+                                            isNumber = false,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+
+                                        // Station - Full Width
+                                        TallyTextField(
+                                            value = station,
+                                            onValueChange = { station = it },
+                                            label = "Station",
+                                            placeholder = "Enter station name",
+                                            isPassword = false,
+                                            isNumber = false,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+
+                                        // 2x2 Grid for remaining fields
+                                        // First Row - GST/RR No & Vehicle No
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            TallyTextField(
+                                                value = gstRrNo,
+                                                onValueChange = { gstRrNo = it },
+                                                label = "GST/RR No.",
+                                                placeholder = "Enter number",
+                                                isPassword = false,
+                                                isNumber = false,
+                                                modifier = Modifier.weight(1f)
+                                            )
+
+                                            TallyTextField(
+                                                value = vehicleNo,
+                                                onValueChange = { vehicleNo = it },
+                                                label = "Vehicle No.",
+                                                placeholder = "Enter vehicle no.",
+                                                isPassword = false,
+                                                isNumber = false,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+
+                                        // Second Row - Pincode & GR/RR Date
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            verticalAlignment = Alignment.Top
+                                        ) {
+                                            TallyTextField(
+                                                value = pincode,
+                                                onValueChange = { pincode = it },
+                                                label = "Pincode",
+                                                placeholder = "Enter pincode",
+                                                isPassword = false,
+                                                isNumber = true,
+                                                modifier = Modifier.weight(1f)
+                                            )
+
+                                            Box(modifier = Modifier.weight(1f)) {
+                                                TallyDatePickerRow(
+                                                    label = "GR/RR Date",
+                                                    selectedDate = gstRrDate,
+                                                    onDateSelected = { gstRrDate = it },
+                                                    defaultDate = CurrentDate()
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             Spacer(modifier = Modifier.height(60.dp))
                         }
 
@@ -724,8 +932,7 @@ data class SaleScreen(
                                 selectedSundries = selectedSundries + newItem
                                 focusedSundryGuid = newItem.guid   // 👈 THIS
                             }
-                        }
-                        ,
+                        },
                         onDismiss = { showSundrySheet = false }
                     )
                 } else {
@@ -750,8 +957,7 @@ data class SaleScreen(
                                 selectedSundries = selectedSundries + newItem
                                 focusedSundryGuid = GUID   // 👈 THIS
                             }
-                        }
-                        ,
+                        },
                         onDismiss = { showSundrySheet = false }
                     )
                 }
@@ -804,7 +1010,7 @@ data class SaleScreen(
                                     list_price = item.listPrice,
                                     discount_percent = item.discountPercentage,
                                     discount_amt = null,
-                                    tax_rate1 = gstPercent,
+                                    tax_rate1 = item.gstPercentage,
                                     tax_rate2 = 0.0,
                                     taxable = item.taxable,
                                     net = item.net,
@@ -830,7 +1036,14 @@ data class SaleScreen(
                                     TranDate = selectedDate,
                                     Narration = narration,
                                     TransactionID = tranId,
-                                    total_amt = grandTotal
+                                    total_amt = grandTotal, transportDetails = TransportDetails(
+                                        transportName = transportName,
+                                        station = station,
+                                        gstNum = gstRrNo,
+                                        vehicleNum = vehicleNo,
+                                        pincode = pincode,
+                                        grDate = gstRrDate
+                                    )
                                 ),
                                 onSuccess = {
                                     println(
@@ -848,7 +1061,15 @@ data class SaleScreen(
                                             TranDate = selectedDate,
                                             Narration = narration,
                                             TransactionID = tranId,
-                                            total_amt = grandTotal
+                                            total_amt = grandTotal,
+                                            transportDetails = TransportDetails(
+                                                transportName = transportName,
+                                                station = station,
+                                                gstNum = gstRrNo,
+                                                vehicleNum = vehicleNo,
+                                                pincode = pincode,
+                                                grDate = gstRrDate
+                                            )
                                         )
                                     )
                                     showResultDialog = true
@@ -895,8 +1116,8 @@ data class SaleScreen(
 
 
 @Composable
-fun SmallAddButton(label: String, onClick: () -> Unit) {
-    Button(onClick = onClick) {
+fun SmallAddButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
+    Button(onClick = onClick,enabled=enabled) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -1136,7 +1357,7 @@ fun SundryCard(
     onAmountChange: (Double, Double, Int, Double) -> Unit, // Now returns (amount, rate, srno)
     onRemove: () -> Unit,
     index: Int,
-    runningTotal: Double,shouldFocus: Boolean,
+    runningTotal: Double, shouldFocus: Boolean,
     onFocusConsumed: () -> Unit
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -1676,7 +1897,8 @@ fun ExpandedItemEditor1(
         listPrice: Double,
         taxable: Double,
         gstAmount: Double,
-        net: Double
+        net: Double,
+        gstPercentage: Double
     ) -> Unit,
     onCancel: () -> Unit,
     onBack: () -> Unit
@@ -1860,7 +2082,7 @@ fun ExpandedItemEditor1(
                             listPriceN.toDoubleOrNull() ?: 0.0,
                             taxableAmount,
                             gstAmount,
-                            netAmount
+                            netAmount, gstPercentage
                         )
                     }
                 ) {
