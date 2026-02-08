@@ -32,6 +32,7 @@ fun salesHtml(
         "Stock Transfer" -> "Stock Transfer"
         else -> ""
     }
+    val taxItems = items.groupBy { item -> item.gstPercentage }
 
     html.append(
         """<!DOCTYPE html>
@@ -235,13 +236,21 @@ th {
         <th>Taxable Amt.</th>
         <th>IGST Amt.</th>
         <th>Total Tax</th>
-    </tr>
-    <tr>
-        <td class="center">18%</td>
-        <td class="right">9,000.00</td>
-        <td class="right">1,620.00</td>
-        <td class="right">1,620.00</td>
-    </tr>
+    </tr>""".trimIndent())
+
+    taxItems.forEach {
+        html.append("""
+            
+            <tr>
+        <td class="center">${it.key}</td>
+        <td class="right">${it.value.sumOf { it.price }.formatToAmtDec()}</td>
+        <td class="right">${it.value.sumOf { it.gstAmt }.formatToAmtDec()}</td>
+        <td class="right">${(it.value.sumOf { it.gstAmt } + it.value.sumOf { it.price }).formatToAmtDec()}</td>
+    </tr> 
+        """.trimIndent())
+    }
+    html.append("""
+   
 </table>
 
 <!-- AMOUNT IN WORDS -->
@@ -278,11 +287,6 @@ th {
  
         """.trimIndent()
     )
-
-
-
-
-
     return html.toString()
 }
 
