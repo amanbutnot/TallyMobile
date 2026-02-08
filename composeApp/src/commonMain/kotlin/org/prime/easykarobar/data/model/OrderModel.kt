@@ -38,7 +38,7 @@ data class Order(
     val total_amount: String,
     val status: String,
     val OrderStatus: ORDERSTATUS,
-    val status_billed: String,
+    val status_billed: ORDERSTATUS,
     val billing_guid: String?=null,
     val billing_name: String,
     val billing_mobile: String,
