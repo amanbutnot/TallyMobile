@@ -454,6 +454,7 @@ data class SaleScreen(
         val htmlContent = salesHtml(
             name = name,
             partyName = selectedLedger,
+            partyGuid = selectedLedgerGUID,
             invoiceNo = oneState.data?.AutoVchNo.toString(),
             date = selectedDate,
             items = selectedItems,

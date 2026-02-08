@@ -57,3 +57,6 @@ selectNameFromGuid:
 SELECT Name
  FROM LedgerMaster
  WHERE GUID = ?;
+
+ selectByGuid:
+ SELECT * FROM LedgerMaster WHERE GUID = ?;

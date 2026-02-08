@@ -12,6 +12,7 @@ import org.prime.easykarobar.ui.shared.globalShared.Tdate
 fun salesHtml(
     name: String,
     partyName: String,
+    partyGuid: String,
     invoiceNo: String,
     date: String,
     items: List<InvoiceItem>,
@@ -33,6 +34,8 @@ fun salesHtml(
         else -> ""
     }
     val taxItems = items.groupBy { item -> item.gstPercentage }
+
+    val partyDetails = db.ledgerMasterQueries.selectByGuid(partyGuid).executeAsOneOrNull()
 
     html.append(
         """<!DOCTYPE html>
@@ -146,9 +149,8 @@ th {
     <div style="width:55%">
         <b>Party Details :</b><br>
         $partyName<br>
-        C-186, GALI NO.7, BHAJAN PURA<br>
-        North East Delhi, Delhi – 110053<br><br>
-        <b>GSTIN / UIN :</b> 07ANZPS4239D1ZG
+        ${partyDetails?.Address1}<br>
+        <b>GSTIN / UIN :</b> ${partyDetails?.GSTIN}
     </div>
 
     <div style="width:40%">
@@ -256,14 +258,6 @@ th {
 <!-- AMOUNT IN WORDS -->
 <div class="box bold">
     ${numberToWords(grandTotal.toInt())} Only
-</div>
-
-<!-- BANK DETAILS -->
-<div class="box">
-    <b>Bank Details :</b><br>
-    Bank Name : HDFC Bank<br>
-    A/C No : 50200110813700<br>
-    IFSC : HDFC0000654
 </div>
 
 <!-- FOOTER -->
