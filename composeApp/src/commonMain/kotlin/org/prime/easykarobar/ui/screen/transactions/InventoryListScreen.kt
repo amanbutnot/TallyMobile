@@ -1,5 +1,6 @@
 package org.prime.easykarobar.ui.screen.transactions
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -37,6 +39,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.business.viewmodel.transactions.InventoryVoucherViewModel
+import org.prime.easykarobar.data.model.ORDERSTATUS
 import org.prime.easykarobar.data.model.transactions.InventoryListRequest
 import org.prime.easykarobar.data.model.transactions.InventoryListResponse
 import org.prime.easykarobar.ui.screen.transactions.sale.SaleScreen
@@ -89,11 +92,15 @@ data class InventoryListScreen(
                         EmptyListPlaceholder(
                             icon = Icons.Default.Inbox,
                             title = state.error.toString(),
-                            onAddClick = {  nav.push(SaleScreen(
-                                name = name,
-                                vchType = vchType,
-                                isEdit = false
-                            )) },
+                            onAddClick = {
+                                nav.push(
+                                    SaleScreen(
+                                        name = name,
+                                        vchType = vchType,
+                                        isEdit = false
+                                    )
+                                )
+                            },
                         )
                     }
 
@@ -107,7 +114,8 @@ data class InventoryListScreen(
                                                 name = name,
                                                 vchType = vchType,
                                                 tranId = item.id,
-                                                isEdit = true
+                                                isEdit = true,
+                                                enableUpdateButton = item.status_billed == ORDERSTATUS.Pending.name
                                             )
                                         )
                                     }
@@ -124,10 +132,18 @@ data class InventoryListScreen(
 
 @Composable
 private fun ListItem(listState: InventoryListResponse, onClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().clickable { onClick() }
-        .padding(horizontal = 16.dp, vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (listState.status_billed == ORDERSTATUS.Pending.name) Color(
+                0xffFBC02D
+            ).copy(alpha = 0.04f) else MaterialTheme.colorScheme.surface,
+            //   surfaceTintColor = Color.Transparent
+        ), border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.onBackground)
+        //    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+
+    ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp)
         ) {
@@ -208,7 +224,7 @@ private fun ListItem(listState: InventoryListResponse, onClick: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = listState.status,
+                    text = listState.status_billed,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,

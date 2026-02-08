@@ -499,12 +499,12 @@ fun ExpandableGrid() {
         "Receipt" to Icons.Default.Receipt,
         "Payment" to Icons.Default.Payment,
         "Journal" to Icons.Default.AddShoppingCart,
-        "Contra" to Icons.Default.Payment,
         "Purchase Order" to Icons.Default.AddShoppingCart,
         "Purchase Invoice" to Icons.Default.ShoppingCart,
         "Purchase Return" to Icons.Default.Receipt,
+        "Attendance" to Icons.Default.LocationOn,
         "Check In/Out" to Icons.Default.LocationCity,
-        "Attendance" to Icons.Default.LocationOn
+        "Contra" to Icons.Default.Payment
     )
 
     Column(
