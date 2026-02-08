@@ -99,6 +99,7 @@ import org.prime.easykarobar.data.model.transactions.BillingItem
 import org.prime.easykarobar.data.model.transactions.InventoryVoucherRequest
 import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.model.transactions.TransportDetails
+import org.prime.easykarobar.ui.printing.salesHtml
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
 import org.prime.easykarobar.ui.screen.transactions.TallyNarrationField
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
@@ -114,6 +115,8 @@ import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.isBusy
+import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
+import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.Products
 import kotlin.math.abs
 import kotlin.math.round
@@ -157,7 +160,7 @@ data class SaleScreen(
     val name: String,
     val vchType: Int,
     val tranId: Int? = null,
-    val isEdit: Boolean = false
+    val isEdit: Boolean = false, val enableUpdateButton: Boolean = true
 ) : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -216,6 +219,7 @@ data class SaleScreen(
         var station by remember { mutableStateOf("") }
         var pincode by remember { mutableStateOf("") }
         var gstRrDate by remember { mutableStateOf(CurrentDate()) }
+        var shareLoading by remember { mutableStateOf(false) }
 
 
         scannerLauncher = rememberBarcodeScanner(
@@ -447,7 +451,23 @@ data class SaleScreen(
                 isSuccess = false
             )
         }
-
+        val htmlContent = salesHtml(
+            name = name,
+            partyName = selectedLedger,
+            invoiceNo = oneState.data?.AutoVchNo.toString(),
+            date = selectedDate,
+            items = selectedItems,
+            sundries = selectedSundries,
+            grandTotal = grandTotal,
+            transportDetails = org.prime.easykarobar.ui.printing.TransportDetails(
+                transportName = transportName,
+                gstRrNo = gstRrNo,
+                vehicleNo = vehicleNo,
+                station = station,
+                pincode = pincode,
+                gstRrDate = gstRrDate
+            )
+        )
         TallyReportScaffold(
             showBurgerMenu = isEdit,
             showBarcodeIcon = !isEdit,
@@ -456,8 +476,26 @@ data class SaleScreen(
 
             },
             menuItems = listOf(
-                MenuItemData(Icons.Default.Download, "Download", {}),
-                MenuItemData(Icons.Default.Share, "Share", {}),
+                MenuItemData(Icons.Default.Download, "Download", {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = name,
+                            htmlContent = htmlContent,
+                            action = PdfAction.Download,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }),
+                MenuItemData(Icons.Default.Share, "Share", {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = name,
+                            htmlContent = htmlContent,
+                            action = PdfAction.Share,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }),
                 MenuItemData(Icons.Default.Delete, "Delete", { showDeleteDialog = true })
             ),
             title = if (isEdit) "Edit $name" else name,
@@ -637,7 +675,10 @@ data class SaleScreen(
                                         horizontalArrangement = Arrangement.Center,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        SmallAddButton(label = "Add More Item", enabled = editingItem==null) {
+                                        SmallAddButton(
+                                            label = "Add More Item",
+                                            enabled = editingItem == null
+                                        ) {
                                             showItemSheet = true
                                         }
                                     }
@@ -1089,7 +1130,7 @@ data class SaleScreen(
                                 }
 
                             },
-                            enabled = selectedLedger.isNotEmpty() && selectedItems.isNotEmpty(),
+                            enabled = if (isEdit) enableUpdateButton else selectedLedger.isNotEmpty() && selectedItems.isNotEmpty(),
                             label = if (isEdit) "Update" else "Create Invoice",
                             backgroundColor = MaterialTheme.colorScheme.primary
                         )
@@ -1117,7 +1158,7 @@ data class SaleScreen(
 
 @Composable
 fun SmallAddButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
-    Button(onClick = onClick,enabled=enabled) {
+    Button(onClick = onClick, enabled = enabled) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
