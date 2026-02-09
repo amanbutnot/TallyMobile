@@ -45,6 +45,7 @@ import org.prime.easykarobar.ui.shared.reportsShared.TallyReportLazyList
 import org.tally.PendingPurchaseOrderList
 import smartSearch
 import kotlin.collections.contains
+import kotlin.math.absoluteValue
 
 data class PendingOrderPartyList(
     val name: String, val startDate: String, val endDate: String, val cm1: String? = null
@@ -132,9 +133,9 @@ data class PendingOrderPartyList(
         }
         // Apply group filter
         val groupFilteredReceivableList = if (selectedGroups.isEmpty()) {
-            filteredList
+            filteredList.filter { it.PendingQty!=0.0 }
         } else {
-            filteredList.filter { it.GroupName in selectedGroups }
+            filteredList.filter { it.GroupName in selectedGroups && it.PendingQty!=0.0}
         }
 
 
@@ -148,12 +149,12 @@ data class PendingOrderPartyList(
                 TallyReportBottomBar(
                     columns = listOf(
                         ReportColumn(
-                            text = list.count().toString(),
+                            text = "Rows: ${list.count()}",
                             weight = column1Weight,
                             textAlign = TextAlign.Start
                         ),
                         ReportColumn(
-                            text = list.sumOf { it.PendingQty ?: 0.0 }.toString(),
+                            text = "Total: ${list.sumOf { it.PendingQty?.absoluteValue ?: 0.0 }}",
                             weight = column1Weight,
                             textAlign = TextAlign.End
                         ),
@@ -239,7 +240,7 @@ data class PendingOrderPartyList(
                                 isHeader = false
                             )
                             TableCell(
-                                text = item.PendingQty.toString(),
+                                text = item.PendingQty?.absoluteValue.toString(),
                                 weight = column1Weight,
                                 isHeader = false, textAlign = TextAlign.End
                             )

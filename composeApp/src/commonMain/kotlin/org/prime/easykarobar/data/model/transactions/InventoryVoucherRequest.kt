@@ -115,7 +115,7 @@ data class InventoryItemResponse(
     val billing_country: String,
     val created_at: String,
     val razorpay_payment_id: String,
-    val other_info: TransportDetails,
+    val other_info: TransportDetails?=null,
     val Others1: String,
     val Others2: String,
     val items: List<Item>, val taxType: Int,val sundries: List<SundryItem>

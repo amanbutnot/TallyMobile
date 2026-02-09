@@ -336,7 +336,7 @@ fun ReportFilterScreen(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = "Add New Account",
+                                text = "Add New Voucher",
                                 style = MaterialTheme.typography.labelLarge
                             )
                         }
