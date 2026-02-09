@@ -6,7 +6,9 @@ import androidx.compose.ui.platform.LocalContext
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 
 @Composable
-actual fun rememberBarcodeScanner(onResult: (String?) -> Unit): BarcodeScannerLauncher {
+actual fun rememberBarcodeScanner(
+    onResult: (BarcodeScanResult) -> Unit
+): BarcodeScannerLauncher {
     val context = LocalContext.current
     val scanner = remember { GmsBarcodeScanning.getClient(context) }
 
@@ -14,13 +16,15 @@ actual fun rememberBarcodeScanner(onResult: (String?) -> Unit): BarcodeScannerLa
         BarcodeScannerLauncher {
             scanner.startScan()
                 .addOnSuccessListener { barcode ->
-                    onResult(barcode.rawValue)
+                    onResult(
+                        BarcodeScanResult.Success(barcode.rawValue.orEmpty())
+                    )
                 }
-                .addOnFailureListener {
-                    onResult(null)
+                .addOnFailureListener { e ->
+                    onResult(BarcodeScanResult.Failure(e))
                 }
                 .addOnCanceledListener {
-                    onResult(null)
+                    onResult(BarcodeScanResult.Cancelled)
                 }
         }
     }

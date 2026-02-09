@@ -4,50 +4,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCAction
-import platform.AVFoundation.AVCaptureConnection
-import platform.AVFoundation.AVCaptureDevice
-import platform.AVFoundation.AVCaptureDeviceInput
-import platform.AVFoundation.AVCaptureMetadataOutput
-import platform.AVFoundation.AVCaptureMetadataOutputObjectsDelegateProtocol
-import platform.AVFoundation.AVCaptureOutput
-import platform.AVFoundation.AVCaptureSession
-import platform.AVFoundation.AVCaptureVideoPreviewLayer
-import platform.AVFoundation.AVLayerVideoGravityResizeAspectFill
-import platform.AVFoundation.AVMediaTypeVideo
-import platform.AVFoundation.AVMetadataMachineReadableCodeObject
-import platform.AVFoundation.AVMetadataObjectTypeAztecCode
-import platform.AVFoundation.AVMetadataObjectTypeCode128Code
-import platform.AVFoundation.AVMetadataObjectTypeCode39Code
-import platform.AVFoundation.AVMetadataObjectTypeCode93Code
-import platform.AVFoundation.AVMetadataObjectTypeEAN13Code
-import platform.AVFoundation.AVMetadataObjectTypeEAN8Code
-import platform.AVFoundation.AVMetadataObjectTypePDF417Code
-import platform.AVFoundation.AVMetadataObjectTypeQRCode
-import platform.AVFoundation.AVMetadataObjectTypeUPCECode
+import platform.AVFoundation.*
 import platform.Foundation.NSSelectorFromString
-import platform.UIKit.NSLayoutConstraint
-import platform.UIKit.UIApplication
-import platform.UIKit.UIButton
-import platform.UIKit.UIButtonTypeSystem
-import platform.UIKit.UIColor
-import platform.UIKit.UIControlEventTouchUpInside
-import platform.UIKit.UIControlStateNormal
-import platform.UIKit.UIViewController
-import platform.UIKit.UIWindow
-import platform.darwin.DISPATCH_QUEUE_PRIORITY_DEFAULT
-import platform.darwin.dispatch_async
-import platform.darwin.dispatch_get_global_queue
-import platform.darwin.dispatch_get_main_queue
+import platform.UIKit.*
+import platform.darwin.*
 
 @Composable
-actual fun rememberBarcodeScanner(onResult: (String?) -> Unit): BarcodeScannerLauncher {
+actual fun rememberBarcodeScanner(
+    onResult: (BarcodeScanResult) -> Unit
+): BarcodeScannerLauncher {
     return remember {
         BarcodeScannerLauncher {
-            val window = UIApplication.sharedApplication.windows.first() as? UIWindow
-            val rootViewController = window?.rootViewController
+            val window = UIApplication.sharedApplication.windows.firstOrNull() as? UIWindow
+            val rootViewController = window?.rootViewController ?: return@BarcodeScannerLauncher
 
             val scannerViewController = ScannerViewController(onResult)
-            rootViewController?.presentViewController(
+            rootViewController.presentViewController(
                 scannerViewController,
                 animated = true,
                 completion = null
@@ -59,18 +31,18 @@ actual fun rememberBarcodeScanner(onResult: (String?) -> Unit): BarcodeScannerLa
 actual class BarcodeScannerLauncher(
     private val onLaunch: () -> Unit
 ) {
-    actual fun launch() {
-        onLaunch()
-    }
+    actual fun launch() = onLaunch()
 }
 
 @OptIn(ExperimentalForeignApi::class)
 private class ScannerViewController(
-    private val onResult: (String?) -> Unit
-) : UIViewController(null, null), AVCaptureMetadataOutputObjectsDelegateProtocol {
+    private val onResult: (BarcodeScanResult) -> Unit
+) : UIViewController(null, null),
+    AVCaptureMetadataOutputObjectsDelegateProtocol {
 
     private var captureSession: AVCaptureSession? = null
     private var previewLayer: AVCaptureVideoPreviewLayer? = null
+    private var didEmitResult = false
 
     override fun viewDidLoad() {
         super.viewDidLoad()
@@ -79,49 +51,42 @@ private class ScannerViewController(
         val session = AVCaptureSession()
         captureSession = session
 
-        val videoCaptureDevice = AVCaptureDevice.defaultDeviceWithMediaType(AVMediaTypeVideo)
-        if (videoCaptureDevice == null) {
-            onResult(null)
+        val device = AVCaptureDevice.defaultDeviceWithMediaType(AVMediaTypeVideo)
+        if (device == null) {
+            emitFailure()
             return
         }
 
-        val videoInput = try {
-            AVCaptureDeviceInput.deviceInputWithDevice(
-                videoCaptureDevice,
-                null
-            ) as? AVCaptureDeviceInput
-        } catch (e: Exception) {
-            null
-        }
+        val input = runCatching {
+            AVCaptureDeviceInput.deviceInputWithDevice(device, null)
+        }.getOrNull()
 
-        if (videoInput != null && session.canAddInput(videoInput)) {
-            session.addInput(videoInput)
-        } else {
-            onResult(null)
+        if (input == null || !session.canAddInput(input)) {
+            emitFailure()
             return
         }
+
+        session.addInput(input)
 
         val metadataOutput = AVCaptureMetadataOutput()
-
-        if (session.canAddOutput(metadataOutput)) {
-            session.addOutput(metadataOutput)
-
-            metadataOutput.setMetadataObjectsDelegate(this, dispatch_get_main_queue())
-            metadataOutput.metadataObjectTypes = listOf(
-                AVMetadataObjectTypeQRCode,
-                AVMetadataObjectTypeEAN13Code,
-                AVMetadataObjectTypeEAN8Code,
-                AVMetadataObjectTypeCode128Code,
-                AVMetadataObjectTypeCode39Code,
-                AVMetadataObjectTypeCode93Code,
-                AVMetadataObjectTypeUPCECode,
-                AVMetadataObjectTypePDF417Code,
-                AVMetadataObjectTypeAztecCode
-            )
-        } else {
-            onResult(null)
+        if (!session.canAddOutput(metadataOutput)) {
+            emitFailure()
             return
         }
+
+        session.addOutput(metadataOutput)
+        metadataOutput.setMetadataObjectsDelegate(this, dispatch_get_main_queue())
+        metadataOutput.metadataObjectTypes = listOf(
+            AVMetadataObjectTypeQRCode,
+            AVMetadataObjectTypeEAN13Code,
+            AVMetadataObjectTypeEAN8Code,
+            AVMetadataObjectTypeCode128Code,
+            AVMetadataObjectTypeCode39Code,
+            AVMetadataObjectTypeCode93Code,
+            AVMetadataObjectTypeUPCECode,
+            AVMetadataObjectTypePDF417Code,
+            AVMetadataObjectTypeAztecCode
+        )
 
         val preview = AVCaptureVideoPreviewLayer.layerWithSession(session)
         preview.frame = view.layer.bounds
@@ -129,7 +94,9 @@ private class ScannerViewController(
         view.layer.addSublayer(preview)
         previewLayer = preview
 
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT.toLong(), 0u)) {
+        dispatch_async(
+            dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT.toLong(), 0u)
+        ) {
             session.startRunning()
         }
 
@@ -140,10 +107,11 @@ private class ScannerViewController(
         val cancelButton = UIButton.buttonWithType(UIButtonTypeSystem)
         cancelButton.setTitle("Cancel", forState = UIControlStateNormal)
         cancelButton.setTitleColor(UIColor.whiteColor, forState = UIControlStateNormal)
-        cancelButton.backgroundColor = UIColor.blackColor.colorWithAlphaComponent(0.5)
+        cancelButton.backgroundColor =
+            UIColor.blackColor.colorWithAlphaComponent(0.6)
         cancelButton.layer.cornerRadius = 8.0
-
         cancelButton.translatesAutoresizingMaskIntoConstraints = false
+
         view.addSubview(cancelButton)
 
         NSLayoutConstraint.activateConstraints(
@@ -153,7 +121,7 @@ private class ScannerViewController(
                     -32.0
                 ),
                 cancelButton.centerXAnchor.constraintEqualToAnchor(view.centerXAnchor),
-                cancelButton.widthAnchor.constraintEqualToConstant(100.0),
+                cancelButton.widthAnchor.constraintEqualToConstant(120.0),
                 cancelButton.heightAnchor.constraintEqualToConstant(44.0)
             )
         )
@@ -167,18 +135,7 @@ private class ScannerViewController(
 
     @ObjCAction
     fun cancelPressed() {
-        stopSession()
-        dismissViewControllerAnimated(true) {
-            onResult(null)
-        }
-    }
-
-    private fun stopSession() {
-        captureSession?.let {
-            if (it.isRunning()) {
-                it.stopRunning()
-            }
-        }
+        emitOnce(BarcodeScanResult.Cancelled)
     }
 
     override fun captureOutput(
@@ -186,16 +143,32 @@ private class ScannerViewController(
         didOutputMetadataObjects: List<*>,
         fromConnection: AVCaptureConnection
     ) {
-        val metadataObject =
+        val metadata =
             didOutputMetadataObjects.firstOrNull() as? AVMetadataMachineReadableCodeObject
-        if (metadataObject != null) {
-            val stringValue = metadataObject.stringValue
-            if (stringValue != null) {
-                stopSession()
-                dismissViewControllerAnimated(true) {
-                    onResult(stringValue)
-                }
-            }
+
+        val value = metadata?.stringValue?.trim()
+        if (!value.isNullOrEmpty()) {
+            emitOnce(BarcodeScanResult.Success(value))
+        }
+    }
+
+    private fun emitFailure() {
+        emitOnce(BarcodeScanResult.Failure(null))
+    }
+
+    private fun emitOnce(result: BarcodeScanResult) {
+        if (didEmitResult) return
+        didEmitResult = true
+
+        stopSession()
+        dismissViewControllerAnimated(true) {
+            onResult(result)
+        }
+    }
+
+    private fun stopSession() {
+        captureSession?.let {
+            if (it.isRunning()) it.stopRunning()
         }
     }
 
