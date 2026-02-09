@@ -17,8 +17,10 @@ fun salesHtml(
     date: String,
     items: List<InvoiceItem>,
     sundries: List<SundryItem>,
-    grandTotal: Double,transportDetails: TransportDetails
+    grandTotal: Double,
+    transportDetails: TransportDetails
 ): String {
+    println(items)
     val db = DatabaseHolder.instance
     val compInfo = db.companyInformationQueries.getCompanyInformation().executeAsOneOrNull()
     val html = StringBuilder()
@@ -54,6 +56,12 @@ body {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 10pt;
     color: #000;
+}
+
+.main-container {
+    border: 2px solid #000;
+    border-radius: 8px;
+    padding: 12px;
 }
 
 h1, h2, h3 {
@@ -132,6 +140,8 @@ th {
 
 <body>
 
+<div class="main-container">
+
 <!-- HEADER -->
 <div class="header">
     <div class="bold">GSTIN : ${compInfo?.T4.toString()}</div>
@@ -157,20 +167,19 @@ th {
         <table class="no-border">
             <tr><td><b>Invoice No.</b></td><td>: $invoiceNo</td></tr>
             <tr><td><b>Dated</b></td><td>: ${Tdate(date)}</td></tr>
-            <tr><td><b>Place of Supply</b></td><td>: Delhi (07)</td></tr>
-            <tr><td><b>Reverse Charge</b></td><td>: N</td></tr>
             
-            ${if(transportDetails.transportName!="") "<tr><td><b>Transport Name</b></td><td>: ${transportDetails.transportName}</td></tr>" else ""}
-            ${if(transportDetails.station!="") "<tr><td><b>Station</b></td><td>: ${transportDetails.station}</td></tr>" else ""}
-            ${if(transportDetails.gstRrNo!="") "<tr><td><b>GST/RR No.</b></td><td>: ${transportDetails.gstRrNo}</td></tr>" else ""}
-            ${if(transportDetails.vehicleNo!="") "<tr><td><b>Vehicle No.</b></td><td>: ${transportDetails.vehicleNo}</td></tr>" else ""}
-            ${if(transportDetails.pincode!="") "<tr><td><b>Pincode</b></td><td>: ${transportDetails.pincode}</td></tr>" else ""}
-            ${if(transportDetails.gstRrDate!="") "<tr><td><b>GR/RR Date</b></td><td>: ${Tdate(transportDetails.gstRrDate)}</td></tr>" else ""}
+            ${if (transportDetails.transportName != "") "<tr><td><b>Transport Name</b></td><td>: ${transportDetails.transportName}</td></tr>" else ""}
+            ${if (transportDetails.station != "") "<tr><td><b>Station</b></td><td>: ${transportDetails.station}</td></tr>" else ""}
+            ${if (transportDetails.gstRrNo != "") "<tr><td><b>GST/RR No.</b></td><td>: ${transportDetails.gstRrNo}</td></tr>" else ""}
+            ${if (transportDetails.vehicleNo != "") "<tr><td><b>Vehicle No.</b></td><td>: ${transportDetails.vehicleNo}</td></tr>" else ""}
+            ${if (transportDetails.pincode != "") "<tr><td><b>Pincode</b></td><td>: ${transportDetails.pincode}</td></tr>" else ""}
+            ${if (transportDetails.gstRrDate != "") "<tr><td><b>GR/RR Date</b></td><td>: ${Tdate(transportDetails.gstRrDate)}</td></tr>" else ""}
         </table>
     </div>
 </div>
-            <!-- ITEM TABLE -->
-             <table>
+
+<!-- ITEM TABLE -->
+<table>
     <tr>
         <th>S.N.</th>
         <th>Description of Goods</th>
@@ -184,39 +193,35 @@ th {
     items.forEachIndexed { index, item ->
         html.append(
             """
-    
-
     <tr>
         <td class="center">${index + 1}</td>
-        <td>
-            ${item.name}
-        </td>
+        <td>${item.name}</td>
         <td class="center"></td>
         <td class="center">${item.qty}</td>
         <td class="right">${item.price.formatToAmtDec()}</td>
         <td class="right">${item.total.formatToAmtDec()}</td>
     </tr>
-
             """.trimIndent()
         )
-
     }
-    html.append(
 
+    html.append(
         """
-            </table>
-           <!-- TOTALS -->
+</table>
+
+<!-- TOTALS -->
 <table class="amount-summary">
     <tr>
         <td style="width:70%"></td>
         <td class="right bold">${items.sumOf { it.total }.formatToAmtDec()}</td>
     </tr>""".trimIndent()
     )
+
     sundries.forEach { sun ->
         html.append(
             """
-                 <tr>
-        <td class="right bold">${if ((sun.i1 == 0 && sun.i2 == 0) || (sun.i1 == 0 && sun.i2 == 1)) "Less" else "Add"} : ${sun.name} ${if (sun.i2 == 1) sun.amount.formatToAmtDec() +"%" else ""}</td>
+    <tr>
+        <td class="right bold">${if ((sun.i1 == 0 && sun.i2 == 0) || (sun.i1 == 0 && sun.i2 == 1)) "Less" else "Add"} : ${sun.name} ${if (sun.i2 == 1) sun.amount.formatToAmtDec() + "%" else ""}</td>
         <td class="right">${if (sun.i2 == 1) sun.percentValue.formatToAmtDec() else sun.amount.formatToAmtDec()}</td>
     </tr>
             """.trimIndent()
@@ -236,23 +241,32 @@ th {
     <tr>
         <th>Tax Rate</th>
         <th>Taxable Amt.</th>
-        <th>IGST Amt.</th>
+        <th>GST Amt.</th>
         <th>Total Tax</th>
-    </tr>""".trimIndent())
+    </tr>""".trimIndent()
+    )
 
     taxItems.forEach {
-        html.append("""
-            
-            <tr>
+        html.append(
+            """
+    <tr>
         <td class="center">${it.key}</td>
-        <td class="right">${it.value.sumOf { it.price }.formatToAmtDec()}</td>
+        <td class="right">${it.value.sumOf { it.taxable }.formatToAmtDec()}</td>
         <td class="right">${it.value.sumOf { it.gstAmt }.formatToAmtDec()}</td>
-        <td class="right">${(it.value.sumOf { it.gstAmt } + it.value.sumOf { it.price }).formatToAmtDec()}</td>
-    </tr> 
-        """.trimIndent())
+        <td class="right">${(it.value.sumOf { it.gstAmt } + it.value.sumOf { it.taxable }).formatToAmtDec()}</td>
+    </tr>
+            """.trimIndent()
+        )
     }
-    html.append("""
-   
+
+    html.append(
+        """
+    <tr>
+        <td class="center">Total</td>
+        <td class="right">${taxItems.values.sumOf { it.sumOf { item -> item.taxable } }.formatToAmtDec()}</td>
+        <td class="right">${taxItems.values.sumOf { it.sumOf { item -> item.gstAmt } }.formatToAmtDec()}</td>
+        <td class="right">${(taxItems.values.sumOf { it.sumOf { item -> item.taxable } } + taxItems.values.sumOf { it.sumOf { item -> item.gstAmt } }).formatToAmtDec()}</td>
+    </tr>
 </table>
 
 <!-- AMOUNT IN WORDS -->
@@ -276,21 +290,22 @@ th {
     </div>
 </div>
 
+</div>
+
 </body>
 </html>
- 
         """.trimIndent()
     )
     return html.toString()
 }
 
 data class TransportDetails(
-    val transportName : String,
-    val gstRrNo : String,
-    val vehicleNo : String,
-    val station : String,
-    val pincode : String,
-    val  gstRrDate: String,
+    val transportName: String,
+    val gstRrNo: String,
+    val vehicleNo: String,
+    val station: String,
+    val pincode: String,
+    val gstRrDate: String,
 )
 
 private val ones = arrayOf(
