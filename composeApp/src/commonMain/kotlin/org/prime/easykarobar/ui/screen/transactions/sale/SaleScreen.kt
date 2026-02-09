@@ -92,6 +92,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.prime.easykarobar.business.viewmodel.transactions.InventoryVoucherViewModel
+import org.prime.easykarobar.data.expect.BarcodeScanResult
 import org.prime.easykarobar.data.expect.BarcodeScannerLauncher
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.rememberBarcodeScanner
@@ -222,19 +223,40 @@ data class SaleScreen(
         var shareLoading by remember { mutableStateOf(false) }
 
 
-        scannerLauncher = rememberBarcodeScanner(
-            onResult = { text ->
-                val product = db.productsQueries
-                    .getItemByName(text?.trim())
-                    .executeAsOneOrNull()
+        scannerLauncher = rememberBarcodeScanner { result ->
 
-                if (product == null) {
+            when (result) {
+                is BarcodeScanResult.Cancelled -> {
+                    showQtyPopup=false
+                    return@rememberBarcodeScanner
+                }
+
+                is BarcodeScanResult.Failure -> {
                     showEmptyBarcode = true
-                } else {
+                    return@rememberBarcodeScanner
+                }
+
+                is BarcodeScanResult.Success -> {
+                    val barcode = result.value.trim()
+
+                    if (barcode.isEmpty()) {
+                        showEmptyBarcode = true
+                        return@rememberBarcodeScanner
+                    }
+
+                    val product = db.productsQueries
+                        .getItemByName(barcode)
+                        .executeAsOneOrNull()
+
+                    if (product == null) {
+                        showEmptyBarcode = true
+                        return@rememberBarcodeScanner
+                    }
+
                     showQtyPopup = false
 
                     selectedItems = selectedItems + InvoiceItem(
-                        name = product.Name ?: "",
+                        name = product.Name.orEmpty(),
                         price = product.SalesPrice ?: 0.0,
                         qty = barcodeQty.toInt(),
                         discountPercentage = 0.0,
@@ -246,11 +268,13 @@ data class SaleScreen(
                         gstPercentage = 0.0,
                         taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0
                     )
-                    displayItemName = product.Name.toString()
+
+                    displayItemName = product.Name.orEmpty()
                     showAddMorePopup = true
                 }
             }
-        )
+        }
+
 
         if (showAddMorePopup) {
             TallyAlertBox(
@@ -375,12 +399,12 @@ data class SaleScreen(
                     )
                 }
 
-                transportName = data.other_info.transportName
-                gstRrNo = data.other_info.gstNum
-                vehicleNo = data.other_info.vehicleNum
-                station = data.other_info.station
-                pincode = data.other_info.pincode
-                gstRrDate = data.other_info.grDate
+                transportName = data.other_info?.transportName?:""
+                gstRrNo = data.other_info?.gstNum?:""
+                vehicleNo = data.other_info?.vehicleNum?:""
+                station = data.other_info?.station?:""
+                pincode = data.other_info?.pincode?:""
+                gstRrDate = data.other_info?.grDate?:CurrentDate()
             }
         }
         val sundriesTotal = selectedSundries.fold(0.0) { runningTotal, sundry ->
@@ -1502,8 +1526,7 @@ fun SundryCard(
                                     val filtered = newValue.filter { it.isDigit() || it == '.' }
                                     val dotCount = filtered.count { it == '.' }
                                     val validInput = if (dotCount > 1) {
-                                        filtered.substringBefore('.') + "." +
-                                                filtered.substringAfter('.').replace(".", "")
+                                        filtered.substringBefore('.') + "." + filtered.substringAfter('.').replace(".", "")
                                     } else {
                                         filtered
                                     }
@@ -1511,19 +1534,20 @@ fun SundryCard(
                                     textValue = validInput
                                     val parsedValue = validInput.toDoubleOrNull() ?: 0.0
 
-                                    val finalValue = if (isPercentage) {
-                                        rate
+                                    // Calculate the final amount based on the NEW parsed value
+                                    val finalAmount = if (isPercentage) {
+                                        runningTotal * (parsedValue / 100.0)
                                     } else {
                                         parsedValue
                                     }
 
+                                    val finalRate = if (isPercentage) parsedValue else 0.0
 
-                                    val finalRate = if (isPercentage) finalValue else 0.0
                                     onAmountChange(
-                                        finalValue,
-                                        finalRate,
-                                        index + 1,
-                                        calculatedAmount
+                                        parsedValue,      // The raw value entered (10 for 10%, or 500 for absolute)
+                                        finalRate,        // The rate (10 if percentage, 0 if absolute)
+                                        index + 1,        // srno
+                                        finalAmount       // The calculated amount
                                     )
                                 }
                             },
