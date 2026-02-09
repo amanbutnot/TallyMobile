@@ -136,7 +136,7 @@ FROM (
     LEFT JOIN LedgerMaster AS lm
         ON lm.Name = V.CM1
     WHERE V.CM2 IN ('New Ref', 'Advance')
-      AND V.D1 > 0
+      AND V.D1 < 0
       AND V.DATE >= :fromDate
       AND V.DATE <= :toDate
       AND (:filterCm3 = 0 OR V.CM3 IN :cm3)
