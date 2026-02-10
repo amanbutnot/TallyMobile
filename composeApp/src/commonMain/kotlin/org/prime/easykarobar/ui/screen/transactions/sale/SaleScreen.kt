@@ -103,6 +103,7 @@ import org.prime.easykarobar.data.model.transactions.TransportDetails
 import org.prime.easykarobar.ui.printing.salesHtml
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
 import org.prime.easykarobar.ui.screen.transactions.TallyNarrationField
+import org.prime.easykarobar.ui.shared.composables.DownloadResultDialog
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyAlertBox
 import org.prime.easykarobar.ui.shared.composables.TallyButton
@@ -227,7 +228,7 @@ data class SaleScreen(
 
             when (result) {
                 is BarcodeScanResult.Cancelled -> {
-                    showQtyPopup=false
+                    showQtyPopup = false
                     return@rememberBarcodeScanner
                 }
 
@@ -399,12 +400,12 @@ data class SaleScreen(
                     )
                 }
 
-                transportName = data.other_info?.transportName?:""
-                gstRrNo = data.other_info?.gstNum?:""
-                vehicleNo = data.other_info?.vehicleNum?:""
-                station = data.other_info?.station?:""
-                pincode = data.other_info?.pincode?:""
-                gstRrDate = data.other_info?.grDate?:CurrentDate()
+                transportName = data.other_info?.transportName ?: ""
+                gstRrNo = data.other_info?.gstNum ?: ""
+                vehicleNo = data.other_info?.vehicleNum ?: ""
+                station = data.other_info?.station ?: ""
+                pincode = data.other_info?.pincode ?: ""
+                gstRrDate = data.other_info?.grDate ?: CurrentDate()
             }
         }
         val sundriesTotal = selectedSundries.fold(0.0) { runningTotal, sundry ->
@@ -494,7 +495,7 @@ data class SaleScreen(
             )
         )
         TallyReportScaffold(
-            showBurgerMenu = isEdit,
+            showBurgerMenu = false,
             showBarcodeIcon = !isEdit,
             onBarcodeClick = {
                 showQtyPopup = true
@@ -589,13 +590,17 @@ data class SaleScreen(
 
                                     if (pending != null) {
                                         val gst = try {
-                                            db.taxCategoryMastQueries
-                                                .selectTaxRate(
-                                                    pending.taxCategoryCode.toString(),
-                                                    selectedDate
-                                                )
-                                                .executeAsOneOrNull()
-                                                ?: 18.0
+                                            if (isEdit) {
+                                                pending.gstPercentage
+                                            } else {
+                                                db.taxCategoryMastQueries
+                                                    .selectTaxRate(
+                                                        pending.taxCategoryCode.toString(),
+                                                        selectedDate
+                                                    )
+                                                    .executeAsOneOrNull()
+                                                    ?: 0.0
+                                            }
                                         } catch (e: Exception) {
                                             println(e.message)
                                             0.0
@@ -1028,11 +1033,16 @@ data class SaleScreen(
                     )
                 }
                 if (showResultDialog) {
-                    TallyResultDialog(
-                        message = "${state.message} ${state.data?.VoucherNumber}",
-                        onDone = { nav.pop() },
+                    DownloadResultDialog(
+                        message = state.message ?: "Error Occurred",
+                        onDone = {
+                            showResultDialog = false
+                            nav.pop()
+                        },
                         isSuccess = state.success,
-                        confirmText = "Ok"
+                        fileName = name,
+                        htmlContent = htmlContent,
+                        onLoadingChange = { shareLoading = it }
                     )
                 }
             },
@@ -1526,7 +1536,9 @@ fun SundryCard(
                                     val filtered = newValue.filter { it.isDigit() || it == '.' }
                                     val dotCount = filtered.count { it == '.' }
                                     val validInput = if (dotCount > 1) {
-                                        filtered.substringBefore('.') + "." + filtered.substringAfter('.').replace(".", "")
+                                        filtered.substringBefore('.') + "." + filtered.substringAfter(
+                                            '.'
+                                        ).replace(".", "")
                                     } else {
                                         filtered
                                     }
