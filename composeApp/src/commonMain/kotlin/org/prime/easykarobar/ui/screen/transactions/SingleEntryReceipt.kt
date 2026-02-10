@@ -39,9 +39,11 @@ import org.prime.easykarobar.business.viewmodel.transactions.SingleEntryViewMode
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.model.transactions.TranListResponse
 import org.prime.easykarobar.data.model.transactions.TranRequest
+import org.prime.easykarobar.ui.printing.EntryTypesHtml
+import org.prime.easykarobar.ui.printing.entryTypesHtml
+import org.prime.easykarobar.ui.shared.composables.DownloadResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
-import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 
@@ -82,7 +84,7 @@ data class SingleEntryReceipt(
         var showPopup by remember { mutableStateOf(false) }
         var showBottomSheet by rememberSaveable { mutableStateOf(false) }
         var showSettlementBottomSheet by rememberSaveable { mutableStateOf(false) }
-        val list =getLedgerMasters(db)
+        val list = getLedgerMasters(db)
 
 
         val viewmodel: SingleEntryViewModel = viewModel { SingleEntryViewModel() }
@@ -270,23 +272,12 @@ data class SingleEntryReceipt(
                     )
                 }
                 if (showPopup) {
-                    TallyResultDialog(
+                    DownloadResultDialog(
                         message = (state.message + " ${state.data?.VoucherNumber ?: ""}"),
                         onDone = {
                             if (state.success) {
-                                if (isEdit) {
                                     showPopup = false
                                     nav.pop()
-                                } else {
-                                    selectedAccount = ""
-                                    selectedAccountGUID = ""
-                                    selectedSettlement = ""
-                                    selectedSettlementGUID = ""
-                                    amount = ""
-                                    narration = ""
-                                    selectedDate = CurrentDate()
-                                    showPopup = false
-                                }
 
                             } else {
                                 showPopup = false
@@ -294,7 +285,18 @@ data class SingleEntryReceipt(
 
                         },
                         isSuccess = state.success,
-                        confirmText = if (state.success) "Done" else "Try Again"
+                        confirmText = if (state.success) "Done" else "Try Again",
+                        fileName = "${name}_${existingTransaction?.VchNo}",
+                        htmlContent = entryTypesHtml(
+                            voucherNo = state.data?.VoucherNumber.toString(),
+                            date = selectedDate,
+                            data = EntryTypesHtml(
+                                ledger = selectedAccount,
+                                settlement = selectedSettlement,
+                                amount = amount.toDoubleOrNull() ?: 0.0
+                            ),
+                            title = name
+                        ),
                     )
                 }
             },

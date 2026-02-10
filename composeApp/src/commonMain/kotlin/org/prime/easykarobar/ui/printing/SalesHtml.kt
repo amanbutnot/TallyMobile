@@ -242,7 +242,7 @@ th {
         <th>Tax Rate</th>
         <th>Taxable Amt.</th>
         <th>GST Amt.</th>
-        <th>Total Tax</th>
+        <th>Net Amount</th>
     </tr>""".trimIndent()
     )
 
@@ -250,7 +250,7 @@ th {
         html.append(
             """
     <tr>
-        <td class="center">${it.key}</td>
+        <td class="center">${it.key.formatToAmtDec()}</td>
         <td class="right">${it.value.sumOf { it.taxable }.formatToAmtDec()}</td>
         <td class="right">${it.value.sumOf { it.gstAmt }.formatToAmtDec()}</td>
         <td class="right">${(it.value.sumOf { it.gstAmt } + it.value.sumOf { it.taxable }).formatToAmtDec()}</td>

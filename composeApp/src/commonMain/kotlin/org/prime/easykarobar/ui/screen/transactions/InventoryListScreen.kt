@@ -15,19 +15,27 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +51,7 @@ import org.prime.easykarobar.data.model.ORDERSTATUS
 import org.prime.easykarobar.data.model.transactions.InventoryListRequest
 import org.prime.easykarobar.data.model.transactions.InventoryListResponse
 import org.prime.easykarobar.ui.screen.transactions.sale.SaleScreen
+import org.prime.easykarobar.ui.shared.composables.DownloadResultDialog
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
@@ -58,6 +67,8 @@ data class InventoryListScreen(
     @Composable
     override fun Content() {
         val viewModel: InventoryVoucherViewModel = viewModel { InventoryVoucherViewModel() }
+        var showResultDialog by remember { mutableStateOf(false) }
+        var shareLoading by remember { mutableStateOf(false) }
         val nav = LocalNavigator.currentOrThrow
         val state by viewModel.listState
 
@@ -108,7 +119,7 @@ data class InventoryListScreen(
                         LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
                             state.data?.let {
                                 itemsIndexed(it) { index, item ->
-                                    ListItem(item) {
+                                    ListItem(listState = item, onDownload = {}, onShare = {}) {
                                         nav.push(
                                             SaleScreen(
                                                 name = name,
@@ -124,30 +135,50 @@ data class InventoryListScreen(
                         }
                     }
                 }
-
+                if (showResultDialog) {
+                    DownloadResultDialog(
+                        message = state.message ?: "Error Occurred",
+                        onDone = {
+                            showResultDialog = false
+                            nav.pop()
+                        },
+                        isSuccess = state.success,
+                        fileName = name,
+                        //TODO: make it have the html file
+                        htmlContent = "",
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
             })
     }
 }
 
 
 @Composable
-private fun ListItem(listState: InventoryListResponse, onClick: () -> Unit) {
+private fun ListItem(
+    listState: InventoryListResponse,
+    onDownload: () -> Unit = {},
+    onShare: () -> Unit = {},
+    onClick: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() }
+        modifier = Modifier
+            .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (listState.status_billed == ORDERSTATUS.Pending.name) Color(
-                0xffFBC02D
-            ).copy(alpha = 0.04f) else MaterialTheme.colorScheme.surface,
-            //   surfaceTintColor = Color.Transparent
-        ), border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.onBackground)
-        //    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-
+            containerColor = if (listState.status_billed == ORDERSTATUS.Pending.name)
+                Color(0xffFBC02D).copy(alpha = 0.04f)
+            else
+                MaterialTheme.colorScheme.surface,
+        ),
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.onBackground)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onClick() }
+                .padding(16.dp)
         ) {
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -189,9 +220,10 @@ private fun ListItem(listState: InventoryListResponse, onClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Narration
+            // Billing Name
             Row(
-                modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
             ) {
                 Text(
                     text = "Billing Name: ",
@@ -209,11 +241,13 @@ private fun ListItem(listState: InventoryListResponse, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis
                 )
             }
+
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Narration
+            // Status
             Row(
-                modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
             ) {
                 Text(
                     text = "Status:",
@@ -257,7 +291,72 @@ private fun ListItem(listState: InventoryListResponse, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.primary
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Action Buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Download Button
+                OutlinedButton(
+                    onClick = onDownload,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
+                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Download,
+                        contentDescription = "Download",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Download",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                // Share Button
+                Button(
+                    onClick = onShare,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    elevation = androidx.compose.material3.ButtonDefaults.buttonElevation(
+                        defaultElevation = 2.dp,
+                        pressedElevation = 4.dp
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Share",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
         }
     }
 }
-

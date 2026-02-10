@@ -1,6 +1,7 @@
 package org.prime.easykarobar.ui.screen.transactions
 
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,19 +16,26 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -37,14 +45,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.launch
 import org.prime.easykarobar.business.viewmodel.transactions.SingleEntryViewModel
 import org.prime.easykarobar.data.model.transactions.TranListRequest
 import org.prime.easykarobar.data.model.transactions.TranListResponse
+import org.prime.easykarobar.ui.printing.EntryTypesHtml
+import org.prime.easykarobar.ui.printing.entryTypesHtml
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyDivider
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.getNameFromGUID
+import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
+import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 
 data class SingleEntryListScreen(
     val startDate: String, val endDate: String, val vchType: Int, val name: String
@@ -59,6 +72,7 @@ data class SingleEntryListScreen(
             content = { paddingValues ->
                 Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
                     val viewmodel: SingleEntryViewModel = viewModel { SingleEntryViewModel() }
+                    val scope = rememberCoroutineScope()
                     val state by viewmodel.listState
 
                     LaunchedEffect(
@@ -86,14 +100,11 @@ data class SingleEntryListScreen(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
-
-
                                 Text(
                                     state.error.toString(),
                                     style = MaterialTheme.typography.displaySmall,
                                     color = MaterialTheme.colorScheme.error
                                 )
-
                             }
                         }
 
@@ -101,7 +112,46 @@ data class SingleEntryListScreen(
                             LazyColumn(modifier = Modifier.fillMaxSize()) {
                                 state.data?.let {
                                     itemsIndexed(it) { index, item ->
-                                        ListItem(item) {
+                                        ListItem(
+                                            item,
+                                            onDownload = { data ->
+                                                scope.launch {
+                                                    handlePdfAction(
+                                                        fileName = "${name}_${item.VchNo}",
+                                                        htmlContent = entryTypesHtml(
+                                                            voucherNo = item.VchNo,
+                                                            date = item.TranDate,
+                                                            data = EntryTypesHtml(
+                                                                ledger = item.C1,
+                                                                settlement = item.C2,
+                                                                amount = item.D2
+                                                            ),
+                                                            title = name
+                                                        ),
+                                                        action = PdfAction.Download,
+                                                        onLoadingChange = {}
+                                                    )
+                                                }
+                                            },
+                                            onShare = { data ->
+                                                scope.launch {
+                                                    handlePdfAction(
+                                                        fileName = "${name}_${item.VchNo}",
+                                                        htmlContent = entryTypesHtml(
+                                                            voucherNo = item.VchNo,
+                                                            date = item.TranDate,
+                                                            data = EntryTypesHtml(
+                                                                ledger = item.C1,
+                                                                settlement = item.C2,
+                                                                amount = item.D2
+                                                            ),
+                                                            title = name
+                                                        ),
+                                                        action = PdfAction.Share,
+                                                        onLoadingChange = {}
+                                                    )
+                                                }
+                                            }) {
                                             nav.push(
                                                 SingleEntryReceipt(
                                                     name = name,
@@ -118,20 +168,30 @@ data class SingleEntryListScreen(
                     }
 
                 }
-
             })
     }
 }
 
 
 @Composable
-private fun ListItem(listState: TranListResponse, onClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().clickable { onClick() }
-        .padding(horizontal = 16.dp, vertical = 8.dp),
+private fun ListItem(
+    listState: TranListResponse,
+    onDownload: (TranListResponse) -> Unit,
+    onShare: (TranListResponse) -> Unit,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onClick() }
+                .padding(16.dp)
         ) {
             // Header Row - Voucher No and Date
             Row(
@@ -175,9 +235,10 @@ private fun ListItem(listState: TranListResponse, onClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Narration
+            // Party Name
             Row(
-                modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
             ) {
                 Text(
                     text = "Party Name:",
@@ -195,15 +256,17 @@ private fun ListItem(listState: TranListResponse, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis
                 )
             }
+
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Narration
+            // Settlement Mode
             Row(
-                modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
             ) {
                 Text(
                     text = "Settlement Mode:",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold ),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -217,11 +280,13 @@ private fun ListItem(listState: TranListResponse, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis
                 )
             }
+
             Spacer(modifier = Modifier.height(12.dp))
 
             // Narration
             Row(
-                modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
             ) {
                 Icon(
                     imageVector = Icons.Default.Description,
@@ -264,7 +329,72 @@ private fun ListItem(listState: TranListResponse, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.primary
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Action Buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Download Button
+                OutlinedButton(
+                    onClick = { onDownload(listState) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Download,
+                        contentDescription = "Download",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Download",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                // Share Button
+                Button(
+                    onClick = { onShare(listState) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 2.dp,
+                        pressedElevation = 4.dp
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Share",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
         }
     }
 }
-
