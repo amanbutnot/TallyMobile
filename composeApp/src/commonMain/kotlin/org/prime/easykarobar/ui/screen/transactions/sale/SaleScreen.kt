@@ -1994,7 +1994,7 @@ fun ExpandedItemEditor1(
 
     /* ------------------ CORE PRICE LOGIC ------------------ */
 
-    val unitPrice by remember {
+    val unitPrice by
         derivedStateOf {
             when (editMode) {
 
@@ -2018,13 +2018,13 @@ fun ExpandedItemEditor1(
                     price
                 }
             }
-        }
+
     }
 
-    val amount by remember {
+    val amount by
         derivedStateOf {
             if (qtyValue > 0) unitPrice * qtyValue else 0.0
-        }
+
     }
 
     /* ------------------ TAX CALCULATION ------------------ */
@@ -2086,7 +2086,11 @@ fun ExpandedItemEditor1(
                     Text("Qty", style = MaterialTheme.typography.labelSmall)
                     BorderedInput(
                         value = qtyN,
-                        onValueChange = { qtyN = it.filter(Char::isDigit) },
+                        onValueChange = {
+                            isAmountManuallyEdited = false
+                            editMode = PriceEditMode.LIST_PRICE
+                            qtyN = it.filter(Char::isDigit)
+                        },
                         keyboardType = KeyboardType.Number
                     )
                 }
