@@ -120,6 +120,7 @@ import org.prime.easykarobar.ui.shared.globalShared.isBusy
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.Products
+import yymmdd
 import kotlin.math.abs
 import kotlin.math.round
 
@@ -688,7 +689,7 @@ data class SaleScreen(
                                             onQuantityChange = { newQty ->
                                                 selectedItems =
                                                     selectedItems.mapIndexed { index1, item1 ->
-                                                        if (index1 == index) item1.copy(qty = newQty) else item1
+                                                        if (index1 == index) item1.copy(qty = newQty, net = newQty*item1.net) else item1
                                                     }
                                             },
                                             onRemove = { selectedItems = selectedItems - item },
@@ -1034,7 +1035,7 @@ data class SaleScreen(
                 }
                 if (showResultDialog) {
                     DownloadResultDialog(
-                        message = state.message ?: "Error Occurred",
+                        message = "${state.message}\n${state.data?.VoucherNumber}",
                         onDone = {
                             showResultDialog = false
                             nav.pop()
@@ -1109,7 +1110,7 @@ data class SaleScreen(
                                     taxType = if (taxType == TaxType.EXTRA) 1 else 2,
                                     items = billingItems,
                                     sundries = selectedSundries,
-                                    TranDate = selectedDate,
+                                    TranDate = selectedDate.yymmdd(),
                                     Narration = narration,
                                     TransactionID = tranId,
                                     total_amt = grandTotal, transportDetails = TransportDetails(
@@ -1122,7 +1123,7 @@ data class SaleScreen(
                                     )
                                 ),
                                 onSuccess = {
-                                    println(
+                                    println("The Item i am sending: "+
                                         InventoryVoucherRequest(
                                             billing_guid = selectedLedgerGUID,
                                             vch_type = vchType,
