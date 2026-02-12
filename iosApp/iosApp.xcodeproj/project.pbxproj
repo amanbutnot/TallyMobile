@@ -12,7 +12,7 @@
 
 /* Begin PBXFileReference section */
 		07F7F8F52E8956C000389A1A /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
-		98B6A157296695295817FD77 /* TallyMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TallyMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		98B6A157296695295817FD77 /* Easy Karobar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Easy Karobar.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -64,7 +64,7 @@
 		567EADFD5EE3A817BE532813 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				98B6A157296695295817FD77 /* TallyMobile.app */,
+				98B6A157296695295817FD77 /* Easy Karobar.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -102,7 +102,7 @@
 			packageProductDependencies = (
 			);
 			productName = iosApp;
-			productReference = 98B6A157296695295817FD77 /* TallyMobile.app */;
+			productReference = 98B6A157296695295817FD77 /* Easy Karobar.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -254,6 +254,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Easy Karobar";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				INFOPLIST_KEY_NSCameraUsageDescription = "We need camera access to capture attendance and check in / check out photos";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We require access to your location to verify the source of your attendance.\n";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need photo library access to save attendance photos";
@@ -288,6 +289,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Easy Karobar";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				INFOPLIST_KEY_NSCameraUsageDescription = "We need camera access to capture attendance and check in / check out photos";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We require access to your location to verify the source of your attendance.\n";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need photo library access to save attendance photos";
