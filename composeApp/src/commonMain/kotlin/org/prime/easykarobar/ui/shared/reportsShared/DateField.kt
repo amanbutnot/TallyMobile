@@ -217,3 +217,11 @@ fun getMonthRange(monthName: String, year: Int): Pair<String, String> {
 
 fun isLeapYear(year: Int): Boolean =
     (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+
+fun String.yymmdd():String{
+    val s = this.split("-")
+    val day = s[0]
+    val month = s[1]
+    val year = s[2]
+    return "$year-$month-$day"
+}
