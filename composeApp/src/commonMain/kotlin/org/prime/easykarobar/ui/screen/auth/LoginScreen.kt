@@ -203,7 +203,7 @@ object LoginScreen : Screen {
 
                         TallyButton(
                             label = "Support Ticket",
-                            onClick = { urlHandler.openUri("http://easykarobar.in/support-ticket.php") },
+                            onClick = { urlHandler.openUri("https://easykarobar.in/support-ticket.php") },
                             backgroundColor = Color.Transparent,
                             contentColor = colors.primary,
                             modifier = Modifier.fillMaxWidth(),
