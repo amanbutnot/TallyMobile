@@ -278,7 +278,7 @@ data class SaleScreen(
                     val taxableAmount: Double
                     val gstAmount: Double
                     val netAmount: Double
-
+//for cleanup
                     if (taxType == TaxType.EXTRA) {
                         taxableAmount = price * qty
                         gstAmount = taxableAmount * gstPercentage / 100.0
