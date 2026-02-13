@@ -257,17 +257,57 @@ data class SaleScreen(
 
                     showQtyPopup = false
 
+                    // Get the price based on whether it's a sale or purchase
+                    val price = if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
+                    val qty = barcodeQty.toIntOrNull() ?: 1
+
+                    // Get GST percentage from tax category
+                    val gstPercentage = try {
+                        db.taxCategoryMastQueries
+                            .selectTaxRate(
+                                product.TaxCategoryCode?.toString() ?: "0",
+                                selectedDate
+                            )
+                            .executeAsOneOrNull() ?: 0.0
+                    } catch (e: Exception) {
+                        println(e.message)
+                        0.0
+                    }
+
+                    // Calculate tax values based on tax type
+                    val taxableAmount: Double
+                    val gstAmount: Double
+                    val netAmount: Double
+
+                    if (taxType == TaxType.EXTRA) {
+                        taxableAmount = price * qty
+                        gstAmount = taxableAmount * gstPercentage / 100.0
+                        netAmount = taxableAmount + gstAmount
+                    } else {
+                        // Tax Inclusive
+                        if (gstPercentage == 0.0) {
+                            taxableAmount = price * qty
+                            gstAmount = 0.0
+                            netAmount = price * qty
+                        } else {
+                            val amount = price * qty
+                            taxableAmount = amount * 100.0 / (100.0 + gstPercentage)
+                            gstAmount = amount - taxableAmount
+                            netAmount = amount
+                        }
+                    }
+
                     selectedItems = selectedItems + InvoiceItem(
                         name = product.Name.orEmpty(),
-                        price = product.SalesPrice ?: 0.0,
-                        qty = barcodeQty.toInt(),
+                        price = price,
+                        qty = qty,
                         discountPercentage = 0.0,
-                        listPrice = 0.0,
-                        taxable = 0.0,
-                        gstAmt = 0.0,
-                        net = 0.0,
+                        listPrice = if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0,
+                        taxable = taxableAmount,
+                        gstAmt = gstAmount,
+                        net = netAmount,
                         guid = product.GUID ?: pendingSelectedProductGUID.orEmpty(),
-                        gstPercentage = 0.0,
+                        gstPercentage = gstPercentage,
                         taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0
                     )
 
@@ -276,7 +316,6 @@ data class SaleScreen(
                 }
             }
         }
-
 
         if (showAddMorePopup) {
             TallyAlertBox(
@@ -689,7 +728,44 @@ data class SaleScreen(
                                             onQuantityChange = { newQty ->
                                                 selectedItems =
                                                     selectedItems.mapIndexed { index1, item1 ->
-                                                        if (index1 == index) item1.copy(qty = newQty, net = newQty*item1.net) else item1
+                                                        if (index1 == index) {
+                                                            // Recalculate based on tax type
+                                                            val newTaxableAmount: Double
+                                                            val newGstAmount: Double
+                                                            val newNetAmount: Double
+
+                                                            if (taxType == TaxType.EXTRA) {
+                                                                newTaxableAmount =
+                                                                    item1.price * newQty
+                                                                newGstAmount =
+                                                                    newTaxableAmount * item1.gstPercentage / 100.0
+                                                                newNetAmount =
+                                                                    newTaxableAmount + newGstAmount
+                                                            } else {
+                                                                if (item1.gstPercentage == 0.0) {
+                                                                    newTaxableAmount =
+                                                                        item1.price * newQty
+                                                                    newGstAmount = 0.0
+                                                                    newNetAmount =
+                                                                        item1.price * newQty
+                                                                } else {
+                                                                    val amount =
+                                                                        item1.price * newQty
+                                                                    newTaxableAmount =
+                                                                        amount * 100.0 / (100.0 + item1.gstPercentage)
+                                                                    newGstAmount =
+                                                                        amount - newTaxableAmount
+                                                                    newNetAmount = amount
+                                                                }
+                                                            }
+
+                                                            item1.copy(
+                                                                qty = newQty,
+                                                                taxable = newTaxableAmount,
+                                                                gstAmt = newGstAmount,
+                                                                net = newNetAmount
+                                                            )
+                                                        } else item1
                                                     }
                                             },
                                             onRemove = { selectedItems = selectedItems - item },
@@ -1123,31 +1199,32 @@ data class SaleScreen(
                                     )
                                 ),
                                 onSuccess = {
-                                    println("The Item i am sending: "+
-                                        InventoryVoucherRequest(
-                                            billing_guid = selectedLedgerGUID,
-                                            vch_type = vchType,
-                                            billing_name = selectedLedger,
-                                            billing_mobile = "",
-                                            billing_state = "",
-                                            billing_country = "",
-                                            billing_address = "",
-                                            taxType = if (taxType == TaxType.EXTRA) 1 else 2,
-                                            items = billingItems,
-                                            sundries = selectedSundries,
-                                            TranDate = selectedDate,
-                                            Narration = narration,
-                                            TransactionID = tranId,
-                                            total_amt = grandTotal,
-                                            transportDetails = TransportDetails(
-                                                transportName = transportName,
-                                                station = station,
-                                                gstNum = gstRrNo,
-                                                vehicleNum = vehicleNo,
-                                                pincode = pincode,
-                                                grDate = gstRrDate
-                                            )
-                                        )
+                                    println(
+                                        "The Item i am sending: " +
+                                                InventoryVoucherRequest(
+                                                    billing_guid = selectedLedgerGUID,
+                                                    vch_type = vchType,
+                                                    billing_name = selectedLedger,
+                                                    billing_mobile = "",
+                                                    billing_state = "",
+                                                    billing_country = "",
+                                                    billing_address = "",
+                                                    taxType = if (taxType == TaxType.EXTRA) 1 else 2,
+                                                    items = billingItems,
+                                                    sundries = selectedSundries,
+                                                    TranDate = selectedDate,
+                                                    Narration = narration,
+                                                    TransactionID = tranId,
+                                                    total_amt = grandTotal,
+                                                    transportDetails = TransportDetails(
+                                                        transportName = transportName,
+                                                        station = station,
+                                                        gstNum = gstRrNo,
+                                                        vehicleNum = vehicleNo,
+                                                        pincode = pincode,
+                                                        grDate = gstRrDate
+                                                    )
+                                                )
                                     )
                                     showResultDialog = true
                                 },
@@ -1996,35 +2073,35 @@ fun ExpandedItemEditor1(
     /* ------------------ CORE PRICE LOGIC ------------------ */
 
     val unitPrice by
-        derivedStateOf {
-            when (editMode) {
+    derivedStateOf {
+        when (editMode) {
 
-                PriceEditMode.LIST_PRICE,
-                PriceEditMode.DISCOUNT -> {
-                    val lp = listPriceN.toDoubleOrNull() ?: 0.0
-                    val dis = discountN.toDoubleOrNull() ?: 0.0
-                    lp - (lp * dis / 100.0)
-                }
-
-                PriceEditMode.AMOUNT -> {
-                    if (!isAmountManuallyEdited || qtyValue == 0) return@derivedStateOf 0.0
-
-                    val amt = amountN.toDoubleOrNull() ?: 0.0
-                    val price = amt / qtyValue
-
-                    // REQUIRED behavior
-                    discountN = "0"
-                    listPriceN = price.toString()
-
-                    price
-                }
+            PriceEditMode.LIST_PRICE,
+            PriceEditMode.DISCOUNT -> {
+                val lp = listPriceN.toDoubleOrNull() ?: 0.0
+                val dis = discountN.toDoubleOrNull() ?: 0.0
+                lp - (lp * dis / 100.0)
             }
+
+            PriceEditMode.AMOUNT -> {
+                if (!isAmountManuallyEdited || qtyValue == 0) return@derivedStateOf 0.0
+
+                val amt = amountN.toDoubleOrNull() ?: 0.0
+                val price = amt / qtyValue
+
+                // REQUIRED behavior
+                discountN = "0"
+                listPriceN = price.toString()
+
+                price
+            }
+        }
 
     }
 
     val amount by
-        derivedStateOf {
-            if (qtyValue > 0) unitPrice * qtyValue else 0.0
+    derivedStateOf {
+        if (qtyValue > 0) unitPrice * qtyValue else 0.0
 
     }
 
