@@ -110,7 +110,12 @@ SELECT
     SUM(D1) * -1 AS Amt,
     'SalesRegister' AS RepType
 FROM Vouchers_Ledgers
-WHERE VchType = 'Sales'
+WHERE VchType = 'Sales' AND CM1 IN (
+                                                SELECT Name
+                                                FROM LedgerMaster
+                                                WHERE (:groupFilter = 0 OR GroupCode IN ?)
+                                                  AND (:excludeFilter = 0 OR GUID NOT IN ?)
+                                            )
   AND SRNO = 1
   AND DATE >= ?1
   AND DATE <= ?2
@@ -122,7 +127,12 @@ SELECT
     SUM(D1) AS Amt,
     'PurchaseRegister' AS RepType
 FROM Vouchers_Ledgers
-WHERE VchType = 'Purchase'
+WHERE VchType = 'Purchase' AND CM1 IN (
+                                                  SELECT Name
+                                                  FROM LedgerMaster
+                                                  WHERE (:groupFilter = 0 OR GroupCode IN ?)
+                                                    AND (:excludeFilter = 0 OR GUID NOT IN ?)
+                                              )
   AND SRNO = 1
   AND DATE >= ?1
   AND DATE <= ?2
@@ -134,7 +144,12 @@ SELECT
     SUM(D1) AS Amt,
     'RcptRegister' AS RepType
 FROM Vouchers_Ledgers
-WHERE VchType = 'Receipt'
+WHERE VchType = 'Receipt' AND CM1 IN (
+                                                 SELECT Name
+                                                 FROM LedgerMaster
+                                                 WHERE (:groupFilter = 0 OR GroupCode IN ?)
+                                                   AND (:excludeFilter = 0 OR GUID NOT IN ?)
+                                             )
   AND SRNO = 1
   AND DATE >= ?1
   AND DATE <= ?2
@@ -146,7 +161,12 @@ SELECT
     SUM(D1) * -1 AS Amt,
     'PymntRegister' AS RepType
 FROM Vouchers_Ledgers
-WHERE VchType = 'Payment'
+WHERE VchType = 'Payment' AND CM1 IN (
+                                                  SELECT Name
+                                                  FROM LedgerMaster
+                                                  WHERE (:groupFilter = 0 OR GroupCode IN ?)
+                                                    AND (:excludeFilter = 0 OR GUID NOT IN ?)
+                                              )
   AND SRNO= 1
   AND DATE >= ?1
   AND DATE <= ?2;

@@ -37,7 +37,6 @@ import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.ShoppingBasket
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Sync
@@ -47,12 +46,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -140,7 +137,15 @@ object HomeTab : Tab {
             excludeFilter = filterAccounts,
             GUID = excludeGuids,
             GroupCode_ = groupCodes,
-            GUID_ = excludeGuids
+            GUID_ = excludeGuids,
+            GroupCode__ = groupCodes,
+            GUID__ = excludeGuids,
+            GroupCode___ = groupCodes,
+            GUID___ = excludeGuids,
+            GroupCode____ = groupCodes,
+            GUID____ = excludeGuids,
+            GroupCode_____ = groupCodes,
+            GUID_____ = excludeGuids
         ).executeAsList()
 
         val filteredReportList = reportList
