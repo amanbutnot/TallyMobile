@@ -243,7 +243,7 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                             TextAlign.Start
                         ),
                         ReportColumn(
-                            "Closing: ${closingBalance.absoluteValue.formatToAmtDec().stringToDouble()} $closingBalanceType",
+                            "Closing: ${closingBalance.absoluteValue.formatToAmtDec()} $closingBalanceType",
                             columnBigWeight,
                             TextAlign.End
                         ),

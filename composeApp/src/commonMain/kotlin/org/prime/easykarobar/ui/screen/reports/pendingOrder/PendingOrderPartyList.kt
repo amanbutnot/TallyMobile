@@ -27,8 +27,8 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
-import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportItemScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingReportScreen
 import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheet
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
@@ -44,7 +44,6 @@ import org.prime.easykarobar.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportLazyList
 import org.tally.PendingPurchaseOrderList
 import smartSearch
-import kotlin.collections.contains
 import kotlin.math.absoluteValue
 
 data class PendingOrderPartyList(
@@ -154,7 +153,7 @@ data class PendingOrderPartyList(
                             textAlign = TextAlign.Start
                         ),
                         ReportColumn(
-                            text = "Total: ${list.sumOf { it.PendingQty?.absoluteValue ?: 0.0 }}",
+                            text = "Total: ${list.sumOf { it.PendingQty?.absoluteValue ?: 0.0 }.formatToAmtDec()}",
                             weight = column1Weight,
                             textAlign = TextAlign.End
                         ),
@@ -240,7 +239,7 @@ data class PendingOrderPartyList(
                                 isHeader = false
                             )
                             TableCell(
-                                text = item.PendingQty?.absoluteValue.toString(),
+                                text = item.PendingQty?.absoluteValue?.formatToAmtDec().toString(),
                                 weight = column1Weight,
                                 isHeader = false, textAlign = TextAlign.End
                             )
