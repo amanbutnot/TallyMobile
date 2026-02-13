@@ -156,7 +156,7 @@ data class InvoiceItem(
 
 enum class TaxType {
     INCLUSIVE,
-    EXTRA
+    EXTRA,VOUCHER
 }
 
 data class SaleScreen(
@@ -283,7 +283,11 @@ data class SaleScreen(
                         taxableAmount = price * qty
                         gstAmount = taxableAmount * gstPercentage / 100.0
                         netAmount = taxableAmount + gstAmount
-                    } else {
+                    } else if (taxType == TaxType.VOUCHER){
+                        taxableAmount = price * qty
+                        gstAmount = 0.0
+                        netAmount = price * qty
+                    }else {
                         // Tax Inclusive
                         if (gstPercentage == 0.0) {
                             taxableAmount = price * qty
@@ -394,7 +398,9 @@ data class SaleScreen(
                 if (taxType == TaxType.EXTRA) {
                     val taxable = item.price * item.qty
                     taxable + taxable * item.gstPercentage / 100.0
-                } else {
+                } else if (taxType == TaxType.VOUCHER){
+                    item.price*item.qty
+                }else {
                     item.price * item.qty
                 }
             }
@@ -741,7 +747,14 @@ data class SaleScreen(
                                                                     newTaxableAmount * item1.gstPercentage / 100.0
                                                                 newNetAmount =
                                                                     newTaxableAmount + newGstAmount
-                                                            } else {
+                                                            }
+                                                            else if (taxType == TaxType.VOUCHER){
+                                                                newTaxableAmount =
+                                                                    item1.price * newQty
+                                                                newGstAmount = 0.0
+                                                                newNetAmount =
+                                                                    item1.price * newQty
+                                                            }else {
                                                                 if (item1.gstPercentage == 0.0) {
                                                                     newTaxableAmount =
                                                                         item1.price * newQty
@@ -1356,7 +1369,10 @@ fun CompactItemCard(
         if (taxType == TaxType.EXTRA) {
             val taxable = item.price * item.qty
             taxable + taxable * gstPercentage / 100.0
-        } else {
+        }
+        else if (taxType == TaxType.VOUCHER){
+            item.price * item.qty
+        }else {
             item.price * item.qty
         }
     }
@@ -1764,6 +1780,12 @@ fun TaxTypeSelector(
                     label = "Tax Extra",
                     selected = selectedTaxType == TaxType.EXTRA,
                     onClick = { onTaxTypeSelected(TaxType.EXTRA) },
+                    modifier = Modifier.weight(1f)
+                )
+                TaxTypeOption(
+                    label = "Voucher Wise",
+                    selected = selectedTaxType == TaxType.VOUCHER,
+                    onClick = { onTaxTypeSelected(TaxType.VOUCHER) },
                     modifier = Modifier.weight(1f)
                 )
             }
