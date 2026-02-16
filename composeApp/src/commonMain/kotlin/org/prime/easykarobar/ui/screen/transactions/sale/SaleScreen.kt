@@ -163,6 +163,8 @@ data class SaleScreen(
     val name: String,
     val vchType: Int,
     val tranId: Int? = null,
+    val selectedLedger: String? = null,
+    val selectedLedgerGUID: String? = null,
     val isEdit: Boolean = false, val enableUpdateButton: Boolean = true
 ) : Screen {
 
@@ -175,9 +177,9 @@ data class SaleScreen(
         val db = DatabaseHolder.instance
         val nav = LocalNavigator.currentOrThrow
 
-        var selectedLedger by rememberSaveable { mutableStateOf("") }
+        var selectedLedger by rememberSaveable { mutableStateOf(selectedLedger ?: "") }
         var barcodeQty by rememberSaveable { mutableStateOf("") }
-        var selectedLedgerGUID by rememberSaveable { mutableStateOf("") }
+        var selectedLedgerGUID by rememberSaveable { mutableStateOf(selectedLedgerGUID ?: "") }
         var narration by rememberSaveable { mutableStateOf("") }
         var selectedDate by rememberSaveable { mutableStateOf(CurrentDate()) }
         var taxType by rememberSaveable { mutableStateOf(TaxType.INCLUSIVE) }
