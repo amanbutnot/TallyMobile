@@ -26,6 +26,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -67,6 +68,7 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
             val list = db.ledgerGroupMasterQueries.selectAll().executeAsList()
             val nameList = list.map { it.Name }
             val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            var reportType by rememberSaveable { mutableStateOf("ALL") }
 
 
             Column(
@@ -79,7 +81,6 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
             ) {
 
 
-                // Filters Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -87,46 +88,135 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                     shape = RoundedCornerShape(20.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(20.dp)
-                    ) {
-                        // Account Selection
+                )
+                {
 
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text(
-                                text = "Account Group",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    )
+                    {
+                        // All Accounts Option
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    reportType = "ALL"
+                                    selectedAccount = ""
+                                    selectedGuid = ""
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (reportType == "ALL")
+                                MaterialTheme.colorScheme.primaryContainer
+                            else
+                                MaterialTheme.colorScheme.surfaceContainer,
+                            border = BorderStroke(
+                                1.5.dp,
+                                if (reportType == "ALL")
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.outlineVariant
                             )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                RadioButton(
+                                    selected = reportType == "ALL",
+                                    onClick = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    "All Accounts",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (reportType == "ALL")
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        // Single Account Option
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { reportType = "SINGLE" },
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (reportType == "SINGLE")
+                                MaterialTheme.colorScheme.primaryContainer
+                            else
+                                MaterialTheme.colorScheme.surfaceContainer,
+                            border = BorderStroke(
+                                1.5.dp,
+                                if (reportType == "SINGLE")
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.outlineVariant
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                RadioButton(
+                                    selected = reportType == "SINGLE",
+                                    onClick = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    "Single Account",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (reportType == "SINGLE")
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+
+
+                    // Account Selection (only for SINGLE)
+                    if (reportType == "SINGLE") {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        ) {
+                            Text(
+                                text = "Select Account",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(8.dp))
                                     .clickable { showBottomSheet = true },
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.surface,
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainer,
                                 border = BorderStroke(
-                                    1.5.dp,
-                                    if (selectedAccount.isEmpty())
-                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                    else
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                                 )
-                            ) {
+                            )
+                            {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                                        .padding(horizontal = 12.dp, vertical = 14.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = selectedAccount.ifEmpty { "Select an account group" },
-                                        style = MaterialTheme.typography.bodyLarge,
+                                        text = selectedAccount.ifEmpty { "Choose an account" },
+                                        style = MaterialTheme.typography.bodyMedium,
                                         color = if (selectedAccount.isEmpty())
                                             MaterialTheme.colorScheme.onSurfaceVariant
                                         else
@@ -136,27 +226,19 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
                                         imageVector = Icons.Outlined.KeyboardArrowDown,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                             }
-
-
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(1.dp)
-                                    .background(
-                                        MaterialTheme.colorScheme.outlineVariant.copy(
-                                            alpha = 0.5f
-                                        )
-                                    )
-                            )
                         }
+                    }
 
-
-                        // Start Date
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
 
                         TallyDatePickerRow(
                             label = "Start Date",
@@ -203,7 +285,7 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
                                 }
                             },
                             onDismiss = { showBottomSheet = false },
-                            bottomSheetState = state,title="Select Account Group"
+                            bottomSheetState = state, title = "Select Account Group"
                         )
                     }
                 }
@@ -255,16 +337,21 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
                                     name = name,
                                     startDate = startDate,
                                     endDate = endDate,
-                                    guid = selectedGuid.toDouble(),
+                                    guid = if (reportType == "ALL") null else selectedGuid.toDouble(),
 
                                     account = selectedAccount
                                 )
                             )
                         }
                     },
-                    enabled = (startDate.isNotEmpty()) &&
-                            (endDate.isNotEmpty()) && (selectedGuid.isNotEmpty()) &&
-                            (selectedAccount.isNotEmpty()),
+                    enabled = if (reportType == "ALL") {
+                        (startDate.isNotEmpty()) &&
+                                (endDate.isNotEmpty())
+                    } else {
+                        (startDate.isNotEmpty()) &&
+                                (endDate.isNotEmpty()) && (selectedGuid.isNotEmpty()) &&
+                                (selectedAccount.isNotEmpty())
+                    },
                     backgroundColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )

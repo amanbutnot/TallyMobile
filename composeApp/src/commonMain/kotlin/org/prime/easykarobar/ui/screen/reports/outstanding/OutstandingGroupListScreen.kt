@@ -48,7 +48,7 @@ data class OutstandingGroupListScreen(
     val name: String,
     val startDate: String,
     val endDate: String,
-    val guid: Double,
+    val guid: Double? = null,
     val account: String
 ) :
     Screen {
@@ -129,14 +129,13 @@ data class OutstandingGroupListScreen(
 
             isLoading = true
             withContext(Dispatchers.IO) {
-                println("${if (name == "Bill Receivable") 0 else 1} $startDate $endDate $filterBroker $configBroker $guid $filterAccounts $excludeGuids")
                 list = db.voucherBillAllocationsQueries.outstandingGroupList(
                     mode = if (name == "Bill Receivable") 0 else 1,
                     DATE = startDate,
                     DATE_ = endDate,
                     filterCm3 = filterBroker,
                     cm3 = configBroker,
-                    GroupCode = guid,
+                    groupCode = guid,
                     excludeFilter = filterAccounts,
                     GUID = excludeGuids,
                 ).executeAsList()
@@ -199,7 +198,10 @@ data class OutstandingGroupListScreen(
                                 modifier = Modifier.focusRequester(focusRequester)
                             )
                         }
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(8.dp)) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(8.dp)
+                        ) {
                             Text(
                                 account,
                                 style = MaterialTheme.typography.titleMedium,
@@ -259,7 +261,7 @@ data class OutstandingGroupListScreen(
                                     isHeader = false
                                 )
                             }
-                        )   
+                        )
                     }
                 }
             })
