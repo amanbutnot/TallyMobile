@@ -110,7 +110,9 @@ SELECT
     SUM(D1) * -1 AS Amt,
     'SalesRegister' AS RepType
 FROM Vouchers_Ledgers
-WHERE VchType = 'Sales' AND CM1 IN (
+WHERE VchType = 'Sales'
+-- AND (:filterCm3 = 0 OR Vouchers_Ledgers.CM2 IN :cm3)
+  AND CM1 IN (
                                                 SELECT Name
                                                 FROM LedgerMaster
                                                 WHERE (:groupFilter = 0 OR GroupCode IN ?)
@@ -144,7 +146,9 @@ SELECT
     SUM(D1) AS Amt,
     'RcptRegister' AS RepType
 FROM Vouchers_Ledgers
-WHERE VchType = 'Receipt' AND CM1 IN (
+WHERE VchType = 'Receipt'
+--AND (:filterCm3 = 0 OR Vouchers_Ledgers.CM2 IN :cm3)
+AND CM1 IN (
                                                  SELECT Name
                                                  FROM LedgerMaster
                                                  WHERE (:groupFilter = 0 OR GroupCode IN ?)
