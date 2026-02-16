@@ -122,6 +122,10 @@ kotlin {
             implementation(libs.compass.geolocation)
             implementation(libs.compass.geolocation.mobile)
 
+            //Permissions
+            implementation("com.mohamedrejeb.calf:calf-permissions:0.9.0")
+
+
 //            //Scan Barcode
 //            implementation("io.github.ismai117:KScan:0.5.0")
 //

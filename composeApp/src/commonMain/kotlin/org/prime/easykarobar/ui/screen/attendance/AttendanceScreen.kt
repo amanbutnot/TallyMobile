@@ -19,8 +19,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.PendingActions
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Report
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -56,6 +63,10 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
+import com.mohamedrejeb.calf.permissions.ExperimentalPermissionsApi
+import com.mohamedrejeb.calf.permissions.Permission
+import com.mohamedrejeb.calf.permissions.isGranted
+import com.mohamedrejeb.calf.permissions.rememberPermissionState
 import dev.jordond.compass.Place
 import dev.jordond.compass.geocoder.Geocoder
 import dev.jordond.compass.geocoder.mobile
@@ -76,8 +87,11 @@ import org.prime.easykarobar.data.model.attendance.AttendanceRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingReportScreen
+import org.prime.easykarobar.ui.screen.reports.pendingOrder.PendingOrderPartyList
+import org.prime.easykarobar.ui.screen.reports.registers.RegisterReportScreen
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
+import org.prime.easykarobar.ui.screen.transactions.sale.SaleScreen
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
@@ -92,7 +106,10 @@ data class AttendanceScreen(
     val lat: Double, val lon: Double, val isAttendance: Boolean
 ) : Screen {
 
-    @OptIn(ExperimentalMaterial3Api::class, ExperimentalEncodingApi::class)
+    @OptIn(
+        ExperimentalMaterial3Api::class, ExperimentalEncodingApi::class,
+        ExperimentalPermissionsApi::class
+    )
     @Composable
     override fun Content() {
         var address by remember { mutableStateOf("") }
@@ -119,6 +136,7 @@ data class AttendanceScreen(
         val typography = MaterialTheme.typography
         val scrollState = rememberScrollState()
         var selectedAccount by remember { mutableStateOf("") }
+        var selectedGUID by remember { mutableStateOf("") }
 
         LaunchedEffect(Unit) {
             selectedAccount = SharedPrefs.CheckInOutLedger.get() ?: ""
@@ -182,6 +200,7 @@ data class AttendanceScreen(
                             onSelected = {
                                 it.let {
                                     selectedAccount = it.first
+                                    selectedGUID= it.second
                                     println("Selected Account: ${it.first} and selected GUID is ${it.second}")
                                 }
                             },
@@ -211,54 +230,102 @@ data class AttendanceScreen(
                                 title = "Reports",
                                 iconTint = colors.secondary,
                                 content = {
-                                    //TODO: make it go to the filter screen instead
-                                    TallyButton(
-                                        label = "Account Ledger",
-                                        backgroundColor = MaterialTheme.colorScheme.primary,
-                                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                                        onClick = {
-                                            nav.push(
-                                                LedgerReportScreen(
-                                                    accountName = selectedAccount,
-                                                    startDate = StartDate(),
-                                                    endDate = CurrentDate()
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        ReportButton(
+                                            label = "Account Ledger",
+                                            icon = Icons.Default.AccountBalance,
+                                            onClick = {
+                                                nav.push(
+                                                    LedgerReportScreen(
+                                                        accountName = selectedAccount,
+                                                        startDate = StartDate(),
+                                                        endDate = CurrentDate()
+                                                    )
                                                 )
-                                            )
-                                        }
-                                    )
-                                    TallyButton(
-                                        label = "Bill Receivable",
-                                        backgroundColor = MaterialTheme.colorScheme.primary,
-                                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                                        onClick = {
-                                            nav.push(
-                                                OutstandingReportScreen(
-                                                    name = "Bill Receivable",
-                                                    startDate = StartDate(),
-                                                    endDate = CurrentDate(),
-                                                    cm1 = selectedAccount
+                                            }
+                                        )
+
+                                        ReportButton(
+                                            label = "Bill Receivable",
+                                            icon = Icons.Default.Receipt,
+                                            onClick = {
+                                                nav.push(
+                                                    OutstandingReportScreen(
+                                                        name = "Bill Receivable",
+                                                        startDate = StartDate(),
+                                                        endDate = CurrentDate(),
+                                                        cm1 = selectedAccount
+                                                    )
                                                 )
-                                            )
-                                        }
-                                    )
-                                    TallyButton(
-                                        label = "Bill Payable",
-                                        backgroundColor = MaterialTheme.colorScheme.primary,
-                                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                                        onClick = {
-                                            nav.push(
-                                                OutstandingReportScreen(
-                                                    name = "Bill Payable",
-                                                    startDate = StartDate(),
-                                                    endDate = CurrentDate(),
-                                                    cm1 = selectedAccount
+                                            }
+                                        )
+
+                                        ReportButton(
+                                            label = "Receipt",
+                                            icon = Icons.Default.Payments,
+                                            onClick = {
+                                                nav.push(
+                                                    RegisterReportScreen(
+                                                        name = "Receipt",
+                                                        startDate = StartDate(),
+                                                        endDate = CurrentDate()
+                                                    )
                                                 )
-                                            )
-                                        }
-                                    )
+                                            }
+                                        )
+
+                                        ReportButton(
+                                            label = "Pending Sale Order",
+                                            icon = Icons.Default.PendingActions,
+                                            onClick = {
+                                                nav.push(
+                                                    PendingOrderPartyList(
+                                                        name = "Pending Sale Order",
+                                                        startDate = StartDate(),
+                                                        endDate = CurrentDate(),
+                                                        cm1 = selectedAccount
+                                                    )
+                                                )
+                                            }
+                                        )
+
+                                        ReportButton(
+                                            label = "Bill Payable",
+                                            icon = Icons.Default.CreditCard,
+                                            onClick = {
+                                                nav.push(
+                                                    OutstandingReportScreen(
+                                                        name = "Bill Payable",
+                                                        startDate = StartDate(),
+                                                        endDate = CurrentDate(),
+                                                        cm1 = selectedAccount
+                                                    )
+                                                )
+                                            }
+                                        )
+                                    }
                                 }
                             )
 
+                            ElegantCard(
+                                icon = Icons.Default.Create,
+                                title = "Create",
+                                iconTint = colors.secondary,
+                                content = {
+                                    ReportButton(
+                                        label = "Create Sale Order",
+                                        icon = Icons.Default.Create,
+                                        onClick = {
+
+                                            nav.push(SaleScreen(name="Sale Order", vchType = 12, selectedLedger = selectedAccount, selectedLedgerGUID = selectedGUID))
+
+                                        }
+                                    )
+
+                                }
+                            )
                         }
 
 
@@ -273,28 +340,36 @@ data class AttendanceScreen(
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-
+                                val cameraPermission = rememberPermissionState(
+                                    Permission.Camera
+                                )
                                 Button(
                                     modifier = Modifier.fillMaxWidth().height(52.dp),
                                     onClick = {
-                                        scope.launch {
-                                            val file = FileKit.openCameraPicker(
-                                                type = FileKitCameraType.Photo,
-                                                cameraFacing = FileKitCameraFacing.Back
-                                            )
-                                            file?.let {
-                                                val bytes = it.readBytes()
-                                                val compressedBytes = FileKit.compressImage(
-                                                    bytes = bytes,
-                                                    quality = 30, // 0-100, where 100 is highest quality
-                                                    maxWidth = 1024, // Optional maximum width
-                                                    maxHeight = 1024, // Optional maximum height
-                                                    imageFormat = ImageFormat.JPEG // JPEG or PNG
+                                        if (cameraPermission.status.isGranted) {
+                                            scope.launch {
+                                                val file = FileKit.openCameraPicker(
+                                                    type = FileKitCameraType.Photo,
+                                                    cameraFacing = FileKitCameraFacing.Back
                                                 )
+                                                file?.let {
+                                                    val bytes = it.readBytes()
+                                                    val compressedBytes = FileKit.compressImage(
+                                                        bytes = bytes,
+                                                        quality = 30, // 0-100, where 100 is highest quality
+                                                        maxWidth = 1024, // Optional maximum width
+                                                        maxHeight = 1024, // Optional maximum height
+                                                        imageFormat = ImageFormat.JPEG // JPEG or PNG
+                                                    )
 
-                                                capturedFileInBytes = Base64.encode(compressedBytes)
-                                                capturedFile = it
+                                                    capturedFileInBytes =
+                                                        Base64.encode(compressedBytes)
+                                                    capturedFile = it
+                                                }
                                             }
+
+                                        } else {
+                                            cameraPermission.launchPermissionRequest()
                                         }
                                     },
                                     shape = RoundedCornerShape(12.dp),
@@ -474,7 +549,8 @@ private fun ElegantCard(
         ), elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
-            modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // Header with icon
             Row(
@@ -539,4 +615,63 @@ fun formatAddress(a: Place): String {
 
 fun isCheckIn(spDate: String?): Boolean {
     return spDate.isNullOrBlank() || spDate != CurrentDate()
+}
+
+@Composable
+private fun ReportButton(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    val colors = MaterialTheme.colorScheme
+    val typography = MaterialTheme.typography
+
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = colors.surfaceVariant.copy(alpha = 0.4f)
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 1.dp
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = colors.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+
+                Text(
+                    text = label,
+                    style = typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = colors.onSurface
+                )
+            }
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = colors.onSurfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
 }
