@@ -79,6 +79,7 @@ import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingReportScre
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
 import org.prime.easykarobar.ui.shared.composables.TallyButton
+import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
@@ -88,12 +89,22 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 data class AttendanceScreen(
-    val lat: Double, val lon: Double, val address: String, val isAttendance: Boolean
+    val lat: Double, val lon: Double, val isAttendance: Boolean
 ) : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalEncodingApi::class)
     @Composable
     override fun Content() {
+        var address by remember { mutableStateOf("") }
+        var isLoading by remember { mutableStateOf(false) }
+
+
+        LaunchedEffect(Unit) {
+            isLoading = true
+            address =
+                getPlaceFromCoordinates(lat, lon)?.let { formatAddress(it) } ?: "Address not found"
+            isLoading = false
+        }
 
 
         val viewModel: AttendanceViewModel = viewModel { AttendanceViewModel() }
@@ -137,252 +148,272 @@ data class AttendanceScreen(
             onBack = { nav.pop() },
             content = { paddingValues ->
 
-                Column(
-                    modifier = Modifier.fillMaxSize().background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                colors.surface, colors.surfaceVariant.copy(alpha = 0.3f)
-                            )
-                        )
-                    ).verticalScroll(scrollState).padding(paddingValues)
-                        .padding(horizontal = 8.dp, vertical = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
-                ) {
-
-
-                    if (!isAttendance) {
-                        SelectLedgerRow(
-                            selectedAccount = selectedAccount,
-                            onShowBottomSheet = { showBottomSheet = true },
-                            title = "Ledger",
-                            enabled = isCheckIn(lastCheckInOutDate)
-                        )
+                if (isLoading) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        TallyCircularLoader()
                     }
+                } else {
 
-                    TransactionBottomSheet(
-                        showBottomSheet = showBottomSheet,
-                        list = list.map { Pair(it.Name ?: "", it.GUID ?: "") },
-                        onSelected = {
-                            it.let {
-                                selectedAccount = it.first
-                                println("Selected Account: ${it.first} and selected GUID is ${it.second}")
-                            }
-                        },
-                        onDismiss = { showBottomSheet = false },
-                        bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                        title = "Ledger Name",
-                    )
-
-                    ElegantCard(
-                        icon = Icons.Default.LocationOn,
-                        title = "Location Details",
-                        iconTint = colors.primary,
-                        modifier = Modifier
+                    Column(
+                        modifier = Modifier.fillMaxSize().background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    colors.surface, colors.surfaceVariant.copy(alpha = 0.3f)
+                                )
+                            )
+                        ).verticalScroll(scrollState).padding(paddingValues)
+                            .padding(horizontal = 8.dp, vertical = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                address,
-                                style = typography.bodyMedium,
-                                color = colors.onSurface,
-                                lineHeight = typography.bodyMedium.lineHeight
+
+
+                        if (!isAttendance) {
+                            SelectLedgerRow(
+                                selectedAccount = selectedAccount,
+                                onShowBottomSheet = { showBottomSheet = true },
+                                title = "Ledger",
+                                enabled = isCheckIn(lastCheckInOutDate)
                             )
                         }
-                    }
-                    if (!isCheckIn(lastCheckInOutDate)) {
-                        ElegantCard(
-                            icon = Icons.Default.Report,
-                            title = "Reports",
-                            iconTint = colors.secondary,
-                            content = {
-                                //TODO: make it go to the filter screen instead
-                                TallyButton(
-                                    label = "Account Ledger",
-                                    backgroundColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                                    onClick = { nav.push(LedgerReportScreen(
-                                        accountName = selectedAccount,
-                                        startDate = StartDate(),
-                                        endDate = CurrentDate()
-                                    )) }
-                                )
-                                TallyButton(
-                                    label = "Bill Receivable",
-                                    backgroundColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                                    onClick = { nav.push(OutstandingReportScreen(
-                                        name = "Bill Receivable",
-                                        startDate = StartDate(),
-                                        endDate = CurrentDate(),
-                                        cm1 = selectedAccount
-                                    )) }
-                                )
-                                TallyButton(
-                                    label = "Bill Payable",
-                                    backgroundColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                                    onClick = { nav.push(OutstandingReportScreen(
-                                        name = "Bill Payable",
-                                        startDate = StartDate(),
-                                        endDate = CurrentDate(),
-                                        cm1 = selectedAccount
-                                    )) }
-                                )
-                            }
+
+                        TransactionBottomSheet(
+                            showBottomSheet = showBottomSheet,
+                            list = list.map { Pair(it.Name ?: "", it.GUID ?: "") },
+                            onSelected = {
+                                it.let {
+                                    selectedAccount = it.first
+                                    println("Selected Account: ${it.first} and selected GUID is ${it.second}")
+                                }
+                            },
+                            onDismiss = { showBottomSheet = false },
+                            bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                            title = "Ledger Name",
                         )
 
-                    }
-
-
-
-                    ElegantCard(
-                        icon = Icons.Default.PhotoCamera,
-                        title = "Camera Capture",
-                        iconTint = colors.secondary,
-                        modifier = Modifier
-                    ) {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        ElegantCard(
+                            icon = Icons.Default.LocationOn,
+                            title = "Location Details",
+                            iconTint = colors.primary,
+                            modifier = Modifier
                         ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(
+                                    address,
+                                    style = typography.bodyMedium,
+                                    color = colors.onSurface,
+                                    lineHeight = typography.bodyMedium.lineHeight
+                                )
+                            }
+                        }
+                        if (!isCheckIn(lastCheckInOutDate)) {
+                            ElegantCard(
+                                icon = Icons.Default.Report,
+                                title = "Reports",
+                                iconTint = colors.secondary,
+                                content = {
+                                    //TODO: make it go to the filter screen instead
+                                    TallyButton(
+                                        label = "Account Ledger",
+                                        backgroundColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                                        onClick = {
+                                            nav.push(
+                                                LedgerReportScreen(
+                                                    accountName = selectedAccount,
+                                                    startDate = StartDate(),
+                                                    endDate = CurrentDate()
+                                                )
+                                            )
+                                        }
+                                    )
+                                    TallyButton(
+                                        label = "Bill Receivable",
+                                        backgroundColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                                        onClick = {
+                                            nav.push(
+                                                OutstandingReportScreen(
+                                                    name = "Bill Receivable",
+                                                    startDate = StartDate(),
+                                                    endDate = CurrentDate(),
+                                                    cm1 = selectedAccount
+                                                )
+                                            )
+                                        }
+                                    )
+                                    TallyButton(
+                                        label = "Bill Payable",
+                                        backgroundColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                                        onClick = {
+                                            nav.push(
+                                                OutstandingReportScreen(
+                                                    name = "Bill Payable",
+                                                    startDate = StartDate(),
+                                                    endDate = CurrentDate(),
+                                                    cm1 = selectedAccount
+                                                )
+                                            )
+                                        }
+                                    )
+                                }
+                            )
 
-                            Button(
-                                modifier = Modifier.fillMaxWidth().height(52.dp),
-                                onClick = {
-                                    scope.launch {
-                                        val file = FileKit.openCameraPicker(
-                                            type = FileKitCameraType.Photo,
-                                            cameraFacing = FileKitCameraFacing.Back
-                                        )
-                                        file?.let {
-                                            val bytes = it.readBytes()
-                                            val compressedBytes = FileKit.compressImage(
-                                                bytes = bytes,
-                                                quality = 30, // 0-100, where 100 is highest quality
-                                                maxWidth = 1024, // Optional maximum width
-                                                maxHeight = 1024, // Optional maximum height
-                                                imageFormat = ImageFormat.JPEG // JPEG or PNG
+                        }
+
+
+
+                        ElegantCard(
+                            icon = Icons.Default.PhotoCamera,
+                            title = "Camera Capture",
+                            iconTint = colors.secondary,
+                            modifier = Modifier
+                        ) {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+
+                                Button(
+                                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                                    onClick = {
+                                        scope.launch {
+                                            val file = FileKit.openCameraPicker(
+                                                type = FileKitCameraType.Photo,
+                                                cameraFacing = FileKitCameraFacing.Back
+                                            )
+                                            file?.let {
+                                                val bytes = it.readBytes()
+                                                val compressedBytes = FileKit.compressImage(
+                                                    bytes = bytes,
+                                                    quality = 30, // 0-100, where 100 is highest quality
+                                                    maxWidth = 1024, // Optional maximum width
+                                                    maxHeight = 1024, // Optional maximum height
+                                                    imageFormat = ImageFormat.JPEG // JPEG or PNG
+                                                )
+
+                                                capturedFileInBytes = Base64.encode(compressedBytes)
+                                                capturedFile = it
+                                            }
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = colors.primaryContainer,
+                                        contentColor = colors.onPrimaryContainer
+                                    ),
+                                    elevation = ButtonDefaults.buttonElevation(
+                                        defaultElevation = 2.dp, pressedElevation = 6.dp
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PhotoCamera,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        "Capture Image",
+                                        style = typography.labelLarge,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+
+
+                                capturedFile?.let { file ->
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth().shadow(
+                                            elevation = 8.dp, shape = RoundedCornerShape(16.dp)
+                                        ),
+                                        shape = RoundedCornerShape(16.dp),
+
+                                        ) {
+                                        Box(
+                                            modifier = Modifier.padding(8.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            AsyncImage(
+                                                model = file.path,
+                                                contentDescription = "Captured image",
+                                                modifier = Modifier.wrapContentWidth()
+                                                    .wrapContentHeight().padding(8.dp)
+                                                    .clip(RoundedCornerShape(12.dp)),
+                                                contentScale = ContentScale.Fit
                                             )
 
-                                            capturedFileInBytes = Base64.encode(compressedBytes)
-                                            capturedFile = it
                                         }
                                     }
-                                },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = colors.primaryContainer,
-                                    contentColor = colors.onPrimaryContainer
-                                ),
-                                elevation = ButtonDefaults.buttonElevation(
-                                    defaultElevation = 2.dp, pressedElevation = 6.dp
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.PhotoCamera,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    "Capture Image",
-                                    style = typography.labelLarge,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-
-
-                            capturedFile?.let { file ->
-                                Surface(
-                                    modifier = Modifier.fillMaxWidth().shadow(
-                                        elevation = 8.dp, shape = RoundedCornerShape(16.dp)
-                                    ),
-                                    shape = RoundedCornerShape(16.dp),
-
-                                    ) {
-                                    Box(
-                                        modifier = Modifier.padding(8.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        AsyncImage(
-                                            model = file.path,
-                                            contentDescription = "Captured image",
-                                            modifier = Modifier.wrapContentWidth()
-                                                .wrapContentHeight().padding(8.dp)
-                                                .clip(RoundedCornerShape(12.dp)),
-                                            contentScale = ContentScale.Fit
-                                        )
-
-                                    }
                                 }
-                            }
 
-                            TallyButton(
-                                label = buttonName,
-                                onClick = {
+                                TallyButton(
+                                    label = buttonName,
+                                    onClick = {
 
-                                    if (isAttendance) {
-                                        println(capturedFileInBytes)
-                                        //ATTENDANCE
-                                        viewModel.sendAttendance(
-                                            attendanceRequest = AttendanceRequest(
-                                                LoginID = "Admin",
-                                                TranType = 1,
-                                                RecType = if (isCheckIn(lastAttendanceDate)) 1 else 2,
-                                                C2 = lat.toString(),
-                                                C3 = lon.toString(),
-                                                C4 = address,
-                                                C5 = capturedFileInBytes
-                                            ), onSuccess = {
-                                                if (isCheckIn(lastAttendanceDate)) {
-                                                    SharedPrefs.AttendanceDate.save(CurrentDate())
-                                                } else {
-                                                    SharedPrefs.AttendanceDate.clear()
-                                                }
-                                                showAlert = true
+                                        if (isAttendance) {
+                                            println(capturedFileInBytes)
+                                            //ATTENDANCE
+                                            viewModel.sendAttendance(
+                                                attendanceRequest = AttendanceRequest(
+                                                    LoginID = "Admin",
+                                                    TranType = 1,
+                                                    RecType = if (isCheckIn(lastAttendanceDate)) 1 else 2,
+                                                    C2 = lat.toString(),
+                                                    C3 = lon.toString(),
+                                                    C4 = address,
+                                                    C5 = capturedFileInBytes
+                                                ), onSuccess = {
+                                                    if (isCheckIn(lastAttendanceDate)) {
+                                                        SharedPrefs.AttendanceDate.save(CurrentDate())
+                                                    } else {
+                                                        SharedPrefs.AttendanceDate.clear()
+                                                    }
+                                                    showAlert = true
 
-                                            })
+                                                })
+                                        } else {
+                                            // CHECK IN CHECK OUT
+                                            viewModel.sendAttendance(
+                                                attendanceRequest = AttendanceRequest(
+                                                    LoginID = "Admin",
+                                                    TranType = 2,
+                                                    RecType = if (isCheckIn(lastCheckInOutDate)) 1 else 2,
+                                                    C1 = selectedAccount,
+                                                    C2 = lat.toString(),
+                                                    C3 = lon.toString(),
+                                                    C4 = address,
+                                                    C5 = capturedFileInBytes
+                                                ), onSuccess = {
+                                                    if (isCheckIn(lastCheckInOutDate)) {
+                                                        SharedPrefs.CheckInOutDate.save(CurrentDate())
+                                                        lastCheckInOutDate = CurrentDate()
+                                                        SharedPrefs.CheckInOutLedger.save(
+                                                            selectedAccount
+                                                        )
+                                                    } else {
+                                                        SharedPrefs.CheckInOutDate.clear()
+                                                        lastCheckInOutDate = null
+                                                        SharedPrefs.CheckInOutLedger.clear()
+                                                    }
+                                                    showAlert = true
+                                                })
+                                        }
+
+
+                                    },
+                                    backgroundColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    enabled = if (isAttendance) {
+                                        capturedFile != null
                                     } else {
-                                        // CHECK IN CHECK OUT
-                                        viewModel.sendAttendance(
-                                            attendanceRequest = AttendanceRequest(
-                                                LoginID = "Admin",
-                                                TranType = 2,
-                                                RecType = if (isCheckIn(lastCheckInOutDate)) 1 else 2,
-                                                C1 = selectedAccount,
-                                                C2 = lat.toString(),
-                                                C3 = lon.toString(),
-                                                C4 = address,
-                                                C5 = capturedFileInBytes
-                                            ), onSuccess = {
-                                                if (isCheckIn(lastCheckInOutDate)) {
-                                                    SharedPrefs.CheckInOutDate.save(CurrentDate())
-                                                    lastCheckInOutDate = CurrentDate()
-                                                    SharedPrefs.CheckInOutLedger.save(
-                                                        selectedAccount
-                                                    )
-                                                } else {
-                                                    SharedPrefs.CheckInOutDate.clear()
-                                                    lastCheckInOutDate = null
-                                                    SharedPrefs.CheckInOutLedger.clear()
-                                                }
-                                                showAlert = true
-                                            })
+                                        !selectedAccount.isEmpty() && capturedFile != null
                                     }
-
-
-                                },
-                                backgroundColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                                enabled = if (isAttendance) {
-                                    capturedFile != null
-                                } else {
-                                    !selectedAccount.isEmpty() && capturedFile != null
-                                }
-                            )
+                                )
+                            }
                         }
-                    }
 
+                    }
                 }
+
             },
 
             )

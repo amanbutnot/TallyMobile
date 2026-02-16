@@ -82,8 +82,6 @@ import org.prime.easykarobar.data.model.hasSalesmanPermission
 import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.attendance.AttendanceScreen
-import org.prime.easykarobar.ui.screen.attendance.formatAddress
-import org.prime.easykarobar.ui.screen.attendance.getPlaceFromCoordinates
 import org.prime.easykarobar.ui.screen.distributor.order.MyOrdersScreen
 import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen
 import org.prime.easykarobar.ui.screen.home.ROLE
@@ -586,7 +584,6 @@ fun ExpandableGrid() {
                                             successBlock = {
                                                 nav?.push(SaleScreen(item.first, vchType = 9))
                                             })
-
                                         "Check In/Out" -> salesmanPermission(
                                             "D22",
                                             accessDeniedBlock = { showDeniedDialog = true },
@@ -594,40 +591,38 @@ fun ExpandableGrid() {
                                                 scope.launch {
                                                     showLoading = true
                                                     try {
-                                                        val locator = Locator.mobile()
-                                                        val geolocator = Geolocator(locator)
+                                                        val geolocator = Geolocator(Locator.mobile())
 
-                                                        val result = withTimeoutOrNull(30000) {
+                                                        runCatching { geolocator.lastLocation() }
+
+                                                        val result = withTimeoutOrNull(20000) {
                                                             geolocator.current(Priority.HighAccuracy)
                                                         }
 
                                                         when (result) {
                                                             is GeolocatorResult.Success -> {
                                                                 val c = result.data.coordinates
-                                                                val address =
-                                                                    getPlaceFromCoordinates(
-                                                                        c.latitude,
-                                                                        c.longitude
-                                                                    )?.let { formatAddress(it) }
-                                                                        ?: "Address not found"
 
                                                                 nav?.push(
                                                                     AttendanceScreen(
                                                                         c.latitude,
                                                                         c.longitude,
-                                                                        address,
+
                                                                         isAttendance = false
                                                                     )
                                                                 )
                                                             }
-
                                                             else -> showLocationPopup = true
                                                         }
+
+                                                    } catch (e: Exception) {
+                                                        showLocationPopup = true
                                                     } finally {
                                                         showLoading = false
                                                     }
                                                 }
-                                            })
+                                            }
+                                        )
 
                                         "Attendance" -> salesmanPermission(
                                             "D23",
@@ -636,40 +631,40 @@ fun ExpandableGrid() {
                                                 scope.launch {
                                                     showLoading = true
                                                     try {
-                                                        val locator = Locator.mobile()
-                                                        val geolocator = Geolocator(locator)
+                                                        val geolocator = Geolocator(Locator.mobile())
 
-                                                        val result = withTimeoutOrNull(30000) {
+                                                        runCatching { geolocator.lastLocation() }
+
+                                                        val result = withTimeoutOrNull(20000) {
                                                             geolocator.current(Priority.HighAccuracy)
                                                         }
 
                                                         when (result) {
                                                             is GeolocatorResult.Success -> {
                                                                 val c = result.data.coordinates
-                                                                val address =
-                                                                    getPlaceFromCoordinates(
-                                                                        c.latitude,
-                                                                        c.longitude
-                                                                    )?.let { formatAddress(it) }
-                                                                        ?: "Address not found"
 
                                                                 nav?.push(
                                                                     AttendanceScreen(
                                                                         c.latitude,
                                                                         c.longitude,
-                                                                        address,
+
                                                                         isAttendance = true
                                                                     )
                                                                 )
                                                             }
-
                                                             else -> showLocationPopup = true
                                                         }
+
+                                                    } catch (e: Exception) {
+                                                        showLocationPopup = true
                                                     } finally {
                                                         showLoading = false
                                                     }
                                                 }
-                                            })
+                                            }
+                                        )
+
+
 
                                         "Sale Return" -> salesmanPermission(
                                             "D24",

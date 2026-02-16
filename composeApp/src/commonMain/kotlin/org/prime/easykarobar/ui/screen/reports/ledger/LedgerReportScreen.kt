@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
@@ -127,7 +127,6 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
         )
 
 
-
         // Calculate totals and closing balance
         var totalDebit = 0.0
         var totalCredit = 0.0
@@ -141,7 +140,8 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
 
         val closingBalance = runningBalance
         val closingBalanceType = if (closingBalance >= 0) "Cr" else "Dr"
-        val openingBalType = if ((openingBalance?.OpeningBal?.toDouble() ?: 0.0) >= 0) "Cr" else "Dr"
+        val openingBalType =
+            if ((openingBalance?.OpeningBal?.toDouble() ?: 0.0) >= 0) "Cr" else "Dr"
 
         // Generate ledger rows for PDF
         fun generateLedgerRows(): List<LedgerRow> {
@@ -182,7 +182,9 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                                 accountName = accountName,
                                 startDate = startDate,
                                 endDate = endDate,
-                                openingBalance = kotlin.math.abs(openingBalance?.OpeningBal?.toDouble() ?: 0.0),
+                                openingBalance = kotlin.math.abs(
+                                    openingBalance?.OpeningBal?.toDouble() ?: 0.0
+                                ),
                                 openingBalanceType = openingBalType,
                                 rows = generateLedgerRows(),
                                 totalDebit = totalDebit,
@@ -207,7 +209,9 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                                 accountName = accountName,
                                 startDate = startDate,
                                 endDate = endDate,
-                                openingBalance = kotlin.math.abs(openingBalance?.OpeningBal?.toDouble() ?: 0.0),
+                                openingBalance = kotlin.math.abs(
+                                    openingBalance?.OpeningBal?.toDouble() ?: 0.0
+                                ),
                                 openingBalanceType = openingBalType,
                                 rows = generateLedgerRows(),
                                 totalDebit = totalDebit,
@@ -403,6 +407,16 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                         }
+                        val runningBalances = remember(filteredList, openingBalance) {
+                            var bal = openingBalance?.OpeningBal
+                                ?.formatToAmtDec()
+                                ?.stringToDouble() ?: 0.0
+
+                            filteredList.map { item ->
+                                bal += (item.D2 ?: 0.0) - (item.D3 ?: 0.0)
+                                bal
+                            }
+                        }
 
                         LazyColumn(
                             modifier = Modifier.fillMaxSize()
@@ -421,9 +435,9 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                                     }
                                 }
                             } else {
-                                var bal = openingBalance?.OpeningBal?.formatToAmtDec()?.stringToDouble() ?: 0.0
-                                items(filteredList) { item ->
-                                    bal += (item.D2 ?: 0.0) - (item.D3 ?: 0.0)
+
+                                itemsIndexed(filteredList) { index, item ->
+                                    val bal = runningBalances[index]
                                     val balType = if (bal >= 0) "Cr" else "Dr"
 
                                     Card(
@@ -444,7 +458,8 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                                             containerColor = MaterialTheme.colorScheme.surface
                                         ),
                                         elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp)
-                                    ) {
+                                    )
+                                    {
                                         Column(
                                             modifier = Modifier.padding(
                                                 horizontal = 16.dp,
