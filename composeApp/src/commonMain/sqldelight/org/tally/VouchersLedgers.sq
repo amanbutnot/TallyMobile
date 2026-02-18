@@ -58,7 +58,7 @@ registerReportList:
 SELECT DATE,
 VchName,VOUCHERNUMBER,D1,VCH_GUID,CM1
 FROM Vouchers_Ledgers
-WHERE VchType=? AND CM1 IN (
+WHERE VchType=? AND (:filterCm3 = 0 OR Vouchers_Ledgers.CM2 IN :cm3) AND CM1 IN (
                         SELECT Name
                         FROM LedgerMaster
                         WHERE (:groupFilter = 0 OR GroupCode IN ?)

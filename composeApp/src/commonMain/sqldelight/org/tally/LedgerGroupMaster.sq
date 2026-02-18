@@ -5,10 +5,15 @@ CREATE TABLE LedgerGroupMaster (
     Name TEXT,
     Alias TEXT,
     GroupName TEXT,
-    GroupCode REAL,
+    GroupCode TEXT NOT NULL,
     AlterID INTEGER,
     GUID TEXT UNIQUE
 );
 
 selectAll:
 SELECT * FROM LedgerGroupMaster ORDER BY Name;
+
+getChildrenByGroupCode:
+SELECT * FROM LedgerGroupMaster WHERE GroupCode IN ? AND GUID NOT IN ?;
+getChildrenByGroupName:
+SELECT * FROM LedgerGroupMaster WHERE GroupName IN ? AND GUID NOT IN ?;

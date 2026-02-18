@@ -12,3 +12,6 @@ CREATE TABLE ProductGroupMaster (
 
 selectAll:
 SELECT * FROM ProductGroupMaster  ORDER BY Name;
+
+getChildrenProductByGroupName:
+SELECT * FROM ProductGroupMaster WHERE GroupName IN ? AND GUID NOT IN ?;

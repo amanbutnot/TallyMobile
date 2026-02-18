@@ -155,7 +155,7 @@ WHERE BILLID IN (
       AND CM1 IN (
           SELECT Name
           FROM LedgerMaster
-          WHERE (:groupCode IS NULL OR GroupCode = :groupCode)
+          WHERE (:filterGroupCode = 0 OR GroupCode IN :groupCode)
             AND (:excludeFilter = 0 OR GUID NOT IN ?)
       )
 )
