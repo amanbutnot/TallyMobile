@@ -53,6 +53,7 @@ kotlin {
 
             //Barcode
             implementation(libs.gms.play.services.code.scanner)
+            implementation(libs.zxing)
 
 
             //html to pdf
@@ -65,7 +66,7 @@ kotlin {
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
-            implementation(compose.material3)
+            implementation("org.jetbrains.compose.material3:material3:1.10.0-alpha01")
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
@@ -99,7 +100,7 @@ kotlin {
             implementation(libs.coroutines.extensions)
 
             // kotlinx date time
-            implementation(libs.kotlinx.datetime)
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
 
             //Handle Files
             implementation(libs.filekit.core)
