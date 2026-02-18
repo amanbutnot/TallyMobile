@@ -59,6 +59,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
@@ -85,7 +86,6 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
         val productGroups = remember { db.productGroupMasterQueries.selectAll().executeAsList() }
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
         val bottomSheetState = rememberModalBottomSheetState()
-
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
@@ -103,9 +103,8 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                     if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
                 val godownCodes =
                     if (filterGodown == 1L) perms?.ConfigGodown.parseToDoubleList() else emptyList()
-
                 list = db.productParamStockQueries.getProductStockList(
-                    productGuid,
+                    productGuid?.toDouble()?.toInt()?.toString(),
                     enableParam,
                     paramFilters,
                     filterGroup = filterGroup,
@@ -115,6 +114,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                     filterGodown = filterGodown,
                     godownCodes = godownCodes
                 ).executeAsList()
+                println(list)
             }
             isLoading = false
         }
@@ -128,7 +128,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
         val groupFilteredList = if (selectedGroups.isEmpty()) {
             list
         } else {
-            list.filter { it.GroupName in selectedGroups }
+            list.filter { it.GroupName in getProductsGroupCodesByName(selectedGroups) }
         }
 
         val filteredList = smartSearch(

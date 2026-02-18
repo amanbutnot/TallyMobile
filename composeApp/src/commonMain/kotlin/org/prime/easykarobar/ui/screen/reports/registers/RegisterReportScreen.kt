@@ -79,6 +79,9 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
         val filterAccounts = if(perms?.FilterAccounts == "Y")  1L else 0L
         val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
         val excludeGuids = perms?.ConfigAccounts.parseToStringList()
+        val filterBroker = if (perms?.FilterBroker == "Y") 1L else 0L
+        val configBroker =
+            if (filterBroker == 1L) perms?.ConfigBroker.parseToStringList() else emptyList()
 
         LaunchedEffect(Unit) {
             isLoading = true
@@ -87,10 +90,12 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                     VchType = name,
                     DATE = startDate,
                     DATE_ = endDate,
-                    groupFilter =filterAGRP,
+                    groupFilter = filterAGRP,
                     GroupCode = groupCodes,
                     excludeFilter = filterAccounts,
-                    GUID = excludeGuids
+                    GUID = excludeGuids,
+                    filterCm3 = filterBroker,
+                    cm3 = configBroker
                 ).executeAsList()
                 withContext(Dispatchers.Main) {
                     isLoading = false
@@ -251,13 +256,7 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
 
                             }, key = { item ->
                                 buildString {
-                                    append(item.DATE)
-                                    append('|')
-                                    append(item.D1)
-                                    append('|')
-                                    append(item.VOUCHERNUMBER)
-                                    append('|')
-                                    append(item.CM1)
+                                    append(item.VCH_GUID)
                                 }
                             },
                             content = { item ->

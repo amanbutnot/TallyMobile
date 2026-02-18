@@ -35,6 +35,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
@@ -134,7 +135,7 @@ data class PendingOrderPartyList(
         val groupFilteredReceivableList = if (selectedGroups.isEmpty()) {
             filteredList.filter { it.PendingQty!=0.0 }
         } else {
-            filteredList.filter { it.GroupName in selectedGroups && it.PendingQty!=0.0}
+            filteredList.filter { it.GroupName in getPCGroupCodesByName(selectedGroups) && it.PendingQty!=0.0}
         }
 
 
