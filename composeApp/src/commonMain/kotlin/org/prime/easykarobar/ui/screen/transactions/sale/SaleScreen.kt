@@ -70,7 +70,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -177,27 +176,27 @@ data class SaleScreen(
         val db = DatabaseHolder.instance
         val nav = LocalNavigator.currentOrThrow
 
-        var selectedLedger by rememberSaveable { mutableStateOf(selectedLedger ?: "") }
-        var barcodeQty by rememberSaveable { mutableStateOf("") }
-        var selectedLedgerGUID by rememberSaveable { mutableStateOf(selectedLedgerGUID ?: "") }
-        var narration by rememberSaveable { mutableStateOf("") }
-        var selectedDate by rememberSaveable { mutableStateOf(CurrentDate()) }
-        var taxType by rememberSaveable { mutableStateOf(TaxType.INCLUSIVE) }
+        var selectedLedger by remember { mutableStateOf(selectedLedger ?: "") }
+        var barcodeQty by remember { mutableStateOf("") }
+        var selectedLedgerGUID by remember { mutableStateOf(selectedLedgerGUID ?: "") }
+        var narration by remember { mutableStateOf("") }
+        var selectedDate by remember { mutableStateOf(CurrentDate()) }
+        var taxType by remember { mutableStateOf(TaxType.INCLUSIVE) }
 
         var selectedItems by remember { mutableStateOf<List<InvoiceItem>>(emptyList()) }
         var selectedSundries by remember { mutableStateOf<List<SundryItem>>(emptyList()) }
 
-        var showLedgerSheet by rememberSaveable { mutableStateOf(false) }
-        var showQtyPopup by rememberSaveable { mutableStateOf(false) }
-        var showItemSheet by rememberSaveable { mutableStateOf(false) }
-        var showWarningMessage by rememberSaveable { mutableStateOf(false) }
-        var showSundrySheet by rememberSaveable { mutableStateOf(false) }
-        var showResultDialog by rememberSaveable { mutableStateOf(false) }
+        var showLedgerSheet by remember { mutableStateOf(false) }
+        var showQtyPopup by remember { mutableStateOf(false) }
+        var showItemSheet by remember { mutableStateOf(false) }
+        var showWarningMessage by remember { mutableStateOf(false) }
+        var showSundrySheet by remember { mutableStateOf(false) }
+        var showResultDialog by remember { mutableStateOf(false) }
 
         var editingItem by remember { mutableStateOf<InvoiceItem?>(null) }
 
-        var pendingSelectedProductName by rememberSaveable { mutableStateOf<String?>(null) }
-        var pendingSelectedProductGUID by rememberSaveable { mutableStateOf<String?>(null) }
+        var pendingSelectedProductName by remember { mutableStateOf<String?>(null) }
+        var pendingSelectedProductGUID by remember { mutableStateOf<String?>(null) }
 
         val ledgerList = getLedgerMasters(db)
         val busyLedgerList = db.bSMasterQueries.selectAll().executeAsList()
@@ -223,27 +222,33 @@ data class SaleScreen(
         var vehicleNo by remember { mutableStateOf("") }
         var station by remember { mutableStateOf("") }
         var pincode by remember { mutableStateOf("") }
+        var demoBarcodeName by remember { mutableStateOf("") }
         var gstRrDate by remember { mutableStateOf(CurrentDate()) }
         var shareLoading by remember { mutableStateOf(false) }
 
 
         scannerLauncher = rememberBarcodeScanner { result ->
-
+            demoBarcodeName = result.toString()
             when (result) {
                 is BarcodeScanResult.Cancelled -> {
+                    demoBarcodeName = result.toString()
                     showQtyPopup = false
                     return@rememberBarcodeScanner
                 }
 
                 is BarcodeScanResult.Failure -> {
+                    demoBarcodeName = result.toString()
                     showEmptyBarcode = true
                     return@rememberBarcodeScanner
                 }
 
                 is BarcodeScanResult.Success -> {
+                    demoBarcodeName = result.toString()
                     val barcode = result.value.trim()
 
                     if (barcode.isEmpty()) {
+                        demoBarcodeName = result.toString()
+
                         showEmptyBarcode = true
                         return@rememberBarcodeScanner
                     }
@@ -253,6 +258,7 @@ data class SaleScreen(
                         .executeAsOneOrNull()
 
                     if (product == null) {
+                        demoBarcodeName = result.toString()
                         showEmptyBarcode = true
                         return@rememberBarcodeScanner
                     }
@@ -520,7 +526,7 @@ data class SaleScreen(
 
         if (showEmptyBarcode) {
             TallyResultDialog(
-                message = "Barcode not found",
+                message = "Barcode not found \n Barcode Value $demoBarcodeName",
                 onDone = { showEmptyBarcode = false },
                 isSuccess = false
             )
@@ -1783,12 +1789,13 @@ fun TaxTypeSelector(
                     onClick = { onTaxTypeSelected(TaxType.EXTRA) },
                     modifier = Modifier.weight(1f)
                 )
-                TaxTypeOption(
-                    label = "Voucher Wise",
-                    selected = selectedTaxType == TaxType.VOUCHER,
-                    onClick = { onTaxTypeSelected(TaxType.VOUCHER) },
-                    modifier = Modifier.weight(1f)
-                )
+                //TODO: Enable voucher wise later
+//                TaxTypeOption(
+//                    label = "Voucher Wise",
+//                    selected = selectedTaxType == TaxType.VOUCHER,
+//                    onClick = { onTaxTypeSelected(TaxType.VOUCHER) },
+//                    modifier = Modifier.weight(1f)
+//                )
             }
         }
     }

@@ -46,6 +46,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.getProductStockItems
+import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TableCell
@@ -102,7 +103,7 @@ object StockReportScreen : Screen {
         val groupFilteredList = if (selectedGroups.isEmpty()) {
             list
         } else {
-            list.filter { it.GroupName in selectedGroups }
+            list.filter { it.GroupName in getProductsGroupCodesByName(selectedGroups) }
         }
         val filteredList = smartSearch(
             list = groupFilteredList,
@@ -266,10 +267,10 @@ object StockReportScreen : Screen {
                             onItemClick = { item ->
                                 //TODO: this is the StockItemReportListScreen
                                 //   nav.push(StockItemReportScreen(item.Item_Name))
-                                println(item.MasterCode1?.toInt())
+                                //   println(item.MasterCode1?.toInt())
                                 nav.push(
                                     ProductReportScreen(
-                                        item.MasterCode1?.toInt().toString(),
+                                        item.MasterCode1,
                                         isMain = false
                                     )
                                 )
