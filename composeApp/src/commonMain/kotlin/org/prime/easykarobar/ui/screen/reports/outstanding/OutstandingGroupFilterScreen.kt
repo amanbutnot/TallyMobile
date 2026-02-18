@@ -130,7 +130,7 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Text(
-                                    "All Accounts",
+                                    "All Groups",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = if (reportType == "ALL")
                                         MaterialTheme.colorScheme.onPrimaryContainer
@@ -170,7 +170,7 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Text(
-                                    "Single Account",
+                                    "Single Groups",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = if (reportType == "SINGLE")
                                         MaterialTheme.colorScheme.onPrimaryContainer

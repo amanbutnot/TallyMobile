@@ -58,6 +58,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.outstandingFilter
 import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
@@ -262,11 +263,12 @@ data class OutstandingReportScreen(
         val groupFilteredReceivableList = if (selectedGroups.isEmpty()) {
             receivableList
         } else {
-            receivableList.filter { it.GroupName in selectedGroups }
+            println(getPCGroupCodesByName(selectedGroups))
+            receivableList.filter { it.GroupName in getPCGroupCodesByName(selectedGroups) }
         }
 
         val filteredReceivableList = smartSearch(
-            list = groupFilteredReceivableList.filter { it.adjustmentAmount?.toDouble() != 0.0 },
+            list = groupFilteredReceivableList.filter { it.adjustmentAmount != 0.0 },
             query = searchQuery,
             selectors = listOf { item ->
                 if (selectedOption == "Name") item.cm1 else item.billNumber
@@ -275,11 +277,11 @@ data class OutstandingReportScreen(
         val groupFilteredPayableList = if (selectedGroups.isEmpty()) {
             payableList
         } else {
-            payableList.filter { it.GroupName in selectedGroups }
+            payableList.filter { it.GroupName in getPCGroupCodesByName(selectedGroups) }
         }
 
         val filteredPayableList = smartSearch(
-            list = groupFilteredPayableList.filter { it.adjustmentAmount?.toDouble() != 0.0 },
+            list = groupFilteredPayableList.filter { it.adjustmentAmount != 0.0 },
             query = searchQuery,
             selectors = listOf { item ->
                 if (selectedOption == "Name") item.cm1 else item.billNumber

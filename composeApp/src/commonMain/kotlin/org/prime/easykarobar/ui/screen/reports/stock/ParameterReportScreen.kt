@@ -44,6 +44,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.getProductParamStockItems
+import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TableCell
@@ -99,7 +100,7 @@ object ParameterReportScreen : Screen {
         val groupFilteredList = if (selectedGroups.isEmpty()) {
             list
         } else {
-            list.filter { it.GroupName in selectedGroups }
+            list.filter { it.GroupName in getProductsGroupCodesByName(selectedGroups) }
         }
 
         val filteredList = smartSearch(
@@ -246,12 +247,12 @@ object ParameterReportScreen : Screen {
                                     column3Weight,
                                     TextAlign.End
                                 ),
-                                ReportColumn(
-                                    if(showAmtToSalesman())
-                                    "Amount" else "",
-                                    column4Weight,
-                                    TextAlign.End
-                                )
+//                                ReportColumn(
+//                                    if(showAmtToSalesman())
+//                                    "Amount" else "",
+//                                    column4Weight,
+//                                    TextAlign.End
+//                                )
                             )
                         )
 
@@ -303,12 +304,12 @@ object ParameterReportScreen : Screen {
                                     textAlign = TextAlign.End,
                                     isHeader = false
                                 )
-                                TableCell(
-                                    text = "-",
-                                    weight = column4Weight,
-                                    textAlign = TextAlign.End,
-                                    isHeader = false
-                                )
+//                                TableCell(
+//                                    text = "-",
+//                                    weight = column4Weight,
+//                                    textAlign = TextAlign.End,
+//                                    isHeader = false
+//                                )
                             }
                         )
                     }

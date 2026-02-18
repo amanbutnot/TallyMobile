@@ -34,6 +34,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TableCell
@@ -126,23 +127,23 @@ data class OutstandingGroupListScreen(
             TallyLoadingDialog("Generating Report")
         }
         LaunchedEffect(Unit) {
-
             isLoading = true
             withContext(Dispatchers.IO) {
+                val groupCodes = guid?.let { getPCGroupCodes(it.toString()) } ?: emptyList()
+                println(groupCodes)
+
                 list = db.voucherBillAllocationsQueries.outstandingGroupList(
                     mode = if (name == "Bill Receivable") 0 else 1,
                     DATE = startDate,
                     DATE_ = endDate,
                     filterCm3 = filterBroker,
                     cm3 = configBroker,
-                    groupCode = guid,
+                    filterGroupCode = if (groupCodes.isNotEmpty()) 1 else 0,
+                    groupCode = groupCodes.map { it.toDoubleOrNull() ?: 0.0 },
                     excludeFilter = filterAccounts,
                     GUID = excludeGuids,
                 ).executeAsList()
                 println(list)
-                withContext(Dispatchers.Main) {
-                    isLoading = false
-                }
             }
             isLoading = false
         }
