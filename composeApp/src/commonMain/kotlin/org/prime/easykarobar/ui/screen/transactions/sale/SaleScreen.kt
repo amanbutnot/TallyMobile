@@ -296,6 +296,7 @@ data class SaleScreen(
                         gstAmount = 0.0
                         netAmount = price * qty
                     } else {
+                        println("demo")
                         // Tax Inclusive
                         if (gstPercentage == 0.0) {
                             taxableAmount = price * qty
