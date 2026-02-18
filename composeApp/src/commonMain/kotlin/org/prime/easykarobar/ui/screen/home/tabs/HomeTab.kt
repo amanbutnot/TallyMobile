@@ -97,6 +97,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import kotlin.math.absoluteValue
@@ -177,7 +178,9 @@ object HomeTab : Tab {
             )
             //    Spacer(Modifier.height(8.dp))
             LastSyncedCard(
-                lastSyncDateTime = SharedPrefs.LastSync.get().toString()
+                lastSyncDateTime = SharedPrefs.LastSync.get().toString(), modifier = Modifier.clickable{
+                    println(getPCGroupCodes("117.0"))
+                }
             )
             if (userRole() == ROLE.ADMIN || userRole() == ROLE.SALESMAN) {
                 Column(
@@ -584,6 +587,7 @@ fun ExpandableGrid() {
                                             successBlock = {
                                                 nav?.push(SaleScreen(item.first, vchType = 9))
                                             })
+
                                         "Check In/Out" -> salesmanPermission(
                                             "D22",
                                             accessDeniedBlock = { showDeniedDialog = true },
@@ -591,7 +595,8 @@ fun ExpandableGrid() {
                                                 scope.launch {
                                                     showLoading = true
                                                     try {
-                                                        val geolocator = Geolocator(Locator.mobile())
+                                                        val geolocator =
+                                                            Geolocator(Locator.mobile())
 
                                                         runCatching { geolocator.lastLocation() }
 
@@ -612,6 +617,7 @@ fun ExpandableGrid() {
                                                                     )
                                                                 )
                                                             }
+
                                                             else -> showLocationPopup = true
                                                         }
 
@@ -631,7 +637,8 @@ fun ExpandableGrid() {
                                                 scope.launch {
                                                     showLoading = true
                                                     try {
-                                                        val geolocator = Geolocator(Locator.mobile())
+                                                        val geolocator =
+                                                            Geolocator(Locator.mobile())
 
                                                         runCatching { geolocator.lastLocation() }
 
@@ -652,6 +659,7 @@ fun ExpandableGrid() {
                                                                     )
                                                                 )
                                                             }
+
                                                             else -> showLocationPopup = true
                                                         }
 
@@ -663,7 +671,6 @@ fun ExpandableGrid() {
                                                 }
                                             }
                                         )
-
 
 
                                         "Sale Return" -> salesmanPermission(
@@ -1050,7 +1057,7 @@ fun InfoStatCard(
             verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                //.padding(end = 40.dp)
+            //.padding(end = 40.dp)
         ) {
             Text(
                 text = title,

@@ -16,7 +16,7 @@ actual fun Double.formatToQtyDec(num: Int): String {
     return NSString
         .stringWithFormat("%.${num}f", truncated)
         .toString()
-        .replace(",", "")
+       // .replace(",", "")
 }
 
 
@@ -34,6 +34,6 @@ actual fun Double.formatToAmtDec(num: Int): String {
 
     return formatter
         .stringFromNumber(NSNumber(truncated))
-        ?.replace(",", "")
+//?.replace(",", "")
         ?: "0"
 }

@@ -87,7 +87,6 @@ import org.prime.easykarobar.data.model.attendance.AttendanceRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingReportScreen
-import org.prime.easykarobar.ui.screen.reports.pendingOrder.PendingOrderPartyList
 import org.prime.easykarobar.ui.screen.reports.registers.RegisterReportScreen
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
@@ -200,7 +199,7 @@ data class AttendanceScreen(
                             onSelected = {
                                 it.let {
                                     selectedAccount = it.first
-                                    selectedGUID= it.second
+                                    selectedGUID = it.second
                                     println("Selected Account: ${it.first} and selected GUID is ${it.second}")
                                 }
                             },
@@ -281,7 +280,7 @@ data class AttendanceScreen(
                                             icon = Icons.Default.PendingActions,
                                             onClick = {
                                                 nav.push(
-                                                    PendingOrderPartyList(
+                                                    OutstandingReportScreen(
                                                         name = "Pending Sale Order",
                                                         startDate = StartDate(),
                                                         endDate = CurrentDate(),
@@ -319,7 +318,14 @@ data class AttendanceScreen(
                                         icon = Icons.Default.Create,
                                         onClick = {
 
-                                            nav.push(SaleScreen(name="Sale Order", vchType = 12, selectedLedger = selectedAccount, selectedLedgerGUID = selectedGUID))
+                                            nav.push(
+                                                SaleScreen(
+                                                    name = "Sale Order",
+                                                    vchType = 12,
+                                                    selectedLedger = selectedAccount,
+                                                    selectedLedgerGUID = selectedGUID
+                                                )
+                                            )
 
                                         }
                                     )
@@ -419,58 +425,79 @@ data class AttendanceScreen(
                                         }
                                     }
                                 }
-
+                                var showErrorLocation by remember { mutableStateOf(false) }
+                                val nav = LocalNavigator.currentOrThrow
+                                if (showErrorLocation) {
+                                    TallyResultDialog(
+                                        message = "Address not found. Please try again \n Check Internet Connection",
+                                        onDone = {
+                                            showErrorLocation = false
+                                            nav.pop()
+                                        },
+                                        isSuccess = false,
+                                        confirmText = "Retry"
+                                    )
+                                }
                                 TallyButton(
                                     label = buttonName,
                                     onClick = {
 
-                                        if (isAttendance) {
-                                            println(capturedFileInBytes)
-                                            //ATTENDANCE
-                                            viewModel.sendAttendance(
-                                                attendanceRequest = AttendanceRequest(
-                                                    LoginID = "Admin",
-                                                    TranType = 1,
-                                                    RecType = if (isCheckIn(lastAttendanceDate)) 1 else 2,
-                                                    C2 = lat.toString(),
-                                                    C3 = lon.toString(),
-                                                    C4 = address,
-                                                    C5 = capturedFileInBytes
-                                                ), onSuccess = {
-                                                    if (isCheckIn(lastAttendanceDate)) {
-                                                        SharedPrefs.AttendanceDate.save(CurrentDate())
-                                                    } else {
-                                                        SharedPrefs.AttendanceDate.clear()
-                                                    }
-                                                    showAlert = true
-
-                                                })
+                                        if (address == "Address not found") {
+                                            showErrorLocation = true
                                         } else {
-                                            // CHECK IN CHECK OUT
-                                            viewModel.sendAttendance(
-                                                attendanceRequest = AttendanceRequest(
-                                                    LoginID = "Admin",
-                                                    TranType = 2,
-                                                    RecType = if (isCheckIn(lastCheckInOutDate)) 1 else 2,
-                                                    C1 = selectedAccount,
-                                                    C2 = lat.toString(),
-                                                    C3 = lon.toString(),
-                                                    C4 = address,
-                                                    C5 = capturedFileInBytes
-                                                ), onSuccess = {
-                                                    if (isCheckIn(lastCheckInOutDate)) {
-                                                        SharedPrefs.CheckInOutDate.save(CurrentDate())
-                                                        lastCheckInOutDate = CurrentDate()
-                                                        SharedPrefs.CheckInOutLedger.save(
-                                                            selectedAccount
-                                                        )
-                                                    } else {
-                                                        SharedPrefs.CheckInOutDate.clear()
-                                                        lastCheckInOutDate = null
-                                                        SharedPrefs.CheckInOutLedger.clear()
-                                                    }
-                                                    showAlert = true
-                                                })
+                                            if (isAttendance) {
+                                                println(capturedFileInBytes)
+                                                //ATTENDANCE
+                                                viewModel.sendAttendance(
+                                                    attendanceRequest = AttendanceRequest(
+                                                        LoginID = "Admin",
+                                                        TranType = 1,
+                                                        RecType = if (isCheckIn(lastAttendanceDate)) 1 else 2,
+                                                        C2 = lat.toString(),
+                                                        C3 = lon.toString(),
+                                                        C4 = address,
+                                                        C5 = capturedFileInBytes
+                                                    ), onSuccess = {
+                                                        if (isCheckIn(lastAttendanceDate)) {
+                                                            SharedPrefs.AttendanceDate.save(
+                                                                CurrentDate()
+                                                            )
+                                                        } else {
+                                                            SharedPrefs.AttendanceDate.clear()
+                                                        }
+                                                        showAlert = true
+
+                                                    })
+                                            } else {
+                                                // CHECK IN CHECK OUT
+                                                viewModel.sendAttendance(
+                                                    attendanceRequest = AttendanceRequest(
+                                                        LoginID = "Admin",
+                                                        TranType = 2,
+                                                        RecType = if (isCheckIn(lastCheckInOutDate)) 1 else 2,
+                                                        C1 = selectedAccount,
+                                                        C2 = lat.toString(),
+                                                        C3 = lon.toString(),
+                                                        C4 = address,
+                                                        C5 = capturedFileInBytes
+                                                    ), onSuccess = {
+                                                        if (isCheckIn(lastCheckInOutDate)) {
+                                                            SharedPrefs.CheckInOutDate.save(
+                                                                CurrentDate()
+                                                            )
+                                                            lastCheckInOutDate = CurrentDate()
+                                                            SharedPrefs.CheckInOutLedger.save(
+                                                                selectedAccount
+                                                            )
+                                                        } else {
+                                                            SharedPrefs.CheckInOutDate.clear()
+                                                            lastCheckInOutDate = null
+                                                            SharedPrefs.CheckInOutLedger.clear()
+                                                        }
+                                                        showAlert = true
+                                                    })
+                                            }
+
                                         }
 
 
