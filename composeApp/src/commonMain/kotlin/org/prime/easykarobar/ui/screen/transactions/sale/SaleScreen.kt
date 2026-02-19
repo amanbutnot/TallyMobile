@@ -226,7 +226,6 @@ data class SaleScreen(
         var gstRrDate by remember { mutableStateOf(CurrentDate()) }
         var shareLoading by remember { mutableStateOf(false) }
 
-
         scannerLauncher = rememberBarcodeScanner { result ->
             demoBarcodeName = result.toString()
             when (result) {
@@ -273,7 +272,7 @@ data class SaleScreen(
                     val gstPercentage = try {
                         db.taxCategoryMastQueries
                             .selectTaxRate(
-                                product.TaxCategoryCode?.toString() ?: "0",
+                                product.TaxCategoryCode?.toInt().toString(),
                                 selectedDate
                             )
                             .executeAsOneOrNull() ?: 0.0
@@ -296,7 +295,6 @@ data class SaleScreen(
                         gstAmount = 0.0
                         netAmount = price * qty
                     } else {
-                        println("demo")
                         // Tax Inclusive
                         if (gstPercentage == 0.0) {
                             taxableAmount = price * qty
@@ -376,28 +374,45 @@ data class SaleScreen(
                 onDismiss = { showDeleteDialog = false },
             )
         }
-
+        var qtyError by remember { mutableStateOf(false) }
         if (showQtyPopup) {
             TallyAlertBox(
                 title = "Enter Quantity",
                 confirmButtonText = "OK",
                 cancelButtonText = "Cancel",
                 onConfirm = {
-
-                    scannerLauncher?.launch()
-
+                    if (barcodeQty.isBlank()) {
+                        qtyError = true
+                    } else {
+                        qtyError = false
+                        showQtyPopup = false
+                        scannerLauncher?.launch()
+                    }
                 },
                 onCancel = { showQtyPopup = false },
                 onDismiss = { showQtyPopup = false },
                 content = {
-                    TallyTextField(
-                        value = barcodeQty,
-                        onValueChange = { barcodeQty = it },
-                        placeholder = "Enter Quantity",
-                        isPassword = false,
-                        isNumber = true,
-                        label = "Barcode Qty",
-                    )
+                    Column {
+                        TallyTextField(
+                            value = barcodeQty,
+                            onValueChange = {
+                                barcodeQty = it
+                                if (it.isNotBlank()) qtyError = false
+                            },
+                            placeholder = "Enter Quantity",
+                            isPassword = false,
+                            isNumber = true,
+                            label = "Barcode Qty",
+                        )
+
+                        if (qtyError) {
+                            Text(
+                                text = "Quantity cannot be empty",
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
                 }
             )
         }
@@ -661,6 +676,7 @@ data class SaleScreen(
                                             println(e.message)
                                             0.0
                                         }
+                                        println("This is value of gst ${pending.taxCategoryCode.toString()}")
                                         if (product != null) {
                                             ExpandedItemEditor1(
                                                 name = product.Name ?: pending.name,
