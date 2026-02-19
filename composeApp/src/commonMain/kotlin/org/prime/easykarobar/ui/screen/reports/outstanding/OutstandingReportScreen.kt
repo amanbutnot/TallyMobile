@@ -59,8 +59,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodesByName
-import org.prime.easykarobar.ui.shared.globalShared.outstandingFilter
-import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
+import org.prime.easykarobar.ui.shared.globalShared.getSalemanPCFilter
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.DueDays
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
@@ -97,7 +96,7 @@ data class OutstandingReportScreen(
             if (filterBroker == 1L) perms?.ConfigBroker.parseToStringList() else emptyList()
         val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
         val filterAccounts = if (perms?.FilterAccounts == "Y") 1L else 0L
-        val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
+        val groupCodes = perms?.ConfigAGRP.parseToStringList()
         val excludeGuids = perms?.ConfigAccounts.parseToStringList()
         val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
         var showGroupFilterSheet by remember { mutableStateOf(false) }
@@ -129,14 +128,15 @@ data class OutstandingReportScreen(
                             )
                         }
                     } else {
-                        println(outstandingFilter())
+                        println(groupCodes)
+                        println(getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() } )
                         receivableList = db.voucherBillAllocationsQueries.billReceivableList(
                             DATE = startDate,
                             DATE_ = endDate,
                             filterCm3 = filterBroker,
                             cm3 = configBroker,
                             groupFilter = filterAGRP,
-                            GroupCode = groupCodes,
+                            GroupCode = getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() } ,
                             excludeFilter = filterAccounts,
                             GUID = excludeGuids
                         ).executeAsList().map {
@@ -224,13 +224,14 @@ data class OutstandingReportScreen(
                             )
                         }
                     } else {
+                        println(getPCGroupCodesByName(groupCodes) )
                         payableList = db.voucherBillAllocationsQueries.billPayableList(
                             DATE = startDate,
                             DATE_ = endDate,
                             filterCm3 = filterBroker,
                             cm3 = configBroker,
                             groupFilter = filterAGRP,
-                            GroupCode = groupCodes,
+                            GroupCode = getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() } ,
                             excludeFilter = filterAccounts,
                             GUID = excludeGuids
                         ).executeAsList().map {

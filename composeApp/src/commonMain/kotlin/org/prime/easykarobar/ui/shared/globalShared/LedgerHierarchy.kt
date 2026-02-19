@@ -76,3 +76,27 @@ fun getProductsGroupCodesByName(ids: List<String>): List<String> {
 
     return allNames
 }
+
+fun getSalemanPCFilter(ids: List<String>): List<String> {
+    val db = DatabaseHolder.instance
+
+    var currentIds = ids
+    val allIds = ids.toMutableList()
+
+    repeat(9999) {
+        val children = db.ledgerGroupMasterQueries
+            .getChildrenByGroupCode(
+                GroupCode = currentIds,
+                GUID = allIds
+            )
+            .executeAsList()
+            .mapNotNull { it.GUID }
+
+        if (children.isEmpty()) return allIds
+
+        allIds.addAll(children)
+        currentIds = children
+    }
+
+    return allIds
+}

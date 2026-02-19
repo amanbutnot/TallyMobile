@@ -98,7 +98,7 @@ import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodes
-import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
+import org.prime.easykarobar.ui.shared.globalShared.getSalemanPCFilter
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import kotlin.math.absoluteValue
 
@@ -125,25 +125,25 @@ object HomeTab : Tab {
             if (filterBroker == 1L) perms?.ConfigBroker.parseToStringList() else emptyList()
         val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
         val filterAccounts = if (perms?.FilterAccounts == "Y") 1L else 0L
-        val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
+        val groupCodes = perms?.ConfigAGRP.parseToStringList()
         val excludeGuids = perms?.ConfigAccounts.parseToStringList()
 
         val reportList = queries.dashboardReportData(
             StartDate(), CurrentDate(), filterCm3 = filterBroker,
             cm3 = configBroker,
             groupFilter = filterAGRP,
-            GroupCode = groupCodes,
+            GroupCode = getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() },
             excludeFilter = filterAccounts,
             GUID = excludeGuids,
-            GroupCode_ = groupCodes,
+            GroupCode_ = getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() },
             GUID_ = excludeGuids,
-            GroupCode__ = groupCodes,
+            GroupCode__ = getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() },
             GUID__ = excludeGuids,
-            GroupCode___ = groupCodes,
+            GroupCode___ = getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() },
             GUID___ = excludeGuids,
-            GroupCode____ = groupCodes,
+            GroupCode____ = getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() },
             GUID____ = excludeGuids,
-            GroupCode_____ = groupCodes,
+            GroupCode_____ = getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() },
             GUID_____ = excludeGuids
         ).executeAsList()
 
