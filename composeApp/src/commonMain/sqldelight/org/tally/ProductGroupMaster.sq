@@ -15,3 +15,6 @@ SELECT * FROM ProductGroupMaster  ORDER BY Name;
 
 getChildrenProductByGroupName:
 SELECT * FROM ProductGroupMaster WHERE GroupName IN ? AND GUID NOT IN ?;
+
+getChildrenProductByGroupCode:
+SELECT * FROM ProductGroupMaster WHERE GroupCode IN ? AND GUID NOT IN ?;
