@@ -90,6 +90,7 @@ object StockReportScreen : Screen {
         LaunchedEffect(Unit) {
             isLoading = true
             list = getProductStockItems(db)
+            println(list)
 
             isLoading = false
 

@@ -58,6 +58,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.getSalemanPCFilter
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
@@ -136,7 +137,7 @@ data class OutstandingReportScreen(
                             filterCm3 = filterBroker,
                             cm3 = configBroker,
                             groupFilter = filterAGRP,
-                            GroupCode = getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() } ,
+                            GroupCode = filterGroupCodes() ,
                             excludeFilter = filterAccounts,
                             GUID = excludeGuids
                         ).executeAsList().map {
@@ -231,7 +232,7 @@ data class OutstandingReportScreen(
                             filterCm3 = filterBroker,
                             cm3 = configBroker,
                             groupFilter = filterAGRP,
-                            GroupCode = getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() } ,
+                            GroupCode = filterGroupCodes(),
                             excludeFilter = filterAccounts,
                             GUID = excludeGuids
                         ).executeAsList().map {

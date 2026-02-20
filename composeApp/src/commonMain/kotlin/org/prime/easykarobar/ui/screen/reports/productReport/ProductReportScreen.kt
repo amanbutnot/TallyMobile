@@ -50,6 +50,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.productReportHtml
@@ -59,6 +60,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.globalShared.filterItemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
@@ -97,8 +99,6 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                 val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
                 val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L
 
-                val groupCodes =
-                    if (filterGroup == 1L) perms?.ConfigIGRP.parseToDoubleList() else emptyList()
                 val excludeGuids =
                     if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
                 val godownCodes =
@@ -108,7 +108,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                     enableParam,
                     paramFilters,
                     filterGroup = filterGroup,
-                    groupCodes = groupCodes,
+                    groupCodes = filterItemGroupCodes(),
                     filterExclude = filterExclude,
                     excludeGuids = excludeGuids,
                     filterGodown = filterGodown,
@@ -242,7 +242,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                                         )
                                         Text(
                                             text = if (showQtyToSalesman()) {
-                                                "Total: " + items.sumOf { it.Value1 ?: 0.0 }
+                                                "Total: " + items.sumOf { it.Value1 ?: 0.0 }.formatToAmtDec()
                                             } else "",
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.Bold,

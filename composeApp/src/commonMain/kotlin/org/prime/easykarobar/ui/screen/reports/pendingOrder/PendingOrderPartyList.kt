@@ -35,8 +35,8 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodesByName
-import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TableCell
@@ -59,7 +59,6 @@ data class PendingOrderPartyList(
             if (filterBroker == 1L) perms?.ConfigBroker.parseToStringList() else emptyList()
         val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
         val filterAccounts = if (perms?.FilterAccounts == "Y") 1L else 0L
-        val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
         val excludeGuids = perms?.ConfigAccounts.parseToStringList()
         val column1Weight = 1f
         val nav = LocalNavigator.currentOrThrow
@@ -96,7 +95,7 @@ data class PendingOrderPartyList(
                     filterCm3 = filterBroker,
                     cm3 = configBroker,
                     groupFilter = filterAGRP,
-                    groupCodes = groupCodes,
+                    groupCodes = filterGroupCodes(),
                     excludeFilter = filterAccounts,
                     excludeGuids = excludeGuids
                 ).executeAsList().map {
@@ -113,7 +112,7 @@ data class PendingOrderPartyList(
                     filterCm3 = filterBroker,
                     cm3 = configBroker,
                     groupFilter = filterAGRP,
-                    groupCodes = groupCodes,
+                    groupCodes = filterGroupCodes(),
                     excludeFilter = filterAccounts,
                     excludeGuids = excludeGuids
                 ).executeAsList()
