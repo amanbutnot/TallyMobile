@@ -58,6 +58,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.internal.BackHandler
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.deleteDbFile
+import org.prime.easykarobar.data.utils.MOBILE_VERSION
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.OnBoardingScreen
 import org.prime.easykarobar.ui.screen.distributor.CreateDistributorScreen
@@ -144,7 +145,7 @@ object SettingScreen : Screen {
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    if (userRole()==ROLE.ADMIN) {
+                    if (userRole() == ROLE.ADMIN) {
                         Text(
                             text = "Distributor Management",
                             style = MaterialTheme.typography.titleSmall.copy(
@@ -315,6 +316,18 @@ object SettingScreen : Screen {
                 TallyIconButton("Sign Out", Icons.AutoMirrored.Filled.Logout) {
                     showAlertBox = true
                 }
+                Spacer(modifier = Modifier.height(20.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Text(
+                        "v $MOBILE_VERSION",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                    )
+                }
+
 
                 if (showAlertBox) {
                     TallyAlertBox(

@@ -34,16 +34,14 @@ fun getLedgerMasters(db: TallyDatabase): List<LedgerMaster> {
         }
         // Both filters active
         filterAGRP && filterAccounts -> {
-            val groupCodes = perms.ConfigAGRP.parseToDoubleList()
             val excludeGuids = perms.ConfigAccounts.parseToStringList()
-            db.ledgerMasterQueries.selectAllFilterAGRP(groupCodes, excludeGuids)
+            db.ledgerMasterQueries.selectAllFilterAGRP(filterGroupCodes(), excludeGuids)
                 .executeAsList()
         }
 
         // Only GroupCode filter
         filterAGRP -> {
-            val groupCodes = perms.ConfigAGRP.parseToDoubleList()
-            db.ledgerMasterQueries.selectByGroupCode(groupCodes)
+            db.ledgerMasterQueries.selectByGroupCode(filterGroupCodes())
                 .executeAsList()
         }
 
@@ -77,17 +75,14 @@ fun getItemMasters(db: TallyDatabase): List<Products> {
         }
         // Both filters active
         filterIGRP && filterItems -> {
-            val groupCodes = perms.ConfigIGRP.parseToDoubleList()
             val excludeGuids = perms.ConfigItems.parseToStringList()
-            db.productsQueries.selectAllFilterAGRP(groupCodes, excludeGuids)
+            db.productsQueries.selectAllFilterAGRP(filterItemGroupCodes(), excludeGuids)
                 .executeAsList()
         }
 
         // Only GroupCode filter
         filterIGRP -> {
-            val groupCodes = perms.ConfigIGRP.parseToDoubleList()
-            println(groupCodes)
-            db.productsQueries.selectByGroupCode(groupCodes)
+            db.productsQueries.selectByGroupCode(filterItemGroupCodes())
                 .executeAsList()
         }
 
@@ -136,7 +131,7 @@ fun getProductStockItems(db: TallyDatabase): List<GetProductStockItemList> {
     val filterExclude = if (perms.FilterItems == "Y") 1L else 0L
     val filterGodown = if (perms.FilterGodown == "Y") 1L else 0L
 
-    val groupCodes = if (filterGroup == 1L) perms.ConfigIGRP.parseToDoubleList() else emptyList()
+    val groupCodes = if (filterGroup == 1L) filterItemGroupCodes() else emptyList()
     val excludeGuids =
         if (filterExclude == 1L) perms.ConfigItems.parseToStringList() else emptyList()
     val godownCodes =
@@ -162,7 +157,7 @@ fun getProductParamStockItems(db: TallyDatabase): List<GetProductParamStockList>
     val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
     val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L
 
-    val groupCodes = if (filterGroup == 1L) perms?.ConfigIGRP.parseToDoubleList() else emptyList()
+    val groupCodes = if (filterGroup == 1L) filterItemGroupCodes() else emptyList()
     val excludeGuids =
         if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
     val godownCodes =
