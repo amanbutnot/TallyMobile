@@ -139,7 +139,7 @@ data class OutstandingGroupListScreen(
                     DATE_ = endDate,
                     filterCm3 = filterBroker,
                     cm3 = configBroker,
-                    filterGroupCode = if (groupCodes.isNotEmpty()) 1 else 0,
+                    filterGroupCode = if (groupCodes.isNotEmpty()) 0 else 1,
                     groupCode =filterGroupCodes(),
                     excludeFilter = filterAccounts,
                     GUID = excludeGuids,
