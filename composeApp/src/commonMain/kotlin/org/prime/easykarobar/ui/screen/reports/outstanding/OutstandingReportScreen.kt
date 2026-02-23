@@ -58,6 +58,8 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.globalShared.agrpGroupCodes
+import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
 import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.getSalemanPCFilter
@@ -102,7 +104,10 @@ data class OutstandingReportScreen(
         val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
         var showGroupFilterSheet by remember { mutableStateOf(false) }
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
-        val productGroups = remember { db.ledgerGroupMasterQueries.selectAll().executeAsList() }
+        val productGroups = remember { db.ledgerGroupMasterQueries.selectAll(
+            filterGroup = filterAGRPGroups(),
+            groupCodes = agrpGroupCodes()
+        ).executeAsList() }
 
         LaunchedEffect(Unit) {
             isLoading = true

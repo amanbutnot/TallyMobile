@@ -48,6 +48,8 @@ import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
+import org.prime.easykarobar.ui.shared.globalShared.agrpGroupCodes
+import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
 import org.prime.easykarobar.ui.shared.globalShared.parseDate
 
 data class OutstandingGroupFilterScreen(val name: String) : Screen {
@@ -63,9 +65,12 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
             var selectedGuid by rememberSaveable { mutableStateOf("") }
             var showBottomSheet by remember { mutableStateOf(false) }
             var showError by remember { mutableStateOf(false) }
-
             val db = DatabaseHolder.instance
-            val list = db.ledgerGroupMasterQueries.selectAll().executeAsList()
+            val list = db.ledgerGroupMasterQueries.selectAll(
+                filterGroup = filterAGRPGroups(),
+                groupCodes = agrpGroupCodes()
+            ).executeAsList()
+            println("Filter list is $list")
             val nameList = list.map { it.Name }
             val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
             var reportType by rememberSaveable { mutableStateOf("ALL") }
