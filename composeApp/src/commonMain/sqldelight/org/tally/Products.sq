@@ -43,7 +43,7 @@ WHERE GUID IN (
 UNION ALL
 SELECT *
 FROM Products
-WHERE Name= :itemName AND (:filterGroup = 0 OR Products.GroupCode IN :groupCodes)
+WHERE Name= :itemName
   COLLATE NOCASE;
 
 

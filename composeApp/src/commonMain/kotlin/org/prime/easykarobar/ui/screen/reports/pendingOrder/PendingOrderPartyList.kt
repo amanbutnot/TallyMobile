@@ -35,8 +35,6 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
-import org.prime.easykarobar.ui.shared.globalShared.agrpGroupCodes
-import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
 import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
@@ -73,8 +71,7 @@ data class PendingOrderPartyList(
 
         val db = DatabaseHolder.instance
         var showGroupFilterSheet by remember { mutableStateOf(false) }
-        val productGroups = remember { db.ledgerGroupMasterQueries.selectAll(      filterGroup = filterAGRPGroups(),
-            groupCodes = agrpGroupCodes().map { it.toString() }).executeAsList() }
+        val productGroups = remember { db.ledgerGroupMasterQueries.selectAll().executeAsList() }
         val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
 
