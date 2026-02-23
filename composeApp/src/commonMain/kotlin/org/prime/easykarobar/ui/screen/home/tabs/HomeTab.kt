@@ -97,9 +97,13 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
-import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
+import org.prime.easykarobar.ui.shared.globalShared.accountGroupCodes
+import org.prime.easykarobar.ui.shared.globalShared.agrpGroupCodes
+import org.prime.easykarobar.ui.shared.globalShared.configBroker
+import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
+import org.prime.easykarobar.ui.shared.globalShared.filterAccountGroups
+import org.prime.easykarobar.ui.shared.globalShared.filterBroker
 import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodes
-import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import kotlin.math.absoluteValue
 
 object HomeTab : Tab {
@@ -117,33 +121,25 @@ object HomeTab : Tab {
         val compInfo = queries.getCompanyInformation().executeAsOne()
         var showDeniedDialog by remember { mutableStateOf(false) }
         val nav = LocalNavigator.currentOrThrow.parent
-        val perms = SharedPrefs.Permissions.get()
 
-
-        val filterBroker = if (perms?.FilterBroker == "Y") 1L else 0L
-        val configBroker =
-            if (filterBroker == 1L) perms?.ConfigBroker.parseToStringList() else emptyList()
-        val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
-        val filterAccounts = if (perms?.FilterAccounts == "Y") 1L else 0L
-        val excludeGuids = perms?.ConfigAccounts.parseToStringList()
 
         val reportList = queries.dashboardReportData(
-            StartDate(), CurrentDate(), filterCm3 = filterBroker,
-            cm3 = configBroker,
-            groupFilter = filterAGRP,
-            GroupCode = filterGroupCodes(),
-            excludeFilter = filterAccounts,
-            GUID = excludeGuids,
-            GroupCode_ = filterGroupCodes(),
-            GUID_ = excludeGuids,
-            GroupCode__ = filterGroupCodes(),
-            GUID__ = excludeGuids,
-            GroupCode___ = filterGroupCodes(),
-            GUID___ = excludeGuids,
-            GroupCode____ = filterGroupCodes(),
-            GUID____ = excludeGuids,
-            GroupCode_____ = filterGroupCodes(),
-            GUID_____ = excludeGuids
+            StartDate(), CurrentDate(), filterCm3 = filterBroker(),
+            cm3 = configBroker(),
+            groupFilter = filterAGRPGroups(),
+            GroupCode = agrpGroupCodes().map { it.toDoubleOrNull()?:0.0 },
+            excludeFilter = filterAccountGroups(),
+            GUID = accountGroupCodes(),
+            GroupCode_ = agrpGroupCodes().map { it.toDoubleOrNull()?:0.0 },
+            GUID_ = accountGroupCodes(),
+            GroupCode__ = agrpGroupCodes().map { it.toDoubleOrNull()?:0.0 },
+            GUID__ = accountGroupCodes(),
+            GroupCode___ = agrpGroupCodes().map { it.toDoubleOrNull()?:0.0 },
+            GUID___ = accountGroupCodes(),
+            GroupCode____ = agrpGroupCodes().map { it.toDoubleOrNull()?:0.0 },
+            GUID____ = accountGroupCodes(),
+            GroupCode_____ = agrpGroupCodes().map { it.toDoubleOrNull()?:0.0 },
+            GUID_____ = accountGroupCodes()
         ).executeAsList()
 
         val filteredReportList = reportList
@@ -177,7 +173,8 @@ object HomeTab : Tab {
             )
             //    Spacer(Modifier.height(8.dp))
             LastSyncedCard(
-                lastSyncDateTime = SharedPrefs.LastSync.get().toString(), modifier = Modifier.clickable{
+                lastSyncDateTime = SharedPrefs.LastSync.get().toString(),
+                modifier = Modifier.clickable {
                     println(getPCGroupCodes("117.0"))
                 }
             )
