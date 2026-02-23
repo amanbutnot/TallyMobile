@@ -113,8 +113,10 @@ import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
+import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.isBusy
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
@@ -253,7 +255,10 @@ data class SaleScreen(
                     }
 
                     val product = db.productsQueries
-                        .getItemByName(barcode)
+                        .getItemByName(
+                            barcode, groupCodes = itemGroupCodes(),
+                            filterGroup = filterItemGroups(),
+                        )
                         .executeAsOneOrNull()
 
                     if (product == null) {
