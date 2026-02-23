@@ -11,9 +11,14 @@ CREATE TABLE LedgerGroupMaster (
 );
 
 selectAll:
-SELECT * FROM LedgerGroupMaster ORDER BY Name;
+SELECT * FROM LedgerGroupMaster WHERE (:filterGroup = 0 OR LedgerGroupMaster.GroupCode IN :groupCodes) ORDER BY Name;
 
 getChildrenByGroupCode:
 SELECT * FROM LedgerGroupMaster WHERE GroupCode IN ? AND GUID NOT IN ?;
 getChildrenByGroupName:
 SELECT * FROM LedgerGroupMaster WHERE GroupName IN ? AND GUID NOT IN ?;
+
+getByGroupCodes:
+SELECT * FROM LedgerGroupMaster WHERE GroupCode IN ?;
+getByGroupNames:
+SELECT * FROM LedgerGroupMaster WHERE Name IN :GroupName AND GUID NOT IN :GUID;

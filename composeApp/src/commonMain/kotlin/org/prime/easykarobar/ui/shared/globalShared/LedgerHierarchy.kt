@@ -56,25 +56,25 @@ fun getPCGroupCodesByName(ids: List<String>): List<String> {
 fun getProductsGroupCodesByName(ids: List<String>): List<String> {
     val db = DatabaseHolder.instance
     var currentNames = ids
-    val allNames = mutableListOf<String>().apply { addAll(ids) }
-    val visitedGuids = mutableListOf<String>()
+    val allNames = ids.toMutableList()
+    val visitedGuids = mutableSetOf<String>()  // Set for O(1) lookup
 
-    repeat(9999) {
+    while (currentNames.isNotEmpty()) {
         val results = db.productGroupMasterQueries
             .getChildrenProductByGroupName(
                 GroupName = currentNames,
-                GUID = visitedGuids.ifEmpty { listOf("") }
+                GUID = visitedGuids.ifEmpty { setOf("") }
             )
             .executeAsList()
 
         val childNames = results.mapNotNull { it.Name }
         val childGuids = results.mapNotNull { it.GUID }
 
-        if (childNames.isEmpty()) return allNames
+        if (childNames.isEmpty()) break
 
         allNames.addAll(childNames)
         visitedGuids.addAll(childGuids)
-        currentNames = childNames  // next iteration searches children of current children
+        currentNames = childNames
     }
 
     return allNames
@@ -142,7 +142,15 @@ fun filterGroupCodes(): List<Double> {
 fun filterItemGroupCodes(): List<Double> {
     val perms = SharedPrefs.Permissions.get()
     val groupCodes = perms?.ConfigIGRP.parseToStringList()
-    println(getProductsGroupCodesByGuid(groupCodes).mapNotNull { it.toDoubleOrNull() })
+    println("asdlk;fjakl;sdfj "+getProductsGroupCodesByGuid(groupCodes).mapNotNull { it.toDoubleOrNull() })
+    return getProductsGroupCodesByGuid(groupCodes).mapNotNull { it.toDoubleOrNull() }
+
+}
+
+fun filterItemGroupCodesByName(): List<Double> {
+    val perms = SharedPrefs.Permissions.get()
+    val groupCodes = perms?.ConfigIGRP.parseToStringList()
+    println("asdlk;fjakl;sdfj "+getProductsGroupCodesByGuid(groupCodes).mapNotNull { it.toDoubleOrNull() })
     return getProductsGroupCodesByGuid(groupCodes).mapNotNull { it.toDoubleOrNull() }
 
 }

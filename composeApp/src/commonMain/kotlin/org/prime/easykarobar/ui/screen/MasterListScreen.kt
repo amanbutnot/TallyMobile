@@ -53,6 +53,8 @@ import org.prime.easykarobar.data.enums.MasterEnums
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
+import org.prime.easykarobar.ui.shared.globalShared.agrpGroupCodes
+import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
 import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.tally.GodownMaster
@@ -74,11 +76,15 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
         val selectedItem = remember { mutableStateOf<Any?>(null) }
 
 
+
         LaunchedEffect(Unit) {
             allItems.value = when (masterEnum) {
 
                 MasterEnums.ACCOUNTS -> getLedgerMasters(db)
-                MasterEnums.ACCOUNT_GROUP -> db.ledgerGroupMasterQueries.selectAll().executeAsList()
+                MasterEnums.ACCOUNT_GROUP -> db.ledgerGroupMasterQueries.selectAll(
+                    filterGroup = filterAGRPGroups(),
+                    groupCodes = agrpGroupCodes()
+                ).executeAsList()
                 MasterEnums.ITEMS -> getItemMasters(db)
                 MasterEnums.ITEM_GROUP -> db.productGroupMasterQueries.selectAll().executeAsList()
                 MasterEnums.ITEM_UNIT -> db.productUnitMasterQueries.selectAll().executeAsList()
