@@ -139,8 +139,8 @@ fun getProductStockItems(db: TallyDatabase): List<GetProductStockItemList> {
 
     return db.productStockQueries
         .getProductStockItemList(
-            filterGroup = filterItemGroups(),
-            groupCodes = itemGroupCodes(),
+            filterGroup = filterGroup,
+            groupCodes = groupCodes,
             filterExclude = filterExclude,
             excludeGuids = excludeGuids,
             filterGodown = filterGodown,
