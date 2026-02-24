@@ -11,7 +11,7 @@ CREATE TABLE ProductGroupMaster (
 );
 
 selectAll:
-SELECT * FROM ProductGroupMaster  ORDER BY Name;
+SELECT * FROM ProductGroupMaster  WHERE (:filterGroup = 0 OR ProductGroupMaster.GroupCode IN :groupCodes OR CAST(ProductGroupMaster.GUID AS INTEGER) IN :groupCodes) ORDER BY Name;
 
 getChildrenProductByGroupName:
 SELECT * FROM ProductGroupMaster WHERE GroupName IN ? AND GUID NOT IN ?;
