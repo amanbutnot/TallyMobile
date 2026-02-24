@@ -61,7 +61,9 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroupCodes
+import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
+import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
@@ -85,7 +87,8 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
         var shareLoading by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
         var showGroupFilterSheet by remember { mutableStateOf(false) }
-        val productGroups = remember { db.productGroupMasterQueries.selectAll().executeAsList() }
+        val productGroups = remember { db.productGroupMasterQueries.selectAll(   filterGroup = filterItemGroups(),
+            groupCodes = itemGroupCodes()).executeAsList() }
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
         val bottomSheetState = rememberModalBottomSheetState()
         LaunchedEffect(Unit) {

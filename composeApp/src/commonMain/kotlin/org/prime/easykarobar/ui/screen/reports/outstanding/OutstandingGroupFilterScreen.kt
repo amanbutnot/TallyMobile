@@ -70,8 +70,6 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
                 filterGroup = filterAGRPGroups(),
                 groupCodes = agrpGroupCodes()
             ).executeAsList()
-            println("Filter list is $list")
-            val nameList = list.map { it.Name }
             val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
             var reportType by rememberSaveable { mutableStateOf("ALL") }
 
