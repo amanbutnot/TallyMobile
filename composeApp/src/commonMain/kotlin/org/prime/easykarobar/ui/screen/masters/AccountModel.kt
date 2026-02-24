@@ -1,0 +1,27 @@
+package org.prime.easykarobar.ui.screen.masters
+
+data class AccountModel(
+    val name: String,
+    val alias: String = "",
+    val printName: String = name,
+    val parentGroupName: String,
+    val parentGroupGuid: String,
+    val openingBalance: String = "",
+    val drCr: String = "Dr",
+    val gstNo: String = "",
+    val itPan: String = "",
+    val addressLine1: String = "",
+    val addressLine2: String = "",
+    val addressLine3: String = "",
+    val addressLine4: String = "",
+    val country: String,
+    val state: String,
+    val pincode: String = "",
+    val station: String = "",
+    val mobileNo: String = "",
+    val email: String = "",
+    val whatsappNo: String = "",
+    val maintainBillByBill: Boolean = false,
+    val saleCreditDays: String = "",
+    val purchaseCreditDays: String = "",
+)
