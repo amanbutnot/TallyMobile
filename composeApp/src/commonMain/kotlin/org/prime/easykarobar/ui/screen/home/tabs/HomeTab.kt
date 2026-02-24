@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Business
@@ -86,6 +87,7 @@ import org.prime.easykarobar.ui.screen.distributor.order.MyOrdersScreen
 import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen
 import org.prime.easykarobar.ui.screen.home.ROLE
 import org.prime.easykarobar.ui.screen.home.userRole
+import org.prime.easykarobar.ui.screen.masters.AccountAddScreen
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportFilterScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingDisFilterScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingReportScreen
@@ -506,7 +508,8 @@ fun ExpandableGrid() {
         "Purchase Return" to Icons.Default.Receipt,
         "Attendance" to Icons.Default.LocationOn,
         "Check In/Out" to Icons.Default.LocationCity,
-        "Contra" to Icons.Default.Payment
+        "Contra" to Icons.Default.Payment,
+        "Account" to Icons.Default.AccountBox
     )
 
     Column(
@@ -708,6 +711,7 @@ fun ExpandableGrid() {
                                                     )
                                                 )
                                             })
+                                        "Account"->{nav?.push(AccountAddScreen)}
                                     }
                                 }
                         )

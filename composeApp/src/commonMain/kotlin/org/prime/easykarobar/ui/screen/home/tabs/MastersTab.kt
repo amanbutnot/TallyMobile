@@ -48,7 +48,7 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.prime.easykarobar.data.enums.MasterEnums
 import org.prime.easykarobar.data.model.salesmanPermission
-import org.prime.easykarobar.ui.screen.MasterListScreen
+import org.prime.easykarobar.ui.screen.masters.MasterListScreen
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 
 object MastersTab : Tab {

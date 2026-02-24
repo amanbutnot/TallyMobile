@@ -95,45 +95,58 @@ fun getProductsGroupCodesByGuid(ids: List<String>): List<String> {
             .executeAsList()
             .mapNotNull { it.GUID }
 
-        if (children.isEmpty()) return allIds
+        if (children.isEmpty()) {
+            println("HGELLOSDFJLKSDJFLDSK " + allIds)
+            return allIds}
 
         allIds.addAll(children)
         currentIds = children.mapNotNull { it.toDoubleOrNull() }
     }
+    println("HGELLOSDFJLKSDJFLDSK " + allIds)
 
     return allIds
 }
 
-fun getSalemanPCFilter(ids: List<String>): List<String> {
+fun getSalemanPCFilter(groupCodes: List<String>): List<String> {
     val db = DatabaseHolder.instance
+    val allIds = groupCodes.toMutableSet()
+    val queue = ArrayDeque<String>()
 
-    var currentIds = ids
-    val allIds = ids.toMutableList()
+    val parents = db.ledgerGroupMasterQueries
+        .getParentsByGuid(GUID = groupCodes)
+        .executeAsList()
+        .mapNotNull { it.GUID }
 
-    repeat(9999) {
+    allIds.addAll(parents)
+    queue.addAll(allIds)
+
+    while (queue.isNotEmpty()) {
+        val current = queue.removeFirst()
+
         val children = db.ledgerGroupMasterQueries
             .getChildrenByGroupCode(
-                GroupCode = currentIds,
-                GUID = allIds
+                GroupCode = listOf(current),
+                GUID = allIds.toList()
             )
             .executeAsList()
             .mapNotNull { it.GUID }
 
-        if (children.isEmpty()) return allIds
-
-        allIds.addAll(children)
-        currentIds = children
+        for (child in children) {
+            if (child !in allIds) {
+                allIds.add(child)
+                queue.add(child)
+            }
+        }
     }
-
-    return allIds
+    return allIds.toList()
 }
-
 
 fun filterGroupCodes(): List<Double> {
     val perms = SharedPrefs.Permissions.get()
     val groupCodes = perms?.ConfigAGRP.parseToStringList()
+    println("Group Codes are: $groupCodes")
 
-    println("FilterGroupCodes: ${getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() }}")
+    println("FilterGroupCodes NEW NEW NEW: ${getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() }}")
 
     return getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() }
 

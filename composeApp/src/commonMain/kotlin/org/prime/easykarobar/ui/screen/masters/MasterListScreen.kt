@@ -1,4 +1,4 @@
-package org.prime.easykarobar.ui.screen
+package org.prime.easykarobar.ui.screen.masters
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -49,14 +49,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.data.enums.MasterEnums
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
-import org.prime.easykarobar.ui.shared.globalShared.agrpGroupCodes
-import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
+import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
+import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.tally.GodownMaster
 import org.tally.LedgerGroupMaster
 import org.tally.LedgerMaster
@@ -74,6 +76,7 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
         var searchQuery by remember { mutableStateOf("") }
         val showBottomSheet = remember { mutableStateOf(false) }
         val selectedItem = remember { mutableStateOf<Any?>(null) }
+        val nav = LocalNavigator.currentOrThrow
 
 
 
@@ -82,11 +85,16 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
 
                 MasterEnums.ACCOUNTS -> getLedgerMasters(db)
                 MasterEnums.ACCOUNT_GROUP -> db.ledgerGroupMasterQueries.selectAll(
-                    filterGroup = filterAGRPGroups(),
-                    groupCodes = agrpGroupCodes()
+                    filterGroup = filterItemGroups(),
+                    groupCodes = itemGroupCodes().map { it.toString() }
                 ).executeAsList()
+
                 MasterEnums.ITEMS -> getItemMasters(db)
-                MasterEnums.ITEM_GROUP -> db.productGroupMasterQueries.selectAll().executeAsList()
+                MasterEnums.ITEM_GROUP -> db.productGroupMasterQueries.selectAll(
+                    filterGroup = filterItemGroups(),
+                    groupCodes = itemGroupCodes()
+                ).executeAsList()
+
                 MasterEnums.ITEM_UNIT -> db.productUnitMasterQueries.selectAll().executeAsList()
                 MasterEnums.MATERIAL_CENTER -> db.godownMasterQueries.selectAll().executeAsList()
             }
@@ -95,6 +103,10 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
         TallyScaffold(
             title = masterEnum.name.replace("_", " ").lowercase().split(" ")
                 .joinToString(" ") { it.replaceFirstChar { char -> char.uppercaseChar() } },
+            showAddBar = masterEnum == MasterEnums.ACCOUNTS || masterEnum == MasterEnums.ITEMS,
+            onAddClick = {
+                nav.push(AccountAddScreen)
+            },
             content = { innerPadding ->
                 Column(
                     modifier = Modifier
