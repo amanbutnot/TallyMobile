@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
@@ -39,6 +40,8 @@ fun TallyScaffold(
     title: String,
     content: @Composable (PaddingValues) -> Unit,
     showBottomBar: Boolean = false,
+    showAddBar: Boolean = false,
+    onAddClick: () -> Unit = {},
     bottomBarContent: @Composable () -> Unit = {}
 ) {
     val nav = LocalNavigator.currentOrThrow
@@ -60,6 +63,16 @@ fun TallyScaffold(
                             fontWeight = FontWeight.Medium
                         )
                     )
+                }, actions = {
+                    if (showAddBar) {
+                        IconButton(onClick = { onAddClick() }) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Add",
+                                tint = colors.onSurface
+                            )
+                        }
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = { nav.pop() }) {
@@ -133,7 +146,7 @@ fun TallyReportScaffold(
                 },
                 actions = {
                     Row {
-                        if(showBarcodeIcon){
+                        if (showBarcodeIcon) {
                             IconButton(onClick = { onBarcodeClick?.invoke() }) {
                                 Icon(
                                     Icons.Default.QrCodeScanner,

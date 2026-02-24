@@ -45,8 +45,10 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getProductStockItems
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
+import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TableCell
@@ -74,7 +76,8 @@ object StockReportScreen : Screen {
         var shareLoading by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
         var showGroupFilterSheet by remember { mutableStateOf(false) }
-        val productGroups = remember { db.productGroupMasterQueries.selectAll().executeAsList() }
+        val productGroups = remember { db.productGroupMasterQueries.selectAll(  filterGroup = filterItemGroups(),
+            groupCodes = itemGroupCodes()).executeAsList() }
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
         val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
@@ -90,7 +93,7 @@ object StockReportScreen : Screen {
         LaunchedEffect(Unit) {
             isLoading = true
             list = getProductStockItems(db)
-            println(list)
+            println("Group list is : $list")
 
             isLoading = false
 
