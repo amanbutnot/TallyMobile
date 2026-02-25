@@ -64,7 +64,6 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import kotlinx.coroutines.launch
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
@@ -72,17 +71,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.agrpGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Top-level helpers for parent group selection
-//  Pair(first = Name, second = GUID) — matches TransactionBottomSheet's
-//  List<Pair<String, String>> and onSelected: (Pair<String, String>) -> Unit
-// ─────────────────────────────────────────────────────────────────────────────
 
-private val Pair<String, String>.isSelected get() = first.isNotBlank() && second.isNotBlank()
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Section Header
-// ─────────────────────────────────────────────────────────────────────────────
 @Composable
 private fun SectionHeader(title: String, icon: ImageVector) {
     Row(
@@ -547,23 +536,6 @@ object AccountAddScreen : Screen {
 
         val countryError = attempted && country.isBlank()
         val stateError = attempted && state.isBlank()
-
-        // ── Helpers ────────────────────────────────────────────────────────
-        fun hideParentGroupSheet() {
-            scope.launch { parentGroupSheetState.hide() }
-                .invokeOnCompletion { showParentGroupSheet = false }
-        }
-
-        fun resetAll() {
-            name = ""; alias = ""; printName = ""
-            parentGroup = ""
-            openingBalance = ""; gstNo = ""
-            address1 = ""; address2 = ""; address3 = ""; address4 = ""
-            country = "India"; state = ""; mobile = ""; email = ""
-            whatsapp = ""; itPan = ""; saleCreditDays = ""
-            purchaseCreditDays = ""; pincode = ""; station = ""
-            maintainBillByBill = false; attempted = false
-        }
 
         fun validate(): Boolean {
             attempted = true
