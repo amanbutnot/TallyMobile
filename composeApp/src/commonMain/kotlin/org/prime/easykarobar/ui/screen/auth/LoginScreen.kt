@@ -189,7 +189,7 @@ object LoginScreen : Screen {
                                                 list = companyList,
                                             )
                                         )
-                                        nav.push(SelectCompanyScreen(email, password, companyList))
+                                        nav.push(SelectCompanyScreen(email.trim(), password.trim(), companyList))
                                     }
                                 )
                             },

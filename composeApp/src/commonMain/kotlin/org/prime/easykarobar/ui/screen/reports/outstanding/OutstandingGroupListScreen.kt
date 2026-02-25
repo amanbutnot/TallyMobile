@@ -131,7 +131,10 @@ data class OutstandingGroupListScreen(
             isLoading = true
             withContext(Dispatchers.IO) {
                 val groupCodes = guid?.let { getPCGroupCodes(it.toString()) } ?: emptyList()
-                println(groupCodes)
+                println("Group Coodes are: "+groupCodes)
+                println("Filter Coodes are: "+filterGroupCodes())
+                println("Filter Accounts are: "+filterAccounts)
+                println("Exclude GUID are: "+excludeGuids)
 
                 list = db.voucherBillAllocationsQueries.outstandingGroupList(
                     mode = if (name == "Bill Receivable") 0 else 1,
@@ -139,8 +142,9 @@ data class OutstandingGroupListScreen(
                     DATE_ = endDate,
                     filterCm3 = filterBroker,
                     cm3 = configBroker,
-                    filterGroupCode = if (groupCodes.isNotEmpty()) 0 else 1,
-                    groupCode =filterGroupCodes(),
+                    //filterGroupCode = if (groupCodes.isNotEmpty()) 1 else 0 ,
+                    filterGroupCode = 1,
+                    groupCode =groupCodes.map { it.toDoubleOrNull()?:0.0 },
                     excludeFilter = filterAccounts,
                     GUID = excludeGuids,
                 ).executeAsList()
