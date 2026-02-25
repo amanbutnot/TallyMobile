@@ -27,6 +27,7 @@ import kotlinx.coroutines.withContext
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
+import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.data.utils.showAmtToSalesman
 import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.Quadruple
@@ -36,6 +37,9 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
+import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
+import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TableCell
@@ -68,12 +72,27 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
 
         val totalQty = list.sumOf { it.Item_Qty ?: 0.0 }
         val totalAmt = list.sumOf { it.Item_Amt ?: 0.0 }
+        val perms = SharedPrefs.Permissions.get()
+        val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L
+        val godownCodes =
+            if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
 
+        val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
+        val excludeGuids =
+            if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
 
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
-                list = db.vouchersStockItemsQueries.godownWiseOnEnterList(itemName).executeAsList()
+                list = db.vouchersStockItemsQueries.godownWiseOnEnterList(
+                    Name = itemName,
+                    filterGodown = filterGodown,
+                    godownCodes = godownCodes,
+                    filterGroup = filterItemGroups(),
+                    groupCodes = itemGroupCodes(),
+                    filterExclude = filterExclude,
+                    excludeGuids = excludeGuids,
+                ).executeAsList()
                 withContext(Dispatchers.Main) {
                     isLoading = false
                 }

@@ -34,18 +34,20 @@ import org.prime.easykarobar.data.utils.showAmtToSalesman
 import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.threeHeaderHtml
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
-import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
+import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
+import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
+import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TableCell
+import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportLazyList
-import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.GodownWiseClosingStockList
 import smartSearch
@@ -83,12 +85,19 @@ object GodownClosingStockListScreen : Screen {
         val godownCodes =
             if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
 
+        val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
+        val excludeGuids =
+            if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
                 list = db.vouchersStockItemsQueries.godownWiseClosingStockList(
-                    filterGodown,
-                    godownCodes
+                    filterGodown = filterGodown,
+                    godownCodes = godownCodes,
+                    filterGroup = filterItemGroups(),
+                    groupCodes = itemGroupCodes(),
+                    filterExclude = filterExclude,
+                    excludeGuids = excludeGuids,
                 ).executeAsList()
                 withContext(Dispatchers.Main) {
                     isLoading = false

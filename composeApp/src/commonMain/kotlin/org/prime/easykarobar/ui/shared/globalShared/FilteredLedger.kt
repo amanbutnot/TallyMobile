@@ -127,24 +127,27 @@ fun getProductStockItems(db: TallyDatabase): List<GetProductStockItemList> {
             .executeAsList()
     }
 
-    val filterGroup = if (perms.FilterIGRP == "Y") 1L else 0L
     val filterExclude = if (perms.FilterItems == "Y") 1L else 0L
     val filterGodown = if (perms.FilterGodown == "Y") 1L else 0L
 
-    val groupCodes = if (filterGroup == 1L) filterItemGroupCodes() else emptyList()
     val excludeGuids =
         if (filterExclude == 1L) perms.ConfigItems.parseToStringList() else emptyList()
     val godownCodes =
         if (filterGodown == 1L) perms.ConfigGodown.parseToStringList() else emptyList()
 
+
+    println("-STOCK")
+    println("groupcodes : ${itemGroupCodes()}")
+    println("-godownCodes : $godownCodes")
+    println("-exclude GUID: $excludeGuids")
     return db.productStockQueries
         .getProductStockItemList(
-            filterGroup = filterItemGroups(),
             groupCodes = itemGroupCodes(),
-            filterExclude = filterExclude,
+            godownCodes = godownCodes,
             excludeGuids = excludeGuids,
-            filterGodown = filterGodown,
-            godownCodes = godownCodes
+            filterGroup = filterItemGroups(),
+            filterExclude = filterExclude,
+            filterGodown = filterGodown
         )
         .executeAsList()
 }
