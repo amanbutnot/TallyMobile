@@ -51,20 +51,23 @@ Sum(D3) AS Item_Amt
 
 
 godownWiseClosingStockList:
-        SELECT
-            SUM(pps.Value1) AS Item_Qty,
-            SUM(pps.Value3) AS Item_Amt,
-            g.Name           AS Item_Godown,
-            ''               AS UnitName,
-            g.Name           AS GodownName
-        FROM ProductStock pps
-        JOIN GodownMaster g
-            ON g.GUID = pps.MasterCode2
-        WHERE
-            (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes)
-        GROUP BY g.GUID
-        ORDER BY g.Name;
-
+SELECT
+    SUM(pps.Value1) AS Item_Qty,
+    SUM(pps.Value3) AS Item_Amt,
+    g.Name          AS Item_Godown,
+    ''              AS UnitName,
+    g.Name          AS GodownName
+FROM ProductStock AS pps
+JOIN GodownMaster AS g
+    ON g.GUID = pps.MasterCode2
+LEFT JOIN Products AS p
+    ON p.GUID = pps.MasterCode1
+WHERE
+  (:filterGroup = 0 OR p.GroupCode IN :groupCodes)
+                          AND (:filterExclude = 0 OR p.GUID NOT IN :excludeGuids)
+                          AND (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes)
+GROUP BY g.GUID
+ORDER BY g.Name;
 
 
  godownWiseOnEnterList:
@@ -80,7 +83,9 @@ JOIN GodownMaster AS g
     ON g.GUID = pps.MasterCode2
 LEFT JOIN Products AS p
     ON p.GUID = pps.MasterCode1
-WHERE g.Name = ?
+WHERE g.Name = ? AND    (:filterGroup = 0 OR p.GroupCode IN :groupCodes)
+                         AND (:filterExclude = 0 OR p.GUID NOT IN :excludeGuids)
+                         AND (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes)
 GROUP BY g.GUID, p.GUID
 ORDER BY p.Name;
 
