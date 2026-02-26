@@ -4,13 +4,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.openFileSaver
-import io.github.vinceglb.filekit.dialogs.shareFile
 import io.github.vinceglb.filekit.write
 import kotlinx.coroutines.delay
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import org.prime.easykarobar.data.expect.createPdfFromHtml
+import org.prime.easykarobar.data.expect.sharePdf
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -28,10 +28,7 @@ suspend fun handlePdfAction(
     onLoadingChange(true)
     delay(100)
     try {
-        val platformFile = PlatformFile(
-            createPdfFromHtml(htmlContent, fileName)
-        )
-
+        val filePath = createPdfFromHtml(htmlContent, fileName)
 
         when (action) {
             PdfAction.Download -> {
@@ -39,10 +36,10 @@ suspend fun handlePdfAction(
                     suggestedName = generateUniqueFileName(fileName),
                     extension = "pdf"
                 )
-                file?.write(platformFile)
+                file?.write(PlatformFile(filePath))
             }
             PdfAction.Share -> {
-                FileKit.shareFile(platformFile)
+                sharePdf(filePath)
             }
         }
     } catch (e: Exception) {
