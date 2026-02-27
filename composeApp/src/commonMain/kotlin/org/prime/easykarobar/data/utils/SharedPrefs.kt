@@ -13,6 +13,9 @@ import kotlin.time.Instant
 
 object SharedPrefs {
     private val settings: Settings = Settings()
+    fun clearAll() {
+        settings.clear()
+    }
 
     object Token {
         private const val KEY = "token"
