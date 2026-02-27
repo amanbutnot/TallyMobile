@@ -318,7 +318,7 @@ object SettingScreen : Screen {
                 }
                 Spacer(modifier = Modifier.height(20.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
                     horizontalArrangement = Arrangement.End
                 ) {
                     Text(
@@ -336,12 +336,8 @@ object SettingScreen : Screen {
                         confirmButtonText = "Logout",
                         cancelButtonText = "Cancel",
                         onConfirm = {
-                            SharedPrefs.Token.clear()
-                            SharedPrefs.FileId.clear()
-                            SharedPrefs.DistributorData.clear()
-                            SharedPrefs.Permissions.clear()
-                            SharedPrefs.LoginData.clear()
                             deleteDbFile()
+                            SharedPrefs.clearAll()
                             nav.replaceAll(OnBoardingScreen)
                         },
                         onCancel = {
