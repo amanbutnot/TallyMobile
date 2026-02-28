@@ -7,11 +7,11 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
-import org.prime.easykarobar.data.model.LoginRequest
-import org.prime.easykarobar.data.model.LoginResponse
 import org.prime.easykarobar.business.repository.AuthRepository
 import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.ForgotResponse
+import org.prime.easykarobar.data.model.LoginRequest
+import org.prime.easykarobar.data.model.LoginResponse
 import org.prime.easykarobar.data.utils.MOBILE_VERSION
 import org.prime.easykarobar.data.utils.SharedPrefs
 
@@ -146,11 +146,11 @@ class AuthViewModel : ViewModel() {
                         }
 
                         // permissions (non-admin)
-                        if (loginData.role != "admin") {
+                        //if (loginData.role != "admin") {
                             loginData.permissions?.let {
                                 SharedPrefs.Permissions.save(it)
                             }
-                        }
+                        //}
                         SharedPrefs.LoginInfo.clear()
                         SharedPrefs.LoginInfo.save(loginRequest.Username)
                         SharedPrefs.User.save(loginData)
