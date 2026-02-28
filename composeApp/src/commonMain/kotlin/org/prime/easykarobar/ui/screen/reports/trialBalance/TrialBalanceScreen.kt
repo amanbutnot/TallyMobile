@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
+import org.prime.easykarobar.data.expect.stringToDouble
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.printing.threeHeaderHtml
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportScreen
@@ -105,8 +106,8 @@ object TrialBalanceScreen : Screen {
                                 title = "Trial Balance",
                                 headers = Triple("Account Name", "Debit", "Credit"),
                                 rows = rows,
-                                totalDebit = totalDebit.formatToAmtDec().toDouble(),
-                                totalCredit = totalCredit.formatToAmtDec().toDouble(),
+                                totalDebit = totalDebit.formatToAmtDec().stringToDouble(),
+                                totalCredit = totalCredit.formatToAmtDec().stringToDouble(),
                                 date = StartDate()
                             ),
                             action = PdfAction.Download,
