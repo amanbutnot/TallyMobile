@@ -1,6 +1,5 @@
 package org.prime.easykarobar.ui.shared.reportsShared
 
-import androidx.compose.ui.graphics.vector.ImageVector
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.openFileSaver
@@ -25,27 +24,53 @@ suspend fun handlePdfAction(
     action: PdfAction,
     onLoadingChange: (Boolean) -> Unit
 ) {
+    println("📄 [handlePdfAction] Started — fileName: $fileName | action: $action")
+    println("📄 [handlePdfAction] HTML content length: ${htmlContent.length} chars")
+
     onLoadingChange(true)
+    println("📄 [handlePdfAction] Loading state set to true")
+
     delay(100)
+
     try {
+        println("📄 [handlePdfAction] Calling createPdfFromHtml...")
         val filePath = createPdfFromHtml(htmlContent, fileName)
+        println("📄 [handlePdfAction] createPdfFromHtml returned path: $filePath")
+
+        if (filePath.isEmpty()) {
+            println("❌ [handlePdfAction] filePath is empty — PDF creation likely failed")
+            return
+        }
 
         when (action) {
             PdfAction.Download -> {
+                println("📄 [handlePdfAction] Action: Download — opening file saver")
+                val uniqueName = generateUniqueFileName(fileName)
+                println("📄 [handlePdfAction] Suggested file name: $uniqueName")
                 val file = FileKit.openFileSaver(
-                    suggestedName = generateUniqueFileName(fileName),
+                    suggestedName = uniqueName,
                     extension = "pdf"
                 )
-                file?.write(PlatformFile(filePath))
+                if (file == null) {
+                    println("⚠️ [handlePdfAction] File saver returned null — user may have cancelled")
+                } else {
+                    println("📄 [handlePdfAction] Writing to file: $file")
+                    file.write(PlatformFile(filePath))
+                    println("✅ [handlePdfAction] File written successfully")
+                }
             }
             PdfAction.Share -> {
+                println("📄 [handlePdfAction] Action: Share — calling sharePdf")
                 sharePdf(filePath)
+                println("📄 [handlePdfAction] sharePdf call returned")
             }
         }
     } catch (e: Exception) {
+        println("❌ [handlePdfAction] Exception caught: ${e::class.simpleName} — ${e.message}")
         e.printStackTrace()
     } finally {
         onLoadingChange(false)
+        println("📄 [handlePdfAction] Loading state set to false — done")
     }
 }
 
@@ -61,5 +86,7 @@ fun generateUniqueFileName(baseName: String): String {
                 now.minute.toString().padStart(2, '0') +
                 now.second.toString().padStart(2, '0')
 
-    return "${baseName}_$timestamp"
+    val result = "${baseName}_$timestamp"
+    println("📄 [generateUniqueFileName] Generated: $result")
+    return result
 }

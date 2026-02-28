@@ -49,6 +49,14 @@ actual class DriverFactory {
             )
         } else {
             println("✔️ Directory exists already")
+            // Clean up existing WAL/SHM files to avoid corruption when overwriting the main DB
+            listOf("-wal", "-shm").forEach { suffix ->
+                val journalPath = "$sqliterDbPath$suffix"
+                if (fm.fileExistsAtPath(journalPath)) {
+                    println("🧹 Deleting old journal file: $journalPath")
+                    fm.removeItemAtPath(journalPath, null)
+                }
+            }
         }
 
         // ❗ Copy BEFORE opening the driver!
