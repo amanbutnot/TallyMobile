@@ -47,6 +47,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
+import org.prime.easykarobar.data.expect.stringToDouble
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.printing.OutstandingRow
 import org.prime.easykarobar.ui.printing.outstandingHtml
@@ -318,7 +319,7 @@ data class OutstandingReportScreen(
                         date = item.date ?: "",
                         vchType = item.vchType ?: "",
                         refNo = item.billNumber ?: "",
-                        refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
+                        refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.stringToDouble() ?: 0.0,
                         pendingAmount = item.adjustmentAmount?.absoluteValue?.toDouble()
                             ?.formatToAmtDec()?.toDouble() ?: 0.0,
                         due = "Y",
@@ -332,7 +333,7 @@ data class OutstandingReportScreen(
                         date = item.date ?: "",
                         vchType = item.vchType ?: "",
                         refNo = item.billNumber ?: "",
-                        refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.toDouble() ?: 0.0,
+                        refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.stringToDouble() ?: 0.0,
                         pendingAmount = item.adjustmentAmount?.absoluteValue?.toDouble()
                             ?.formatToAmtDec()?.toDouble() ?: 0.0,
                         due = "Y",
