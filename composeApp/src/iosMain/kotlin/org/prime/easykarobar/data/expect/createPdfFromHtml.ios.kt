@@ -1,6 +1,7 @@
 package org.prime.easykarobar.data.expect
 
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.ObjCSignatureOverride
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -21,6 +22,7 @@ import platform.UIKit.viewPrintFormatter
 import platform.WebKit.WKNavigation
 import platform.WebKit.WKNavigationDelegateProtocol
 import platform.WebKit.WKWebView
+import platform.WebKit.WKWebViewConfiguration
 import platform.darwin.NSObject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -28,21 +30,28 @@ import kotlin.coroutines.resumeWithException
 @OptIn(ExperimentalForeignApi::class)
 actual suspend fun createPdfFromHtml(html: String, fileName: String): String =
     withContext(Dispatchers.Main) {
+        // ✅ FIX: Declare these outside suspendCancellableCoroutine so they are
+        // strongly retained for the entire duration of the coroutine.
+        // Inside the lambda, Kotlin/Native's ARC cannot guarantee the objects
+        // stay alive — the WKWebView and its delegate were being deallocated
+        // before didFinishNavigation fired, killing the WebContent process.
+        var webViewRef: WKWebView? = null
+        var delegateRef: NSObject? = null
+
         suspendCancellableCoroutine { continuation ->
 
             val webView = WKWebView(
-                frame = CGRectMake(0.0, 0.0, 595.2, 841.8)
+                frame = CGRectMake(0.0, 0.0, 595.2, 841.8),
+                configuration = WKWebViewConfiguration()
             )
+            webViewRef = webView // ✅ retain strongly
 
-            // Load HTML and wait for it to finish rendering
-            webView.loadHTMLString(html, baseURL = null)
-
-            // Observe when loading finishes
             val delegate = object : NSObject(), WKNavigationDelegateProtocol {
                 override fun webView(
                     webView: WKWebView,
                     didFinishNavigation: WKNavigation?
                 ) {
+                    println("📄 [createPdfFromHtml] didFinishNavigation fired")
                     try {
                         val printFormatter = webView.viewPrintFormatter()
                         val renderer = UIPrintPageRenderer()
@@ -56,6 +65,7 @@ actual suspend fun createPdfFromHtml(html: String, fileName: String): String =
                         UIGraphicsBeginPDFContextToData(pdfData, paperRect, null)
 
                         val numberOfPages = renderer.numberOfPages
+                        println("📄 [createPdfFromHtml] Rendering $numberOfPages page(s)")
                         renderer.prepareForDrawingPages(
                             NSMakeRange(0u, numberOfPages.toULong())
                         )
@@ -77,29 +87,59 @@ actual suspend fun createPdfFromHtml(html: String, fileName: String): String =
                             "$tempDir/$sanitizedFileName.pdf"
 
                         pdfData.writeToFile(path, atomically = true)
+                        println("📄 [createPdfFromHtml] PDF written to: $path")
+
+                        // ✅ Clear refs before resuming
+                        webViewRef = null
+                        delegateRef = null
 
                         continuation.resume(path)
                     } catch (e: Exception) {
+                        webViewRef = null
+                        delegateRef = null
                         continuation.resumeWithException(e)
                     }
                 }
-
+                @ObjCSignatureOverride
                 override fun webView(
                     webView: WKWebView,
                     didFailNavigation: WKNavigation?,
                     withError: NSError
                 ) {
+                    println("❌ [createPdfFromHtml] didFailNavigation: ${withError.localizedDescription}")
+                    webViewRef = null
+                    delegateRef = null
                     continuation.resumeWithException(
                         Exception("WKWebView failed: ${withError.localizedDescription}")
                     )
                 }
+
+                @ObjCSignatureOverride
+                override fun webView(
+                    webView: WKWebView,
+                    didFailProvisionalNavigation: WKNavigation?,
+                    withError: NSError
+                ) {
+                    println("❌ [createPdfFromHtml] didFailProvisionalNavigation: ${withError.localizedDescription}")
+                    webViewRef = null
+                    delegateRef = null
+                    continuation.resumeWithException(
+                        Exception("WKWebView provisional load failed: ${withError.localizedDescription}")
+                    )
+                }
             }
 
+            delegateRef = delegate // ✅ retain strongly
             webView.navigationDelegate = delegate
 
-            // Keep delegate alive until coroutine completes
+            println("📄 [createPdfFromHtml] Loading HTML into WKWebView...")
+            webView.loadHTMLString(html, baseURL = null)
+
             continuation.invokeOnCancellation {
+                println("📄 [createPdfFromHtml] Coroutine cancelled — cleaning up")
                 webView.navigationDelegate = null
+                webViewRef = null
+                delegateRef = null
             }
         }
     }
