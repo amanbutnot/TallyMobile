@@ -321,7 +321,7 @@ data class OutstandingReportScreen(
                         refNo = item.billNumber ?: "",
                         refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.stringToDouble() ?: 0.0,
                         pendingAmount = item.adjustmentAmount?.absoluteValue?.toDouble()
-                            ?.formatToAmtDec()?.toDouble() ?: 0.0,
+                            ?.formatToAmtDec()?.stringToDouble() ?: 0.0,
                         due = "Y",
                         dueDate = item.dueDate ?: "",
                         dueDays = DueDays(endDate, item.dueDate.toString())
@@ -335,7 +335,7 @@ data class OutstandingReportScreen(
                         refNo = item.billNumber ?: "",
                         refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.stringToDouble() ?: 0.0,
                         pendingAmount = item.adjustmentAmount?.absoluteValue?.toDouble()
-                            ?.formatToAmtDec()?.toDouble() ?: 0.0,
+                            ?.formatToAmtDec()?.stringToDouble() ?: 0.0,
                         due = "Y",
                         dueDate = item.dueDate ?: "",
                         dueDays = DueDays(endDate, item.dueDate.toString())
