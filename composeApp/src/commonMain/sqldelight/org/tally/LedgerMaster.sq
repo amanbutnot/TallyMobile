@@ -26,9 +26,65 @@ CREATE TABLE LedgerMaster (
     L5 REAL
 );
 
+existingAccounts:
+SELECT GUID FROM LedgerMaster WHERE (Name = :name1 OR Alias = :alias1) OR (Name = :name2 OR Alias = :alias2);
 
 
--- ledger.sq
+insertLedger:
+INSERT INTO LedgerMaster(
+    Code,
+    Name,
+    Alias,
+    GroupName,
+    GroupCode,
+    OpBal,
+    Address1,
+    Address2,
+    Address3,
+    Address4,
+    Country,
+    State,
+    TypeOfDealer,
+    GSTIN,
+    Email,
+    MobileNo,
+    BankName,
+    AlterID,
+    GUID,
+    PanNo,
+    L1,
+    L2,
+    L3,
+    L4,
+    L5
+)
+VALUES(
+    :code,
+    :name,
+    :alias,
+    :groupName,
+    :groupCode,
+    :opBal,
+    :address1,
+    :address2,
+    :address3,
+    :address4,
+    :country,
+    :state,
+    NULL,
+    :gstin,
+    :email,
+    :mobileNo,
+    NULL,
+    :alterId,
+    :guid,
+    :panNo,
+    1,
+    1,
+    1,
+    1,
+    1
+);
 
 -- All filters
 selectAllFilterAGRP:
