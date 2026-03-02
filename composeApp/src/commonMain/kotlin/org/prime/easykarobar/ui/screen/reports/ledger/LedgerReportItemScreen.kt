@@ -73,10 +73,6 @@ data class LedgerReportItemScreen(
         val ledgerReportItemList = db.vouchersLedgersQueries.ledgerReportItemList(guid).executeAsList()
         val vouchers = db.vouchersQueries.selectByGuid(guid).executeAsOneOrNull()
 
-        println(vouchers)
-        println("ledgerStockItemList size = ${ledgerStockItemList.size}")
-        println("ledgerReportItemList size = ${ledgerReportItemList.size}")
-        println("ledgerStockBusyItemList size = ${ledgerStockBusyItemList.size}")
         var isLoading by remember { mutableStateOf(false) }
         var shareLoading by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()

@@ -107,7 +107,7 @@ println("groupCodes in account groups are: ${itemGroupCodes().map { it.toInt().t
         TallyScaffold(
             title = masterEnum.name.replace("_", " ").lowercase().split(" ")
                 .joinToString(" ") { it.replaceFirstChar { char -> char.uppercaseChar() } },
-          //  showAddBar = masterEnum == MasterEnums.ACCOUNTS || masterEnum == MasterEnums.ITEMS,
+        //   showAddBar = masterEnum == MasterEnums.ACCOUNTS || masterEnum == MasterEnums.ITEMS,
             showAddBar = false,
             onAddClick = {
                 if (masterEnum == MasterEnums.ACCOUNTS) {
