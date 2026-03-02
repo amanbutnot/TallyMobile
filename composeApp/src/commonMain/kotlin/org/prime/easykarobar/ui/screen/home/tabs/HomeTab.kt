@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Business
@@ -509,7 +508,7 @@ fun ExpandableGrid() {
         "Attendance" to Icons.Default.LocationOn,
         "Check In/Out" to Icons.Default.LocationCity,
         "Contra" to Icons.Default.Payment,
-        "Account" to Icons.Default.AccountBox
+   //     "Account" to Icons.Default.AccountBox
     )
 
     Column(

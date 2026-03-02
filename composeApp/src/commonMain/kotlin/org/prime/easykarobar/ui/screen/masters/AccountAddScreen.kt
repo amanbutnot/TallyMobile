@@ -61,11 +61,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.launch
+import org.prime.easykarobar.business.viewmodel.masters.AccountViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
+import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
+import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.agrpGroupCodes
@@ -493,6 +498,8 @@ object AccountAddScreen : Screen {
         val nav = LocalNavigator.currentOrThrow
         val scroll = rememberScrollState()
         val scope = rememberCoroutineScope()
+        val viewmodel: AccountViewModel = viewModel { AccountViewModel() }
+        val dataState by viewmodel.dataState
 
         // ── Form state ─────────────────────────────────────────────────────
         var name by remember { mutableStateOf("") }
@@ -503,6 +510,8 @@ object AccountAddScreen : Screen {
         var parentGroup by remember { mutableStateOf("") }
         var parentGroupGUID by remember { mutableStateOf("") }
         var showParentGroupSheet by remember { mutableStateOf(false) }
+        var showDuplicateDialog by remember { mutableStateOf(false) }
+        var showResultDialog by remember { mutableStateOf(false) }
         val parentGroupSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
         var openingBalance by remember { mutableStateOf("") }
@@ -830,12 +839,49 @@ object AccountAddScreen : Screen {
                                 mobileNo = mobile.trim(),
                                 email = email.trim(),
                                 whatsappNo = whatsapp.trim(),
-                                maintainBillByBill = maintainBillByBill,
+                                maintainBillByBill = if (maintainBillByBill) 1 else 0,
                                 saleCreditDays = if (maintainBillByBill) saleCreditDays.trim() else "",
                                 purchaseCreditDays = if (maintainBillByBill) purchaseCreditDays.trim() else "",
                             )
 
                             println(account)
+                            scope.launch {
+                                val existing = db.ledgerMasterQueries.existingAccounts(
+                                    name1 = name.trim(),
+                                    alias1 = name.trim(),
+                                    name2 = if (alias == "") name.trim() else alias.trim(),
+                                    alias2 = if (alias == "") name.trim() else alias.trim()
+                                ).executeAsList()
+                                if (existing.isEmpty()) {
+                                    viewmodel.createAccount(account) {
+                                        db.ledgerMasterQueries.insertLedger(
+                                            code = dataState.data?.ledger_guid?.toLong(),
+                                            name = dataState.data?.name?.trim(),
+                                            alias = dataState.data?.alias?.trim(),
+                                            groupName = dataState.data?.parentGroupName,
+                                            groupCode = dataState.data?.parentGroupGuid?.toDoubleOrNull()
+                                                ?: 0.0,
+                                            opBal = dataState.data?.openingBalance?.toDoubleOrNull()
+                                                ?: 0.0,
+                                            address1 = dataState.data?.addressLine1,
+                                            address2 = dataState.data?.addressLine2,
+                                            address3 = dataState.data?.addressLine3,
+                                            address4 = dataState.data?.addressLine4,
+                                            country = dataState.data?.country,
+                                            state = dataState.data?.state,
+                                            gstin = dataState.data?.gstNo,
+                                            email = dataState.data?.email,
+                                            mobileNo = dataState.data?.mobileNo,
+                                            alterId = 0,
+                                            guid = dataState.data?.ledger_guid.toString(),
+                                            panNo = dataState.data?.itPan
+                                        )
+                                        showResultDialog = true
+                                    }
+                                } else {
+                                    showDuplicateDialog = true
+                                }
+                            }
                             //TODO: Send Request
                         }
                     },
@@ -858,7 +904,25 @@ object AccountAddScreen : Screen {
                     Spacer(Modifier.width(8.dp))
                     Text("Save Account", style = MaterialTheme.typography.labelLarge)
                 }
-
+                if (dataState.isLoading) {
+                    TallyLoadingDialog("Creating your account")
+                }
+                if (showResultDialog) {
+                    TallyResultDialog(
+                        message = dataState.message ?: "Error Occurred",
+                        onDone = { nav.pop() },
+                        isSuccess = dataState.success,
+                        confirmText = "OK"
+                    )
+                }
+                if (showDuplicateDialog) {
+                    TallyResultDialog(
+                        message = "Account with this name or alias already exists",
+                        onDone = { showDuplicateDialog = false },
+                        isSuccess = dataState.success,
+                        confirmText = "OK"
+                    )
+                }
 
             }
         }
