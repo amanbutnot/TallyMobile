@@ -246,7 +246,7 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                             onItemClick = { item ->
                                 nav.push(
                                     LedgerReportItemScreen(
-                                        date = startDate,
+                                        date = item.DATE.toString(),
                                         vchType = item.VchName.toString(),
                                         guid = item.VCH_GUID.toString(),
                                         vchNo = item.VOUCHERNUMBER.toString()
