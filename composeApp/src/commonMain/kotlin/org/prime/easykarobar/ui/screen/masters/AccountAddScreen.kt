@@ -882,7 +882,6 @@ object AccountAddScreen : Screen {
                                     showDuplicateDialog = true
                                 }
                             }
-                            //TODO: Send Request
                         }
                     },
                     modifier = Modifier

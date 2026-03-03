@@ -1,0 +1,112 @@
+package org.prime.easykarobar.ui.screen.startup
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.easykarobar.business.viewmodel.masters.AccountViewModel
+import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.ui.screen.home.Dashboard
+
+object MasterAddScreen : Screen {
+
+    @Composable
+    override fun Content() {
+
+        val db = DatabaseHolder.instance
+        val viewmodel: AccountViewModel = viewModel { AccountViewModel() }
+        val state by viewmodel.listState
+        val nav = LocalNavigator.currentOrThrow
+
+        LaunchedEffect(Unit) {
+            viewmodel.listAccount {
+                state.data?.forEach { dataState ->
+                    db.ledgerMasterQueries.insertLedger(
+                        code = dataState.ledger_guid?.toLong(),
+                        name = dataState.name?.trim(),
+                        alias = dataState.alias?.trim(),
+                        groupName = dataState.parentGroupName,
+                        groupCode = dataState.parentGroupGuid?.toDoubleOrNull() ?: 0.0,
+                        opBal = dataState.openingBalance?.toDoubleOrNull() ?: 0.0,
+                        address1 = dataState.addressLine1,
+                        address2 = dataState.addressLine2,
+                        address3 = dataState.addressLine3,
+                        address4 = dataState.addressLine4,
+                        country = dataState.country,
+                        state = dataState.state,
+                        gstin = dataState.gstNo,
+                        email = dataState.email,
+                        mobileNo = dataState.mobileNo,
+                        alterId = 0,
+                        guid = dataState.ledger_guid.toString(),
+                        panNo = dataState.itPan
+                    )
+                }
+                nav.replaceAll(Dashboard)
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(8.dp),
+                modifier = Modifier.fillMaxWidth(0.85f)
+            ) {
+
+                Column(
+                    modifier = Modifier.padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+
+                    CircularProgressIndicator(
+                        strokeWidth = 4.dp
+                    )
+
+                    Text(
+                        text = "Importing Masters",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+
+                    Text(
+                        text = "Please wait while we sync your ledger data.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    state.data?.let {
+                        Text(
+                            text = "Records processed: ${it.size}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

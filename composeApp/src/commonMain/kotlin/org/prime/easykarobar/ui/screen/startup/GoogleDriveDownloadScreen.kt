@@ -147,7 +147,7 @@ object GoogleDriveDownloadScreen : Screen {
 
                                 println(">>> Navigating to Dashboard")
                                 withContext(Dispatchers.Main) {
-                                    nav.replaceAll(Dashboard)
+                                    nav.replaceAll(MasterAddScreen)
                                 }
 
                             } catch (e: Exception) {

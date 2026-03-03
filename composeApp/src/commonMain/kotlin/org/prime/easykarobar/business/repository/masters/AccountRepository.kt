@@ -40,6 +40,7 @@ object AccountRepository {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
             }
+            println("l;ksadjf;lkasdjl;kfjqs;kldfj;laksdfj;lkasdjfl;kasdjf;lkasjdf;lkasjdlfk;jl;kf")
             println(response.bodyAsText())
             response.body()
         } catch (e: Exception) {
