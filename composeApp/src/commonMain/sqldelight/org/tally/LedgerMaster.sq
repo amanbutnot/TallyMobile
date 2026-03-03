@@ -31,7 +31,7 @@ SELECT GUID FROM LedgerMaster WHERE (Name = :name1 OR Alias = :alias1) OR (Name 
 
 
 insertLedger:
-INSERT INTO LedgerMaster(
+INSERT OR IGNORE INTO LedgerMaster(
     Code,
     Name,
     Alias,
