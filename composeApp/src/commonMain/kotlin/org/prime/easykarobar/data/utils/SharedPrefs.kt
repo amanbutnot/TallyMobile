@@ -13,10 +13,11 @@ import kotlin.time.Instant
 
 object SharedPrefs {
     private val settings: Settings = Settings()
+    private val settings2: Settings = Settings()
     fun clearAll() {
         settings.clear()
     }
-
+//9896634135
     object Token {
         private const val KEY = "token"
         fun save(token: String) {
@@ -36,16 +37,16 @@ object SharedPrefs {
         private const val KEY = "login_request"
         fun save(login: LoginDataModel) {
             val json = Json.encodeToString(login)
-            settings.putString(KEY, json)
+            settings2.putString(KEY, json)
         }
 
         fun get(): LoginDataModel? {
-            val stored = settings.getStringOrNull(KEY) ?: return null
+            val stored = settings2.getStringOrNull(KEY) ?: return null
             return runCatching { Json.decodeFromString<LoginDataModel>(stored) }.getOrNull()
         }
 
         fun clear() {
-            settings.remove(KEY)
+            settings2.remove(KEY)
         }
     }
 
@@ -180,15 +181,15 @@ object SharedPrefs {
     object LoginInfo {
         private const val KEY = "loginInfo"
         fun save(login: String) {
-            settings.putString(KEY, login)
+            settings2.putString(KEY, login)
         }
 
         fun get(): String? {
-            return settings.getStringOrNull(KEY)
+            return settings2.getStringOrNull(KEY)
         }
 
         fun clear() {
-            settings.remove(KEY)
+            settings2.remove(KEY)
         }
     }
 
