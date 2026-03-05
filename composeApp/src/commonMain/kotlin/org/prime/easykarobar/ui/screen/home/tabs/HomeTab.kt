@@ -99,11 +99,11 @@ import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.accountGroupCodes
-import org.prime.easykarobar.ui.shared.globalShared.agrpGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.configBroker
 import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
 import org.prime.easykarobar.ui.shared.globalShared.filterAccountGroups
 import org.prime.easykarobar.ui.shared.globalShared.filterBroker
+import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodes
 import kotlin.math.absoluteValue
 
@@ -128,18 +128,18 @@ object HomeTab : Tab {
             StartDate(), CurrentDate(), filterCm3 = filterBroker(),
             cm3 = configBroker(),
             groupFilter = filterAGRPGroups(),
-            GroupCode = agrpGroupCodes().map { it.toDoubleOrNull()?:0.0 },
+            GroupCode = filterGroupCodes(),
             excludeFilter = filterAccountGroups(),
             GUID = accountGroupCodes(),
-            GroupCode_ = agrpGroupCodes().map { it.toDoubleOrNull()?:0.0 },
+            GroupCode_ = filterGroupCodes(),
             GUID_ = accountGroupCodes(),
-            GroupCode__ = agrpGroupCodes().map { it.toDoubleOrNull()?:0.0 },
+            GroupCode__ = filterGroupCodes(),
             GUID__ = accountGroupCodes(),
-            GroupCode___ = agrpGroupCodes().map { it.toDoubleOrNull()?:0.0 },
+            GroupCode___ = filterGroupCodes(),
             GUID___ = accountGroupCodes(),
-            GroupCode____ = agrpGroupCodes().map { it.toDoubleOrNull()?:0.0 },
+            GroupCode____ = filterGroupCodes(),
             GUID____ = accountGroupCodes(),
-            GroupCode_____ = agrpGroupCodes().map { it.toDoubleOrNull()?:0.0 },
+            GroupCode_____ = filterGroupCodes(),
             GUID_____ = accountGroupCodes()
         ).executeAsList()
 
@@ -508,7 +508,7 @@ fun ExpandableGrid() {
         "Attendance" to Icons.Default.LocationOn,
         "Check In/Out" to Icons.Default.LocationCity,
         "Contra" to Icons.Default.Payment,
-   //     "Account" to Icons.Default.AccountBox
+        //     "Account" to Icons.Default.AccountBox
     )
 
     Column(
@@ -710,7 +710,10 @@ fun ExpandableGrid() {
                                                     )
                                                 )
                                             })
-                                        "Account"->{nav?.push(AccountAddScreen)}
+
+                                        "Account" -> {
+                                            nav?.push(AccountAddScreen)
+                                        }
                                     }
                                 }
                         )

@@ -2,6 +2,7 @@ package org.prime.easykarobar.data.model
 
 import kotlinx.serialization.Serializable
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.shared.globalShared.perms
 
 
 @Serializable
@@ -73,14 +74,14 @@ data class Permissions(
     val FilterItems: String,
     val ConfigItems: String,
     val FilterMobile: String,
-    val FilterGodown:String?=null,
-    val ConfigGodown: String?=null,
-    val FilterParam1: String?=null,
-    val ConfigParam1: String?=null,
-    val FilterBroker: String?=null,
-    val ConfigBroker: String?=null,
-    val FilterAmount: String?=null,
-    val FilterQty: String?=null,
+    val FilterGodown: String? = null,
+    val ConfigGodown: String? = null,
+    val FilterParam1: String? = null,
+    val ConfigParam1: String? = null,
+    val FilterBroker: String? = null,
+    val ConfigBroker: String? = null,
+    val FilterAmount: String? = null,
+    val FilterQty: String? = null,
     val D1: Int,
     val D2: Int,
     val D3: Int,
@@ -219,6 +220,21 @@ fun hasSalesmanPermission(flag: String): Boolean {
     }
 }
 
+fun receivableDashboardPerms(): Boolean {
+    return perms?.D32 == 0
+}
+
+fun payableDashboardPerms(): Boolean {
+    return perms?.D33 == 0
+}
+
+fun saleDashboardPerms(): Boolean {
+    return perms?.D34== 0
+}
+
+fun receiptsDashboardPerms(): Boolean {
+    return perms?.D35 ==0
+}
 
 @Serializable
 data class RegisterRequest(
@@ -247,6 +263,7 @@ data class ForgotResponse(
     val ID: Int,
     val FirstName: String
 )
+
 @Serializable
 data class ResetRequest(
     val MobileNo: String,
