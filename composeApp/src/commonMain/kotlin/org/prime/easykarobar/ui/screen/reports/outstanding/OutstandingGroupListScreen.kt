@@ -127,14 +127,12 @@ data class OutstandingGroupListScreen(
         if (shareLoading) {
             TallyLoadingDialog("Generating Report")
         }
+        val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
+
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
                 val groupCodes = guid?.let { getPCGroupCodes(it.toString()) } ?: emptyList()
-                println("Group Coodes are: "+groupCodes)
-                println("Filter Coodes are: "+filterGroupCodes())
-                println("Filter Accounts are: "+filterAccounts)
-                println("Exclude GUID are: "+excludeGuids)
 
                 list = db.voucherBillAllocationsQueries.outstandingGroupList(
                     mode = if (name == "Bill Receivable") 0 else 1,
@@ -142,9 +140,9 @@ data class OutstandingGroupListScreen(
                     DATE_ = endDate,
                     filterCm3 = filterBroker,
                     cm3 = configBroker,
-                    filterGroupCode = if (groupCodes.isNotEmpty()) 1 else 0 ,
+                    filterGroupCode =filterAGRP,
                     //filterGroupCode = 1,
-                    groupCode =groupCodes.map { it.toDoubleOrNull()?:0.0 },
+                    groupCode =filterGroupCodes(),
                     excludeFilter = filterAccounts,
                     GUID = excludeGuids,
                 ).executeAsList()

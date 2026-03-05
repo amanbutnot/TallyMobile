@@ -462,7 +462,7 @@ data class LedgerReportItemScreen(
 
                             if (isBusy()) {
                                 LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                                    itemsIndexed(ledgerStockBusyItemList) { index, item ->
+                                    itemsIndexed(ledgerReportItemList) { index, item ->
                                         Card(
                                             modifier = Modifier
                                                 .fillMaxWidth()
@@ -482,22 +482,19 @@ data class LedgerReportItemScreen(
                                                     stockColumn1Weight
                                                 )
                                                 TableCell(
-                                                    item.CM1 ?: "",
+                                                    item.LedgerName ?: "",
                                                     stockColumn2Weight + stockColumn3Weight
                                                 )
                                                 TableCell(
-                                                    if (item.D1?.absoluteValue?.formatToAmtDec()
-                                                            .toString() == "0.00"
-                                                    ) "" else item.D1?.absoluteValue?.formatToAmtDec()
-                                                        .toString(),
+                                                    item.DebitAmt?.formatToAmtDec().toString(),
                                                     stockColumn5Weight,
                                                     textAlign = TextAlign.End,
-                                                    isHeader = true
+                                                    isHeader = false
                                                 )
-                                                println("D3 iS : ${item.D3}")
+//println("D3 iS : ${item.D3}")
 
                                                 TableCell(
-                                                    item.D3?.absoluteValue?.formatToAmtDec()
+                                                    item.CreditAmt?.formatToAmtDec().toString()
                                                         .toString(),
                                                     stockColumn5Weight,
                                                     textAlign = TextAlign.End

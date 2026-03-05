@@ -164,7 +164,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                         handlePdfAction(
                             fileName = "Barcode Report", htmlContent = productReportHtml(
                                 rows = list
-                            ), action = PdfAction.Download, onLoadingChange = { shareLoading = it })
+                            ), action = PdfAction.Share, onLoadingChange = { shareLoading = it })
                     }
                 })
         )
