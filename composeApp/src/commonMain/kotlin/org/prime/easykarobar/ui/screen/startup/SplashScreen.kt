@@ -141,12 +141,12 @@ private fun BarChartLine(height: Dp, modifier: Modifier = Modifier) {
             .height(animatedHeight).clip(
                 RoundedCornerShape(
                     topStart = 20.dp,
-                    topEnd = 0.dp,
+                    topEnd = 20.dp,
                     bottomStart = 0.dp,
                     bottomEnd = 0.dp
                 )
             )
-     .background(MaterialTheme.colorScheme.primary.copy(alpha = 1f))
+     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.9f))
        //     .background(Color(0xfff56013).copy(alpha = 1f))
     )
 }
