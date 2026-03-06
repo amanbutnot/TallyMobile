@@ -3,7 +3,7 @@ package org.prime.easykarobar.ui.shared.globalShared
 import org.prime.easykarobar.data.utils.SharedPrefs
 
 
-val perms = SharedPrefs.Permissions.get()
+val perms get() = SharedPrefs.Permissions.get()
 
 fun filterItemGroups(): Long {
     return if (perms?.FilterIGRP == "Y") 1L else 0L
