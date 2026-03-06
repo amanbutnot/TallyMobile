@@ -34,7 +34,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
-import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
+import org.prime.easykarobar.ui.shared.globalShared.filterOneGroupCode
 import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
@@ -140,9 +140,9 @@ data class OutstandingGroupListScreen(
                     DATE_ = endDate,
                     filterCm3 = filterBroker,
                     cm3 = configBroker,
-                    filterGroupCode =filterAGRP,
+                    filterGroupCode = filterAGRP,
                     //filterGroupCode = 1,
-                    groupCode =filterGroupCodes(),
+                    groupCode = filterOneGroupCode(listOf(guid.toString())),
                     excludeFilter = filterAccounts,
                     GUID = excludeGuids,
                 ).executeAsList()

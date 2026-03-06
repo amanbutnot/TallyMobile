@@ -97,7 +97,8 @@ fun getProductsGroupCodesByGuid(ids: List<String>): List<String> {
 
         if (children.isEmpty()) {
             println("HGELLOSDFJLKSDJFLDSK " + allIds)
-            return allIds}
+            return allIds
+        }
 
         allIds.addAll(children)
         currentIds = children.mapNotNull { it.toDoubleOrNull() }
@@ -144,18 +145,19 @@ fun getSalemanPCFilter(groupCodes: List<String>): List<String> {
 fun filterGroupCodes(): List<Double> {
     val perms = SharedPrefs.Permissions.get()
     val groupCodes = perms?.ConfigAGRP.parseToStringList()
-    println("Group Codes are: $groupCodes")
-
-    println("FilterGroupCodes NEW NEW NEW: ${getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() }}")
-
     return getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() }
+}
 
+fun filterOneGroupCode(codes: List<String>): List<Double> {
+    val perms = SharedPrefs.Permissions.get()
+    //val groupCodes = perms?.ConfigAGRP.parseToStringList()
+    return getSalemanPCFilter(codes).mapNotNull { it.toDoubleOrNull() }
 }
 
 fun filterItemGroupCodes(): List<Double> {
     val perms = SharedPrefs.Permissions.get()
     val groupCodes = perms?.ConfigIGRP.parseToStringList()
-    println("asdlk;fjakl;sdfj "+getProductsGroupCodesByGuid(groupCodes).mapNotNull { it.toDoubleOrNull() })
+    println("asdlk;fjakl;sdfj " + getProductsGroupCodesByGuid(groupCodes).mapNotNull { it.toDoubleOrNull() })
     return getProductsGroupCodesByGuid(groupCodes).mapNotNull { it.toDoubleOrNull() }
 
 }
@@ -163,7 +165,7 @@ fun filterItemGroupCodes(): List<Double> {
 fun filterItemGroupCodesByName(): List<Double> {
     val perms = SharedPrefs.Permissions.get()
     val groupCodes = perms?.ConfigIGRP.parseToStringList()
-    println("asdlk;fjakl;sdfj "+getProductsGroupCodesByGuid(groupCodes).mapNotNull { it.toDoubleOrNull() })
+    println("asdlk;fjakl;sdfj " + getProductsGroupCodesByGuid(groupCodes).mapNotNull { it.toDoubleOrNull() })
     return getProductsGroupCodesByGuid(groupCodes).mapNotNull { it.toDoubleOrNull() }
 
 }
