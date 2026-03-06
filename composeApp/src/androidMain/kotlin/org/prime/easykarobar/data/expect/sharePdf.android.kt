@@ -24,7 +24,9 @@ actual fun sharePdf(filePath: String) {
 
     }
     Handler(Looper.getMainLooper()).post {
-        context.startActivity(Intent.createChooser(intent, "Share PDF via"))
+        val chooser = Intent.createChooser(intent, "Share PDF via")
+        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(chooser)
     }
 
 }
