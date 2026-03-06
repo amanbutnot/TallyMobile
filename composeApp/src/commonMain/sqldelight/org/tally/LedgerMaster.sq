@@ -113,6 +113,10 @@ selectNameFromGuid:
 SELECT Name
  FROM LedgerMaster
  WHERE GUID = ?;
+selectGuidFromName:
+SELECT GUID
+ FROM LedgerMaster
+ WHERE Name = ? LIMIT 1;
 
  selectByGuid:
  SELECT * FROM LedgerMaster WHERE GUID = ?;

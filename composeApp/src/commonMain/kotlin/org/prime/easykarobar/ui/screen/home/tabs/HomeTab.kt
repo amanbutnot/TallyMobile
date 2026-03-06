@@ -739,13 +739,13 @@ fun ExpandableGrid() {
             )
         }
 
+        if (showLoading) {
+            TallyLoadingDialog("Getting Location")
+        }
         if (showDeniedDialog) {
             PermissionDeniedDialog { showDeniedDialog = false }
         }
 
-        if (showLoading) {
-            TallyLoadingDialog("Getting Location")
-        }
 
     }
 }

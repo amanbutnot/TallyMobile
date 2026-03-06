@@ -59,10 +59,14 @@ class InventoryVoucherViewModel : ViewModel() {
         }
     }
 
+    fun clearError() {
+        _dataState.value = _dataState.value.copy(error = null)
+    }
+
     fun deleteInventoryVch(
         tranId: Int, vchType: Int,
 
-    ) {
+        ) {
         viewModelScope.launch {
 
             _deleteState.value = DataState(isLoading = true)

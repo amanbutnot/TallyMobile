@@ -116,8 +116,8 @@ import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
-import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.isBusy
+import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.Products
@@ -227,6 +227,13 @@ data class SaleScreen(
         var demoBarcodeName by remember { mutableStateOf("") }
         var gstRrDate by remember { mutableStateOf(CurrentDate()) }
         var shareLoading by remember { mutableStateOf(false) }
+
+
+//        selectedLedgerGUID = db.ledgerMasterQueries
+//            .selectGuidFromName(selectedLedger)
+//            .executeAsOneOrNull() ?: ""
+        selectedLedgerGUID = ledgerList.find { l -> l.Name == selectedLedger }?.GUID ?: ""
+
 
         scannerLauncher = rememberBarcodeScanner { result ->
             demoBarcodeName = result.toString()
@@ -1290,6 +1297,14 @@ data class SaleScreen(
                             label = if (isEdit) "Update" else "Create Invoice",
                             backgroundColor = MaterialTheme.colorScheme.primary
                         )
+                        if (viewmodel.dataState.value.error != null) {
+                            TallyResultDialog(
+                                message = viewmodel.dataState.value.error ?: "Error",
+                                onDone = { viewmodel.clearError() },
+                                isSuccess = false,
+                                confirmText = "Ok"
+                            )
+                        }
                         if (showWarningMessage) {
                             TallyAlertBox(
                                 title = "Warning",

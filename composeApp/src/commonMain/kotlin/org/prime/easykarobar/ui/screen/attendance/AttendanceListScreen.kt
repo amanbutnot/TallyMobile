@@ -17,13 +17,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -41,6 +46,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,6 +60,13 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
+import dev.jordond.compass.Priority
+import dev.jordond.compass.geolocation.Geolocator
+import dev.jordond.compass.geolocation.GeolocatorResult
+import dev.jordond.compass.geolocation.Locator
+import dev.jordond.compass.geolocation.mobile.mobile
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.prime.easykarobar.business.viewmodel.attendance.AttendanceViewModel
 import org.prime.easykarobar.data.model.attendance.AttendanceListRequest
 import org.prime.easykarobar.data.model.attendance.AttendanceListResponse
@@ -61,6 +74,7 @@ import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
+import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
@@ -70,17 +84,21 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
     @Composable
     override fun Content() {
         val nav = LocalNavigator.currentOrThrow
+        var showLoading by remember { mutableStateOf(false) }
+        var showLocationPopup by remember { mutableStateOf(false) }
         TallyScaffold(name, onBack = { nav.pop() }) { paddingValues ->
             var startDate by rememberSaveable { mutableStateOf(StartDate()) }
             var endDate by rememberSaveable { mutableStateOf(CurrentDate()) }
             var selectedAccount by rememberSaveable { mutableStateOf("") }
             var selectedMobile by rememberSaveable { mutableStateOf("") }
             var showBottomSheet by remember { mutableStateOf(false) }
+
             var reportType by rememberSaveable { mutableStateOf("ALL") }
 
             val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
             val viewModel: AttendanceViewModel = viewModel { AttendanceViewModel() }
             val isAdmin = SharedPrefs.User.get()?.role == "admin"
+            val scope = rememberCoroutineScope()
 
             val vState by viewModel.salesmanList
             val nameList = vState.data ?: emptyList()
@@ -119,6 +137,110 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+
+
+                        OutlinedButton(
+                            onClick = {
+                                if (isCheckIn) {
+                                    scope.launch {
+                                        showLoading = true
+                                        try {
+                                            val geolocator =
+                                                Geolocator(Locator.mobile())
+
+                                            runCatching { geolocator.lastLocation() }
+
+                                            val result = withTimeoutOrNull(20000) {
+                                                geolocator.current(Priority.HighAccuracy)
+                                            }
+
+                                            when (result) {
+                                                is GeolocatorResult.Success -> {
+                                                    val c = result.data.coordinates
+
+                                                    nav?.push(
+                                                        AttendanceScreen(
+                                                            c.latitude,
+                                                            c.longitude,
+
+                                                            isAttendance = true
+                                                        )
+                                                    )
+                                                }
+
+                                                else -> showLocationPopup = true
+                                            }
+
+                                        } catch (e: Exception) {
+                                            showLocationPopup = true
+                                        } finally {
+                                            showLoading = false
+                                        }
+                                    }
+                                } else
+                                {
+                                    scope.launch {
+                                        showLoading = true
+                                        try {
+                                            val geolocator =
+                                                Geolocator(Locator.mobile())
+
+                                            runCatching { geolocator.lastLocation() }
+
+                                            val result = withTimeoutOrNull(20000) {
+                                                geolocator.current(Priority.HighAccuracy)
+                                            }
+
+                                            when (result) {
+                                                is GeolocatorResult.Success -> {
+                                                    val c = result.data.coordinates
+
+                                                    nav?.push(
+                                                        AttendanceScreen(
+                                                            c.latitude,
+                                                            c.longitude,
+
+                                                            isAttendance = false
+                                                        )
+                                                    )
+                                                }
+
+                                                else -> showLocationPopup = true
+                                            }
+
+                                        } catch (e: Exception) {
+                                            showLocationPopup = true
+                                        } finally {
+                                            showLoading = false
+                                        }
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth().padding(12.dp)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(
+                                1.5.dp,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                            ),
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                                contentColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Add New",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
+
                         // Report Type Section (Only for Admin and Check-in)
                         if (isAdmin) {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -331,6 +453,22 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
                 bottomSheetState = state,
                 title = "Select Salesman"
             )
+        }
+        if (showLocationPopup) {
+            AlertDialog(
+                onDismissRequest = { showLocationPopup = false },
+                title = { Text("Location is Off") },
+                text = { Text("Please enable location to continue.") },
+                confirmButton = {
+                    Button(onClick = { showLocationPopup = false }) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+
+        if (showLoading) {
+            TallyLoadingDialog("Getting Location")
         }
     }
 }

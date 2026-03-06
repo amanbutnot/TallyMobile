@@ -323,7 +323,7 @@ data class AttendanceScreen(
                                                     name = "Sale Order",
                                                     vchType = 12,
                                                     selectedLedger = selectedAccount,
-                                                    selectedLedgerGUID = selectedGUID
+                                                  //  selectedLedgerGUID = selectedGUID
                                                 )
                                             )
 
