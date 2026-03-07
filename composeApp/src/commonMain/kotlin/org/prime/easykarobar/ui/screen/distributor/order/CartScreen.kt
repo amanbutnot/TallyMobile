@@ -595,6 +595,7 @@ fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel? = null, 
                 net_amount = product.sales_price?.toDouble() ?: (0.0 * quantity)
             )
         }
+        println(itemsList)
         TallyAlertBox(
             title = "Confirm Order",
             message = "Do you want to confirm your order",
@@ -635,7 +636,7 @@ fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel? = null, 
 
 
 @Composable
-private fun SummaryRow(
+fun SummaryRow(
     label: String,
     value: String,
     textStyle: TextStyle,
