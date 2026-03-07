@@ -2,7 +2,6 @@ package org.prime.easykarobar.ui.screen.distributor.order
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,13 +27,10 @@ import androidx.compose.material.icons.filled.AllInbox
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -62,10 +58,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -77,18 +71,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import coil3.compose.AsyncImage
-import org.prime.easykarobar.business.viewmodel.distributor.CartItem
-import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.CancelOrderRequest
-import org.prime.easykarobar.data.model.Order
-import org.prime.easykarobar.data.model.OrderItem
 import org.prime.easykarobar.data.model.ORDERSTATUS
+import org.prime.easykarobar.data.model.Order
 import org.prime.easykarobar.data.model.OrderItemList
 import org.prime.easykarobar.data.model.StatusHistory
-import org.prime.easykarobar.data.utils.BASE_URL
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
 import org.prime.easykarobar.ui.shared.composables.TallyAlertBox
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
@@ -96,7 +85,6 @@ import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
-import org.tally.GetProductsForDis
 
 object MyOrdersScreen : Screen {
     @Composable
@@ -162,20 +150,23 @@ fun MyOrderContent(
     var isRefreshing by remember { mutableStateOf(false) }
     val pullToRefreshState = rememberPullToRefreshState()
 
-    val options = listOf("All", "Cancelled", "Is Dispatched", "Delivered")
+    val options = listOf(
+        "All", "Cancelled"
+        //    , "Is Dispatched", "Delivered"
+    )
     val unCheckedIcons = listOf(
         Icons.Default.AllInbox,
         Icons.Default.Cancel,
-        Icons.Default.DoneAll,
-        Icons.Default.DoneAll,
-        Icons.Default.DoneAll
+//        Icons.Default.DoneAll,
+//        Icons.Default.DoneAll,
+//        Icons.Default.DoneAll
     )
     val checkedIcons = listOf(
         Icons.Default.AllInbox,
         Icons.Default.Cancel,
-        Icons.Default.DoneAll,
-        Icons.Default.DoneAll,
-        Icons.Default.DoneAll
+//        Icons.Default.DoneAll,
+//        Icons.Default.DoneAll,
+//        Icons.Default.DoneAll
     )
 
     var selectedIndex by remember { mutableStateOf(0) }
@@ -234,13 +225,13 @@ fun MyOrderContent(
                 list.filter { it.OrderStatus == ORDERSTATUS.Cancelled }
             }
 
-            2 -> {
-                list.filter { it.OrderStatus == ORDERSTATUS.InDispatched }
-            }
-
-            3 -> {
-                list.filter { it.OrderStatus == ORDERSTATUS.Delivered }
-            }
+//            2 -> {
+//                list.filter { it.OrderStatus == ORDERSTATUS.InDispatched }
+//            }
+//
+//            3 -> {
+//                list.filter { it.OrderStatus == ORDERSTATUS.Delivered }
+//            }
 
 
             else -> {
@@ -586,6 +577,59 @@ fun OrderCard(
             Spacer(modifier = Modifier.height(10.dp))
 
 
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+
+                    Text("Order Summary", fontWeight = FontWeight.Bold)
+
+                    val itemsTotal = order.items.sumOf { it.nett_price.toDoubleOrNull() ?: 0.0 }
+
+                    val itemsDiscount =
+                        order.items.sumOf { it.discount_amt.toDoubleOrNull() ?: 0.0 }
+                    val itemsGst = order.items.sumOf { it.taxamt1.toDoubleOrNull() ?: 0.0 }
+                    val grandTotal = order.total_amount.toDoubleOrNull() ?: 0.0
+
+
+                    SummaryRow(
+                        "Items (${order.items.size})",
+                        itemsTotal.formatToAmtDec(),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+                    )
+                    SummaryRow(
+                        "Discount",
+                        "-${
+                            itemsDiscount.formatToAmtDec()
+                        }",
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+                    )
+                    SummaryRow(
+                        "Subtotal",
+                        (itemsTotal - itemsDiscount).formatToAmtDec(),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+                    )
+                    SummaryRow(
+                        "GST",
+                        itemsGst.formatToAmtDec(),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    SummaryRow(
+                        label = "Total Amount",
+                        value = (grandTotal).formatToAmtDec(),
+                        fontWeight = FontWeight.Bold,
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+                    )
+
+                }
+            }
+
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -617,28 +661,30 @@ fun OrderCard(
 
 
                 if (order.cancellation_date == null) {
-                    Button(
-                        onClick = onCancelOrder,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor = MaterialTheme.colorScheme.onError
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        elevation = ButtonDefaults.buttonElevation(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Cancel",
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Cancel Order",
-                            fontWeight = FontWeight.Medium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                    if (order.OrderStatus != ORDERSTATUS.Confirmed) {
+                        Button(
+                            onClick = onCancelOrder,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth().weight(1f),
+                            elevation = ButtonDefaults.buttonElevation(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Cancel",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Cancel Order",
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 } else {
                     Surface(
@@ -691,7 +737,7 @@ fun OrderCard(
                             ) {
                                 CancellationField(
                                     label = "Cancelled on",
-                                    value = order.cancellation_date,
+                                    value = Tdate(order.cancellation_date),
                                     icon = Icons.Default.CalendarMonth
                                 )
 
@@ -814,7 +860,7 @@ fun OrderItemRow(item: OrderItemList, serialNumber: Int) {
                 color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
             ) {
                 Text(
-                    text = "${item.product_name}",
+                    text = item.product_name,
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontWeight = FontWeight.Medium

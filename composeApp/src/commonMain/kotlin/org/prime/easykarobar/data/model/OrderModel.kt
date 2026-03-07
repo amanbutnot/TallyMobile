@@ -124,5 +124,5 @@ data class CancelOrderResponse(
 )
 
 enum class ORDERSTATUS {
-    Pending, Confirmed, InDispatched, Delivered, Cancelled
+    Pending, Confirmed, InDispatched, Delivered, Cancelled,Billed
 }

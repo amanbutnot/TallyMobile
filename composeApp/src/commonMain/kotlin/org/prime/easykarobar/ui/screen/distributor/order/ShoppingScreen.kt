@@ -12,28 +12,20 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -42,11 +34,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.ImageNotSupported
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Badge
@@ -77,7 +67,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -342,7 +331,7 @@ object ShoppingScreen : Screen {
                                 color = colorScheme.primary
                             )
 
-                            if (product.MRP != product.sales_price && product.MRP!=0.0) {
+                            if (product.MRP != product.sales_price && product.MRP != 0.0) {
                                 Text(
                                     text = "${product.MRP?.formatToAmtDec()}",
                                     style = MaterialTheme.typography.bodySmall.copy(
@@ -353,7 +342,7 @@ object ShoppingScreen : Screen {
                             }
                         }
 
-                        if (product.MRP!=0.0) {
+                        if (product.MRP != 0.0) {
                             Surface(
                                 color = colorScheme.secondary,
                                 shape = RoundedCornerShape(50)
@@ -371,33 +360,65 @@ object ShoppingScreen : Screen {
 
                 Spacer(Modifier.height(28.dp))
                 val inCart = cartViewModel.isProductInCart(product)
-                Button(
-                    onClick = onButtonClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (inCart)
-                            MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
-                        else
-                            MaterialTheme.colorScheme.primary,
-                        contentColor = if (inCart)
-                            MaterialTheme.colorScheme.error
-                        else
-                            MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
-                    Icon(
-                        imageVector = if (inCart) Icons.Default.Remove else Icons.Default.ShoppingCart,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = if (inCart) "Remove" else "Add to cart",
-                        fontSize = 12.sp
-                    )
+                val quantity = cartViewModel.getProductQuantity(product)
+
+                if (inCart) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.primary,
+                                RoundedCornerShape(8.dp)
+                            ),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { cartViewModel.decreaseQuantity(product) }) {
+                            Icon(
+                                imageVector = Icons.Default.HorizontalRule,
+                                contentDescription = "Decrease",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Text(
+                            text = quantity.toString(),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(onClick = { cartViewModel.increaseQuantity(product) }) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Increase",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                } else {
+                    Button(
+                        onClick = onButtonClick,
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "Add to cart",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
                 }
+
+                Spacer(Modifier.height(12.dp))
 
                 // --- Close button (neutral, not shouting)
                 OutlinedButton(
@@ -461,437 +482,435 @@ object ShoppingScreen : Screen {
                     modifier = Modifier.weight(0.5f)
                 )
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-                    BadgedBox(
-                        badge = {
-                            if (cartViewModel.getTotalProductCount() > 0) {
-                                Badge(
-                                    containerColor = MaterialTheme.colorScheme.error,
-                                    contentColor = MaterialTheme.colorScheme.onError
-                                ) {
-                                    Text("${cartViewModel.getTotalProductCount()}")
-                                }
+                BadgedBox(
+                    badge = {
+                        if (cartViewModel.getTotalProductCount() > 0) {
+                            Badge(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError
+                            ) {
+                                Text("${cartViewModel.getTotalProductCount()}")
                             }
-                        }) {
-                        IconButton(
-                            onClick = onCartClick, modifier = Modifier.background(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ShoppingCart,
-                                contentDescription = "Your Cart",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
                         }
+                    }) {
+                    IconButton(
+                        onClick = onCartClick, modifier = Modifier.background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart,
+                            contentDescription = "Your Cart",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
+                }
 
+            }
+        }
+    }
+
+}
+
+@Composable
+fun ToggleIconButton(
+    isOn: Boolean,
+    onToggle: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Animate background and icon color for smooth transition
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isOn) MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)
+        else MaterialTheme.colorScheme.onError.copy(alpha = 0.05f)
+    )
+    val iconTint by animateColorAsState(
+        targetValue = if (isOn) MaterialTheme.colorScheme.secondary
+        else MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+    )
+
+    IconButton(
+        onClick = { onToggle(!isOn) },
+        modifier = modifier
+            .size(48.dp) // professional button size
+            .background(backgroundColor, CircleShape)
+            .clip(CircleShape)
+    ) {
+        Icon(
+            imageVector = if (isOn) Icons.Default.Image else Icons.Default.ImageNotSupported,
+            contentDescription = if (isOn) "With Image" else "Without Image",
+            tint = iconTint,
+            modifier = Modifier.size(24.dp) // icon size proportional to button
+        )
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchField(
+    query: String, onQueryChange: (String) -> Unit, modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        maxLines = 1,
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = modifier,
+        placeholder = {
+            Text(
+                text = "Search products...",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 14.sp,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = "Search",
+                tint = MaterialTheme.colorScheme.onSurface
+            )
+        },
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+        ),
+        singleLine = true
+    )
+}
+
+@Composable
+private fun CategoryGrid(
+    categories: List<ProductCategoriesForDis>,
+    onCategoryClick: (ProductCategoriesForDis) -> Unit,
+    product: List<GetProductsForDis>,
+    viewModel: CartViewModel
+) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+
+        Text(
+            text = "Categories",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        // Split list into chunks of 2 (each column has 2 items)
+        val columns = categories.chunked(2)
+        HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(columns) { columnItems ->
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.width(160.dp) // control column width
+                ) {
+                    columnItems.forEach { category ->
+                        CategoryCard(
+                            category = category,
+                            onClick = { onCategoryClick(category) },
+                            product = product,
+                            viewModel = viewModel
+                        )
+                    }
                 }
             }
         }
-
+        HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
     }
+}
 
-    @Composable
-    fun ToggleIconButton(
-        isOn: Boolean,
-        onToggle: (Boolean) -> Unit,
-        modifier: Modifier = Modifier
+
+@Composable
+private fun CategoryCard(
+    modifier: Modifier = Modifier,
+    category: ProductCategoriesForDis,
+    onClick: () -> Unit,
+    product: List<GetProductsForDis>,
+    viewModel: CartViewModel
+) {
+    val showImage = viewModel.showImage.value
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .clickable { onClick() },
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Animate background and icon color for smooth transition
-        val backgroundColor by animateColorAsState(
-            targetValue = if (isOn) MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)
-            else MaterialTheme.colorScheme.onError.copy(alpha = 0.05f)
-        )
-        val iconTint by animateColorAsState(
-            targetValue = if (isOn) MaterialTheme.colorScheme.secondary
-            else MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+
+        val fullUrl = getCategoryImage(
+            SharedPrefs.User.get()?.ID.toString(),
+            category.GUID.toString()
         )
 
-        IconButton(
-            onClick = { onToggle(!isOn) },
-            modifier = modifier
-                .size(48.dp) // professional button size
-                .background(backgroundColor, CircleShape)
-                .clip(CircleShape)
+        // --- Image only when enabled (no wasted space)
+        AnimatedVisibility(
+            visible = showImage,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
         ) {
-            Icon(
-                imageVector = if (isOn) Icons.Default.Image else Icons.Default.ImageNotSupported,
-                contentDescription = if (isOn) "With Image" else "Without Image",
-                tint = iconTint,
-                modifier = Modifier.size(24.dp) // icon size proportional to button
+            AsyncImage(
+                model = fullUrl,
+                contentDescription = category.Name,
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop,
+                fallback = painterResource(Res.drawable.splashImage),
+                error = painterResource(Res.drawable.category_placeholder)
             )
         }
-    }
 
+        if (showImage) Spacer(Modifier.height(8.dp))
 
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    fun SearchField(
-        query: String, onQueryChange: (String) -> Unit, modifier: Modifier = Modifier
-    ) {
-        OutlinedTextField(
-            maxLines = 1,
-            value = query,
-            onValueChange = onQueryChange,
-            modifier = modifier,
-            placeholder = {
-                Text(
-                    text = "Search products...",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 14.sp,
-                    overflow = TextOverflow.Ellipsis
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            },
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface
-            ),
-            singleLine = true
+        // --- Better styled text
+        Text(
+            text = category.Name.orEmpty(),
+            style = if (showImage)
+                MaterialTheme.typography.titleSmall
+            else
+                MaterialTheme.typography.titleMedium, // slightly stronger in compact mode
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            lineHeight = 18.sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
     }
+}
 
-    @Composable
-    private fun CategoryGrid(
-        categories: List<ProductCategoriesForDis>,
-        onCategoryClick: (ProductCategoriesForDis) -> Unit,
-        product: List<GetProductsForDis>,
-        viewModel: CartViewModel
+
+@Composable
+private fun CategoryItemsSection(
+    category: ProductCategoriesForDis,
+    product: List<GetProductsForDis>,
+    onItemClick: (GetProductsForDis) -> Unit,
+    onMoreClick: (ProductCategoriesForDis) -> Unit,
+
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    val cartViewModel: CartViewModel = viewModel { CartViewModel() }
+    val filteredProducts = product.filter {
+        it.category_id?.toDouble() == category.GUID?.toDouble()
+    }
+    println(product)
+    println(filteredProducts)
+    if (filteredProducts.isNotEmpty()) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = category.Name.toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
 
-            Text(
-                text = "Categories",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
+                TextButton(
+                    onClick = {
+                        onMoreClick(category)
+                    }) {
+                    Text(
+                        text = "More",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
 
-            // Split list into chunks of 2 (each column has 2 items)
-            val columns = categories.chunked(2)
-            HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
-
+            Spacer(modifier = Modifier.height(8.dp))
 
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                contentPadding = PaddingValues(end = 16.dp)
             ) {
-                items(columns) { columnItems ->
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.width(160.dp) // control column width
-                    ) {
-                        columnItems.forEach { category ->
-                            CategoryCard(
-                                category = category,
-                                onClick = { onCategoryClick(category) },
-                                product = product,
-                                viewModel = viewModel
-                            )
-                        }
-                    }
+                val filteredProducts =
+                    filteredProducts.take(5)
+                items(filteredProducts) { item ->
+                    ItemCard(
+                        viewModel = cartViewModel,
+                        item = item,
+                        onItemClick = { onItemClick(item) },
+                        onButtonClick = {
+                            if (cartViewModel.isProductInCart(item)) {
+                                cartViewModel.removeProduct(item)
+                            } else {
+
+                                cartViewModel.addProduct(item)
+                            }
+                        },
+                    )
                 }
             }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
         }
     }
 
+}
 
+@Composable
+fun ItemCard(
+    item: GetProductsForDis,
+    onItemClick: () -> Unit,
+    onButtonClick: () -> Unit,
+    viewModel: CartViewModel
+) {
+    val showImage = viewModel.showImage.value
+    val inCart = viewModel.isProductInCart(item)
+    val quantity = viewModel.getProductQuantity(item)
 
-
-    @Composable
-    private fun CategoryCard(
-        modifier: Modifier=Modifier,
-        category: ProductCategoriesForDis,
-        onClick: () -> Unit,
-        product: List<GetProductsForDis>,
-        viewModel: CartViewModel
+    Card(
+        modifier = Modifier
+            .width(160.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .border(
+                0.4.dp,
+                MaterialTheme.colorScheme.primary,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable { onItemClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        val showImage = viewModel.showImage.value
+        Column(modifier = Modifier.padding(12.dp)) {
 
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp, vertical = 10.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .clickable { onClick() },
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-
-            val fullUrl = getCategoryImage(
-                SharedPrefs.User.get()?.ID.toString(),
-                category.GUID.toString()
+            val fullUrl = getProductImage(
+                storeId = SharedPrefs.User.get()?.ID.toString(),
+                guid = item.product_id.toString()
             )
 
-            // --- Image only when enabled (no wasted space)
+            // --- Image only when enabled (no dead space)
             AnimatedVisibility(
                 visible = showImage,
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically()
             ) {
-                AsyncImage(
-                    model = fullUrl,
-                    contentDescription = category.Name,
+                Box(
                     modifier = Modifier
-                        .size(72.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop,
-                    fallback = painterResource(Res.drawable.splashImage),
-                    error = painterResource(Res.drawable.category_placeholder)
-                )
+                        .fillMaxWidth()
+                        .height(90.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f))
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                            RoundedCornerShape(10.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = fullUrl,
+                        contentDescription = item.product_name,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            //  .padding(6.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop,
+                        fallback = painterResource(Res.drawable.splashImage),
+                        onError = { println(it.result.throwable) }
+                    )
+                }
             }
 
             if (showImage) Spacer(Modifier.height(8.dp))
 
-            // --- Better styled text
+            // --- Product name (stronger hierarchy)
             Text(
-                text = category.Name.orEmpty(),
+                text = item.product_name.orEmpty(),
                 style = if (showImage)
-                    MaterialTheme.typography.titleSmall
+                    MaterialTheme.typography.bodyMedium
                 else
-                    MaterialTheme.typography.titleMedium, // slightly stronger in compact mode
+                    MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                lineHeight = 18.sp,
                 maxLines = 2,
+                lineHeight = 18.sp,
                 overflow = TextOverflow.Ellipsis
             )
-        }
-    }
 
 
-    @Composable
-    private fun CategoryItemsSection(
-        category: ProductCategoriesForDis,
-        product: List<GetProductsForDis>,
-        onItemClick: (GetProductsForDis) -> Unit,
-        onMoreClick: (ProductCategoriesForDis) -> Unit,
+            Spacer(Modifier.height(6.dp))
 
-        ) {
-        val cartViewModel: CartViewModel = viewModel { CartViewModel() }
-        val filteredProducts = product.filter {
-            it.category_id?.toDouble() == category.GUID?.toDouble()
-        }
-        println(product)
-        println(filteredProducts)
-        if (filteredProducts.isNotEmpty()) {
-            Column(
-                modifier = Modifier.padding(horizontal = 16.dp)
-            ) {
+            // --- Price (visually separated but not screaming)
+            Text(
+                text = item.sales_price?.formatToAmtDec().toString(),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(Modifier.height(10.dp))
+
+            // --- Button that doesn't look like a warning when in cart
+            if (inCart) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth().border(
+                        1.dp,
+                        MaterialTheme.colorScheme.primary,
+                        RoundedCornerShape(12.dp)
+                    ),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = category.Name.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-
-                    TextButton(
-                        onClick = {
-                            onMoreClick(category)
-                        }) {
-                        Text(
-                            text = "More",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    contentPadding = PaddingValues(end = 16.dp)
-                ) {
-                    val filteredProducts =
-                        filteredProducts.take(5)
-                    items(filteredProducts) { item ->
-                        ItemCard(
-                            viewModel = cartViewModel,
-                            item = item,
-                            onItemClick = { onItemClick(item) },
-                            onButtonClick = {
-                                if (cartViewModel.isProductInCart(item)) {
-                                    cartViewModel.removeProduct(item)
-                                } else {
-
-                                    cartViewModel.addProduct(item)
-                                }
-                            },
-                        )
-                    }
-                }
-            }
-        }
-
-    }
-
-    @Composable
-    fun ItemCard(
-        item: GetProductsForDis,
-        onItemClick: () -> Unit,
-        onButtonClick: () -> Unit,
-        viewModel: CartViewModel
-    ) {
-        val showImage = viewModel.showImage.value
-        val inCart = viewModel.isProductInCart(item)
-        val quantity = viewModel.getProductQuantity(item)
-
-        Card(
-            modifier = Modifier
-                .width(160.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .border(
-                    0.4.dp,
-                    MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .clickable { onItemClick() },
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-
-                val fullUrl = getProductImage(
-                    storeId = SharedPrefs.User.get()?.ID.toString(),
-                    guid = item.product_id.toString()
-                )
-
-                // --- Image only when enabled (no dead space)
-                AnimatedVisibility(
-                    visible = showImage,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(90.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f))
-                            .border(
-                                1.dp,
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                RoundedCornerShape(10.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        AsyncImage(
-                            model = fullUrl,
-                            contentDescription = item.product_name,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                //  .padding(6.dp)
-                                .clip(RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.Crop,
-                            fallback = painterResource(Res.drawable.splashImage),
-                            onError = { println(it.result.throwable) }
-                        )
-                    }
-                }
-
-                if (showImage) Spacer(Modifier.height(8.dp))
-
-                // --- Product name (stronger hierarchy)
-                Text(
-                    text = item.product_name.orEmpty(),
-                    style = if (showImage)
-                        MaterialTheme.typography.bodyMedium
-                    else
-                        MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 2,
-                    lineHeight = 18.sp,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-
-                Spacer(Modifier.height(6.dp))
-
-                // --- Price (visually separated but not screaming)
-                Text(
-                    text = item.sales_price?.formatToAmtDec().toString(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                Spacer(Modifier.height(10.dp))
-
-                // --- Button that doesn't look like a warning when in cart
-                if (inCart) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().border(
-                            1.dp,
-                            MaterialTheme.colorScheme.primary,
-                            RoundedCornerShape(12.dp)
-                        ),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = { viewModel.decreaseQuantity(item) }) {
-                            Icon(
-                                imageVector = Icons.Default.HorizontalRule,
-                                contentDescription = "Remove",
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        Text(
-                            text = quantity.toString(),
-                            fontSize = 12.sp
-                        )
-                        IconButton(onClick = { viewModel.increaseQuantity(item) }) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add",
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                } else {
-                    Button(
-                        onClick = onButtonClick,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(vertical = 8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
+                    IconButton(onClick = { viewModel.decreaseQuantity(item) }) {
                         Icon(
-                            imageVector = Icons.Default.ShoppingCart,
-                            contentDescription = null,
+                            imageVector = Icons.Default.HorizontalRule,
+                            contentDescription = "Remove",
                             modifier = Modifier.size(16.dp)
                         )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = "Add to cart",
-                            fontSize = 12.sp
+                    }
+                    Text(
+                        text = quantity.toString(),
+                        fontSize = 12.sp
+                    )
+                    IconButton(onClick = { viewModel.increaseQuantity(item) }) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add",
+                            modifier = Modifier.size(16.dp)
                         )
                     }
+                }
+            } else {
+                Button(
+                    onClick = onButtonClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ShoppingCart,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "Add to cart",
+                        fontSize = 12.sp
+                    )
                 }
             }
         }
     }
+}
 
