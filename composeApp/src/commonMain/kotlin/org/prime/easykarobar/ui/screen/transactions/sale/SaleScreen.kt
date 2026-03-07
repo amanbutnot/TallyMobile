@@ -85,9 +85,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cafe.adriel.voyager.core.annotation.InternalVoyagerApi
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.navigator.internal.BackHandler
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.prime.easykarobar.business.viewmodel.transactions.InventoryVoucherViewModel
@@ -169,9 +171,14 @@ data class SaleScreen(
     val isEdit: Boolean = false, val enableUpdateButton: Boolean = true
 ) : Screen {
 
-    @OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class, InternalVoyagerApi::class)
     @Composable
     override fun Content() {
+        var showExitPopup by remember { mutableStateOf(false) }
+        BackHandler(true) {
+            showExitPopup = true
+        }
+
 
         val isSale = name in listOf("Sale Order", "Sale Invoice", "Sale Return")
 
@@ -227,6 +234,15 @@ data class SaleScreen(
         var demoBarcodeName by remember { mutableStateOf("") }
         var gstRrDate by remember { mutableStateOf(CurrentDate()) }
         var shareLoading by remember { mutableStateOf(false) }
+        if (showExitPopup) TallyAlertBox(
+            title = "Exit?",
+            message = "Do you want to exit",
+            confirmButtonText = "Yes",
+            cancelButtonText = "No",
+            onConfirm = { nav.pop() },
+            onCancel = { showExitPopup = false },
+            onDismiss = { showExitPopup = false },
+        )
 
 
 //        selectedLedgerGUID = db.ledgerMasterQueries
@@ -579,6 +595,9 @@ data class SaleScreen(
         )
         TallyReportScaffold(
             showBurgerMenu = false,
+            onBackClick = {
+                showExitPopup = true
+            },
             showBarcodeIcon = !isEdit,
             onBarcodeClick = {
                 showQtyPopup = true
