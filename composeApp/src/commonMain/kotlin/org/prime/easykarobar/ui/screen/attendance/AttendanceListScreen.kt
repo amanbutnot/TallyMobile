@@ -118,7 +118,7 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
             ) {
                 // Compact Header
                 Text(
-                    text = "Attendance Configuration",
+                    text = if(isCheckIn) "Check In Configuration" else "Attendance Configuration",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
