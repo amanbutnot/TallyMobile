@@ -141,7 +141,7 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
 
                         OutlinedButton(
                             onClick = {
-                                if (isCheckIn) {
+                                if (!isCheckIn) {
                                     scope.launch {
                                         showLoading = true
                                         try {
