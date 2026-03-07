@@ -90,7 +90,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
         val productGroups = remember { db.productGroupMasterQueries.selectAll(   filterGroup = filterItemGroups(),
             groupCodes = itemGroupCodes()).executeAsList() }
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
-        val bottomSheetState = rememberModalBottomSheetState()
+        val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {

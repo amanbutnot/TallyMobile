@@ -77,7 +77,7 @@ object ParameterReportScreen : Screen {
         val productGroups = remember { db.productGroupMasterQueries.selectAll(  filterGroup = filterItemGroups(),
             groupCodes = itemGroupCodes()).executeAsList() }
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
-        val bottomSheetState = rememberModalBottomSheetState()
+        val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
         val column1Weight = 0.5f
         val column2Weight = 0.2f

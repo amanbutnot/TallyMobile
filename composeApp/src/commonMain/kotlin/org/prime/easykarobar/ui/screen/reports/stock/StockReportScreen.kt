@@ -79,7 +79,7 @@ object StockReportScreen : Screen {
         val productGroups = remember { db.productGroupMasterQueries.selectAll(  filterGroup = filterItemGroups(),
             groupCodes = itemGroupCodes()).executeAsList() }
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
-        val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+        val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
 
         val column1Weight = 0.5f

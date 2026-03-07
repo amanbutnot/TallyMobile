@@ -51,6 +51,8 @@ import org.prime.easykarobar.data.expect.stringToDouble
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.printing.OutstandingRow
 import org.prime.easykarobar.ui.printing.outstandingHtml
+import org.prime.easykarobar.ui.screen.home.ROLE
+import org.prime.easykarobar.ui.screen.home.userRole
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportItemScreen
 import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheet
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
@@ -102,7 +104,7 @@ data class OutstandingReportScreen(
         val filterAccounts = if (perms?.FilterAccounts == "Y") 1L else 0L
         val groupCodes = perms?.ConfigAGRP.parseToStringList()
         val excludeGuids = perms?.ConfigAccounts.parseToStringList()
-        val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+        val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         var showGroupFilterSheet by remember { mutableStateOf(false) }
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
         val productGroups = remember { db.ledgerGroupMasterQueries.selectAll(
@@ -502,16 +504,19 @@ data class OutstandingReportScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                TextButton(onClick = { showGroupFilterSheet = true }) {
-                                    Text(
-                                        if (selectedGroups.isEmpty()) "Group Filter"
-                                        else "Group Filter (${selectedGroups.size})"
-                                    )
+                            if(userRole()!=ROLE.DISTRIBUTOR){
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    TextButton(onClick = { showGroupFilterSheet = true }) {
+                                        Text(
+                                            if (selectedGroups.isEmpty()) "Group Filter"
+                                            else "Group Filter (${selectedGroups.size})"
+                                        )
+                                    }
                                 }
+
                             }
                         }
 

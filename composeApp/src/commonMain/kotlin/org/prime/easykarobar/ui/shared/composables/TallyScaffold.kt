@@ -109,6 +109,7 @@ fun TallyReportScaffold(
     showBurgerMenu: Boolean = false,
     onSearchClick: (() -> Unit)? = null,
     onBarcodeClick: (() -> Unit)? = null,
+    onBackClick: (() -> Unit)? = null,
     menuItems: List<MenuItemData> = emptyList(),
     content: @Composable (PaddingValues) -> Unit
 ) {
@@ -136,7 +137,7 @@ fun TallyReportScaffold(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { nav.pop() }) {
+                    IconButton(onClick = { if(onBackClick==null)nav.pop() else onBackClick() }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
