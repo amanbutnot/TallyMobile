@@ -75,7 +75,7 @@ data class PendingOrderPartyList(
         var showGroupFilterSheet by remember { mutableStateOf(false) }
         val productGroups = remember { db.ledgerGroupMasterQueries.selectAll(      filterGroup = filterAGRPGroups(),
             groupCodes = agrpGroupCodes().map { it.toString() }).executeAsList() }
-        val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+        val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
 
         GroupFilterBottomSheet(

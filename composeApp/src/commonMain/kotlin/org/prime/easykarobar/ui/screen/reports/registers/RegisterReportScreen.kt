@@ -188,7 +188,7 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                             TextAlign.Start
                         ),
                         ReportColumn(
-                            totalAmt.absoluteValue.formatToAmtDec(),
+                            "Total: " + totalAmt.absoluteValue.formatToAmtDec(),
                             column4Weight,
                             TextAlign.End
                         ),
