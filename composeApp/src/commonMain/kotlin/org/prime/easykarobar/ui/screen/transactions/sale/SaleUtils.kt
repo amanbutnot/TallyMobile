@@ -1,0 +1,265 @@
+package org.prime.easykarobar.ui.screen.transactions.sale
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.RemoveCircleOutline
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import org.prime.easykarobar.ui.screen.transactions.TransactionOneBottomSheet
+import org.prime.easykarobar.ui.shared.composables.TallyTextField
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ShippingCard(
+    showShippingDetails: Boolean,
+    onShowChange: () -> Unit,
+
+    billingShipping: Boolean,
+    onBillingShippingChange: (Boolean) -> Unit,
+
+    partyName: String,
+    onPartyNameChange: (String) -> Unit,
+
+    address: String,
+    onAddressChange: (String) -> Unit,
+
+    state: String,
+    onStateChange: (String) -> Unit,
+
+    mobileNo: String,
+    onMobileChange: (String) -> Unit,
+
+    email: String,
+    onEmailChange: (String) -> Unit,
+
+    itPan: String,
+    onPanChange: (String) -> Unit,
+
+    gstIn: String,
+    onGstChange: (String) -> Unit,
+
+    onbillingShippingSelected: (String) -> Unit
+) {
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        Text(
+            text = "Transport Details",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        TextButton(onClick = onShowChange) {
+
+            Icon(
+                imageVector =
+                    if (showShippingDetails)
+                        Icons.Default.RemoveCircleOutline
+                    else
+                        Icons.Default.AddCircleOutline,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+
+            Spacer(modifier = Modifier.width(4.dp))
+
+            Text(
+                text = if (showShippingDetails) "Remove" else "Add",
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+    }
+
+    AnimatedVisibility(
+        visible = showShippingDetails,
+        enter = fadeIn(animationSpec = tween(300)) +
+                expandVertically(animationSpec = tween(300)),
+        exit = fadeOut(animationSpec = tween(300)) +
+                shrinkVertically(animationSpec = tween(300))
+    ) {
+
+        ElevatedCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 16.dp),
+
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            ),
+
+            elevation = CardDefaults.elevatedCardElevation(2.dp)
+        ) {
+
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+
+                Text(
+                    text = "Billing/Shipping Information",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                HorizontalDivider()
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    RadioButton(
+                        selected = !billingShipping,
+                        onClick = { onBillingShippingChange(false) }
+                    )
+
+                    Text("As Per Party Master")
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    RadioButton(
+                        selected = billingShipping,
+                        onClick = { onBillingShippingChange(true) }
+                    )
+
+                    Text("Billing/Shipping Details")
+                }
+
+                TransactionOneBottomSheet(
+                    showBottomSheet = billingShipping,
+                    list = listOf(
+                        "Un-Registered",
+                        "Registered",
+                        "Composition",
+                        "Govt. Body",
+                        "UIN Holder"
+                    ),
+                    onSelected = onbillingShippingSelected,
+                    onDismiss = { onBillingShippingChange(false) },
+                    bottomSheetState = rememberModalBottomSheetState(),
+                    title = "Billing Shipping Details",
+                )
+
+
+                TallyTextField(
+                    value = partyName,
+                    onValueChange = onPartyNameChange,
+                    label = "Party Name",
+                    placeholder = "Enter party name",
+                    isPassword = false,
+                    isNumber = false,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                TallyTextField(
+                    value = address,
+                    onValueChange = onAddressChange,
+                    label = "Address",
+                    placeholder = "Enter Address",
+                    isPassword = false,
+                    isNumber = false,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+
+                    TallyTextField(
+                        value = state,
+                        onValueChange = onStateChange,
+                        label = "State",
+                        placeholder = "Enter State",
+                        isPassword = false,
+                        isNumber = false,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    TallyTextField(
+                        value = mobileNo,
+                        onValueChange = onMobileChange,
+                        label = "Mobile No.",
+                        placeholder = "Enter Mobile no.",
+                        isPassword = false,
+                        isNumber = false,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                TallyTextField(
+                    value = email,
+                    onValueChange = onEmailChange,
+                    label = "Email",
+                    placeholder = "Enter Email",
+                    isPassword = false,
+                    isNumber = false,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                TallyTextField(
+                    value = itPan,
+                    onValueChange = onPanChange,
+                    label = "IT Pan",
+                    placeholder = "Enter IT Pan",
+                    isPassword = false,
+                    isNumber = false,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                TallyTextField(
+                    value = gstIn,
+                    onValueChange = onGstChange,
+                    label = "GSTIN",
+                    placeholder = "Enter GSTIN/UIN",
+                    isPassword = false,
+                    isNumber = false,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}

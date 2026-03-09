@@ -949,7 +949,8 @@ data class SaleScreen(
                                     .padding(horizontal = 16.dp, vertical = 8.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
-                            ) {
+                            )
+                            {
                                 Text(
                                     text = "Transport Details",
                                     style = MaterialTheme.typography.titleSmall,
@@ -980,7 +981,8 @@ data class SaleScreen(
                                 exit = fadeOut(animationSpec = tween(300)) + shrinkVertically(
                                     animationSpec = tween(300)
                                 )
-                            ) {
+                            )
+                            {
                                 ElevatedCard(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -1084,7 +1086,47 @@ data class SaleScreen(
                                     }
                                 }
                             }
-                            Spacer(modifier = Modifier.height(60.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
+                            var showShippingDetails by remember { mutableStateOf(false) }
+                            var billingShipping by remember { mutableStateOf(false) }
+                            var billingSelected by remember { mutableStateOf("") }
+
+                            var partyName by remember { mutableStateOf("") }
+                            var address by remember { mutableStateOf("") }
+                            var shipState by remember { mutableStateOf("") }
+                            var mobileNo by remember { mutableStateOf("") }
+                            var email by remember { mutableStateOf("") }
+                            var itPan by remember { mutableStateOf("") }
+                            var gstIn by remember { mutableStateOf("") }
+//                            ShippingCard(
+//                                showShippingDetails = showShippingDetails,
+//                                onShowChange = { showShippingDetails = !showShippingDetails },
+//
+//                                billingShipping = billingShipping,
+//                                onBillingShippingChange = { billingShipping = it },
+//
+//                                partyName = partyName,
+//                                onPartyNameChange = { partyName = it },
+//
+//                                address = address,
+//                                onAddressChange = { address = it },
+//
+//                                state = shipState,
+//                                onStateChange = { shipState = it },
+//
+//                                mobileNo = mobileNo,
+//                                onMobileChange = { mobileNo = it },
+//
+//                                email = email,
+//                                onEmailChange = { email = it },
+//
+//                                itPan = itPan,
+//                                onPanChange = { itPan = it },
+//
+//                                gstIn = gstIn,
+//                                onGstChange = { gstIn = it },
+//                                onbillingShippingSelected = { billingSelected = it }
+//                            )
                         }
 
 
