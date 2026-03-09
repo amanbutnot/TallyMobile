@@ -1,6 +1,5 @@
 package org.prime.easykarobar.ui.screen.masters
 
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountTree
@@ -26,11 +26,10 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalOffer
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Percent
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -39,18 +38,16 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -60,6 +57,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -67,21 +65,60 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import kotlinx.coroutines.launch
+import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
+import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
+import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
+import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Top-level helpers  (Pair = display Name + GUID / Code)
+//  Constants
 // ─────────────────────────────────────────────────────────────────────────────
-private val EmptyPair = Pair("", "")
-private val Pair<String, String>.isSelected get() = first.isNotBlank() && second.isNotBlank()
-
-// Conversion type options
 private val CON_TYPE_OPTIONS = listOf("Main / Alt", "Alt / Main")
 
-// Default qty options for Alt unit
-private val DEFAULT_QTY_OPTIONS = listOf("1", "0", "NI")
+// ─────────────────────────────────────────────────────────────────────────────
+//  ItemFormData — built only after successful validation
+// ─────────────────────────────────────────────────────────────────────────────
+data class ItemFormData(
+    // Identity
+    val name: String,
+    val alias: String,
+    val printName: String,
+    // Group
+    val parentGroup: String,
+    val parentGroupGuid: String,
+    // Units
+    val mainUnit: String,
+    val mainUnitGuid: String,
+    val altUnit: String,
+    val altUnitGuid: String,
+    val altSameAsMain: Boolean,
+    val conType: String,
+    val conFactor: Double,
+    // Tax
+    val taxCategoryName: String,
+    val taxCategoryGuid: String,
+    // Opening Stock
+    val opQty: String,
+    val opQtyAlt: String,
+    val opAmount: String,
+    // Pricing
+    val salePrice: String,
+    val purchPrice: String,
+    val mrp: String,
+    val minSalePrice: String,
+    val selfValPrice: String,
+    // Discounts
+    val saleDiscount: String,
+    val purchDiscount: String,
+    // Description
+    val desc1: String,
+    val desc2: String,
+    val desc3: String,
+    val desc4: String,
+)
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Section Header
@@ -145,7 +182,7 @@ private fun FormCard(content: @Composable ColumnScope.() -> Unit) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  FormField — wraps TallyTextField
+//  FormField
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
 private fun FormField(
@@ -187,60 +224,77 @@ private fun FormField(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  BottomSheetTriggerField — read-only field that opens a bottom sheet
+//  DropdownSelector
 // ─────────────────────────────────────────────────────────────────────────────
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BottomSheetTriggerField(
+private fun DropdownSelector(
     label: String,
     value: String,
     isError: Boolean = false,
-    trailingIcon: ImageVector = Icons.Default.AccountTree,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {},
-            readOnly = true,
-            isError = isError,
-            label = {
-                Text(
-                    if (isError) "$label *" else label,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            },
-            supportingText = if (isError) ({
-                Text(
-                    "Required",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }) else null,
-            trailingIcon = {
-                Icon(
-                    imageVector = trailingIcon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp)
-                )
-            },
-            shape = MaterialTheme.shapes.medium,
-            textStyle = MaterialTheme.typography.bodyMedium,
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+        if (label.isNotEmpty()) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isError) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+            )
+        }
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onClick() }
-        )
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { onClick() },
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            border = BorderStroke(
+                1.dp,
+                if (isError) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = value.ifEmpty { "Select…" },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (value.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant
+                    else MaterialTheme.colorScheme.onSurface
+                )
+                Icon(
+                    imageVector = Icons.Outlined.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+        if (isError) {
+            Text(
+                text = "Required",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 4.dp, top = 2.dp)
+            )
+        }
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  TallyDropdown — simple fixed list
+//  TallyDropdown — fixed option list (Con Type)
 // ─────────────────────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -252,7 +306,6 @@ private fun TallyDropdown(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it },
@@ -269,31 +322,23 @@ private fun TallyDropdown(
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
             shape = MaterialTheme.shapes.medium,
             textStyle = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor()
+            modifier = Modifier.fillMaxWidth().menuAnchor()
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { opt ->
                 DropdownMenuItem(
                     text = {
                         Text(
                             opt,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (opt == selected)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onSurface
+                            color = if (opt == selected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface
                         )
                     },
                     onClick = { onSelect(opt); expanded = false },
                     leadingIcon = if (opt == selected) ({
                         Icon(
-                            Icons.Default.Check,
-                            contentDescription = null,
+                            Icons.Default.Check, null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp)
                         )
@@ -305,7 +350,7 @@ private fun TallyDropdown(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  TallyToggle row
+//  TallyToggle
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
 private fun TallyToggle(
@@ -321,131 +366,23 @@ private fun TallyToggle(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
             if (subLabel.isNotEmpty()) {
                 Spacer(Modifier.height(2.dp))
-                Text(
-                    text = subLabel,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text(subLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Switch(
             checked = value,
             onCheckedChange = onToggle,
             colors = SwitchDefaults.colors(
-                checkedThumbColor   = MaterialTheme.colorScheme.onPrimary,
-                checkedTrackColor   = MaterialTheme.colorScheme.primary,
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
                 uncheckedThumbColor = MaterialTheme.colorScheme.outline,
                 uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
             )
         )
     }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  DefaultQtyChips — chips for 1 / 0 / NI default qty selection
-// ─────────────────────────────────────────────────────────────────────────────
-@Composable
-private fun DefaultQtyChips(selected: String, onSelect: (String) -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-    ) {
-        Text(
-            text = "Default Qty",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            DEFAULT_QTY_OPTIONS.forEach { opt ->
-                FilterChip(
-                    selected = selected == opt,
-                    onClick = { onSelect(opt) },
-                    label = {
-                        Text(opt, style = MaterialTheme.typography.labelMedium)
-                    },
-                    leadingIcon = if (selected == opt) ({
-                        Icon(
-                            Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }) else null,
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor     = MaterialTheme.colorScheme.onPrimaryContainer,
-                        selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                )
-            }
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Validation dialog
-// ─────────────────────────────────────────────────────────────────────────────
-@Composable
-private fun RequiredFieldsDialog(
-    missingFields: List<String>,
-    extraMessage: String? = null,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                Icons.Default.Warning,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error
-            )
-        },
-        title = {
-            Text("Required Fields Missing", style = MaterialTheme.typography.titleMedium)
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (extraMessage != null) {
-                    Text(
-                        extraMessage,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    Spacer(Modifier.height(6.dp))
-                }
-                if (missingFields.isNotEmpty()) {
-                    Text(
-                        "Please fill in the following required fields:",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    missingFields.forEach { field ->
-                        Text(
-                            "• $field",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("OK", style = MaterialTheme.typography.labelLarge)
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = MaterialTheme.shapes.large
-    )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -456,56 +393,52 @@ object ItemAddScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
-        val nav    = LocalNavigator.currentOrThrow
+        val nav = LocalNavigator.currentOrThrow
         val scroll = rememberScrollState()
-        val scope  = rememberCoroutineScope()
+        val scope = rememberCoroutineScope()
 
         // ── 1. Identity ────────────────────────────────────────────────────
-        var name      by remember { mutableStateOf("") }
-        var alias     by remember { mutableStateOf("") }   // auto = name, editable
-        var printName by remember { mutableStateOf("") }   // auto = name, editable
+        var name by remember { mutableStateOf("") }
+        var alias by remember { mutableStateOf("") }
+        var printName by remember { mutableStateOf("") }
 
         // ── 2. Group ───────────────────────────────────────────────────────
-        // Pair(Name, GUID) from item group master
-        var group         by remember { mutableStateOf(EmptyPair) }
-        var groupCode     by remember { mutableStateOf("") }
-        var guid          by remember { mutableStateOf("") }
+        var parentGroup by remember { mutableStateOf("") }
+        var parentGroupGUID by remember { mutableStateOf("") }
         var showGroupSheet by remember { mutableStateOf(false) }
         val groupSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
         // ── 3. Units ───────────────────────────────────────────────────────
-        // Pair(Name, Code) from unit master
-        var mainUnit          by remember { mutableStateOf(EmptyPair) }
-        var showMainUnitSheet  by remember { mutableStateOf(false) }
+        var mainUnit by remember { mutableStateOf("") }
+        var mainUnitGuid by remember { mutableStateOf("") }
+        var showMainUnitSheet by remember { mutableStateOf(false) }
         val mainUnitSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-        // altUnit: toggle "same as main" vs separate
-        var altSameAsMain     by remember { mutableStateOf(true) }
-        var altUnit           by remember { mutableStateOf(EmptyPair) }
-        var showAltUnitSheet   by remember { mutableStateOf(false) }
-        val altUnitSheetState  = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        var altSameAsMain by remember { mutableStateOf(true) }
+        var altUnit by remember { mutableStateOf("") }
+        var altUnitGuid by remember { mutableStateOf("") }
+        var showAltUnitSheet by remember { mutableStateOf(false) }
+        val altUnitSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-        // Conversion
-        var conType    by remember { mutableStateOf(CON_TYPE_OPTIONS[0]) } // Main/Alt or Alt/Main
-        var conFactor  by remember { mutableStateOf("") }
-        var defaultQty by remember { mutableStateOf("1") }                 // 1 | 0 | NI
+        var conType by remember { mutableStateOf(CON_TYPE_OPTIONS[0]) }
+        var conFactor by remember { mutableStateOf("") }
 
         // ── 4. Tax ─────────────────────────────────────────────────────────
-        // Pair(Name, Code) from tax category master
-        var taxCategory         by remember { mutableStateOf(EmptyPair) }
+        var taxCategoryName by remember { mutableStateOf("") }
+        var taxCategoryGuid by remember { mutableStateOf("") }
+        var taxCategoryCode by remember { mutableStateOf("") }
         var showTaxCategorySheet by remember { mutableStateOf(false) }
         val taxCategorySheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        var taxCategoryCode     by remember { mutableStateOf("") }
 
         // ── 5. Opening Stock ───────────────────────────────────────────────
-        var opQty    by remember { mutableStateOf("") }    // in Main unit
-        var opQtyAlt by remember { mutableStateOf("") }    // in Alt unit
+        var opQty by remember { mutableStateOf("") }
+        var opQtyAlt by remember { mutableStateOf("") }
         var opAmount by remember { mutableStateOf("") }
 
         // ── 6. Pricing ─────────────────────────────────────────────────────
-        var salePrice    by remember { mutableStateOf("") }
-        var purchPrice   by remember { mutableStateOf("") }
-        var mrp          by remember { mutableStateOf("") }
+        var salePrice by remember { mutableStateOf("") }
+        var purchPrice by remember { mutableStateOf("") }
+        var mrp by remember { mutableStateOf("") }
         var minSalePrice by remember { mutableStateOf("") }
         var selfValPrice by remember { mutableStateOf("") }
 
@@ -520,119 +453,147 @@ object ItemAddScreen : Screen {
         var desc4 by remember { mutableStateOf("") }
 
         // ── Validation ─────────────────────────────────────────────────────
-        var showDialog     by remember { mutableStateOf(false) }
-        var dialogMissing  by remember { mutableStateOf(listOf<String>()) }
-        var dialogExtraMsg by remember { mutableStateOf<String?>(null) }
-        var attempted      by remember { mutableStateOf(false) }
+        var showDialog by remember { mutableStateOf(false) }
+        var dialogMessage by remember { mutableStateOf("") }
+        var attempted by remember { mutableStateOf(false) }
 
-        val nameError         = attempted && name.isBlank()
-        val aliasEqName       = alias.isNotBlank() && alias.trim().equals(name.trim(), ignoreCase = true)
-        val aliasError        = attempted && aliasEqName
-        val groupError        = attempted && !group.isSelected
-        val mainUnitError     = attempted && !mainUnit.isSelected
-        val taxCategoryError  = attempted && !taxCategory.isSelected
+        val aliasEqName = alias.isNotBlank() && alias.trim().equals(name.trim(), ignoreCase = true)
+        val nameError = attempted && name.isBlank()
+        val aliasError = attempted && aliasEqName
+        val groupError = attempted && parentGroup.isBlank()
+        val mainUnitError = attempted && mainUnit.isBlank()
+        val altUnitError = attempted && !altSameAsMain && altUnit.isBlank()
+        val taxCategoryError = attempted && taxCategoryName.isBlank()
+        val conFactorError = attempted && (conFactor.isBlank() || conFactor.toDoubleOrNull() == 0.0)
 
-        // ── Sheet hide helpers ──────────────────────────────────────────────
-        fun hideGroupSheet()       { scope.launch { groupSheetState.hide() }.invokeOnCompletion { showGroupSheet = false } }
-        fun hideMainUnitSheet()    { scope.launch { mainUnitSheetState.hide() }.invokeOnCompletion { showMainUnitSheet = false } }
-        fun hideAltUnitSheet()     { scope.launch { altUnitSheetState.hide() }.invokeOnCompletion { showAltUnitSheet = false } }
-        fun hideTaxCategorySheet() { scope.launch { taxCategorySheetState.hide() }.invokeOnCompletion { showTaxCategorySheet = false } }
+        // ── Data ───────────────────────────────────────────────────────────
+        val db = DatabaseHolder.instance
+        val groupList = db.productGroupMasterQueries
+            .selectAll(filterGroup = filterItemGroups(), groupCodes = itemGroupCodes())
+            .executeAsList()
+        val unitList = db.productUnitMasterQueries.selectAll().executeAsList()
+        val taxCategoryList = emptyList<Pair<String, String>>()
 
-        fun resetAll() {
-            name = ""; alias = ""; printName = ""
-            group = EmptyPair; groupCode = ""; guid = ""
-            mainUnit = EmptyPair; altSameAsMain = true; altUnit = EmptyPair
-            conType = CON_TYPE_OPTIONS[0]; conFactor = ""; defaultQty = "1"
-            taxCategory = EmptyPair; taxCategoryCode = ""
-            opQty = ""; opQtyAlt = ""; opAmount = ""
-            salePrice = ""; purchPrice = ""; mrp = ""; minSalePrice = ""; selfValPrice = ""
-            saleDiscount = ""; purchDiscount = ""
-            desc1 = ""; desc2 = ""; desc3 = ""; desc4 = ""
-            attempted = false
+        // ── Sheet dismissal helper ─────────────────────────────────────────
+        fun hideSheet(state: SheetState, hide: () -> Unit) {
+            scope.launch { state.hide() }.invokeOnCompletion { hide() }
         }
 
-        fun validate(): Boolean {
+        // ── Validate + build ItemFormData ──────────────────────────────────
+        fun validateAndBuild(): ItemFormData? {
             attempted = true
-            val missing = mutableListOf<String>()
-            if (name.isBlank())          missing += "Name"
-            if (!group.isSelected)       missing += "Group"
-            if (!mainUnit.isSelected)    missing += "Main Unit"
-            if (!taxCategory.isSelected) missing += "Tax Category"
 
             if (aliasEqName) {
-                dialogExtraMsg = "Name and Alias cannot be the same."
-                dialogMissing  = missing
-                showDialog     = true
-                return false
+                dialogMessage = "Name and Alias cannot be the same value."
+                showDialog = true
+                return null
             }
-            if (missing.isNotEmpty()) {
-                dialogExtraMsg = null
-                dialogMissing  = missing
-                showDialog     = true
-                return false
-            }
-            return true
-        }
 
-        // ── Dialogs & sheets at top level ──────────────────────────────────
-        if (showDialog) {
-            RequiredFieldsDialog(
-                missingFields = dialogMissing,
-                extraMessage  = dialogExtraMsg,
-                onDismiss     = { showDialog = false }
+            val cf = conFactor.toDoubleOrNull()
+            if (cf == null || cf == 0.0) {
+                dialogMessage = "Conversion Factor cannot be zero or empty."
+                showDialog = true
+                return null
+            }
+
+            val missing = mutableListOf<String>()
+            if (name.isBlank()) missing += "• Name"
+            if (parentGroup.isBlank()) missing += "• Item Group"
+            if (mainUnit.isBlank()) missing += "• Main Unit"
+            if (!altSameAsMain && altUnit.isBlank()) missing += "• Alt Unit"
+            if (taxCategoryName.isBlank()) missing += "• Tax Category"
+            if (missing.isNotEmpty()) {
+                dialogMessage = "Please fill in the following required fields:\n\n${missing.joinToString("\n")}"
+                showDialog = true
+                return null
+            }
+
+            return ItemFormData(
+                name = name.trim(),
+                alias = alias.trim(),
+                printName = printName.trim(),
+                parentGroup = parentGroup,
+                parentGroupGuid = parentGroupGUID,
+                mainUnit = mainUnit,
+                mainUnitGuid = mainUnitGuid,
+                altUnit = altUnit,
+                altUnitGuid = altUnitGuid,
+                altSameAsMain = altSameAsMain,
+                conType = conType,
+                conFactor = cf,
+                taxCategoryName = taxCategoryName,
+                taxCategoryGuid = taxCategoryGuid,
+                opQty = opQty,
+                opQtyAlt = opQtyAlt,
+                opAmount = opAmount,
+                salePrice = salePrice,
+                purchPrice = purchPrice,
+                mrp = mrp,
+                minSalePrice = minSalePrice,
+                selfValPrice = selfValPrice,
+                saleDiscount = saleDiscount,
+                purchDiscount = purchDiscount,
+                desc1 = desc1,
+                desc2 = desc2,
+                desc3 = desc3,
+                desc4 = desc4,
             )
         }
 
-        // Group bottom sheet
+        // ── Dialog ─────────────────────────────────────────────────────────
+        if (showDialog) {
+            TallyResultDialog(
+                message = dialogMessage,
+                isSuccess = false,
+                confirmText = "OK",
+                onDone = { showDialog = false }
+            )
+        }
+
+        // ── Bottom sheets ──────────────────────────────────────────────────
         TransactionBottomSheet(
-            showBottomSheet  = showGroupSheet,
-            list             = emptyList(), // TODO: List<Pair(GroupName, GUID)> from ViewModel
-            onSelected       = { pair -> group = pair; groupCode = pair.second; hideGroupSheet() },
-            onDismiss        = { hideGroupSheet() },
+            showBottomSheet = showGroupSheet,
+            list = groupList.map { Pair(it.Name.toString(), it.GUID.toString()) },
+            onSelected = { parentGroup = it.first; parentGroupGUID = it.second },
+            onDismiss = { hideSheet(groupSheetState) { showGroupSheet = false } },
             bottomSheetState = groupSheetState,
-            title            = "Select Group"
+            title = "Select Item Group"
         )
-
-        // Main Unit bottom sheet
         TransactionBottomSheet(
-            showBottomSheet  = showMainUnitSheet,
-            list             = emptyList(), // TODO: List<Pair(UnitName, UnitCode)> from ViewModel
-            onSelected       = { pair ->
-                mainUnit = pair
-                if (altSameAsMain) altUnit = pair
-                hideMainUnitSheet()
+            showBottomSheet = showMainUnitSheet,
+            list = unitList.map { Pair(it.Name.toString(), it.GUID.toString()) },
+            onSelected = {
+                mainUnit = it.first
+                mainUnitGuid = it.second
+                if (altSameAsMain) { altUnit = it.first; altUnitGuid = it.second }
             },
-            onDismiss        = { hideMainUnitSheet() },
+            onDismiss = { hideSheet(mainUnitSheetState) { showMainUnitSheet = false } },
             bottomSheetState = mainUnitSheetState,
-            title            = "Select Main Unit"
+            title = "Select Main Unit"
         )
-
-        // Alt Unit bottom sheet (only when not same as main)
         TransactionBottomSheet(
-            showBottomSheet  = showAltUnitSheet,
-            list             = emptyList(), // TODO: List<Pair(UnitName, UnitCode)> from ViewModel
-            onSelected       = { pair -> altUnit = pair; hideAltUnitSheet() },
-            onDismiss        = { hideAltUnitSheet() },
+            showBottomSheet = showAltUnitSheet,
+            list = unitList.map { Pair(it.Name.toString(), it.GUID.toString()) },
+            onSelected = { altUnit = it.first; altUnitGuid = it.second },
+            onDismiss = { hideSheet(altUnitSheetState) { showAltUnitSheet = false } },
             bottomSheetState = altUnitSheetState,
-            title            = "Select Alt Unit"
+            title = "Select Alt Unit"
         )
-
-        // Tax Category bottom sheet
         TransactionBottomSheet(
-            showBottomSheet  = showTaxCategorySheet,
-            list             = emptyList(), // TODO: List<Pair(TaxCategoryName, Code)> from ViewModel
-            onSelected       = { pair -> taxCategory = pair; taxCategoryCode = pair.second; hideTaxCategorySheet() },
-            onDismiss        = { hideTaxCategorySheet() },
+            showBottomSheet = showTaxCategorySheet,
+            list = taxCategoryList,
+            onSelected = { taxCategoryName = it.first; taxCategoryGuid = it.second },
+            onDismiss = { hideSheet(taxCategorySheetState) { showTaxCategorySheet = false } },
             bottomSheetState = taxCategorySheetState,
-            title            = "Select Tax Category"
+            title = "Select Tax Category"
         )
 
         // ── Scaffold ───────────────────────────────────────────────────────
         TallyScaffold(
-            title        = "Add Item",
+            title = "Add Item",
             showEditIcon = false,
-            onEditClick  = {},
-            onBack       = { nav.pop() }
+            onEditClick = {},
+            onBack = { nav.pop() }
         ) { paddingValues ->
 
             Column(
@@ -647,186 +608,154 @@ object ItemAddScreen : Screen {
                 // ── 1. Basic Information ──────────────────────────────────
                 SectionHeader("Basic Information", Icons.Default.Inventory2)
                 FormCard {
-                    // Name → auto mirrors to Alias and PrintName
                     FormField(
-                        label        = "Name *",
-                        value        = name,
-                        onChange     = { v ->
+                        label = "Name *",
+                        value = name,
+                        onChange = { v ->
                             name = v
-                            if (alias.isEmpty()     || alias == name.dropLast(1))     alias     = v
+                            if (alias.isEmpty() || alias == name.dropLast(1)) alias = v
                             if (printName.isEmpty() || printName == name.dropLast(1)) printName = v
                         },
-                        placeholder  = "Enter item name",
-                        isError      = nameError,
+                        placeholder = "Enter item name",
+                        isError = nameError,
                         errorMessage = "Name is required"
                     )
                     FormField(
-                        label        = "Alias",
-                        value        = alias,
-                        onChange     = { alias = it },
-                        placeholder  = "Short alias (auto-filled from Name)",
-                        isError      = aliasError,
+                        label = "Alias",
+                        value = alias,
+                        onChange = { alias = it },
+                        placeholder = "Short alias (auto-filled from Name)",
+                        isError = aliasError,
                         errorMessage = "Alias cannot be the same as Name"
                     )
                     FormField(
-                        label       = "Print Name",
-                        value       = printName,
-                        onChange    = { printName = it },
+                        label = "Print Name",
+                        value = printName,
+                        onChange = { printName = it },
                         placeholder = "Name for printing (auto-filled from Name)"
                     )
                 }
 
-                // ── 2. Group & Classification ─────────────────────────────
-                SectionHeader("Group & Classification", Icons.Default.AccountTree)
+                // ── 2. Group ──────────────────────────────────────────────
+                SectionHeader("Group", Icons.Default.AccountTree)
                 FormCard {
-                    BottomSheetTriggerField(
-                        label        = "Group *",
-                        value        = group.first,
-                        isError      = groupError,
-                        trailingIcon = Icons.Default.AccountTree,
-                        onClick      = { showGroupSheet = true }
-                    )
-                    // GroupCode is auto-filled from group selection but editable
-                    FormField(
-                        label       = "Group Code",
-                        value       = groupCode,
-                        onChange    = { groupCode = it },
-                        placeholder = "Auto-filled from Group"
-                    )
-                    FormField(
-                        label       = "GUID",
-                        value       = guid,
-                        onChange    = { guid = it },
-                        placeholder = "Globally unique identifier"
+                    DropdownSelector(
+                        label = "Item Group",
+                        value = parentGroup,
+                        isError = groupError,
+                        onClick = { showGroupSheet = true }
                     )
                 }
 
                 // ── 3. Units & Conversion ─────────────────────────────────
                 SectionHeader("Units & Conversion", Icons.Default.Balance)
                 FormCard {
-                    // Main Unit
-                    BottomSheetTriggerField(
-                        label        = "Main Unit *",
-                        value        = mainUnit.first,
-                        isError      = mainUnitError,
-                        trailingIcon = Icons.Default.Balance,
-                        onClick      = { showMainUnitSheet = true }
+                    DropdownSelector(
+                        label = "Main Unit",
+                        value = mainUnit,
+                        isError = mainUnitError,
+                        onClick = { showMainUnitSheet = true }
                     )
 
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                        color    = MaterialTheme.colorScheme.outlineVariant
+                        color = MaterialTheme.colorScheme.outlineVariant
                     )
 
-                    // Alt Unit same-as-main toggle
                     TallyToggle(
-                        label     = "Alt Unit same as Main",
-                        subLabel  = if (altSameAsMain) "Using ${mainUnit.first.ifEmpty { "Main Unit" }}" else "Custom alt unit selected",
-                        value     = altSameAsMain,
-                        onToggle  = { checked ->
+                        label = "Alt Unit same as Main",
+                        subLabel = if (altSameAsMain) "Using ${mainUnit.ifEmpty { "Main Unit" }}"
+                        else "Custom alt unit selected",
+                        value = altSameAsMain,
+                        onToggle = { checked ->
                             altSameAsMain = checked
-                            if (checked) altUnit = mainUnit
+                            if (checked) {
+                                altUnit = mainUnit
+                                altUnitGuid = mainUnitGuid
+                            } else {
+                                altUnit = ""
+                                altUnitGuid = ""
+                            }
                         }
                     )
 
-                    // Alt Unit selector (only when not same as main)
                     if (!altSameAsMain) {
-                        BottomSheetTriggerField(
-                            label        = "Alt Unit",
-                            value        = altUnit.first,
-                            trailingIcon = Icons.Default.Balance,
-                            onClick      = { showAltUnitSheet = true }
+                        DropdownSelector(
+                            label = "Alt Unit",
+                            value = altUnit,
+                            isError = altUnitError,
+                            onClick = { showAltUnitSheet = true }
                         )
                     }
 
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                        color    = MaterialTheme.colorScheme.outlineVariant
+                        color = MaterialTheme.colorScheme.outlineVariant
                     )
 
-                    // Conversion type + factor side by side
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 0.dp, vertical = 0.dp),
-                        horizontalArrangement = Arrangement.spacedBy(0.dp)
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
                         Box(Modifier.weight(1f)) {
                             TallyDropdown(
-                                label    = "Con Type",
-                                options  = CON_TYPE_OPTIONS,
+                                label = "Con Type",
+                                options = CON_TYPE_OPTIONS,
                                 selected = conType,
                                 onSelect = { conType = it }
                             )
                         }
                         Box(Modifier.weight(1f)) {
                             FormField(
-                                label       = "Con Factor",
-                                value       = conFactor,
-                                onChange    = { conFactor = it },
+                                label = "Con Factor",
+                                value = conFactor,
+                                onChange = { conFactor = it },
                                 placeholder = "e.g. 12",
-                                isNumber    = true
+                                isNumber = true,
+                                isError = conFactorError,
+                                errorMessage = "Cannot be zero or empty"
                             )
                         }
                     }
-
-                    // Default qty chips: 1 / 0 / NI
-                    DefaultQtyChips(selected = defaultQty, onSelect = { defaultQty = it })
                 }
 
                 // ── 4. Tax Category ───────────────────────────────────────
                 SectionHeader("Tax Category", Icons.Default.Receipt)
                 FormCard {
-                    BottomSheetTriggerField(
-                        label        = "Tax Category *",
-                        value        = taxCategory.first,
-                        isError      = taxCategoryError,
-                        trailingIcon = Icons.Default.Receipt,
-                        onClick      = { showTaxCategorySheet = true }
-                    )
-                    // Tax category code — auto-filled from selection
-                    FormField(
-                        label       = "Tax Category Code",
-                        value       = taxCategoryCode,
-                        onChange    = { taxCategoryCode = it },
-                        placeholder = "Auto-filled from Tax Category"
+                    DropdownSelector(
+                        label = "Tax Category *",
+                        value = taxCategoryName,
+                        isError = taxCategoryError,
+                        onClick = { showTaxCategorySheet = true }
                     )
                 }
 
                 // ── 5. Opening Stock ──────────────────────────────────────
                 SectionHeader("Opening Stock", Icons.Default.Inventory2)
                 FormCard {
-                    // Op Qty in Main unit, Alt/Main label shows conversion direction
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(0.dp)
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
                         Box(Modifier.weight(1f)) {
                             FormField(
-                                label       = "Op Qty (${mainUnit.first.ifEmpty { "Main" }})",
-                                value       = opQty,
-                                onChange    = { opQty = it },
+                                label = "Op Qty (Main)",
+                                value = opQty,
+                                onChange = { opQty = it; opQtyAlt = it },
                                 placeholder = "0",
-                                isNumber    = true
+                                isNumber = true
                             )
                         }
                         Box(Modifier.weight(1f)) {
                             FormField(
-                                label       = "Op Qty Alt (${altUnit.first.ifEmpty { "Alt" }})",
-                                value       = opQtyAlt,
-                                onChange    = { opQtyAlt = it },
+                                label = "Op Qty (Alt)",
+                                value = opQtyAlt,
+                                onChange = { opQtyAlt = it },
                                 placeholder = "0",
-                                isNumber    = true
+                                isNumber = true
                             )
                         }
                     }
                     FormField(
-                        label       = "Op Amount",
-                        value       = opAmount,
-                        onChange    = { opAmount = it },
+                        label = "Op Amount",
+                        value = opAmount,
+                        onChange = { opAmount = it },
                         placeholder = "0.00",
-                        isNumber    = true
+                        isNumber = true
                     )
                 }
 
@@ -835,26 +764,26 @@ object ItemAddScreen : Screen {
                 FormCard {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Box(Modifier.weight(1f)) {
-                            FormField("Sale Price",   salePrice,  { salePrice  = it }, "0.00", isNumber = true)
+                            FormField("Sale Price", salePrice, { salePrice = it }, "0.00", isNumber = true)
                         }
                         Box(Modifier.weight(1f)) {
-                            FormField("Purc Price",   purchPrice, { purchPrice = it }, "0.00", isNumber = true)
+                            FormField("Purc Price", purchPrice, { purchPrice = it }, "0.00", isNumber = true)
                         }
                     }
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Box(Modifier.weight(1f)) {
-                            FormField("MRP",          mrp,          { mrp          = it }, "0.00", isNumber = true)
+                            FormField("MRP", mrp, { mrp = it }, "0.00", isNumber = true)
                         }
                         Box(Modifier.weight(1f)) {
                             FormField("Min Sale Price", minSalePrice, { minSalePrice = it }, "0.00", isNumber = true)
                         }
                     }
                     FormField(
-                        label       = "Self Val Price",
-                        value       = selfValPrice,
-                        onChange    = { selfValPrice = it },
+                        label = "Self Val Price",
+                        value = selfValPrice,
+                        onChange = { selfValPrice = it },
                         placeholder = "0.00",
-                        isNumber    = true
+                        isNumber = true
                     )
                 }
 
@@ -863,10 +792,10 @@ object ItemAddScreen : Screen {
                 FormCard {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Box(Modifier.weight(1f)) {
-                            FormField("Sale Disc %",   saleDiscount,  { saleDiscount  = it }, "0.00", isNumber = true)
+                            FormField("Sale Disc %", saleDiscount, { saleDiscount = it }, "0.00", isNumber = true)
                         }
                         Box(Modifier.weight(1f)) {
-                            FormField("Purc Disc %",   purchDiscount, { purchDiscount = it }, "0.00", isNumber = true)
+                            FormField("Purc Disc %", purchDiscount, { purchDiscount = it }, "0.00", isNumber = true)
                         }
                     }
                 }
@@ -878,11 +807,11 @@ object ItemAddScreen : Screen {
                     FormField("Description 2", desc2, { desc2 = it }, "Line 2")
                     FormField("Description 3", desc3, { desc3 = it }, "Line 3")
                     FormField(
-                        label       = "Description 4",
-                        value       = desc4,
-                        onChange    = { desc4 = it },
+                        label = "Description 4",
+                        value = desc4,
+                        onChange = { desc4 = it },
                         placeholder = "Line 4",
-                        imeAction   = ImeAction.Done
+                        imeAction = ImeAction.Done
                     )
                 }
 
@@ -891,62 +820,43 @@ object ItemAddScreen : Screen {
                 // ── Save ──────────────────────────────────────────────────
                 Button(
                     onClick = {
-                        if (validate()) {
-                            // TODO: Build ItemModel and call viewModel.save(item); nav.pop()
-                        }
+                        val item = validateAndBuild() ?: return@Button
+                        // TODO: viewModel.save(item); nav.pop()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                         .height(52.dp),
-                    shape  = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.medium,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor   = MaterialTheme.colorScheme.onPrimary
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Save Item", style = MaterialTheme.typography.labelLarge)
                 }
 
                 Spacer(Modifier.height(8.dp))
 
-                // ── Cancel + Reset ────────────────────────────────────────
-                Row(
+                // ── Cancel ────────────────────────────────────────────────
+                OutlinedButton(
+                    onClick = { nav.pop() },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        .padding(horizontal = 16.dp)
+                        .height(46.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
-                    OutlinedButton(
-                        onClick   = { nav.pop() },
-                        modifier  = Modifier.weight(1f).height(46.dp),
-                        shape     = MaterialTheme.shapes.medium,
-                        colors    = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("Cancel", style = MaterialTheme.typography.labelLarge)
-                    }
-
-                    OutlinedButton(
-                        onClick   = { resetAll() },
-                        modifier  = Modifier.weight(1f).height(46.dp),
-                        shape     = MaterialTheme.shapes.medium,
-                        colors    = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("Reset", style = MaterialTheme.typography.labelLarge)
-                    }
+                    Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Cancel", style = MaterialTheme.typography.labelLarge)
                 }
             }
         }

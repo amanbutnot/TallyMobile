@@ -6,6 +6,10 @@ CREATE TABLE Tax_Category_Mast (
     SGST REAL NOT NULL,
     AppDate TEXT NOT NULL
 );
+
+selectAll:
+SELECT * FROM Tax_Category_Mast;
+
 selectTaxRate:
 SELECT IGST AS TaxRate
 FROM Tax_Category_Mast
