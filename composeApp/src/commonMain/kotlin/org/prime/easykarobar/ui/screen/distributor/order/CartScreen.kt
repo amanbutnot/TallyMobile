@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -71,11 +72,12 @@ import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
 
-data class CartScreen(val viewModel: CartViewModel) : Screen {
+object CartScreen : Screen {
     @Composable
     override fun Content() {
 
         val nav = LocalNavigator.currentOrThrow
+        val viewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
         val state = viewModel.cartItems
 
         TallyScaffold(
@@ -95,7 +97,7 @@ data class CartScreen(val viewModel: CartViewModel) : Screen {
                         onAddClick = { nav.pop() }
                     )
                 } else {
-                    CartContent(viewModel.getAllProducts(), viewModel)
+                    CartContent(viewModel.getAllProducts())
                 }
             }
         }
@@ -105,15 +107,16 @@ data class CartScreen(val viewModel: CartViewModel) : Screen {
 @Composable
 private fun CartContent(
     list: List<CartItem>,
-    viewModel: CartViewModel = viewModel { CartViewModel() }
 ) {
+    val nav = LocalNavigator.currentOrThrow
+    val viewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(12.dp)
     ) {
         items(list) { product ->
-            CartProductItem(product = product, viewModel = viewModel)
+            CartProductItem(product = product)
         }
 
         item {
@@ -127,8 +130,10 @@ private fun CartContent(
 @Composable
 private fun CartProductItem(
     product: CartItem,
-    viewModel: CartViewModel = viewModel { CartViewModel() }
-) {
+
+    ) {
+    val nav = LocalNavigator.currentOrThrow
+    val viewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -212,7 +217,7 @@ private fun CartProductItem(
 
                         Spacer(modifier = Modifier.width(6.dp))
 
-                        if(product.product.MRP!=0.0){
+                        if (product.product.MRP != 0.0) {
                             Text(
                                 text = "${product.product.MRP?.formatToAmtDec()}",
                                 style = MaterialTheme.typography.bodySmall.copy(
@@ -331,7 +336,8 @@ fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel? = null, 
 //        mrp * it.quantity.value
 //    }
     val totalMrp = products.sumOf {
-        val mrp = if (it.product.MRP == 0.0) it.product.sales_price?:0.0 else it.product.MRP?:0.0
+        val mrp =
+            if (it.product.MRP == 0.0) it.product.sales_price ?: 0.0 else it.product.MRP ?: 0.0
         mrp * it.quantity.value
 
     }
@@ -422,7 +428,7 @@ fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel? = null, 
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            if(totalSavings!=0.0){
+            if (totalSavings != 0.0) {
                 SummaryRow(
                     label = "Discount",
                     value = "-${totalSavings?.formatToAmtDec()}",

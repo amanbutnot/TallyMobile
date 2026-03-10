@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cafe.adriel.voyager.core.model.ScreenModel
 import kotlinx.coroutines.launch
 import org.prime.easykarobar.business.repository.OrderRepository
 import org.prime.easykarobar.data.model.CancelOrderRequest
@@ -139,7 +140,7 @@ class OrderViewModel : ViewModel() {
 }
 
 
-class CartViewModel : ViewModel() {
+class CartViewModel : ScreenModel {
 
     private val _cartItems = mutableStateListOf<CartItem>()
     val cartItems: List<CartItem> get() = _cartItems
@@ -199,7 +200,7 @@ class CartViewModel : ViewModel() {
             }
         }
     }
-    
+
     fun getProductQuantity(product: GetProductsForDis): Int {
         return _cartItems.find { it.product.product_id == product.product_id }?.quantity?.value ?: 0
     }

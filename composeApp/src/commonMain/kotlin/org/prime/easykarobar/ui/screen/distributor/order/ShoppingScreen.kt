@@ -76,6 +76,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.annotation.InternalVoyagerApi
+import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -90,6 +91,7 @@ import org.prime.easykarobar.ui.shared.globalShared.getCategoryImage
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
 import org.tally.GetProductsForDis
 import org.tally.ProductCategoriesForDis
+import smartSearch
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.category_placeholder
 import tallymobile.composeapp.generated.resources.splashImage
@@ -113,8 +115,8 @@ object ShoppingScreen : Screen {
         var searchQuery by remember { mutableStateOf("") }
         val viewModel: OrderViewModel = viewModel { OrderViewModel() }
         val state by viewModel.orderState
-        val cartViewModel: CartViewModel = viewModel { CartViewModel() }
         val nav = LocalNavigator.currentOrThrow
+        val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
         val showProductInfo = remember { mutableStateOf(false) }
         val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
 
@@ -123,16 +125,12 @@ object ShoppingScreen : Screen {
         val categoryList = db.productsQueries.productCategoriesForDis().executeAsList()
 
 
-        val filteredProducts = remember(searchQuery, list) {
-            if (searchQuery.isBlank()) {
-                list
-            } else {
-                list.filter {
-                    it.product_name!!.contains(searchQuery, ignoreCase = true)
-                }
-            }
-        }
-
+        val filteredProducts =
+            smartSearch(
+                list = list,
+                query = searchQuery,
+                selectors = listOf { it.product_name }
+            )
         Column(
             modifier = Modifier.fillMaxSize()
                 .background(MaterialTheme.colorScheme.background).systemBarsPadding()
@@ -142,7 +140,7 @@ object ShoppingScreen : Screen {
 
                 onCartClick = {
                     println(cartViewModel.getAllProducts())
-                    nav.push(CartScreen(cartViewModel))
+                    nav.push(CartScreen)
 
                 },
                 modifier = Modifier.padding(16.dp),
@@ -150,47 +148,90 @@ object ShoppingScreen : Screen {
                 onToggle = { cartViewModel.changeShowImage(it) }
             )
 
+            SearchField(
+                query = searchQuery,
+                onQueryChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+            )
 
+            Spacer(modifier = Modifier.height(8.dp))
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item {
-                    CategoryGrid(
-                        categories = categoryList, onCategoryClick = { category ->
-                            nav.push(
-                                AllProductScreen(
-                                    category.Name.toString(),
+                if (searchQuery.isEmpty()) {
+                    item {
+                        CategoryGrid(
+                            categories = categoryList, onCategoryClick = { category ->
+                                nav.push(
+                                    AllProductScreen(
+                                        category.Name.toString(),
 
-                                    cartViewModel, productCode = category.GUID?.toDouble() ?: 0.0
+                                        productCode = category.GUID?.toDouble() ?: 0.0
+                                    )
                                 )
-                            )
-                        }, product = filteredProducts, viewModel = cartViewModel
-                    )
-                }
+                            }, product = filteredProducts, viewModel = cartViewModel
+                        )
+                    }
 
 
+                    items(categoryList) { section ->
+                        CategoryItemsSection(
+                            category = section, onItemClick = { item ->
+                                selectedProduct.value = item
+                                showProductInfo.value = true
 
 
-                items(categoryList) { section ->
-                    CategoryItemsSection(
-                        category = section, onItemClick = { item ->
-                            selectedProduct.value = item
-                            showProductInfo.value = true
-
-
-                        }, onMoreClick = { category ->
-                            nav.push(
-                                AllProductScreen(
-                                    category.Name.toString(),
-                                    cartViewModel,
-                                    productCode = category.GUID?.toDouble() ?: 0.0,
+                            }, onMoreClick = { category ->
+                                nav.push(
+                                    AllProductScreen(
+                                        category.Name.toString(),
+                                        productCode = category.GUID?.toDouble() ?: 0.0,
+                                    )
                                 )
-                            )
-                        }, product = filteredProducts
-                    )
+                            }, product = filteredProducts
+                        )
 
+                    }
+                } else {
+                    item {
+                        Text(
+                            text = "Search Results (${filteredProducts.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+
+                    items(filteredProducts.chunked(2)) { rowItems ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            rowItems.forEach { item ->
+                                ItemCard(
+                                    viewModel = cartViewModel,
+                                    item = item,
+                                    onItemClick = {
+                                        selectedProduct.value = item
+                                        showProductInfo.value = true
+                                    },
+                                    onButtonClick = {
+                                        if (cartViewModel.isProductInCart(item)) {
+                                            cartViewModel.removeProduct(item)
+                                        } else {
+                                            cartViewModel.addProduct(item)
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            if (rowItems.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
                 }
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -347,8 +388,12 @@ object ShoppingScreen : Screen {
                                 color = colorScheme.secondary,
                                 shape = RoundedCornerShape(50)
                             ) {
+                                val per = product.MRP?.takeIf { it != 0.0 }?.let { mrp ->
+                                    ((mrp - (product.sales_price ?: 0.0)) / mrp) * 100
+                                }
+
                                 Text(
-                                    text = "${product.discount}% OFF",
+                                    text = "${per?.formatToAmtDec()}% OFF",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = colorScheme.onSecondary,
                                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
@@ -450,8 +495,8 @@ object ShoppingScreen : Screen {
         onCartClick: () -> Unit,
         modifier: Modifier = Modifier
     ) {
-        val cartViewModel: CartViewModel = viewModel { CartViewModel() }
         val nav = LocalNavigator.currentOrThrow
+        val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
 
 
         Column(
@@ -698,13 +743,12 @@ private fun CategoryItemsSection(
     onMoreClick: (ProductCategoriesForDis) -> Unit,
 
     ) {
-    val cartViewModel: CartViewModel = viewModel { CartViewModel() }
-    val filteredProducts = product.filter {
+    val nav = LocalNavigator.currentOrThrow
+    val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
+    val categoryProducts = product.filter {
         it.category_id?.toDouble() == category.GUID?.toDouble()
     }
-    println(product)
-    println(filteredProducts)
-    if (filteredProducts.isNotEmpty()) {
+    if (categoryProducts.isNotEmpty()) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp)
         ) {
@@ -739,9 +783,8 @@ private fun CategoryItemsSection(
                 verticalAlignment = Alignment.CenterVertically,
                 contentPadding = PaddingValues(end = 16.dp)
             ) {
-                val filteredProducts =
-                    filteredProducts.take(5)
-                items(filteredProducts) { item ->
+                val displayItems = categoryProducts.take(5)
+                items(displayItems) { item ->
                     ItemCard(
                         viewModel = cartViewModel,
                         item = item,
@@ -754,6 +797,7 @@ private fun CategoryItemsSection(
                                 cartViewModel.addProduct(item)
                             }
                         },
+                        modifier = Modifier.width(160.dp)
                     )
                 }
             }
@@ -767,15 +811,15 @@ fun ItemCard(
     item: GetProductsForDis,
     onItemClick: () -> Unit,
     onButtonClick: () -> Unit,
-    viewModel: CartViewModel
+    viewModel: CartViewModel,
+    modifier: Modifier = Modifier.width(160.dp)
 ) {
     val showImage = viewModel.showImage.value
     val inCart = viewModel.isProductInCart(item)
     val quantity = viewModel.getProductQuantity(item)
 
     Card(
-        modifier = Modifier
-            .width(160.dp)
+        modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .border(
                 0.4.dp,
@@ -846,6 +890,10 @@ fun ItemCard(
 
 
             Spacer(Modifier.height(6.dp))
+            val per = item.MRP?.takeIf { it != 0.0 }?.let { mrp ->
+                ((mrp - (item.sales_price ?: 0.0)) / mrp) * 100
+            }
+
 
             // --- Price (visually separated but not screaming)
             Text(
@@ -854,6 +902,27 @@ fun ItemCard(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
+
+            if (per == null) {
+                Text(
+                    text = "",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                    //modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                )
+            }
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+
+                per?.let {
+                    Text(
+                        text = "${per.toInt()}% OFF",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSecondary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                    )
+
+                }
+            }
 
             Spacer(Modifier.height(10.dp))
 
@@ -913,4 +982,3 @@ fun ItemCard(
         }
     }
 }
-

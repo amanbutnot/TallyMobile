@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -42,7 +43,6 @@ import org.tally.GetProductsForDis
 
 data class AllProductScreen(
     val categoryName: String,
-    val viewModel: CartViewModel,
     val productCode: Double,
 ) : Screen {
     @Composable
@@ -56,6 +56,8 @@ data class AllProductScreen(
             val searchQuery = remember { mutableStateOf("") }
             val db = DatabaseHolder.instance
             val list = db.productsQueries.getProductsForDis(productCode).executeAsList()
+            val viewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
+
             TallyScaffold(
                 title = categoryName,
                 onBack = { nav.pop() },
@@ -95,7 +97,7 @@ data class AllProductScreen(
                                 searchQuery = searchQuery.value,
                                 onSearchQueryChange = { searchQuery.value = it },
                                 onOrdersClick = { nav.push(MyOrdersScreen) },
-                                onCartClick = { nav.push(CartScreen(viewModel)) },
+                                onCartClick = { nav.push(CartScreen) },
                                 cartViewModel = viewModel
                             )
                             Spacer(Modifier.height(8.dp))
