@@ -3,15 +3,42 @@ package org.prime.easykarobar.ui.shared.reportsShared
 
 import CurrentDate
 import TallyDatePickerRow
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,6 +51,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
+import org.prime.easykarobar.ui.shared.globalShared.parseDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +68,8 @@ fun AllOneFilterScreen(
         var startDate by rememberSaveable { mutableStateOf(StartDate()) }
         var endDate by rememberSaveable { mutableStateOf(CurrentDate()) }
         var selectedAccount by rememberSaveable { mutableStateOf("") }
+        var showError by remember { mutableStateOf(false) }
+
         var selectedGUID by rememberSaveable { mutableStateOf("") }
         var showBottomSheet by remember { mutableStateOf(false) }
         var reportType by rememberSaveable { mutableStateOf("ALL") }
@@ -245,6 +275,41 @@ fun AllOneFilterScreen(
                                     onDateSelected = { endDate = it }
                                 )
                             }
+                            // Error Message with Animation
+                            AnimatedVisibility(
+                                visible = showError,
+                                enter = fadeIn() + expandVertically(),
+                                exit = fadeOut() + shrinkVertically()
+                            )
+                            {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer
+                                    ),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(18.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ErrorOutline,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(26.dp)
+                                        )
+                                        Text(
+                                            text = "End date cannot be earlier than start date",
+                                            color = MaterialTheme.colorScheme.onErrorContainer,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -256,14 +321,19 @@ fun AllOneFilterScreen(
             TallyButton(
                 label = buttonText,
                 onClick = {
-                    onGenerateClick(
-                        GenerateOneAllReportData(
-                            accountGUID = selectedGUID,
-                            accountName = selectedAccount,
-                            startDate = startDate,
-                            endDate = endDate
+                    if(parseDate(startDate)>parseDate(endDate)){
+                        showError = true
+                    }else{
+                        showError = false
+                        onGenerateClick(
+                            GenerateOneAllReportData(
+                                accountGUID = selectedGUID,
+                                accountName = selectedAccount,
+                                startDate = startDate,
+                                endDate = endDate
+                            )
                         )
-                    )
+                    }
                 },
                 enabled = (!showStartDate || startDate.isNotEmpty()) &&
                         (!showEndDate || endDate.isNotEmpty()) &&

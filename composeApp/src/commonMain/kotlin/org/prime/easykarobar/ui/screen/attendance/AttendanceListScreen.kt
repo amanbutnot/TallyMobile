@@ -2,6 +2,11 @@ package org.prime.easykarobar.ui.screen.attendance
 
 import CurrentDate
 import TallyDatePickerRow
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +28,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
@@ -78,6 +84,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.globalShared.parseDate
 
 data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -86,6 +93,7 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
         val nav = LocalNavigator.currentOrThrow
         var showLoading by remember { mutableStateOf(false) }
         var showLocationPopup by remember { mutableStateOf(false) }
+        var showError by remember { mutableStateOf(false) }
         TallyScaffold(name, onBack = { nav.pop() }) { paddingValues ->
             var startDate by rememberSaveable { mutableStateOf(StartDate()) }
             var endDate by rememberSaveable { mutableStateOf(CurrentDate()) }
@@ -118,7 +126,7 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
             ) {
                 // Compact Header
                 Text(
-                    text = if(isCheckIn) "Check In Configuration" else "Attendance Configuration",
+                    text = if (isCheckIn) "Check In Configuration" else "Attendance Configuration",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -177,8 +185,7 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
                                             showLoading = false
                                         }
                                     }
-                                } else
-                                {
+                                } else {
                                     scope.launch {
                                         showLoading = true
                                         try {
@@ -408,6 +415,41 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
                                 defaultDate = CurrentDate(),
                                 onDateSelected = { endDate = it }
                             )
+                            // Error Message with Animation
+                            AnimatedVisibility(
+                                visible = showError,
+                                enter = fadeIn() + expandVertically(),
+                                exit = fadeOut() + shrinkVertically()
+                            )
+                            {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer
+                                    ),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(18.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ErrorOutline,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(26.dp)
+                                        )
+                                        Text(
+                                            text = "End date cannot be earlier than start date",
+                                            color = MaterialTheme.colorScheme.onErrorContainer,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -418,17 +460,23 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
                 TallyButton(
                     label = "Generate",
                     onClick = {
-                        nav.push(
-                            AttendanceScreenUi(
-                                startDate = startDate,
-                                endDate = endDate,
-                                accountName = if (isAdmin && reportType == "SINGLE") selectedMobile else "",
-                                vchType = if (isCheckIn) 2 else 1
+                        if(parseDate(startDate)>parseDate(endDate)){
+                            showError = true
+                        }else{
+                            showError = false
+                            nav.push(
+                                AttendanceScreenUi(
+                                    startDate = startDate,
+                                    endDate = endDate,
+                                    accountName = if (isAdmin && reportType == "SINGLE") selectedMobile else "",
+                                    vchType = if (isCheckIn) 2 else 1
+                                )
                             )
-                        )
+
+                        }
                     },
                     enabled = (startDate.isNotEmpty()) &&
-                            (endDate.isNotEmpty()) &&
+                            (endDate.isNotEmpty()) && (!showError) &&
                             (if (isAdmin && isCheckIn) {
                                 if (reportType == "SINGLE") selectedMobile.isNotEmpty() else true
                             } else true),
