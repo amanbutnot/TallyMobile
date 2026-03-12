@@ -16,9 +16,31 @@ object SharedPrefs {
     private val settings2: Settings = Settings()
     fun clearAll() {
         settings.clear()
-        settings2.clear()
+  //      settings2.clear()
     }
+    fun logout() {
 
+        // authentication
+        Token.clear()
+        FileId.clear()
+        User.clear()
+
+        // user related data
+        DistributorData.clear()
+        Permissions.clear()
+
+        // login info / cached login request
+        LoginData.clear()
+
+        // attendance / session related
+        AttendanceDate.clear()
+        CheckInOutDate.clear()
+        CheckInOutLedger.clear()
+
+        // sync / version data
+        LoginVersion.clear()
+        LastSync.clear()
+    }
     object Token {
         private const val KEY = "token"
         fun save(token: String) {

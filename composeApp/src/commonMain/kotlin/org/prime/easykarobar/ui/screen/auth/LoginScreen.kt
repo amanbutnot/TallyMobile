@@ -91,8 +91,9 @@ object LoginScreen : Screen {
                 verticalArrangement = Arrangement.Top
             )
 
-
             {
+                email = SharedPrefs.LoginInfo.get() ?: ""
+
                 Image(
                     painterResource(Res.drawable.splashImage),
                     contentDescription = "App Icon",
@@ -180,7 +181,6 @@ object LoginScreen : Screen {
                                         Password = password
                                     ),
                                     onSuccess = {
-                                        SharedPrefs.LoginInfo.save(email.trim())
                                         nav.push(GoogleDriveDownloadScreen)
                                     }, onListSuccess = { companyList ->
                                         SharedPrefs.LoginData.save(
@@ -190,7 +190,6 @@ object LoginScreen : Screen {
                                                 list = companyList,
                                             )
                                         )
-                                        SharedPrefs.LoginInfo.save(email.trim())
                                         nav.push(
                                             SelectCompanyScreen(
                                                 email.trim(),
