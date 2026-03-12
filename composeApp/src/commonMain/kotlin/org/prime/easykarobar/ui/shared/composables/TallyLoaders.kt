@@ -177,7 +177,8 @@ fun DownloadResultDialog(
 ) {
     var visible by remember { mutableStateOf(true) }
     val backgroundColor = MaterialTheme.colorScheme.surface
-    val primaryColor = if (isSuccess) Color(0xFF00C853) else Color(0xFFD32F2F)
+    val primaryColor =
+        if (isSuccess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.errorContainer
     val icon = if (isSuccess) Icons.Default.CheckCircle else Icons.Default.Error
     val title = if (isSuccess) "Success!" else "Error Occurred"
     val scope = rememberCoroutineScope()
@@ -394,6 +395,7 @@ fun DownloadResultDialog(
         }
     }
 }
+
 @Composable
 fun TallyAlertBox(
     title: String,

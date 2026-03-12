@@ -337,7 +337,7 @@ object SettingScreen : Screen {
                         cancelButtonText = "Cancel",
                         onConfirm = {
                             deleteDbFile()
-                            SharedPrefs.clearAll()
+                            SharedPrefs.logout()
                             nav.replaceAll(OnBoardingScreen)
                         },
                         onCancel = {
