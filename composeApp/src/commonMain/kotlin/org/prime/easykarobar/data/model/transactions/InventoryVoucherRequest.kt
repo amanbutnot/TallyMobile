@@ -17,8 +17,7 @@ data class InventoryVoucherRequest(
     val sundries: List<SundryItem>,
     val Narration: String,
     val transportDetails: TransportDetails,
-    val TransactionID: Int? = null
-    ,val total_amt: Double
+    val TransactionID: Int? = null, val total_amt: Double
 )
 
 @Serializable
@@ -36,13 +35,23 @@ data class SundryItem(
 
 @Serializable
 data class TransportDetails(
-    val transportName:String,
-    val station:String,
-    val gstNum:String,
-    val vehicleNum:String,
-    val pincode:String,
-    val grDate:String,
-)
+    val transportName: String,
+    val station: String,
+    val gstNum: String,
+    val vehicleNum: String,
+    val pincode: String,
+    val grDate: String,
+
+    val SpartyName: String? = null,
+    val SbillingShipping: Boolean? = null,
+    val Saddress: String? = null,
+    val SshipState: String? = null,
+    val SmobileNo: String? = null,
+    val Semail: String? = null,
+    val SitPan: String? = null,
+    val SgstIn: String? = null,
+
+    )
 
 
 @Serializable
@@ -115,10 +124,10 @@ data class InventoryItemResponse(
     val billing_country: String,
     val created_at: String,
     val razorpay_payment_id: String,
-    val other_info: TransportDetails?=null,
+    val other_info: TransportDetails? = null,
     val Others1: String,
     val Others2: String,
-    val items: List<Item>, val taxType: Int,val sundries: List<SundryItem>
+    val items: List<Item>, val taxType: Int, val sundries: List<SundryItem>
 )
 
 @Serializable

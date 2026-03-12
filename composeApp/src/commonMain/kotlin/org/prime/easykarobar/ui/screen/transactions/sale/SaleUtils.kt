@@ -6,6 +6,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,6 +29,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -64,6 +69,7 @@ fun ShippingCard(
     gstIn: String,
     onGstChange: (String) -> Unit,
 
+    selectedBilling: String,
     onbillingShippingSelected: (String) -> Unit
 ) {
 
@@ -76,7 +82,7 @@ fun ShippingCard(
     ) {
 
         Text(
-            text = "Transport Details",
+            text = "Billing/Shipping Details",
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -136,10 +142,13 @@ fun ShippingCard(
 
                 HorizontalDivider()
 
+                var showBillingSheet by remember { mutableStateOf(false) }
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(8.dp),
+                        .padding(8.dp)
+                        .clickable { onBillingShippingChange(false) },
 
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -155,21 +164,37 @@ fun ShippingCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(8.dp),
+                        .padding(8.dp)
+                        .clickable {
+                            onBillingShippingChange(true)
+                            showBillingSheet = true
+                        },
 
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
                     RadioButton(
                         selected = billingShipping,
-                        onClick = { onBillingShippingChange(true) }
+                        onClick = {
+                            onBillingShippingChange(true)
+                            showBillingSheet = true
+                        }
                     )
 
-                    Text("Billing/Shipping Details")
+                    Column {
+                        Text("Billing/Shipping Details")
+                        if (billingShipping && selectedBilling.isNotEmpty()) {
+                            Text(
+                                text = selectedBilling,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
 
                 TransactionOneBottomSheet(
-                    showBottomSheet = billingShipping,
+                    showBottomSheet = showBillingSheet,
                     list = listOf(
                         "Un-Registered",
                         "Registered",
@@ -177,8 +202,11 @@ fun ShippingCard(
                         "Govt. Body",
                         "UIN Holder"
                     ),
-                    onSelected = onbillingShippingSelected,
-                    onDismiss = { onBillingShippingChange(false) },
+                    onSelected = {
+                        onbillingShippingSelected(it)
+                        showBillingSheet = false
+                    },
+                    onDismiss = { showBillingSheet = false },
                     bottomSheetState = rememberModalBottomSheetState(),
                     title = "Billing Shipping Details",
                 )
