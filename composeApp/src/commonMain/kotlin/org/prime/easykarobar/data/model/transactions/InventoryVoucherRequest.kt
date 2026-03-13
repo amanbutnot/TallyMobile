@@ -44,7 +44,10 @@ data class TransportDetails(
 
     val SpartyName: String? = null,
     val SbillingShipping: Boolean? = null,
-    val Saddress: String? = null,
+    val Saddress1: String? = null,
+    val Saddress2: String? = null,
+    val Saddress3: String? = null,
+    val Saddress4: String? = null,
     val SshipState: String? = null,
     val SmobileNo: String? = null,
     val Semail: String? = null,

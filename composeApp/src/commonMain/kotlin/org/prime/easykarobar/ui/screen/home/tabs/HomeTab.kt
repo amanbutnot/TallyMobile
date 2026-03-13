@@ -197,22 +197,25 @@ object HomeTab : Tab {
                                     amount = when (item.RecType) {
                                         1L -> {
                                             if (hasSalesmanPermission("D8")) {
-                                                if(hasSalesmanPermission("D32"))
-                                                item.PenAmt?.absoluteValue?.formatToAmtDec() ?: "-" else "____"
+                                                if (hasSalesmanPermission("D32"))
+                                                    item.PenAmt?.absoluteValue?.formatToAmtDec()
+                                                        ?: "-" else "____"
                                             } else "X"
                                         }
 
                                         2L -> {
                                             if (hasSalesmanPermission("D9")) {
-                                                if(hasSalesmanPermission("D32"))
-                                                item.PenAmt?.absoluteValue?.formatToAmtDec() ?: "-" else "____"
+                                                if (hasSalesmanPermission("D33"))
+                                                    item.PenAmt?.absoluteValue?.formatToAmtDec()
+                                                        ?: "-" else "____"
                                             } else "X"
                                         }
 
                                         3L -> {
                                             if (hasSalesmanPermission("D13")) {
-                                                if(hasSalesmanPermission("D32"))
-                                                item.PenAmt?.absoluteValue?.formatToAmtDec() ?: "-" else "____"
+                                                if (hasSalesmanPermission("D34"))
+                                                    item.PenAmt?.absoluteValue?.formatToAmtDec()
+                                                        ?: "-" else "____"
                                             } else "X"
                                         }
 
@@ -224,8 +227,9 @@ object HomeTab : Tab {
 
                                         5L -> {
                                             if (hasSalesmanPermission("D15")) {
-                                                if(hasSalesmanPermission("D32"))
-                                                item.PenAmt?.absoluteValue?.formatToAmtDec() ?: "-" else "____"
+                                                if (hasSalesmanPermission("D35"))
+                                                    item.PenAmt?.absoluteValue?.formatToAmtDec()
+                                                        ?: "-" else "____"
                                             } else "X"
                                         }
 

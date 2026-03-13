@@ -27,6 +27,7 @@ object AuthRepository {
                 contentType(ContentType.Application.Json)
                 setBody(loginRequest)
             }
+            println(loginRequest)
             println(response.bodyAsText())
             response.body()
         } catch (e: Exception) {
@@ -68,10 +69,12 @@ object AuthRepository {
         return try {
             val response = client.post("${BASE_URL}/Users/update-password.php") {
                 contentType(ContentType.Application.Json)
-                setBody(ResetRequest(
-                    MobileNo = mobileNumber,
-                    NewPassword = newPass
-                ))
+                setBody(
+                    ResetRequest(
+                        MobileNo = mobileNumber,
+                        NewPassword = newPass
+                    )
+                )
             }
             println(response.bodyAsText())
             response.body()
