@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Share
@@ -41,7 +42,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -340,10 +340,8 @@ fun DownloadResultDialog(
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(4.dp))
-
                             // Done Button
-                            TextButton(
+                            OutlinedButton(
                                 onClick = {
                                     visible = false
                                     onDone()
@@ -351,14 +349,23 @@ fun DownloadResultDialog(
                                 shape = RoundedCornerShape(16.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(52.dp)
+                                    .height(56.dp),
+                                border = BorderStroke(2.dp, primaryColor),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = primaryColor
+                                )
                             ) {
+                                Icon(
+                                    imageVector = Icons.Default.Done,
+                                    contentDescription = "Share",
+                                    modifier = Modifier.size(22.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
                                 Text(
                                     text = "Done",
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 15.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    letterSpacing = 0.4.sp
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 16.sp,
+                                    letterSpacing = 0.5.sp
                                 )
                             }
                         }
