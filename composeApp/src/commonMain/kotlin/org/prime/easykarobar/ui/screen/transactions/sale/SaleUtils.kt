@@ -51,8 +51,14 @@ fun ShippingCard(
     partyName: String,
     onPartyNameChange: (String) -> Unit,
 
-    address: String,
-    onAddressChange: (String) -> Unit,
+    address1: String,
+    onAddressChange1: (String) -> Unit,
+    address2: String,
+    onAddressChange2: (String) -> Unit,
+    address3: String,
+    onAddressChange3: (String) -> Unit,
+    address4: String,
+    onAddressChange4: (String) -> Unit,
 
     state: String,
     onStateChange: (String) -> Unit,
@@ -223,9 +229,39 @@ fun ShippingCard(
                 )
 
                 TallyTextField(
-                    value = address,
-                    onValueChange = onAddressChange,
-                    label = "Address",
+                    value = address1,
+                    onValueChange = onAddressChange1,
+                    label = "Address 1",
+                    placeholder = "Enter Address",
+                    isPassword = false,
+                    isNumber = false,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                TallyTextField(
+                    value = address2,
+                    onValueChange = onAddressChange2,
+                    label = "Address 2",
+                    placeholder = "Enter Address",
+                    isPassword = false,
+                    isNumber = false,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                TallyTextField(
+                    value = address3,
+                    onValueChange = onAddressChange3,
+                    label = "Address 3",
+                    placeholder = "Enter Address",
+                    isPassword = false,
+                    isNumber = false,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                TallyTextField(
+                    value = address4,
+                    onValueChange = onAddressChange4,
+                    label = "Address 4",
                     placeholder = "Enter Address",
                     isPassword = false,
                     isNumber = false,

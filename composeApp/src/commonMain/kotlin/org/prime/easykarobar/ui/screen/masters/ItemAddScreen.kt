@@ -366,10 +366,18 @@ private fun TallyToggle(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+            Text(
+                label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             if (subLabel.isNotEmpty()) {
                 Spacer(Modifier.height(2.dp))
-                Text(subLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    subLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
         Switch(
@@ -472,7 +480,8 @@ object ItemAddScreen : Screen {
             .selectAll(filterGroup = filterItemGroups(), groupCodes = itemGroupCodes())
             .executeAsList()
         val unitList = db.productUnitMasterQueries.selectAll().executeAsList()
-        val taxCategoryList = emptyList<Pair<String, String>>()
+        val taxCategoryList: List<Pair<String, String>> =
+            db.taxCategoryMastQueries.selectAll().executeAsList().map { Pair(it.Name, it.GUID) }
 
         // ── Sheet dismissal helper ─────────────────────────────────────────
         fun hideSheet(state: SheetState, hide: () -> Unit) {
@@ -503,7 +512,8 @@ object ItemAddScreen : Screen {
             if (!altSameAsMain && altUnit.isBlank()) missing += "• Alt Unit"
             if (taxCategoryName.isBlank()) missing += "• Tax Category"
             if (missing.isNotEmpty()) {
-                dialogMessage = "Please fill in the following required fields:\n\n${missing.joinToString("\n")}"
+                dialogMessage =
+                    "Please fill in the following required fields:\n\n${missing.joinToString("\n")}"
                 showDialog = true
                 return null
             }
@@ -565,7 +575,9 @@ object ItemAddScreen : Screen {
             onSelected = {
                 mainUnit = it.first
                 mainUnitGuid = it.second
-                if (altSameAsMain) { altUnit = it.first; altUnitGuid = it.second }
+                if (altSameAsMain) {
+                    altUnit = it.first; altUnitGuid = it.second
+                }
             },
             onDismiss = { hideSheet(mainUnitSheetState) { showMainUnitSheet = false } },
             bottomSheetState = mainUnitSheetState,
@@ -613,7 +625,7 @@ object ItemAddScreen : Screen {
                         value = name,
                         onChange = { v ->
                             name = v
-                            if (alias.isEmpty() || alias == name.dropLast(1)) alias = v
+
                             if (printName.isEmpty() || printName == name.dropLast(1)) printName = v
                         },
                         placeholder = "Enter item name",
@@ -764,10 +776,22 @@ object ItemAddScreen : Screen {
                 FormCard {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Box(Modifier.weight(1f)) {
-                            FormField("Sale Price", salePrice, { salePrice = it }, "0.00", isNumber = true)
+                            FormField(
+                                "Sale Price",
+                                salePrice,
+                                { salePrice = it },
+                                "0.00",
+                                isNumber = true
+                            )
                         }
                         Box(Modifier.weight(1f)) {
-                            FormField("Purc Price", purchPrice, { purchPrice = it }, "0.00", isNumber = true)
+                            FormField(
+                                "Purc Price",
+                                purchPrice,
+                                { purchPrice = it },
+                                "0.00",
+                                isNumber = true
+                            )
                         }
                     }
                     Row(modifier = Modifier.fillMaxWidth()) {
@@ -775,7 +799,13 @@ object ItemAddScreen : Screen {
                             FormField("MRP", mrp, { mrp = it }, "0.00", isNumber = true)
                         }
                         Box(Modifier.weight(1f)) {
-                            FormField("Min Sale Price", minSalePrice, { minSalePrice = it }, "0.00", isNumber = true)
+                            FormField(
+                                "Min Sale Price",
+                                minSalePrice,
+                                { minSalePrice = it },
+                                "0.00",
+                                isNumber = true
+                            )
                         }
                     }
                     FormField(
@@ -792,10 +822,22 @@ object ItemAddScreen : Screen {
                 FormCard {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Box(Modifier.weight(1f)) {
-                            FormField("Sale Disc %", saleDiscount, { saleDiscount = it }, "0.00", isNumber = true)
+                            FormField(
+                                "Sale Disc %",
+                                saleDiscount,
+                                { saleDiscount = it },
+                                "0.00",
+                                isNumber = true
+                            )
                         }
                         Box(Modifier.weight(1f)) {
-                            FormField("Purc Disc %", purchDiscount, { purchDiscount = it }, "0.00", isNumber = true)
+                            FormField(
+                                "Purc Disc %",
+                                purchDiscount,
+                                { purchDiscount = it },
+                                "0.00",
+                                isNumber = true
+                            )
                         }
                     }
                 }

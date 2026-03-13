@@ -92,7 +92,7 @@ object LoginScreen : Screen {
             )
 
             {
-                email = SharedPrefs.LoginInfo.get() ?: ""
+
 
                 Image(
                     painterResource(Res.drawable.splashImage),
@@ -183,6 +183,7 @@ object LoginScreen : Screen {
                                     onSuccess = {
                                         nav.push(GoogleDriveDownloadScreen)
                                     }, onListSuccess = { companyList ->
+                                        SharedPrefs.LoginInfo.save(email.trim())
                                         SharedPrefs.LoginData.save(
                                             SharedPrefs.LoginDataModel(
                                                 username = email.trim(),

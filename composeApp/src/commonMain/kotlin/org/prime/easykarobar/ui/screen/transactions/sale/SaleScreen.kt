@@ -238,7 +238,10 @@ data class SaleScreen(
         var SselectedBilling by remember { mutableStateOf("") }
 
         var SpartyName by remember { mutableStateOf("") }
-        var Saddress by remember { mutableStateOf("") }
+        var Saddress1 by remember { mutableStateOf("") }
+        var Saddress2 by remember { mutableStateOf("") }
+        var Saddress3 by remember { mutableStateOf("") }
+        var Saddress4 by remember { mutableStateOf("") }
         var SshipState by remember { mutableStateOf("") }
         var SmobileNo by remember { mutableStateOf("") }
         var Semail by remember { mutableStateOf("") }
@@ -513,7 +516,10 @@ data class SaleScreen(
                 pincode = data.other_info?.pincode ?: ""
                 gstRrDate = data.other_info?.grDate ?: CurrentDate()
                 SpartyName = data.other_info?.SpartyName ?: ""
-                Saddress = data.other_info?.Saddress ?: ""
+                Saddress1 = data.other_info?.Saddress1 ?: ""
+                Saddress2 = data.other_info?.Saddress2 ?: ""
+                Saddress3 = data.other_info?.Saddress3 ?: ""
+                Saddress4 = data.other_info?.Saddress4 ?: ""
                 SshipState = data.other_info?.SshipState ?: ""
                 SmobileNo = data.other_info?.SmobileNo ?: ""
                 Semail = data.other_info?.Semail ?: ""
@@ -612,7 +618,7 @@ data class SaleScreen(
         TallyReportScaffold(
             showBurgerMenu = false, onBackClick = {
                 showExitPopup = true
-            }, showBarcodeIcon = !isEdit, onBarcodeClick = {
+            }, showBarcodeIcon = true, onBarcodeClick = {
                 showQtyPopup = true
 
             }, menuItems = listOf(
@@ -1080,8 +1086,14 @@ data class SaleScreen(
                                 partyName = SpartyName,
                                 onPartyNameChange = { SpartyName = it },
 
-                                address = Saddress,
-                                onAddressChange = { Saddress = it },
+                                address1 = Saddress1,
+                                onAddressChange1 = { if (it.length < 40) Saddress1 = it },
+                                address2 = Saddress2,
+                                onAddressChange2 = { if (it.length < 40) Saddress2 = it },
+                                address3 = Saddress3,
+                                onAddressChange3 = { if (it.length < 40) Saddress3 = it },
+                                address4 = Saddress4,
+                                onAddressChange4 = { if (it.length < 40) Saddress4 = it },
 
                                 state = SshipState,
                                 onStateChange = { SshipState = it },
@@ -1274,7 +1286,10 @@ data class SaleScreen(
                                         vehicleNum = vehicleNo,
                                         pincode = pincode,
                                         grDate = gstRrDate, SpartyName = SpartyName,
-                                        Saddress = Saddress,
+                                        Saddress1 = Saddress1,
+                                        Saddress2 = Saddress2,
+                                        Saddress3 = Saddress3,
+                                        Saddress4 = Saddress4,
                                         SshipState = SshipState,
                                         SmobileNo = SmobileNo,
                                         Semail = Semail,
@@ -1307,7 +1322,10 @@ data class SaleScreen(
                                                 pincode = pincode,
                                                 grDate = gstRrDate,
                                                 SpartyName = SpartyName,
-                                                Saddress = Saddress,
+                                                Saddress1 = Saddress1,
+                                                Saddress2 = Saddress2,
+                                                Saddress3 = Saddress3,
+                                                Saddress4 = Saddress4,
                                                 SshipState = SshipState,
                                                 SmobileNo = SmobileNo,
                                                 Semail = Semail,
