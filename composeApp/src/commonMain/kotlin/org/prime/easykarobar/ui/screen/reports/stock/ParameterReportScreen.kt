@@ -29,7 +29,11 @@ import androidx.compose.ui.text.style.TextAlign
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
@@ -55,6 +59,7 @@ import org.prime.easykarobar.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportLazyList
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductParamStockList
+import org.tally.ProductGroupMaster
 import smartSearch
 import kotlin.math.absoluteValue
 
@@ -74,8 +79,18 @@ object ParameterReportScreen : Screen {
         var shareLoading by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
         var showGroupFilterSheet by remember { mutableStateOf(false) }
-        val productGroups = remember { db.productGroupMasterQueries.selectAll(  filterGroup = filterItemGroups(),
-            groupCodes = itemGroupCodes()).executeAsList() }
+        var productGroups by remember { mutableStateOf(emptyList<ProductGroupMaster>()) }
+
+        LaunchedEffect(Unit) {
+            productGroups = withContext(Dispatchers.IO) {
+                db.productGroupMasterQueries
+                    .selectAll(
+                        filterGroup = filterItemGroups(),
+                        groupCodes = itemGroupCodes()
+                    )
+                    .executeAsList()
+            }
+        }
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
         val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -88,11 +103,13 @@ object ParameterReportScreen : Screen {
 
         LaunchedEffect(Unit) {
             isLoading = true
-            list = getProductParamStockItems(db)
+
+            list = withContext(Dispatchers.IO) {
+                getProductParamStockItems(db)
+            }
+            if (!isActive) return@LaunchedEffect
 
             isLoading = false
-
-
         }
         LaunchedEffect(showSearchBar) {
             if (showSearchBar) {
@@ -100,28 +117,36 @@ object ParameterReportScreen : Screen {
             }
         }
 
-        val groupFilteredList = if (selectedGroups.isEmpty()) {
-            list
-        } else {
-            list.filter { it.GroupName in getProductsGroupCodesByName(selectedGroups) }
+        val groupFilteredList = remember(list, selectedGroups) {
+            if (selectedGroups.isEmpty()) list
+            else list.filter { it.GroupName in getProductsGroupCodesByName(selectedGroups) }
         }
 
-        val filteredList = smartSearch(
-            list = groupFilteredList,
-            query = searchQuery,
-            selectors = listOf { it.ProductName }
-        )
-
-
-        val rows: List<Triple<String, String, String>> = filteredList.map { item ->
-            Triple(
-                item.ProductName ?: "",
-                item.mvalue1?.formatToQtyDec() ?: "-",
-                item.mvalue2?.formatToAmtDec() ?: ""
+        val filteredList = remember(groupFilteredList, searchQuery) {
+            smartSearch(
+                list = groupFilteredList,
+                query = searchQuery,
+                selectors = listOf { it.ProductName }
             )
         }
-        val totalQty = filteredList.sumOf { it.mvalue1 ?: 0.0 }
-        val totalAmt = filteredList.sumOf { it.mvalue2 ?: 0.0 }
+
+        val rows = remember(filteredList) {
+            filteredList.map {
+                Triple(
+                    it.ProductName ?: "",
+                    it.mvalue1?.formatToQtyDec() ?: "-",
+                    it.mvalue2?.formatToAmtDec() ?: ""
+                )
+            }
+        }
+        val totals = remember(filteredList) {
+            val qty = filteredList.sumOf { it.mvalue1 ?: 0.0 }
+            val amt = filteredList.sumOf { it.mvalue2 ?: 0.0 }
+            qty to amt
+        }
+
+        val totalQty = totals.first
+        val totalAmt = totals.second
 
         val menuItems = listOf(
             MenuItemData(
@@ -205,7 +230,7 @@ object ParameterReportScreen : Screen {
                             TextAlign.End
                         ),
                         ReportColumn(
-                            if(showAmtToSalesman()) totalAmt.absoluteValue.formatToAmtDec() else "",
+                            if (showAmtToSalesman()) totalAmt.absoluteValue.formatToAmtDec() else "",
                             column3Weight,
                             TextAlign.End
                         )
