@@ -27,6 +27,7 @@ data class AttendanceListResponse(
     val LocationID: Int,
     val RecType: Int,
     val C1: String?=null,
+    val PartyName: String?=null,
     val C2: String,
     val C3: String,
     val C4: String,

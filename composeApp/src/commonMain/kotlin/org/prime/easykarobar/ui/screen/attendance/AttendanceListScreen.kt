@@ -28,12 +28,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -58,8 +62,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
@@ -74,17 +81,28 @@ import dev.jordond.compass.geolocation.mobile.mobile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.prime.easykarobar.business.viewmodel.attendance.AttendanceViewModel
+import org.prime.easykarobar.data.expect.shareText
 import org.prime.easykarobar.data.model.attendance.AttendanceListRequest
 import org.prime.easykarobar.data.model.attendance.AttendanceListResponse
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.printing.AttendanceRow
+import org.prime.easykarobar.ui.printing.attendanceHtml
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
+import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
+import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
+import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.globalShared.extractNumericValue
+import org.prime.easykarobar.ui.shared.globalShared.googleMapsLink
 import org.prime.easykarobar.ui.shared.globalShared.parseDate
+import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
+import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
+import smartSearch
 
 data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -231,7 +249,7 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
                                 1.5.dp,
                                 MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                             ),
-                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                            colors = ButtonDefaults.outlinedButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
                                 contentColor = MaterialTheme.colorScheme.primary
                             )
@@ -460,16 +478,16 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
                 TallyButton(
                     label = "Generate",
                     onClick = {
-                        if(parseDate(startDate)>parseDate(endDate)){
+                        if (parseDate(startDate) > parseDate(endDate)) {
                             showError = true
-                        }else{
+                        } else {
                             showError = false
                             nav.push(
                                 AttendanceScreenUi(
                                     startDate = startDate,
                                     endDate = endDate,
                                     accountName = if (isAdmin && reportType == "SINGLE") selectedMobile else "",
-                                    vchType = if (isCheckIn) 2 else 1
+                                    vchType = if (isCheckIn) 2 else 1, isCheckIn = isCheckIn
                                 )
                             )
 
@@ -525,18 +543,85 @@ data class AttendanceScreenUi(
     val startDate: String,
     val endDate: String,
     val vchType: Int,
-    val accountName: String
+    val accountName: String,
+    val isCheckIn: Boolean
 ) : Screen {
     @Composable
     override fun Content() {
-        TallyScaffold(
-            title = "Attendance Records",
+
+        val viewModel: AttendanceViewModel = viewModel { AttendanceViewModel() }
+        val state by viewModel.listState
+        var shareLoading by remember { mutableStateOf(false) }
+        val scope = rememberCoroutineScope()
+        var showSearchBar by remember { mutableStateOf(false) }
+
+        var searchQuery by remember { mutableStateOf("") }
+        val focusRequester = remember { FocusRequester() }
+
+        val rows = state.data?.map {
+            AttendanceRow(
+                date = it.LocationDateTime.take(10),
+                time = it.LocationDateTime.substring(11).take(8),
+                salesmen = extractNumericValue(it.C1),
+                party = it.PartyName.toString(),
+                status = if (it.RecType == 1) "In" else "Out",
+                address = it.C4,
+                photoUrl = it.C5
+            )
+        }
+
+        val menuItems = listOf(
+            MenuItemData(
+                title = "Download",
+                icon = Icons.Default.Download,
+                onClick = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = if (isCheckIn) "Check In" else "Attendance",
+                            htmlContent = attendanceHtml(
+                                title = if (isCheckIn) "Check In" else "Attendance",
+                                rows = rows as List<AttendanceRow>,
+                                startDate = startDate, endDate = endDate, isCheckIn = isCheckIn
+                            ),
+                            action = PdfAction.Download,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }
+            ),
+            MenuItemData(
+                title = "Share",
+                icon = Icons.Default.Share,
+                onClick = {
+
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = if (isCheckIn) "Check In" else "Attendance",
+                            htmlContent = attendanceHtml(
+                                title = if (isCheckIn) "Check In" else "Attendance",
+                                rows = rows as List<AttendanceRow>,
+                                startDate = startDate, endDate = endDate, isCheckIn = isCheckIn
+                            ),
+                            action = PdfAction.Download,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }
+            )
+        )
+        if (shareLoading) {
+            TallyLoadingDialog("Generating Report")
+        }
+        TallyReportScaffold(
+            title = if (isCheckIn) "Check In/Out Records" else "Attendance Records",
+            showBurgerMenu = true,
+            menuItems = menuItems,
+            showSearchAction = true,
+            onSearchClick = { showSearchBar = !showSearchBar },
             showBottomBar = false,
             bottomBarContent = { },
             content = { paddingValues ->
 
-                val viewModel: AttendanceViewModel = viewModel { AttendanceViewModel() }
-                val state by viewModel.listState
 
                 LaunchedEffect(Unit) {
                     viewModel.getAttendance(
@@ -548,7 +633,11 @@ data class AttendanceScreenUi(
                         )
                     )
                 }
-
+                val filteredList = smartSearch(
+                    list = state.data.orEmpty(),
+                    query = searchQuery,
+                    selectors = listOf { it.C1 }
+                )
                 when {
                     state.isLoading -> {
                         Box(
@@ -562,12 +651,24 @@ data class AttendanceScreenUi(
                     }
 
                     else -> {
-                        AttendanceListContent(
+                        Column(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(paddingValues),
-                            list = state.data.orEmpty()
-                        )
+                        ) {
+                            if (showSearchBar) {
+                                TallySearchBar(
+                                    searchQuery = searchQuery,
+                                    onQueryChange = { searchQuery = it },
+                                    modifier = Modifier.focusRequester(focusRequester)
+                                )
+                            }
+                            AttendanceListContent(
+                                modifier = Modifier,
+                                list = filteredList, isCheckIn = isCheckIn
+                            )
+
+                        }
                     }
                 }
             }
@@ -580,7 +681,7 @@ data class AttendanceScreenUi(
 @Composable
 private fun AttendanceListContent(
     modifier: Modifier,
-    list: List<AttendanceListResponse>
+    list: List<AttendanceListResponse>, isCheckIn: Boolean
 ) {
     if (list.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -643,7 +744,7 @@ private fun AttendanceListContent(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(list) { item ->
-                AttendanceItem(item)
+                AttendanceItem(item, isCheckIn)
             }
         }
     }
@@ -651,7 +752,7 @@ private fun AttendanceListContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AttendanceItem(item: AttendanceListResponse) {
+private fun AttendanceItem(item: AttendanceListResponse, isCheckIn: Boolean) {
 
     var showSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(
@@ -729,7 +830,17 @@ private fun AttendanceItem(item: AttendanceListResponse) {
             }
         }
     }
+    var shareLocation by remember { mutableStateOf(false) }
 
+    if (shareLocation) {
+        shareText(
+            googleMapsLink(
+                item.C2,
+                item.C3
+            )
+        )
+        shareLocation = false
+    }
     // -------- List Item (UNCHANGED UI) --------
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -839,7 +950,30 @@ private fun AttendanceItem(item: AttendanceListResponse) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+
+                // Share Location
+                OutlinedButton(
+                    onClick = { shareLocation = true },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.LocationOn,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "Share Location",
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
             }
         }
     }
 }
+

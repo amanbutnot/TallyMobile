@@ -1,5 +1,6 @@
 package org.prime.easykarobar.data.expect
 
+import androidx.compose.runtime.Composable
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.readValue
 import platform.CoreGraphics.CGRectZero
@@ -79,7 +80,13 @@ actual fun sharePdf(filePath: String) {
     chmod(sharePath, 420u)
 
     val verifyAttr = fileManager.attributesOfItemAtPath(sharePath, null)
-    println("📤 [sharePdf] Attributes set. Permissions: ${verifyAttr?.get(NSFilePosixPermissions)}, Protection: ${verifyAttr?.get(NSFileProtectionKey)}")
+    println(
+        "📤 [sharePdf] Attributes set. Permissions: ${verifyAttr?.get(NSFilePosixPermissions)}, Protection: ${
+            verifyAttr?.get(
+                NSFileProtectionKey
+            )
+        }"
+    )
 
     if (!fileManager.fileExistsAtPath(sharePath)) {
         println("❌ [sharePdf] Aborting — share file missing after write")
@@ -162,4 +169,22 @@ actual fun sharePdf(filePath: String) {
             }
         )
     }
+}
+
+@Composable
+actual fun shareText(text: String) {
+    val activityVC = UIActivityViewController(
+        activityItems = listOf(text),
+        applicationActivities = null
+    )
+
+    val rootVC = UIApplication.sharedApplication
+        .keyWindow
+        ?.rootViewController
+
+    rootVC?.presentViewController(
+        activityVC,
+        animated = true,
+        completion = null
+    )
 }

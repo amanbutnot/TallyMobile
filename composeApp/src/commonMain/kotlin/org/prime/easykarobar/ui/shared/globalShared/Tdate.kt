@@ -26,3 +26,12 @@ fun Tdate(date: String): String {
         }
     }
 }
+
+fun extractNumericValue(input: String?): String {
+    if (input.isNullOrBlank()) return "-"
+    val colonIndex = input.indexOf(':')
+    if (colonIndex == -1) return input.trim()
+    val afterColon = input.substring(colonIndex + 1)
+    val number = afterColon.trim().split("\\s".toRegex()).firstOrNull()
+    return number?.takeIf { it.all { c -> c.isDigit() } } ?: afterColon.trim()
+}
