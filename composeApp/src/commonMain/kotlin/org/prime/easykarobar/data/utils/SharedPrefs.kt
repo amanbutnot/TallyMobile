@@ -32,11 +32,6 @@ object SharedPrefs {
         // login info / cached login request
         LoginData.clear()
 
-        // attendance / session related
-        AttendanceDate.clear()
-        CheckInOutDate.clear()
-        CheckInOutLedger.clear()
-
         // sync / version data
         LoginVersion.clear()
         LastSync.clear()
@@ -130,15 +125,15 @@ object SharedPrefs {
     object CheckInOutLedger {
         private const val KEY = "attendance_ledger"
         fun save(date: String) {
-            settings.putString(KEY, date)
+            settings2.putString(KEY, date)
         }
 
         fun get(): String? {
-            return settings.getStringOrNull(KEY)
+            return settings2.getStringOrNull(KEY)
         }
 
         fun clear() {
-            settings.remove(KEY)
+            settings2.remove(KEY)
         }
 
     }

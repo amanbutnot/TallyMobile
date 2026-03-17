@@ -149,7 +149,7 @@ data class AttendanceScreen(
         var lastCheckInOutDate by remember { mutableStateOf(SharedPrefs.CheckInOutDate.get()) }
 
         val buttonName = if (isAttendance) {
-            if (isCheckIn(lastAttendanceDate)) "Check In" else "Check Out"
+            if (isCheckIn(lastAttendanceDate)) "Attendance In" else "Attendance Out"
         } else {
             if (isCheckIn(lastCheckInOutDate)) "Check In" else "Check Out"
 
@@ -223,7 +223,7 @@ data class AttendanceScreen(
                                 )
                             }
                         }
-                        if (!isCheckIn(lastCheckInOutDate)) {
+                        if (!isAttendance && !isCheckIn(lastCheckInOutDate)) {
                             ElegantCard(
                                 icon = Icons.Default.Report,
                                 title = "Reports",
