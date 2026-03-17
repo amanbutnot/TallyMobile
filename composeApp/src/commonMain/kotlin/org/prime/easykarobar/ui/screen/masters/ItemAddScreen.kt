@@ -433,7 +433,7 @@ object ItemAddScreen : Screen {
         var showAltUnitSheet by remember { mutableStateOf(false) }
         val altUnitSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-        var conType by remember { mutableStateOf(CON_TYPE_OPTIONS[0]) }
+        var conType by remember { mutableStateOf(CON_TYPE_OPTIONS[1]) }
         var conFactor by remember { mutableStateOf("") }
 
         // ── 4. Tax ─────────────────────────────────────────────────────────
@@ -778,7 +778,15 @@ object ItemAddScreen : Screen {
                             FormField(
                                 label = "Op Qty (Main)",
                                 value = opQty,
-                                onChange = { opQty = it; opQtyAlt = it },
+                                onChange = {
+                                    if (conType == CON_TYPE_OPTIONS[0]) {
+                                        opQty = it; opQtyAlt = ((opQty.toDoubleOrNull()
+                                            ?: 0.0) / (conFactor.toDoubleOrNull() ?: 0.0)).toString()
+                                    }else{
+                                        opQty = it; opQtyAlt = ((opQty.toDoubleOrNull()
+                                            ?: 0.0) * (conFactor.toDoubleOrNull() ?: 0.0)).toString()
+                                    }
+                                },
                                 placeholder = "0",
                                 isNumber = true
                             )
@@ -787,7 +795,15 @@ object ItemAddScreen : Screen {
                             FormField(
                                 label = "Op Qty (Alt)",
                                 value = opQtyAlt,
-                                onChange = { opQtyAlt = it },
+                                onChange = {
+                                    if (conType == CON_TYPE_OPTIONS[0]) {
+                                        opQtyAlt = it; opQty = ((opQtyAlt.toDoubleOrNull()
+                                            ?: 0.0) * (conFactor.toDoubleOrNull() ?: 0.0)).toString()
+                                    }else{
+                                        opQtyAlt = it; opQty = ((opQtyAlt.toDoubleOrNull()
+                                            ?: 0.0) / (conFactor.toDoubleOrNull() ?: 0.0)).toString()
+                                    }
+                                },
                                 placeholder = "0",
                                 isNumber = true
                             )

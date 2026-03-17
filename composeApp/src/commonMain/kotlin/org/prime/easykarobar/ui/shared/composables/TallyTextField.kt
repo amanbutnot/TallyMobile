@@ -1,7 +1,10 @@
 package org.prime.easykarobar.ui.shared.composables
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
@@ -12,18 +15,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun TallyTextField(
@@ -33,17 +42,21 @@ fun TallyTextField(
     isPassword: Boolean,
     isNumber: Boolean,
     modifier: Modifier = Modifier,
-    label: String, imeAction: ImeAction = ImeAction.Next
+    label: String,
+    imeAction: ImeAction = ImeAction.Next
 ) {
-
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     var passwordVisible by remember { mutableStateOf(false) }
+
+    // Detect keyboard visibility for number keyboard Done toolbar
+    val density = LocalDensity.current
+    val imeBottom = WindowInsets.ime.getBottom(density)
+    val isKeyboardVisible = imeBottom > 0
 
     OutlinedTextField(
         label = {
-            Text(
-                label,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Text(label, style = MaterialTheme.typography.bodyMedium)
         },
         textStyle = MaterialTheme.typography.bodyMedium,
         modifier = modifier.defaultMinSize(minHeight = 48.dp),
@@ -52,8 +65,15 @@ fun TallyTextField(
         onValueChange = onValueChange,
         keyboardOptions = KeyboardOptions.Default.copy(
             keyboardType = if (isNumber) KeyboardType.Number else KeyboardType.Text,
-            imeAction = imeAction,
+            // Number keyboard on iOS has no Done key, so we don't set ImeAction for it
+            imeAction = if (isNumber) ImeAction.Default else imeAction,
             capitalization = if (isNumber || isPassword) KeyboardCapitalization.None else KeyboardCapitalization.Sentences
+        ),
+        keyboardActions = KeyboardActions(
+            onDone = { focusManager.clearFocus() },
+            onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) },
+            onSearch = { focusManager.clearFocus() },
+            onGo = { focusManager.clearFocus() }
         ),
         placeholder = {
             Text(
@@ -73,6 +93,23 @@ fun TallyTextField(
                     )
                 }
             }
+
+            // Done button inside trailingIcon for number keyboard on iOS
+            if (isNumber && isKeyboardVisible) {
+                TextButton(
+                    onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    }
+                ) {
+                    Text(
+                        text = "Done",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp
+                    )
+                }
+            }
         },
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -85,7 +122,5 @@ fun TallyTextField(
             focusedContainerColor = MaterialTheme.colorScheme.surface,
             unfocusedContainerColor = MaterialTheme.colorScheme.surface
         )
-
     )
-
 }

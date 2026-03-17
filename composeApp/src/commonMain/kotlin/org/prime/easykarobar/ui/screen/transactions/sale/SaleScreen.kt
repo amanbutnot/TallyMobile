@@ -1749,7 +1749,7 @@ fun SundryCard(
                                 textAlign = TextAlign.End,
                                 fontWeight = FontWeight.SemiBold
                             ),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                             decorationBox = { innerTextField ->
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -1941,12 +1941,20 @@ fun BorderedInput(
         BasicTextField(
             value = textFieldValue,
             onValueChange = {
-                textFieldValue = it
-                onValueChange(it.text)
+                    newValue ->
+                val filtered = newValue.text.filter { it.isDigit() || it == '.' }
+                val dotCount = filtered.count { it == '.' }
+                val validText = if (dotCount > 1) {
+                    filtered.substringBefore('.') + "." + filtered.substringAfter('.').replace(".", "")
+                } else {
+                    filtered
+                }
+                textFieldValue = newValue.copy(text = validText)
+                onValueChange(validText)
             },
             enabled = isEnabled,
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface
             ),
