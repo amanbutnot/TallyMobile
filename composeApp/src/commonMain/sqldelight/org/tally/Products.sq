@@ -28,8 +28,52 @@ CREATE TABLE Products (
     GUID TEXT UNIQUE
 );
 
--- ledger.sq
+existingItems:
+SELECT GUID FROM Products WHERE (Name = :name1 OR Alias = :alias1) OR (Name = :name2 OR Alias = :alias2);
 
+
+insertItem:
+INSERT OR IGNORE INTO Products (
+    Name,
+    Alias,
+    PrintName,
+    GroupName,
+    GroupCode,
+    UnitName,
+    UnitCode,
+    OpStk,
+    OpStkValue,
+    TaxCategory,
+    TaxCategoryCode,
+    SalesPrice,
+    PurcPrice,
+    MRP,
+    MinSalesPrice,
+    SelfValPrice,
+    SaleDisc,
+    PurcDisc,
+    GUID
+) VALUES (
+    :name,
+    :alias,
+    :printName,
+    :parentGroup,
+    :parentGroupGuid,
+    :mainUnit,
+    :mainUnitGuid,
+    :opQty,
+    :opAmount,
+    :taxCategoryName,
+    :taxCategoryGuid,
+    :salePrice,
+    :purchPrice,
+    :mrp,
+    :minSalePrice,
+    :selfValPrice,
+    :saleDiscount,
+    :purchDiscount,
+    :product_guid
+);
 
  getItemByName:
 SELECT *

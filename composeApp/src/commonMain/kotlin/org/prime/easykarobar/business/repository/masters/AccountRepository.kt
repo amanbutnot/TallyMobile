@@ -7,12 +7,14 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
-import kotlinx.serialization.Serializable
 import org.prime.easykarobar.business.repository.AuthRepository.client
+import org.prime.easykarobar.data.model.AccountItemResponse
 import org.prime.easykarobar.data.model.ApiResponse
 import org.prime.easykarobar.data.utils.BASE_URL
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.masters.AccountModel
+import org.prime.easykarobar.ui.screen.masters.CreateItemResponse
+import org.prime.easykarobar.ui.screen.masters.ItemFormData
 
 object AccountRepository {
     suspend fun createAccount(accountModel: AccountModel): ApiResponse<AccountModel>? {
@@ -32,7 +34,24 @@ object AccountRepository {
         }
     }
 
-    suspend fun listAccount(): ApiResponse<List<AccountModel>>? {
+    suspend fun createItem(itemFormData: ItemFormData): ApiResponse<CreateItemResponse>? {
+        return try {
+            val response = client.post("${BASE_URL}/Items/create_products.php") {
+                val token = SharedPrefs.Token.get()
+
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $token")
+                setBody(itemFormData)
+            }
+            println(response.bodyAsText())
+            response.body()
+        } catch (e: Exception) {
+            print("Error Occurred: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun listAccount(): AccountItemResponse? {
         return try {
             val response = client.post("${BASE_URL}/Accounts/list_master_ledger.php") {
                 val token = SharedPrefs.Token.get()
@@ -50,7 +69,3 @@ object AccountRepository {
     }
 }
 
-@Serializable
-data class AccountResponse(
-    val name: String
-)

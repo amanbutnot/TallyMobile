@@ -38,7 +38,7 @@ object MasterAddScreen : Screen {
 
         LaunchedEffect(Unit) {
             viewmodel.listAccount {
-                state.data?.forEach { dataState ->
+                state.data?.data?.forEach { dataState ->
                     db.ledgerMasterQueries.insertLedger(
                         code = dataState.ledger_guid?.toLong(),
                         name = dataState.name?.trim(),
@@ -59,6 +59,38 @@ object MasterAddScreen : Screen {
                         guid = dataState.ledger_guid.toString(),
                         panNo = dataState.itPan
                     )
+                    state.data?.data_items?.forEach { data ->
+
+                        db.productsQueries.insertItem(
+                            name = data.name,
+                            alias = data.alias,
+                            printName = data.printName,
+                            parentGroup = data.parentGroup,
+                            parentGroupGuid = data.parentGroupGuid.toDoubleOrNull()
+                                ?: 0.0,
+                            mainUnit = data.mainUnit,
+                            mainUnitGuid = data.mainUnitGuid.toDoubleOrNull()
+                                ?: 0.0,
+                            opQty = data.opQty.toDoubleOrNull() ?: 0.0,
+                            opAmount = data.opAmount.toDoubleOrNull() ?: 0.0,
+                            taxCategoryName = data.taxCategoryName,
+                            taxCategoryGuid = data.taxCategoryGuid.toDoubleOrNull()
+                                ?: 0.0,
+                            salePrice = data.salePrice.toDoubleOrNull() ?: 0.0,
+                            purchPrice = data.purchPrice.toDoubleOrNull()
+                                ?: 0.0,
+                            mrp = data.mrp.toDoubleOrNull() ?: 0.0,
+                            minSalePrice = data.minSalePrice.toDoubleOrNull()
+                                ?: 0.0,
+                            selfValPrice = data.selfValPrice.toDoubleOrNull()
+                                ?: 0.0,
+                            saleDiscount = data.saleDiscount.toDoubleOrNull()
+                                ?: 0.0,
+                            purchDiscount = data.purchPrice.toDoubleOrNull()
+                                ?: 0.0,
+                            product_guid = data.id.toString()
+                        )
+                    }
                 }
                 nav.replaceAll(Dashboard)
             }
@@ -100,7 +132,7 @@ object MasterAddScreen : Screen {
 
                     state.data?.let {
                         Text(
-                            text = "Records processed: ${it.size}",
+                            text = "Records processed: ${it.data?.size?.plus(it.data_items?.size ?: 0)}",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary
                         )

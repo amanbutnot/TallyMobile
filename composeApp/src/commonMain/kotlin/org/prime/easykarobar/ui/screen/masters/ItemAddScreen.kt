@@ -61,12 +61,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import org.prime.easykarobar.business.viewmodel.masters.AccountViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
+import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
@@ -81,6 +85,7 @@ private val CON_TYPE_OPTIONS = listOf("Main / Alt", "Alt / Main")
 // ─────────────────────────────────────────────────────────────────────────────
 //  ItemFormData — built only after successful validation
 // ─────────────────────────────────────────────────────────────────────────────
+@Serializable
 data class ItemFormData(
     // Identity
     val name: String,
@@ -488,6 +493,32 @@ object ItemAddScreen : Screen {
             scope.launch { state.hide() }.invokeOnCompletion { hide() }
         }
 
+        var showDuplicateDialog by remember { mutableStateOf(false) }
+        var showResultDialog by remember { mutableStateOf(false) }
+        val viewModel: AccountViewModel = viewModel { AccountViewModel() }
+        val state by viewModel.itemDataState
+
+        if (showResultDialog) {
+            TallyResultDialog(
+                message = state.message ?: "Error Occurred",
+                onDone = { nav.pop() },
+                isSuccess = state.success,
+                confirmText = "OK"
+            )
+        }
+        if (state.isLoading) {
+            TallyLoadingDialog("Creating your item")
+        }
+        if (showDuplicateDialog) {
+            TallyResultDialog(
+                message = "Account with this name or alias already exists",
+                onDone = { showDuplicateDialog = false },
+                isSuccess = state.success,
+                confirmText = "OK"
+            )
+        }
+
+
         // ── Validate + build ItemFormData ──────────────────────────────────
         fun validateAndBuild(): ItemFormData? {
             attempted = true
@@ -863,7 +894,51 @@ object ItemAddScreen : Screen {
                 Button(
                     onClick = {
                         val item = validateAndBuild() ?: return@Button
-                        // TODO: viewModel.save(item); nav.pop()
+                        scope.launch {
+                            val existing = db.productsQueries.existingItems(
+                                name1 = name.trim(),
+                                alias1 = name.trim(),
+                                name2 = if (alias == "") name.trim() else alias.trim(),
+                                alias2 = if (alias == "") name.trim() else alias.trim()
+                            ).executeAsList()
+                            if (existing.isEmpty()) {
+                                viewModel.createItem(item) {
+                                    db.productsQueries.insertItem(
+                                        name = state.data?.name,
+                                        alias = state.data?.alias,
+                                        printName = state.data?.printName,
+                                        parentGroup = state.data?.parentGroup,
+                                        parentGroupGuid = state.data?.parentGroupGuid?.toDoubleOrNull()
+                                            ?: 0.0,
+                                        mainUnit = state.data?.mainUnit,
+                                        mainUnitGuid = state.data?.mainUnitGuid?.toDoubleOrNull()
+                                            ?: 0.0,
+                                        opQty = state.data?.opQty?.toDoubleOrNull() ?: 0.0,
+                                        opAmount = state.data?.opAmount?.toDoubleOrNull() ?: 0.0,
+                                        taxCategoryName = state.data?.taxCategoryName,
+                                        taxCategoryGuid = state.data?.taxCategoryGuid?.toDoubleOrNull()
+                                            ?: 0.0,
+                                        salePrice = state.data?.salePrice?.toDoubleOrNull() ?: 0.0,
+                                        purchPrice = state.data?.purchPrice?.toDoubleOrNull()
+                                            ?: 0.0,
+                                        mrp = state.data?.mrp?.toDoubleOrNull() ?: 0.0,
+                                        minSalePrice = state.data?.minSalePrice?.toDoubleOrNull()
+                                            ?: 0.0,
+                                        selfValPrice = state.data?.selfValPrice?.toDoubleOrNull()
+                                            ?: 0.0,
+                                        saleDiscount = state.data?.saleDiscount?.toDoubleOrNull()
+                                            ?: 0.0,
+                                        purchDiscount = state.data?.purchPrice?.toDoubleOrNull()
+                                            ?: 0.0,
+                                        product_guid = state.data?.productGuid.toString()
+                                    )
+                                }
+                                showResultDialog = true
+
+                            } else {
+                                showDuplicateDialog = true
+                            }
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()

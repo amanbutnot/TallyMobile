@@ -2,6 +2,8 @@ package org.prime.easykarobar.data.model
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import org.prime.easykarobar.ui.screen.masters.AccountModel
+import org.prime.easykarobar.ui.screen.masters.ProductItemResponse
 
 @Serializable
 data class ApiResponse<T>(
@@ -15,4 +17,12 @@ data class LoginApiWrapper(
     val statuscode: Int,
     val message: String,
     val data: JsonElement
+)
+
+@Serializable
+data class AccountItemResponse(
+    val statuscode: Int,
+    val message: String,
+    val data: List<AccountModel>? = null,
+    val data_items: List<ProductItemResponse>? = null,
 )
