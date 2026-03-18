@@ -602,7 +602,7 @@ data class AttendanceScreenUi(
                                 rows = rows as List<AttendanceRow>,
                                 startDate = startDate, endDate = endDate, isCheckIn = isCheckIn
                             ),
-                            action = PdfAction.Download,
+                            action = PdfAction.Share ,
                             onLoadingChange = { shareLoading = it }
                         )
                     }
