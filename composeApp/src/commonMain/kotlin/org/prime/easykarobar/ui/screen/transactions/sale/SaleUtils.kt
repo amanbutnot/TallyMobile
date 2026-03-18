@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import org.prime.easykarobar.ui.screen.transactions.TransactionOneBottomSheet
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
@@ -320,7 +321,7 @@ fun ShippingCard(
                     label = "GSTIN",
                     placeholder = "Enter GSTIN/UIN",
                     isPassword = false,
-                    isNumber = false,
+                    isNumber = false, imeAction = ImeAction.Done,
                     modifier = Modifier.fillMaxWidth()
                 )
             }

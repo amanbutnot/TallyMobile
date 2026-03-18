@@ -70,10 +70,28 @@ fun TallyTextField(
             capitalization = if (isNumber || isPassword) KeyboardCapitalization.None else KeyboardCapitalization.Sentences
         ),
         keyboardActions = KeyboardActions(
-            onDone = { focusManager.clearFocus() },
-            onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) },
-            onSearch = { focusManager.clearFocus() },
-            onGo = { focusManager.clearFocus() }
+            onNext = {
+                if (imeAction == ImeAction.Next) {
+                    focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down)
+                }
+            },
+            onDone = {
+                if (imeAction == ImeAction.Done) {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                }
+            },
+            onGo = {
+                if (imeAction == ImeAction.Go) {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                }
+            },
+            onSearch = {
+                if (imeAction == ImeAction.Search) {
+                    focusManager.clearFocus()
+                }
+            }
         ),
         placeholder = {
             Text(
