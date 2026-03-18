@@ -40,9 +40,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Search
@@ -76,8 +78,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
@@ -103,7 +107,6 @@ import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.model.transactions.TransportDetails
 import org.prime.easykarobar.ui.printing.salesHtml
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
-import org.prime.easykarobar.ui.screen.transactions.TallyNarrationField
 import org.prime.easykarobar.ui.shared.composables.DownloadResultDialog
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyAlertBox
@@ -929,10 +932,15 @@ data class SaleScreen(
                                 elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    TallyNarrationField(
+                                    TallyTextField(
                                         value = narration,
                                         onValueChange = { narration = it },
-                                        label = "Narration"
+                                        modifier = Modifier.fillMaxWidth(),
+                                        imeAction = ImeAction.Done,
+                                        label = "Narration",
+                                        isNumber = false,
+                                        isPassword = false,
+                                        placeholder = "Narration"
                                     )
                                 }
                             }
@@ -1058,7 +1066,8 @@ data class SaleScreen(
                                                 label = "Pincode",
                                                 placeholder = "Enter pincode",
                                                 isPassword = false,
-                                                isNumber = true,
+                                                isNumber = false,
+                                                imeAction = ImeAction.Done,
                                                 modifier = Modifier.weight(1f)
                                             )
 
@@ -1608,7 +1617,7 @@ fun QuantitySelector(
 @Composable
 fun SundryCard(
     sundry: SundryItem,
-    onAmountChange: (Double, Double, Int, Double) -> Unit, // Now returns (amount, rate, srno)
+    onAmountChange: (Double, Double, Int, Double) -> Unit,
     onRemove: () -> Unit,
     index: Int,
     runningTotal: Double,
@@ -1616,6 +1625,7 @@ fun SundryCard(
     onFocusConsumed: () -> Unit
 ) {
     val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(shouldFocus) {
         if (shouldFocus) {
@@ -1629,6 +1639,14 @@ fun SundryCard(
     var textValue by remember(sundry.name) {
         mutableStateOf(sundry.d2.takeIf { it.toDouble() != 0.0 }?.toString() ?: "")
     }
+
+    // Track whether the amount has been confirmed (ticked)
+    var isConfirmed by remember(sundry.name) {
+        mutableStateOf(sundry.d2.takeIf { it.toDouble() != 0.0 } != null)
+    }
+
+    // Track whether we're in edit mode (confirmed but user clicked Edit)
+    var isEditing by remember { mutableStateOf(false) }
 
     LaunchedEffect(sundry.amount) {
         val amountStr = if (sundry.amount == 0.0) "" else sundry.amount.toString()
@@ -1645,8 +1663,19 @@ fun SundryCard(
         displayValue
     }
 
-    // Calculate rate: if percentage, return the percentage value, else 0.0
     val rate = if (isPercentage) displayValue else 0.0
+
+    // Helper to fire onAmountChange with current textValue
+    fun fireAmountChange(value: String) {
+        val parsedValue = value.toDoubleOrNull() ?: 0.0
+        val finalAmount = if (isPercentage) runningTotal * (parsedValue / 100.0) else parsedValue
+        val finalRate = if (isPercentage) parsedValue else 0.0
+        onAmountChange(parsedValue, finalRate, index + 1, finalAmount)
+    }
+
+    // Whether the input field should be active
+    val isInputActive = !isConfirmed || isEditing
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.small,
@@ -1658,6 +1687,7 @@ fun SundryCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Left: index + name + calculated display
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.weight(1f),
@@ -1685,113 +1715,173 @@ fun SundryCard(
                                 "${if (sundry.i1 == 0) "-" else "+"}${formatTwo(displayValue)}"
                             },
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (isConfirmed)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium
                         )
                     }
                 }
             }
 
+            // Right: input field + action buttons
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Surface(
-                    modifier = Modifier.width(110.dp),
-                    shape = MaterialTheme.shapes.small,
-                    color = MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                // Input field (shown when not confirmed, or when editing)
+                AnimatedVisibility(visible = isInputActive) {
+                    Surface(
+                        modifier = Modifier.width(110.dp),
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.surfaceVariant
                     ) {
-                        BasicTextField(
-                            value = textValue,
-                            onValueChange = { newValue ->
-                                if (newValue.isEmpty()) {
-                                    textValue = ""
-                                    onAmountChange(0.0, 0.0, index + 1, 0.0)
-                                } else {
-                                    val filtered = newValue.filter { it.isDigit() || it == '.' }
-                                    val dotCount = filtered.count { it == '.' }
-                                    val validInput = if (dotCount > 1) {
-                                        filtered.substringBefore('.') + "." + filtered.substringAfter(
-                                            '.'
-                                        ).replace(".", "")
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                        ) {
+                            BasicTextField(
+                                value = textValue,
+                                onValueChange = { newValue ->
+                                    if (newValue.isEmpty()) {
+                                        textValue = ""
+                                        onAmountChange(0.0, 0.0, index + 1, 0.0)
                                     } else {
-                                        filtered
+                                        val filtered = newValue.filter { it.isDigit() || it == '.' }
+                                        val dotCount = filtered.count { it == '.' }
+                                        val validInput = if (dotCount > 1) {
+                                            filtered.substringBefore('.') + "." + filtered.substringAfter(
+                                                '.'
+                                            ).replace(".", "")
+                                        } else {
+                                            filtered
+                                        }
+                                        textValue = validInput
+                                        fireAmountChange(validInput)
                                     }
-
-                                    textValue = validInput
-                                    val parsedValue = validInput.toDoubleOrNull() ?: 0.0
-
-                                    // Calculate the final amount based on the NEW parsed value
-                                    val finalAmount = if (isPercentage) {
-                                        runningTotal * (parsedValue / 100.0)
-                                    } else {
-                                        parsedValue
-                                    }
-
-                                    val finalRate = if (isPercentage) parsedValue else 0.0
-
-                                    onAmountChange(
-                                        parsedValue,      // The raw value entered (10 for 10%, or 500 for absolute)
-                                        finalRate,        // The rate (10 if percentage, 0 if absolute)
-                                        index + 1,        // srno
-                                        finalAmount       // The calculated amount
-                                    )
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.End,
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                            decorationBox = { innerTextField ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.End,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        if (textValue.isEmpty()) {
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(focusRequester),
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    textAlign = TextAlign.End,
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                                decorationBox = { innerTextField ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.End,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            if (textValue.isEmpty()) {
+                                                Text(
+                                                    text = if (isPercentage) "0%" else "0.00",
+                                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                            alpha = 0.5f
+                                                        ),
+                                                        textAlign = TextAlign.End
+                                                    ),
+                                                    modifier = Modifier.fillMaxWidth()
+                                                )
+                                            }
+                                            innerTextField()
+                                        }
+                                        if (isPercentage && textValue.isNotEmpty()) {
                                             Text(
-                                                text = if (isPercentage) "0%" else "0.00",
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                                        alpha = 0.5f
-                                                    ), textAlign = TextAlign.End
-                                                ),
-                                                modifier = Modifier.fillMaxWidth()
+                                                text = "%",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.padding(start = 2.dp)
                                             )
                                         }
-                                        innerTextField()
-                                    }
-                                    if (isPercentage && textValue.isNotEmpty()) {
-                                        Text(
-                                            text = "%",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            modifier = Modifier.padding(start = 2.dp)
-                                        )
                                     }
                                 }
-                            })
+                            )
+                        }
                     }
                 }
 
-                IconButton(
-                    onClick = onRemove, modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Remove",
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.error
-                    )
+                // Action buttons
+                if (isInputActive) {
+                    // TICK button — confirm the entered amount
+                    IconButton(
+                        onClick = {
+                            if (textValue.isNotEmpty() && textValue.toDoubleOrNull() != null) {
+                                fireAmountChange(textValue)
+                                isConfirmed = true
+                                isEditing = false
+                                focusManager.clearFocus()
+                            }
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Confirm amount",
+                            modifier = Modifier.size(20.dp),
+                            tint = if (textValue.isNotEmpty())
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                        )
+                    }
+
+                    // CLOSE / Cancel button
+                    IconButton(
+                        onClick = {
+                            if (isEditing) {
+                                // Cancel edit: revert to last confirmed value
+                                val revertValue = if (sundry.amount == 0.0) "" else sundry.amount.toString()
+                                textValue = revertValue
+                                isEditing = false
+                                focusManager.clearFocus()
+                            } else {
+                                onRemove()
+                            }
+                        },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = if (isEditing) "Cancel edit" else "Remove",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                } else {
+                    // Confirmed state: show EDIT + DELETE buttons
+                    IconButton(
+                        onClick = {
+                            isEditing = true
+                            isConfirmed = true // stays confirmed until tick again
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit amount",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onRemove,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         }
@@ -1940,12 +2030,12 @@ fun BorderedInput(
     ) {
         BasicTextField(
             value = textFieldValue,
-            onValueChange = {
-                    newValue ->
+            onValueChange = { newValue ->
                 val filtered = newValue.text.filter { it.isDigit() || it == '.' }
                 val dotCount = filtered.count { it == '.' }
                 val validText = if (dotCount > 1) {
-                    filtered.substringBefore('.') + "." + filtered.substringAfter('.').replace(".", "")
+                    filtered.substringBefore('.') + "." + filtered.substringAfter('.')
+                        .replace(".", "")
                 } else {
                     filtered
                 }
