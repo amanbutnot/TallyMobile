@@ -47,16 +47,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
-import org.prime.easykarobar.data.expect.stringToDouble
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.printing.OutstandingRow
-import org.prime.easykarobar.ui.printing.outstandingHtml
+import org.prime.easykarobar.ui.printing.PartyOutstanding
+import org.prime.easykarobar.ui.printing.partyWiseOutstanding
 import org.prime.easykarobar.ui.screen.home.ROLE
 import org.prime.easykarobar.ui.screen.home.userRole
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportItemScreen
 import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheet
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
+import org.prime.easykarobar.ui.shared.composables.TallyFormatSelectionDialog
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
@@ -107,10 +108,14 @@ data class OutstandingReportScreen(
         val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         var showGroupFilterSheet by remember { mutableStateOf(false) }
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
-        val productGroups = remember { db.ledgerGroupMasterQueries.selectAll(
-            filterGroup = filterAGRPGroups(),
-            groupCodes = agrpGroupCodes()
-        ).executeAsList() }
+        var showFormatSelection by remember { mutableStateOf(false) }
+        var isDownload by remember { mutableStateOf(true) }
+        val productGroups = remember {
+            db.ledgerGroupMasterQueries.selectAll(
+                filterGroup = filterAGRPGroups(),
+                groupCodes = agrpGroupCodes()
+            ).executeAsList()
+        }
 
         LaunchedEffect(Unit) {
             isLoading = true
@@ -138,14 +143,14 @@ data class OutstandingReportScreen(
                         }
                     } else {
                         println(groupCodes)
-                        println(getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() } )
+                        println(getSalemanPCFilter(groupCodes).mapNotNull { it.toDoubleOrNull() })
                         receivableList = db.voucherBillAllocationsQueries.billReceivableList(
                             DATE = startDate,
                             DATE_ = endDate,
                             filterCm3 = filterBroker,
                             cm3 = configBroker,
                             groupFilter = filterAGRP,
-                            GroupCode = filterGroupCodes() ,
+                            GroupCode = filterGroupCodes(),
                             excludeFilter = filterAccounts,
                             GUID = excludeGuids
                         ).executeAsList().map {
@@ -165,26 +170,27 @@ data class OutstandingReportScreen(
                 }
                 if (name == "Pending Sale Order") {
                     if (cm1 != "") {
-                        receivableList = db.vouchersPendingOrderQueries.pendingPurchaseOrderLedgerList(
-                            DATE = startDate,
-                            DATE_ = endDate,
-                            CM1 = cm1,
-                            filterCm3 = filterBroker,
-                            cm3 = configBroker
-                        ).executeAsList().map {
-                            DataList(
-                                VCH_GUID = it.VCH_GUID,
-                                date = it.date,
-                                vchType = it.vchType,
-                                billNumber = it.billNumber,
-                                cm1 = it.cm1,
-                                dueDate = it.dueDate,
-                                d1 = it.d1,
-                                adjustmentAmount = it.adjustmentAmount,
-                                GroupName = it.GroupName,
-                                itemName = it.ItemName
-                            )
-                        }
+                        receivableList =
+                            db.vouchersPendingOrderQueries.pendingPurchaseOrderLedgerList(
+                                DATE = startDate,
+                                DATE_ = endDate,
+                                CM1 = cm1,
+                                filterCm3 = filterBroker,
+                                cm3 = configBroker
+                            ).executeAsList().map {
+                                DataList(
+                                    VCH_GUID = it.VCH_GUID,
+                                    date = it.date,
+                                    vchType = it.vchType,
+                                    billNumber = it.billNumber,
+                                    cm1 = it.cm1,
+                                    dueDate = it.dueDate,
+                                    d1 = it.d1,
+                                    adjustmentAmount = it.adjustmentAmount,
+                                    GroupName = it.GroupName,
+                                    itemName = it.ItemName
+                                )
+                            }
                     }
                 }
                 if (name == "Pending Purchase Order") {
@@ -233,7 +239,7 @@ data class OutstandingReportScreen(
                             )
                         }
                     } else {
-                        println(getPCGroupCodesByName(groupCodes) )
+                        println(getPCGroupCodesByName(groupCodes))
                         payableList = db.voucherBillAllocationsQueries.billPayableList(
                             DATE = startDate,
                             DATE_ = endDate,
@@ -299,94 +305,151 @@ data class OutstandingReportScreen(
 
         // Calculate totals based on filtered data
         val totalRefAmt = if (name == "Bill Receivable") {
-            groupFilteredReceivableList.sumOf { it.d1?.absoluteValue ?: 0.0 }
+            groupFilteredReceivableList.sumOf { it.d1 ?: 0.0 }.absoluteValue.formatToAmtDec()
         } else {
-            groupFilteredPayableList.sumOf { it.d1?.absoluteValue ?: 0.0 }
+            groupFilteredPayableList.sumOf { it.d1 ?: 0.0 }.absoluteValue.formatToAmtDec()
         }
 
         val totalPendingAmt = if (name == "Bill Receivable") {
             groupFilteredReceivableList.sumOf {
-                it.adjustmentAmount?.toDouble()?.absoluteValue ?: 0.0
-            }
+                it.adjustmentAmount ?: 0.0
+            }.absoluteValue.formatToAmtDec()
         } else {
-            groupFilteredPayableList.sumOf { it.adjustmentAmount?.toDouble()?.absoluteValue ?: 0.0 }
+            groupFilteredPayableList.sumOf {
+                it.adjustmentAmount ?: 0.0
+            }.absoluteValue.formatToAmtDec()
         }
 
         val ledgerBalType = if (name == "Bill Receivable") "Dr" else "Cr"
 
-        fun generateOutstandingHtml(): String {
-            val allRows = if (name == "Bill Receivable") {
-                groupFilteredReceivableList.map { item ->
+        fun generateOutstandingHtml(partyWise: Boolean): String {
+
+            val list = if (name == "Bill Receivable") {
+                groupFilteredReceivableList
+            } else {
+                groupFilteredPayableList
+            }
+
+            if (!partyWise) {
+                // 🔴 OLD FLAT LOGIC (keep for standard)
+                val allRows = list.map { item ->
                     OutstandingRow(
                         date = item.date ?: "",
                         vchType = item.vchType ?: "",
                         refNo = item.billNumber ?: "",
-                        refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.stringToDouble() ?: 0.0,
-                        pendingAmount = item.adjustmentAmount?.absoluteValue?.toDouble()
-                            ?.formatToAmtDec()?.stringToDouble() ?: 0.0,
-                        due = "Y",
+                        refAmount = item.d1?.absoluteValue ?: 0.0,
+                        pendingAmount = item.adjustmentAmount?.absoluteValue ?: 0.0,
                         dueDate = item.dueDate ?: "",
-                        dueDays = DueDays(endDate, item.dueDate.toString())
+                        dueDays = DueDays(endDate, item.dueDate.toString()),
+                        name = item.cm1.toString(),
                     )
                 }
-            } else {
-                groupFilteredPayableList.map { item ->
+
+                return partyWiseOutstanding(
+                    title = if (name == "Bill Receivable") "Bills Receivable" else "Bills Payable",
+                    accountName = "All Accounts",
+                    onBasis = "Due Date",
+                    startDate = startDate,
+                    endDate = endDate,
+                    billStatusDate = endDate,
+                    parties = listOf( // 👈 wrap as single party
+                        PartyOutstanding(
+                            partyName = "All Accounts",
+                            rows = allRows,
+                            totalRefAmt = totalRefAmt,
+                            totalPendingAmt = totalPendingAmt
+                        )
+                    ),
+                    onAcc = 0.0,
+                    ledgerBal = totalPendingAmt,
+                    ledgerBalType = ledgerBalType
+                )
+            }
+
+            // 🟢 PARTY-WISE LOGIC
+            val grouped = list.groupBy { it.cm1 ?: "Unknown" }
+
+            val parties = grouped.map { (partyName, items) ->
+
+                val rows = items.map { item ->
                     OutstandingRow(
                         date = item.date ?: "",
                         vchType = item.vchType ?: "",
                         refNo = item.billNumber ?: "",
-                        refAmount = item.d1?.absoluteValue?.formatToAmtDec()?.stringToDouble() ?: 0.0,
-                        pendingAmount = item.adjustmentAmount?.absoluteValue?.toDouble()
-                            ?.formatToAmtDec()?.stringToDouble() ?: 0.0,
-                        due = "Y",
+                        refAmount = item.d1?.absoluteValue ?: 0.0,
+                        pendingAmount = item.adjustmentAmount?.absoluteValue ?: 0.0,
                         dueDate = item.dueDate ?: "",
-                        dueDays = DueDays(endDate, item.dueDate.toString())
+                        dueDays = DueDays(endDate, item.dueDate.toString()),
+                        name = item.cm1.toString(),
                     )
                 }
+
+                val totalRef = items.sumOf { it.d1 ?: 0.0 }.absoluteValue.formatToAmtDec()
+                val totalPending =
+                    items.sumOf { it.adjustmentAmount ?: 0.0 }.absoluteValue.formatToAmtDec()
+
+                PartyOutstanding(
+                    partyName = partyName,
+                    rows = rows,
+                    totalRefAmt = totalRef,
+                    totalPendingAmt = totalPending
+                )
             }
 
-            val accountName = if (name == "Bill Receivable") {
-                groupFilteredReceivableList.firstOrNull()?.cm1 ?: "All Accounts"
-            } else {
-                groupFilteredPayableList.firstOrNull()?.cm1 ?: "All Accounts"
-            }
-
-            return outstandingHtml(
+            return partyWiseOutstanding(
                 title = if (name == "Bill Receivable") "Bills Receivable" else "Bills Payable",
-                accountName = accountName,
+                accountName = "All Accounts",
                 onBasis = "Due Date",
                 startDate = startDate,
                 endDate = endDate,
                 billStatusDate = endDate,
-                rows = allRows,
-                totalRefAmt = totalRefAmt,
-                totalPendingAmt = totalPendingAmt,
+                parties = parties,
                 onAcc = 0.0,
                 ledgerBal = totalPendingAmt,
                 ledgerBalType = ledgerBalType
             )
         }
 
+
+        if (showFormatSelection) {
+            TallyFormatSelectionDialog(
+                onDismiss = { showFormatSelection = false },
+                onSelectStandard = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = "${name.replace(" ", "_")}_Report",
+                            htmlContent = generateOutstandingHtml(false), // 👈 FLAT
+                            action = if (isDownload) PdfAction.Download else PdfAction.Share,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                },
+                onPartyWiseSelect = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = "${name.replace(" ", "_")}_PartyWise_Report",
+                            htmlContent = generateOutstandingHtml(true), // 👈 GROUPED
+                            action = if (isDownload) PdfAction.Download else PdfAction.Share,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }
+            )
+        }
+
         val menuItems = listOf(
             MenuItemData(
-            title = "Download", icon = Icons.Default.Download, onClick = {
-                scope.launch {
-                    handlePdfAction(
-                        fileName = "${name.replace(" ", "_")}_Report",
-                        htmlContent = generateOutstandingHtml(),
-                        action = PdfAction.Download,
-                        onLoadingChange = { shareLoading = it })
-                }
-            }), MenuItemData(
-            title = "Share", icon = Icons.Default.Share, onClick = {
-                scope.launch {
-                    handlePdfAction(
-                        fileName = "${name.replace(" ", "_")}_Report",
-                        htmlContent = generateOutstandingHtml(),
-                        action = PdfAction.Share,
-                        onLoadingChange = { shareLoading = it })
-                }
-            }))
+                title = "Download", icon = Icons.Default.Download, onClick = {
+                    isDownload = true
+                    showFormatSelection = true
+
+                }), MenuItemData(
+                title = "Share", icon = Icons.Default.Share, onClick = {
+                    isDownload = false
+                    showFormatSelection = true
+
+                })
+        )
 
         if (shareLoading) {
             TallyLoadingDialog("Generating Report")
@@ -412,13 +475,13 @@ data class OutstandingReportScreen(
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
                 val isOutstanding = (name == "Bill Payable" || name == "Bill Receivable")
-                val row1 = if(isOutstanding) "Vch Amt: " else "Total Qty:"
-                val row2 = if(isOutstanding) "Pen Amt: " else "Pen Qty:"
+                val row1 = if (isOutstanding) "Vch Amt: " else "Total Qty:"
+                val row2 = if (isOutstanding) "Pen Amt: " else "Pen Qty:"
                 TallyReportBottomBar(
                     columns = listOf(
                         ReportColumn(
                             "Rows: ${
-                                if (name == "Bill Receivable"|| name == "Pending Sale Order") {
+                                if (name == "Bill Receivable" || name == "Pending Sale Order") {
                                     filteredReceivableList.count()
                                 } else filteredPayableList.count()
                             }", 1f, TextAlign.Start
@@ -432,7 +495,7 @@ data class OutstandingReportScreen(
                         ),
                         ReportColumn(
                             "$row2 ${
-                                if (name == "Bill Receivable" || name =="Pending Sale Order") {
+                                if (name == "Bill Receivable" || name == "Pending Sale Order") {
                                     filteredReceivableList.sumOf { it.adjustmentAmount?.toDouble() ?: 0.0 }.absoluteValue.formatToAmtDec()
                                 } else filteredPayableList.sumOf { it.adjustmentAmount?.toDouble() ?: 0.0 }.absoluteValue.formatToAmtDec()
                             }", 1f, TextAlign.End
@@ -504,7 +567,7 @@ data class OutstandingReportScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            if(userRole()!=ROLE.DISTRIBUTOR){
+                            if (userRole() != ROLE.DISTRIBUTOR) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.End
@@ -523,7 +586,7 @@ data class OutstandingReportScreen(
                         Spacer(Modifier.padding(vertical = 8.dp))
 
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            if (name == "Bill Receivable" || name =="Pending Sale Order") {
+                            if (name == "Bill Receivable" || name == "Pending Sale Order") {
                                 if (filteredReceivableList.isEmpty()) {
                                     item {
                                         Box(
@@ -581,7 +644,7 @@ data class OutstandingReportScreen(
 
                                                 Spacer(Modifier.height(4.dp))
 
-                                                if(item.itemName!=null){
+                                                if (item.itemName != null) {
                                                     Row {
                                                         TableCell(
                                                             item.itemName,
@@ -638,7 +701,7 @@ data class OutstandingReportScreen(
                                         }
                                     }
                                 }
-                            } else if (name == "Bill Payable" || name =="Pending Purchase Order") {
+                            } else if (name == "Bill Payable" || name == "Pending Purchase Order") {
                                 if (filteredPayableList.isEmpty()) {
                                     item {
                                         Box(
@@ -695,7 +758,7 @@ data class OutstandingReportScreen(
                                                         )
                                                     }
                                                 }
-                                                if(item.itemName!=null){
+                                                if (item.itemName != null) {
                                                     Row {
                                                         TableCell(
                                                             item.itemName,
@@ -773,3 +836,4 @@ data class DataList(
     val GroupName: String?,
     val itemName: String? = null  // Add this field
 )
+
