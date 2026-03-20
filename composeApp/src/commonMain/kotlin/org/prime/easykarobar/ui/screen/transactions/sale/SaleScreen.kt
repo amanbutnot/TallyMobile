@@ -69,6 +69,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -239,6 +240,11 @@ data class SaleScreen(
         var SshowShippingDetails by remember { mutableStateOf(isEdit) }
         var SbillingShipping by remember { mutableStateOf(false) }
         var SselectedBilling by remember { mutableStateOf("") }
+
+        val optionalFields = remember {
+            mutableStateListOf(*Array(20) { "" })
+        }
+        var showOptionalField by remember { mutableStateOf(isEdit) }
 
         var SpartyName by remember { mutableStateOf("") }
         var Saddress1 by remember { mutableStateOf("") }
@@ -527,6 +533,26 @@ data class SaleScreen(
                 SmobileNo = data.other_info?.SmobileNo ?: ""
                 Semail = data.other_info?.Semail ?: ""
                 SitPan = data.other_info?.SitPan ?: ""
+                optionalFields[0] = data.other_info?.OptionalField1?:""
+                optionalFields[1] = data.other_info?.OptionalField2?:""
+                optionalFields[2] = data.other_info?.OptionalField3?:""
+                optionalFields[3] = data.other_info?.OptionalField4?:""
+                optionalFields[4] = data.other_info?.OptionalField5?:""
+                optionalFields[5] = data.other_info?.OptionalField6?:""
+                optionalFields[6] = data.other_info?.OptionalField7?:""
+                optionalFields[7] = data.other_info?.OptionalField8?:""
+                optionalFields[8] = data.other_info?.OptionalField9?:""
+                optionalFields[9] = data.other_info?.OptionalField10?:""
+                optionalFields[10] = data.other_info?.OptionalField11?:""
+                optionalFields[11] = data.other_info?.OptionalField12?:""
+                optionalFields[12] = data.other_info?.OptionalField13?:""
+                optionalFields[13] = data.other_info?.OptionalField14?:""
+                optionalFields[14] = data.other_info?.OptionalField15?:""
+                optionalFields[15] = data.other_info?.OptionalField16?:""
+                optionalFields[16] = data.other_info?.OptionalField17?:""
+                optionalFields[17] = data.other_info?.OptionalField18?:""
+                optionalFields[18] = data.other_info?.OptionalField19?:""
+                optionalFields[19] = data.other_info?.OptionalField20?:""
                 SgstIn =
                     data.other_info?.SgstIn
                         ?: ""
@@ -619,7 +645,8 @@ data class SaleScreen(
             )
         )
         TallyReportScaffold(
-            showBurgerMenu = false, onBackClick = {
+            showBurgerMenu = true,
+            onBackClick = {
                 showExitPopup = true
             }, showBarcodeIcon = true, onBarcodeClick = {
                 showQtyPopup = true
@@ -1083,7 +1110,6 @@ data class SaleScreen(
                                     }
                                 }
                             }
-                            Spacer(modifier = Modifier.height(16.dp))
 
                             ShippingCard(
                                 showShippingDetails = SshowShippingDetails,
@@ -1120,6 +1146,16 @@ data class SaleScreen(
                                 onGstChange = { SgstIn = it },
                                 onbillingShippingSelected = { SselectedBilling = it },
                                 selectedBilling = SselectedBilling
+                            )
+
+
+                            OptionalFieldCard(
+                                showOptionalField = showOptionalField,
+                                onShowChange = { showOptionalField = !showOptionalField },
+                                optionalFields = optionalFields,
+                                onFieldChange = { index, value ->
+                                    optionalFields[index] = value
+                                }
                             )
                         }
 
@@ -1303,7 +1339,26 @@ data class SaleScreen(
                                         SmobileNo = SmobileNo,
                                         Semail = Semail,
                                         SitPan = SitPan,
-                                        SgstIn = SgstIn, SbillingShipping = SbillingShipping
+                                        SgstIn = SgstIn, SbillingShipping = SbillingShipping,                                                OptionalField1 = optionalFields[0],
+                                        OptionalField2 =optionalFields[1],
+                                        OptionalField3 =optionalFields[2],
+                                        OptionalField4 =optionalFields[3],
+                                        OptionalField5 =optionalFields[4],
+                                        OptionalField6 =optionalFields[5],
+                                        OptionalField7 =optionalFields[6],
+                                        OptionalField8 =optionalFields[7],
+                                        OptionalField9 =optionalFields[8],
+                                        OptionalField10 =optionalFields[9],
+                                        OptionalField11 =optionalFields[10],
+                                        OptionalField12 =optionalFields[11],
+                                        OptionalField13 =optionalFields[12],
+                                        OptionalField14 =optionalFields[13],
+                                        OptionalField15 =optionalFields[14],
+                                        OptionalField16 =optionalFields[15],
+                                        OptionalField17 =optionalFields[16],
+                                        OptionalField18 =optionalFields[17],
+                                        OptionalField19 =optionalFields[18],
+                                        OptionalField20 =optionalFields[19],
 
                                     )
                                 ), onSuccess = {
@@ -1339,7 +1394,27 @@ data class SaleScreen(
                                                 SmobileNo = SmobileNo,
                                                 Semail = Semail,
                                                 SitPan = SitPan,
-                                                SgstIn = SgstIn
+                                                SgstIn = SgstIn,
+                                                OptionalField1 = optionalFields[0],
+                                                OptionalField2 =optionalFields[1],
+                                                OptionalField3 =optionalFields[2],
+                                                OptionalField4 =optionalFields[3],
+                                                OptionalField5 =optionalFields[4],
+                                                OptionalField6 =optionalFields[5],
+                                                OptionalField7 =optionalFields[6],
+                                                OptionalField8 =optionalFields[7],
+                                                OptionalField9 =optionalFields[8],
+                                                OptionalField10 =optionalFields[9],
+                                                OptionalField11 =optionalFields[10],
+                                                OptionalField12 =optionalFields[11],
+                                                OptionalField13 =optionalFields[12],
+                                                OptionalField14 =optionalFields[13],
+                                                OptionalField15 =optionalFields[14],
+                                                OptionalField16 =optionalFields[15],
+                                                OptionalField17 =optionalFields[16],
+                                                OptionalField18 =optionalFields[17],
+                                                OptionalField19 =optionalFields[18],
+                                                OptionalField20 =optionalFields[19],
                                             )
                                         )
                                     )
@@ -1837,7 +1912,8 @@ fun SundryCard(
                         onClick = {
                             if (isEditing) {
                                 // Cancel edit: revert to last confirmed value
-                                val revertValue = if (sundry.amount == 0.0) "" else sundry.amount.toString()
+                                val revertValue =
+                                    if (sundry.amount == 0.0) "" else sundry.amount.toString()
                                 textValue = revertValue
                                 isEditing = false
                                 focusManager.clearFocus()

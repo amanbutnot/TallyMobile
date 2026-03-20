@@ -328,3 +328,92 @@ fun ShippingCard(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OptionalFieldCard(
+    showOptionalField: Boolean,
+    onShowChange: () -> Unit,
+
+    optionalFields: List<String>,
+    onFieldChange: (index: Int, value: String) -> Unit,
+) {
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        Text(
+            text = "Optional Fields",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        TextButton(onClick = onShowChange) {
+
+            Icon(
+                imageVector =
+                    if (showOptionalField)
+                        Icons.Default.RemoveCircleOutline
+                    else
+                        Icons.Default.AddCircleOutline,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+
+            Spacer(modifier = Modifier.width(4.dp))
+
+            Text(
+                text = if (showOptionalField) "Remove" else "Add",
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+    }
+
+    AnimatedVisibility(
+        visible = showOptionalField,
+        enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+        exit = fadeOut(tween(300)) + shrinkVertically(tween(300))
+    ) {
+
+        ElevatedCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 16.dp),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            ),
+            elevation = CardDefaults.elevatedCardElevation(2.dp)
+        ) {
+
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+
+                Text(
+                    text = "Optional Fields",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                optionalFields.forEachIndexed { index, value ->
+                    TallyTextField(
+                        value = value,
+                        onValueChange = { onFieldChange(index, it) },
+                        label = "Optional Field ${index + 1}",
+                        placeholder = "Optional Field ${index + 1}",
+                        isPassword = false,
+                        isNumber = false,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+    }
+}
