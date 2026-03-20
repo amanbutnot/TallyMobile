@@ -494,3 +494,44 @@ fun TallyAlertBox(
         )
     )
 }
+
+@Composable
+fun TallyFormatSelectionDialog(
+    onDismiss: () -> Unit,
+    onSelectStandard: () -> Unit,
+    onPartyWiseSelect: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = "Select Format")
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = {
+                        onSelectStandard()
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Standard Format")
+                }
+
+                Button(
+                    onClick = {
+                        onPartyWiseSelect()
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Party Wise")
+                }
+            }
+        },
+        confirmButton = {}, // intentionally empty
+        dismissButton = {}
+    )
+}
