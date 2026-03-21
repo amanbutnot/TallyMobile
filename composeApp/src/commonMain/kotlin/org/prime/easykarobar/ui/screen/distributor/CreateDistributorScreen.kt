@@ -1,8 +1,10 @@
 package org.prime.easykarobar.ui.screen.distributor
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,13 +16,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.PersonAddAlt
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,12 +46,15 @@ import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.model.DistributorRequest
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionLedgerBottomSheet
+import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheetWithGUID
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
+import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
+import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 
 data class CreateDistributorScreen(
     val isEdit: Boolean = false,
@@ -70,8 +78,17 @@ data class CreateDistributorScreen(
         var selectedStatus by remember { mutableStateOf("active") }
         var showBottomSheet by remember { mutableStateOf(false) }
         var showSuccessDialog by remember { mutableStateOf(false) }
+
+        var filterItemGroup by remember { mutableStateOf(false) }
+        var showGroupFilterSheet by remember { mutableStateOf(false) }
+        var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
+
         val db = DatabaseHolder.instance
         val list = getLedgerMasters(db)
+        val groupList = remember {
+            db.productGroupMasterQueries.selectAll(filterItemGroups(), itemGroupCodes())
+                .executeAsList()
+        }
 
         val viewModel: DistributorViewModel = viewModel { DistributorViewModel() }
         val state by viewModel.dataState
@@ -84,6 +101,8 @@ data class CreateDistributorScreen(
             name = distributor.distributor_name
             number = distributor.mobile_no
             selectedStatus = distributor.status.toString()
+            selectedGroups = distributor.ConfigGroup?:emptyList()
+            filterItemGroup = distributor.FilterGroup == "Y"
         }
 
         if (state.isLoading) {
@@ -204,6 +223,62 @@ data class CreateDistributorScreen(
                         )
                         Spacer(Modifier.height(16.dp))
 
+                        // Filter Item Group Checkbox
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Start
+                        ) {
+                            Checkbox(
+                                checked = filterItemGroup,
+                                onCheckedChange = {
+                                    filterItemGroup = it
+                                    if (it) showGroupFilterSheet = true
+                                }
+                            )
+                            Text(
+                                text = "Filter Item Group",
+                                style = type.bodyLarge,
+                                color = colors.onSurface
+                            )
+                            if (filterItemGroup) {
+                                Spacer(modifier = Modifier.weight(1f))
+                                TextButton(onClick = { showGroupFilterSheet = true }) {
+                                    Icon(
+                                        Icons.Default.FilterList,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.size(4.dp))
+                                    Text("Select Groups (${selectedGroups.size})")
+                                }
+                            }
+                        }
+
+                        GroupFilterBottomSheetWithGUID(
+                            show = showGroupFilterSheet,
+
+                            items = groupList,
+
+                            selectedIds = selectedGroups,
+
+                            itemIdSelector = { it.GUID.toString() },
+
+                            itemNameSelector = { it.Name },
+
+                            onSelectedIdsChange = { selectedGroups = it },
+
+                            onDismiss = {
+                                showGroupFilterSheet = false
+                                if (selectedGroups.isEmpty()) filterItemGroup = false
+                            },
+
+                            bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                        )
+                        Spacer(Modifier.height(16.dp))
+
                         TallyTextField(
                             value = password,
                             onValueChange = { password = it },
@@ -231,30 +306,30 @@ data class CreateDistributorScreen(
 
                         val isFormValid = name.isNotEmpty() &&
                                 number.isNotEmpty() &&
-                                password.isNotEmpty() &&
-                                confirmPassword.isNotEmpty() &&
+                                (if (isEdit) true else password.isNotEmpty() && confirmPassword.isNotEmpty() && password == confirmPassword) &&
                                 selectedAccount.isNotEmpty() &&
-                                selectedGUID.isNotEmpty() &&
-                                password == confirmPassword
+                                selectedGUID.isNotEmpty()
 
                         TallyButton(
-                            label = if(isEdit) "Update Distributor" else "Create Distributor",
+                            label = if (isEdit) "Update Distributor" else "Create Distributor",
                             onClick = {
-                                if(isEdit){
+                                if (isEdit) {
                                     viewModel.updateDistributor(
                                         DistributorRequest(
                                             distributor_id = distributor?.distributor_id,
                                             distributor_name = name,
                                             mobile_no = number,
-                                            password = password,
+                                            password = password.ifEmpty { null },
                                             ledger_name = selectedAccount,
                                             ledger_guid = selectedGUID,
-                                            status = selectedStatus
+                                            status = selectedStatus,
+                                            FilterGroup = if (filterItemGroup) "Y" else "N",
+                                            ConfigGroup = selectedGroups,
                                         )
                                     ) {
-                                    nav.pop()
+                                        nav.pop()
                                     }
-                                }else{
+                                } else {
 
                                     viewModel.createDistributor(
                                         DistributorRequest(
@@ -263,7 +338,9 @@ data class CreateDistributorScreen(
                                             password = password,
                                             ledger_name = selectedAccount,
                                             ledger_guid = selectedGUID,
-                                            status = selectedStatus
+                                            status = selectedStatus,
+                                            FilterGroup = if (filterItemGroup) "Y" else "N",
+                                            ConfigGroup = selectedGroups,
                                         )
                                     ) {
                                         name = ""
@@ -272,6 +349,8 @@ data class CreateDistributorScreen(
                                         confirmPassword = ""
                                         selectedAccount = ""
                                         selectedGUID = ""
+                                        selectedGroups = emptyList()
+                                        filterItemGroup = false
                                         showSuccessDialog = true
                                     }
                                 }

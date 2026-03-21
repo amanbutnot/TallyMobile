@@ -19,6 +19,7 @@ object DistributorRepository {
 
     suspend fun createDistributor(distributorRequest: DistributorRequest): ApiResponse<DistributorResponse>? {
         val token = SharedPrefs.Token.get()
+        println(distributorRequest)
         return try {
 
             val response = client.post("${BASE_URL}/Distributors/createDistributor.php") {

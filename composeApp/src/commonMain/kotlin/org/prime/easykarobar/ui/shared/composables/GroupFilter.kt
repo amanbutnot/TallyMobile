@@ -139,3 +139,129 @@ fun <T> GroupFilterBottomSheet(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun <T> GroupFilterBottomSheetWithGUID(
+    show: Boolean,
+    items: List<T>,
+
+    // Only store IDs for selection
+    selectedIds: List<String>,
+
+    itemIdSelector: (T) -> String,
+    itemNameSelector: (T) -> String?,
+
+    onSelectedIdsChange: (List<String>) -> Unit,
+    onDismiss: () -> Unit,
+    bottomSheetState: SheetState
+) {
+    if (!show) return
+
+    var searchQuery by remember { mutableStateOf("") }
+
+    val filteredItems = remember(items, searchQuery) {
+        smartSearch(
+            list = items,
+            query = searchQuery,
+            selectors = listOf(itemNameSelector)
+        )
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = bottomSheetState,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxSize()
+        ) {
+            Text(
+                "Filter",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            TallySearchBar(
+                searchQuery = searchQuery,
+                onQueryChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                TextButton(onClick = {
+                    val allIds = items.map { itemIdSelector(it) }
+                    onSelectedIdsChange(allIds)
+                }) {
+                    Text("Select All")
+                }
+
+                TextButton(onClick = {
+                    onSelectedIdsChange(emptyList())
+                }) {
+                    Text("Clear")
+                }
+            }
+
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                items(filteredItems) { item ->
+
+                    val id = itemIdSelector(item)
+                    val name = itemNameSelector(item)
+
+                    val isSelected = selectedIds.contains(id)
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                val updated = selectedIds.toMutableList()
+                                if (isSelected) {
+                                    updated.remove(id)
+                                } else {
+                                    updated.add(id)
+                                }
+                                onSelectedIdsChange(updated)
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = isSelected,
+                            onCheckedChange = { checked ->
+                                val updated = selectedIds.toMutableList()
+                                if (checked) {
+                                    updated.add(id)
+                                } else {
+                                    updated.remove(id)
+                                }
+                                onSelectedIdsChange(updated)
+                            }
+                        )
+
+                        Text(
+                            text = name ?: "",
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                }
+            }
+
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(top = 8.dp)
+            ) {
+                Text("Apply")
+            }
+        }
+    }
+}
