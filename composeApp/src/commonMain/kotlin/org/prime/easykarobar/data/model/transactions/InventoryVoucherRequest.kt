@@ -112,9 +112,7 @@ data class BillingItem(
     val itemdesc18: String? = null,
     val itemdesc19: String? = null,
     val itemdesc20: String? = null,
-    val additionalinfo1: String? = null,
-    val additionalinfo2: String? = null,
-    val additionalinfo3: String? = null,
+    val additionalinfo: String? = null,
 )
 
 
@@ -221,7 +219,6 @@ data class Item(
     val itemdesc18: String? = null,
     val itemdesc19: String? = null,
     val itemdesc20: String? = null,
-    val additionalinfo1: String? = null,
-    val additionalinfo2: String? = null,
-    val additionalinfo3: String? = null,
+    val additionalinfo: String? = null,
+
 )

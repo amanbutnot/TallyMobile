@@ -174,9 +174,7 @@ data class InvoiceItem(
     val itemdesc19: String? = null,
     val itemdesc20: String? = null,
     // Additional info
-    val additionalinfo1: String? = null,
-    val additionalinfo2: String? = null,
-    val additionalinfo3: String? = null,
+    val additionalinfo: String? = null,
 ) {
     val total: Double get() = price * qty
 }
@@ -526,9 +524,7 @@ data class SaleScreen(
                         itemdesc18 = it.itemdesc18,
                         itemdesc19 = it.itemdesc19,
                         itemdesc20 = it.itemdesc20,
-                        additionalinfo1 = it.additionalinfo1,
-                        additionalinfo2 = it.additionalinfo2,
-                        additionalinfo3 = it.additionalinfo3,
+                        additionalinfo = it.additionalinfo,
                     )
                 }
                 // PRE-POPULATE SUNDRIES SECTION
@@ -804,9 +800,7 @@ data class SaleScreen(
                                                         itemdesc18 = itemDescs.getOrNull(17),
                                                         itemdesc19 = itemDescs.getOrNull(18),
                                                         itemdesc20 = itemDescs.getOrNull(19),
-                                                        additionalinfo1 = additionalInfos.getOrNull(0),
-                                                        additionalinfo2 = additionalInfos.getOrNull(1),
-                                                        additionalinfo3 = additionalInfos.getOrNull(2),
+                                                        additionalinfo = additionalInfos.getOrNull(0),
                                                     )
                                                     editingItem = null
                                                 },
@@ -861,9 +855,8 @@ data class SaleScreen(
                                                         itemdesc18 = itemDescs.getOrNull(17),
                                                         itemdesc19 = itemDescs.getOrNull(18),
                                                         itemdesc20 = itemDescs.getOrNull(19),
-                                                        additionalinfo1 = additionalInfos.getOrNull(0),
-                                                        additionalinfo2 = additionalInfos.getOrNull(1),
-                                                        additionalinfo3 = additionalInfos.getOrNull(2),
+                                                        additionalinfo = additionalInfos.getOrNull(0),
+
                                                     )
                                                     editingItem = null
                                                 },
@@ -1366,9 +1359,8 @@ data class SaleScreen(
                                     itemdesc18 = item.itemdesc18,
                                     itemdesc19 = item.itemdesc19,
                                     itemdesc20 = item.itemdesc20,
-                                    additionalinfo1 = item.additionalinfo1,
-                                    additionalinfo2 = item.additionalinfo2,
-                                    additionalinfo3 = item.additionalinfo3,
+                                    additionalinfo = item.additionalinfo,
+
                                 )
                             }
 
@@ -2237,8 +2229,7 @@ fun ExpandedItemEditor1(
             existingItem.itemdesc13, existingItem.itemdesc14, existingItem.itemdesc15,
             existingItem.itemdesc16, existingItem.itemdesc17, existingItem.itemdesc18,
             existingItem.itemdesc19, existingItem.itemdesc20,
-            existingItem.additionalinfo1, existingItem.additionalinfo2,
-            existingItem.additionalinfo3,
+            existingItem.additionalinfo,
         ).any { !it.isNullOrBlank() }
         mutableStateOf(hasAnyDesc)
     }
@@ -2273,9 +2264,7 @@ fun ExpandedItemEditor1(
     // 3 additional info fields — also keyed on existingItem
     val additionalInfos = remember(existingItem) {
         mutableStateListOf(
-            existingItem?.additionalinfo1 ?: "",
-            existingItem?.additionalinfo2 ?: "",
-            existingItem?.additionalinfo3 ?: "",
+            existingItem?.additionalinfo?: "",
         )
     }
 
@@ -2294,9 +2283,7 @@ fun ExpandedItemEditor1(
             existingItem.itemdesc19, existingItem.itemdesc20,
         )
         descs.forEachIndexed { i, v -> itemDescs[i] = v ?: "" }
-        additionalInfos[0] = existingItem.additionalinfo1 ?: ""
-        additionalInfos[1] = existingItem.additionalinfo2 ?: ""
-        additionalInfos[2] = existingItem.additionalinfo3 ?: ""
+        additionalInfos[0] = existingItem.additionalinfo ?: ""
     }
 
     val qtyValue = qtyN.toIntOrNull()?.takeIf { it > 0 } ?: 0
