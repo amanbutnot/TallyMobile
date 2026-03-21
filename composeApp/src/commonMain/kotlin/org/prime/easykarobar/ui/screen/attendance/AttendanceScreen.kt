@@ -84,6 +84,7 @@ import kotlinx.coroutines.launch
 import org.prime.easykarobar.business.viewmodel.attendance.AttendanceViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.model.attendance.AttendanceRequest
+import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingReportScreen
@@ -91,6 +92,7 @@ import org.prime.easykarobar.ui.screen.reports.registers.RegisterReportScreen
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
 import org.prime.easykarobar.ui.screen.transactions.sale.SaleScreen
+import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
@@ -136,6 +138,11 @@ data class AttendanceScreen(
         val scrollState = rememberScrollState()
         var selectedAccount by remember { mutableStateOf("") }
         var selectedGUID by remember { mutableStateOf("") }
+        var showDeniedDialog by remember { mutableStateOf(false) }
+
+        if (showDeniedDialog) {
+            PermissionDeniedDialog { showDeniedDialog = false }
+        }
 
         LaunchedEffect(Unit) {
             selectedAccount = SharedPrefs.CheckInOutLedger.get() ?: ""
@@ -236,13 +243,21 @@ data class AttendanceScreen(
                                             label = "Account Ledger",
                                             icon = Icons.Default.AccountBalance,
                                             onClick = {
-                                                nav.push(
-                                                    LedgerReportScreen(
-                                                        accountName = selectedAccount,
-                                                        startDate = StartDate(),
-                                                        endDate = CurrentDate()
-                                                    )
+                                                salesmanPermission(
+                                                    "D7",
+                                                    accessDeniedBlock = { showDeniedDialog = true },
+                                                    successBlock = {
+                                                        nav.push(
+                                                            LedgerReportScreen(
+                                                                accountName = selectedAccount,
+                                                                startDate = StartDate(),
+                                                                endDate = CurrentDate()
+                                                            )
+                                                        )
+
+                                                    }
                                                 )
+
                                             }
                                         )
 
@@ -250,14 +265,21 @@ data class AttendanceScreen(
                                             label = "Bill Receivable",
                                             icon = Icons.Default.Receipt,
                                             onClick = {
-                                                nav.push(
-                                                    OutstandingReportScreen(
-                                                        name = "Bill Receivable",
-                                                        startDate = StartDate(),
-                                                        endDate = CurrentDate(),
-                                                        cm1 = selectedAccount
-                                                    )
+                                                salesmanPermission(
+                                                    "D8",
+                                                    accessDeniedBlock = { showDeniedDialog = true },
+                                                    successBlock = {
+                                                        nav.push(
+                                                            OutstandingReportScreen(
+                                                                name = "Bill Receivable",
+                                                                startDate = StartDate(),
+                                                                endDate = CurrentDate(),
+                                                                cm1 = selectedAccount
+                                                            )
+                                                        )
+                                                    }
                                                 )
+
                                             }
                                         )
 
@@ -265,12 +287,18 @@ data class AttendanceScreen(
                                             label = "Receipt",
                                             icon = Icons.Default.Payments,
                                             onClick = {
-                                                nav.push(
-                                                    RegisterReportScreen(
-                                                        name = "Receipt",
-                                                        startDate = StartDate(),
-                                                        endDate = CurrentDate()
-                                                    )
+                                                salesmanPermission(
+                                                    "D15",
+                                                    accessDeniedBlock = { showDeniedDialog = true },
+                                                    successBlock = {
+                                                        nav.push(
+                                                            RegisterReportScreen(
+                                                                name = "Receipt",
+                                                                startDate = StartDate(),
+                                                                endDate = CurrentDate()
+                                                            )
+                                                        )
+                                                    }
                                                 )
                                             }
                                         )
@@ -294,13 +322,19 @@ data class AttendanceScreen(
                                             label = "Bill Payable",
                                             icon = Icons.Default.CreditCard,
                                             onClick = {
-                                                nav.push(
-                                                    OutstandingReportScreen(
-                                                        name = "Bill Payable",
-                                                        startDate = StartDate(),
-                                                        endDate = CurrentDate(),
-                                                        cm1 = selectedAccount
-                                                    )
+                                                salesmanPermission(
+                                                    "D9",
+                                                    accessDeniedBlock = { showDeniedDialog = true },
+                                                    successBlock = {
+                                                        nav.push(
+                                                            OutstandingReportScreen(
+                                                                name = "Bill Payable",
+                                                                startDate = StartDate(),
+                                                                endDate = CurrentDate(),
+                                                                cm1 = selectedAccount
+                                                            )
+                                                        )
+                                                    }
                                                 )
                                             }
                                         )
@@ -317,15 +351,20 @@ data class AttendanceScreen(
                                         label = "Create Sale Order",
                                         icon = Icons.Default.Create,
                                         onClick = {
+                                            salesmanPermission(
+                                                "D17",
+                                                accessDeniedBlock = { showDeniedDialog = true },
+                                                successBlock = {
+                                                    nav.push(
+                                                        SaleScreen(
+                                                            name = "Sale Order",
+                                                            vchType = 12,
+                                                            selectedLedger = selectedAccount,
+                                                            //  selectedLedgerGUID = selectedGUID
+                                                        )
+                                                    )
+                                                })
 
-                                            nav.push(
-                                                SaleScreen(
-                                                    name = "Sale Order",
-                                                    vchType = 12,
-                                                    selectedLedger = selectedAccount,
-                                                  //  selectedLedgerGUID = selectedGUID
-                                                )
-                                            )
 
                                         }
                                     )
