@@ -352,7 +352,7 @@ data class AttendanceScreen(
                                         icon = Icons.Default.Create,
                                         onClick = {
                                             salesmanPermission(
-                                                "D17",
+                                                "D20",
                                                 accessDeniedBlock = { showDeniedDialog = true },
                                                 successBlock = {
                                                     nav.push(

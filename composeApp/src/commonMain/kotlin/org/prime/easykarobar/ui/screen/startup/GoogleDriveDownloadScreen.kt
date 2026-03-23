@@ -53,6 +53,7 @@ import kotlinx.coroutines.withContext
 import org.prime.easykarobar.business.viewmodel.GDownloadViewModel
 import org.prime.easykarobar.business.viewmodel.GoogleDriveViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.deleteDbFile
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
@@ -111,6 +112,8 @@ object GoogleDriveDownloadScreen : Screen {
                 return@LaunchedEffect
             }
 
+            println(">>> Deleting Old DB File...")
+            deleteDbFile()
             println(">>> Requesting Drive token...")
 
             googleDriveViewModel.getDriveToken { accessToken ->
@@ -264,23 +267,6 @@ private fun LogoRound() {
     }
 }
 
-private fun formatBytes(bytes: Long): String {
-    return when {
-        bytes < 1024 -> "$bytes B"
-        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
-        bytes < 1024 * 1024 * 1024 -> {
-            val mb = bytes / (1024.0 * 1024.0)
-            val mbRounded = (mb * 10).toLong() / 10.0
-            "$mbRounded MB"
-        }
-
-        else -> {
-            val gb = bytes / (1024.0 * 1024.0 * 1024.0)
-            val gbRounded = (gb * 100).toLong() / 100.0
-            "$gbRounded GB"
-        }
-    }
-}
 
 // Platform-specific function to read database file
 expect fun readDatabaseFile(filePath: String): ByteArray
