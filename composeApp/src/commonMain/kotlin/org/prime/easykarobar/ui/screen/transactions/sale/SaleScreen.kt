@@ -2519,13 +2519,13 @@ fun ExpandedItemEditor1(
                         )
 
                         // 3 additional info fields — one per row stacked vertically
-                        for (i in 0..2) {
+
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
                                 Text(
-                                    text = "Info ${i + 1}",
+                                    text = "Info",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -2540,8 +2540,8 @@ fun ExpandedItemEditor1(
                                         .padding(horizontal = 8.dp, vertical = 6.dp)
                                 ) {
                                     BasicTextField(
-                                        value = additionalInfos[i],
-                                        onValueChange = { additionalInfos[i] = it },
+                                        value = additionalInfos[0],
+                                        onValueChange = { additionalInfos[0] = it },
                                         singleLine = true,
                                         textStyle = MaterialTheme.typography.bodyMedium.copy(
                                             color = MaterialTheme.colorScheme.onSurface
@@ -2551,7 +2551,7 @@ fun ExpandedItemEditor1(
                                 }
                             }
                         }
-                    }
+
                 }
             }
 

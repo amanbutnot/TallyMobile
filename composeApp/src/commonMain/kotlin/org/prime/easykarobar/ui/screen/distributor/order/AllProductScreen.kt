@@ -36,9 +36,11 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen.ShowProductInfo
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
+import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
 import org.tally.GetProductsForDis
 
 data class AllProductScreen(
@@ -55,7 +57,11 @@ data class AllProductScreen(
             val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
             val searchQuery = remember { mutableStateOf("") }
             val db = DatabaseHolder.instance
-            val list = db.productsQueries.getProductsForDis(productCode).executeAsList()
+            val perms = SharedPrefs.Permissions.get()
+            val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
+            val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
+            val list = db.productsQueries.getProductsForDis(    filterGroup = filterAGRP,
+                groupCodes = groupCodes).executeAsList()
             val viewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
 
             TallyScaffold(
