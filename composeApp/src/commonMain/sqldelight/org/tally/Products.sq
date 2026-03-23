@@ -116,7 +116,7 @@ ORDER BY Name;
 
 -- Distributor
 productCategoriesForDis:
-SELECT Name,GUID FROM ProductGroupMaster ORDER BY Name;
+SELECT Name,GUID FROM ProductGroupMaster WHERE (:filterGroup = 0 OR ProductGroupMaster.GroupCode IN :groupCodes) ORDER BY Name;
 
 getProductsForDis:
 SELECT

@@ -12,7 +12,7 @@ data class DistributorRequest(
     val ledger_guid: String,
     val status: String? = null,
     val FilterGroup: String?=null,
-    val ConfigGroup: List<String>?=null
+    val ConfigGroup: String?=null
 )
 
 

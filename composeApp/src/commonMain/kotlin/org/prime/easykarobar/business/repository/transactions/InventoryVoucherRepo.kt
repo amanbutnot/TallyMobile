@@ -69,6 +69,7 @@ object InventoryVoucherRepo {
                 header("Authorization", "Bearer $token")
                 setBody(mapOf("Transaction_ID" to tranId))
             }
+            println("THIS IS WHT I LOOK")
             println(response.bodyAsText())
             response.body()
         } catch (e: Exception) {

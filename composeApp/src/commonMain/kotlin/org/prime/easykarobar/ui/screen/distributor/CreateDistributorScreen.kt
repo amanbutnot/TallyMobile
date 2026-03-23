@@ -101,7 +101,8 @@ data class CreateDistributorScreen(
             name = distributor.distributor_name
             number = distributor.mobile_no
             selectedStatus = distributor.status.toString()
-            selectedGroups = distributor.ConfigGroup?:emptyList()
+            selectedGroups =
+                distributor.ConfigGroup?.split(",")?.map { it.trim().removeSurrounding("'") }?:emptyList()
             filterItemGroup = distributor.FilterGroup == "Y"
         }
 
@@ -324,7 +325,7 @@ data class CreateDistributorScreen(
                                             ledger_guid = selectedGUID,
                                             status = selectedStatus,
                                             FilterGroup = if (filterItemGroup) "Y" else "N",
-                                            ConfigGroup = selectedGroups,
+                                            ConfigGroup = selectedGroups.joinToString(",") { "'$it'"  },
                                         )
                                     ) {
                                         nav.pop()
@@ -340,7 +341,7 @@ data class CreateDistributorScreen(
                                             ledger_guid = selectedGUID,
                                             status = selectedStatus,
                                             FilterGroup = if (filterItemGroup) "Y" else "N",
-                                            ConfigGroup = selectedGroups,
+                                            ConfigGroup = selectedGroups.joinToString(",") { it },
                                         )
                                     ) {
                                         name = ""

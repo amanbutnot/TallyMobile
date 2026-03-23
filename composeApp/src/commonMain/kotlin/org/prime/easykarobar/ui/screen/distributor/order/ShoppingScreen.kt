@@ -87,9 +87,10 @@ import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getCategoryImage
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
-import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
+import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.tally.GetProductsForDis
 import org.tally.ProductCategoriesForDis
 import smartSearch
@@ -120,15 +121,13 @@ object ShoppingScreen : Screen {
         val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
         val showProductInfo = remember { mutableStateOf(false) }
         val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
-        val perms = SharedPrefs.Permissions.get()
-        val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
-        val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
         val db = DatabaseHolder.instance
         val list = db.productsQueries.getProductsForDis(
-            filterGroup = filterAGRP,
-            groupCodes = groupCodes
+            filterGroup = filterItemGroups(),
+            groupCodes = itemGroupCodes()
         ).executeAsList()
-        val categoryList = db.productsQueries.productCategoriesForDis().executeAsList()
+        val categoryList = db.productsQueries.productCategoriesForDis(       filterGroup = filterItemGroups(),
+            groupCodes = itemGroupCodes()).executeAsList()
 
 
         val filteredProducts =
