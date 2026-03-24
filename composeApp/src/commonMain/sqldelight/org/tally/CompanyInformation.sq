@@ -9,6 +9,7 @@ CREATE TABLE CompanyInformation (
     T7 TEXT,
     T8 TEXT,
     T9 TEXT,
+    C8 TEXT,
     T10 TEXT,
     D1 REAL,
     D2 REAL,

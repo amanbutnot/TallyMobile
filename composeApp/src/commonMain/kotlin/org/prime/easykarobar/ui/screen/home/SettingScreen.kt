@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Store
+import androidx.compose.material.icons.filled.SyncLock
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -307,6 +308,11 @@ object SettingScreen : Screen {
                             Icons.Default.CalendarToday,
                             "Date Format",
                             compInfo.T8.toString()
+                        )
+                        ProfileItem(
+                            Icons.Default.SyncLock,
+                            "Lasy Synced from Software",
+                            compInfo.C8.toString()
                         )
                     }
                 }
