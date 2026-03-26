@@ -108,6 +108,7 @@ import org.prime.easykarobar.data.model.transactions.InventoryVoucherRequest
 import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.model.transactions.TransportDetails
 import org.prime.easykarobar.ui.printing.salesHtml
+import org.prime.easykarobar.ui.screen.reports.outstanding.DataList
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionBillBottomSheet
 import org.prime.easykarobar.ui.shared.composables.DownloadResultDialog
@@ -131,7 +132,10 @@ import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.Products
 import yymmdd
 import kotlin.math.abs
+import kotlin.math.absoluteValue
 import kotlin.math.round
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 fun formatTwo(value: Double): String {
     val cents = round(value * 100).toLong()
@@ -196,7 +200,7 @@ data class SaleScreen(
     val enableUpdateButton: Boolean = true
 ) : Screen {
 
-    @OptIn(ExperimentalMaterial3Api::class, InternalVoyagerApi::class)
+    @OptIn(ExperimentalMaterial3Api::class, InternalVoyagerApi::class, ExperimentalUuidApi::class)
     @Composable
     override fun Content() {
         var showExitPopup by remember { mutableStateOf(false) }
@@ -277,7 +281,9 @@ data class SaleScreen(
         var SitPan by remember { mutableStateOf("") }
         var SgstIn by remember { mutableStateOf("") }
         var shareLoading by remember { mutableStateOf(false) }
-
+        var selectedReferences by remember {
+            mutableStateOf(listOf<DataList>())
+        }
         var showBillModalSheet by remember { mutableStateOf(false) }
         if (showExitPopup) TallyAlertBox(
             title = "Exit?",
@@ -1202,21 +1208,24 @@ data class SaleScreen(
 
                             TallyButton(
                                 label = "Bill Reference",
-                                enabled = (selectedLedgerGUID != "") && (!itemsList.isEmpty()), onClick = {
+                                enabled = (selectedLedgerGUID != "") && (!itemsList.isEmpty()),
+                                onClick = {
                                     showBillModalSheet = true
                                 }
                             )
 
 
-                                TransactionBillBottomSheet(
-                                    cm1 = selectedLedger,
-                                    showBottomSheet = showBillModalSheet,
-                                    ledgerGuid = selectedLedgerGUID,
-                                    onBillsSelected = { },
-                                    onDismiss = { showBillModalSheet = false },
-                                    bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                                    title = "Bill by Bill", totalAmount = grandTotal
-                                )
+                            TransactionBillBottomSheet(
+                                cm1 = selectedLedger,
+                                showBottomSheet = showBillModalSheet,
+                                ledgerGuid = selectedLedgerGUID,
+                                onBillsSelected = { selectedReferences = it },
+                                onDismiss = { showBillModalSheet = false },
+                                bottomSheetState = rememberModalBottomSheetState(
+                                    skipPartiallyExpanded = true
+                                ),
+                                title = "Bill by Bill", totalAmount = grandTotal
+                            )
 
 
                             OptionalFieldCard(
@@ -1457,7 +1466,49 @@ data class SaleScreen(
                                         OptionalField20 = optionalFields[19],
                                     )
                                 ),
-                                onSuccess = { showResultDialog = true },
+                                onSuccess = {
+                                    db.transaction {
+                                        selectedReferences.forEachIndexed { index, ref ->
+
+                                            val guid = Uuid.random().toString()
+                                            db.voucherBillAllocationsQueries.insertBillAllocation(
+                                                guid = "999$guid",
+
+                                                vch_guid = ref.VCH_GUID.toString(),
+
+                                                vchtype = ref.vchType,
+
+                                                date = ref.date,
+
+                                                duedate = ref.dueDate,
+
+                                                billnumber = ref.billNumber,
+
+                                                // order matters more than you think later
+                                                srno = (index+1).toLong(),
+
+                                                // you're already storing cm1 in data → don’t ignore it
+                                                cm1 =selectedLedger,
+
+                                                cm2 = "Agst Ref", // still hardcoded, your call
+
+                                                cm3 = "",
+
+                                                billid = ref.billId?.toDoubleOrNull(),
+
+                                                //TODO: logic for sale me + purc me minus
+                                                d1 = ref.d1?.absoluteValue,
+
+                                                d2 = null,
+
+
+                                                e2 = null
+                                            )
+                                        }
+                                    }
+
+                                    showResultDialog = true
+                                },
                                 url = if (isEdit) "updateInventory" else "addInventoryVch"
                             )
                         }
@@ -2659,3 +2710,17 @@ fun RowScope.SummaryCell(
 enum class PriceEditMode {
     LIST_PRICE, DISCOUNT, AMOUNT
 }
+
+
+//GUID 999 (0-1)
+//VCH GUID  same as GUID
+//VCHTYPE (Sale Purchase r p)
+//Date selected date
+//billnumber (reference wala bill number)
+//srno 0
+//cm1 party select
+//cm2 agst ref
+//cm3 ""
+//billid reference me aarha hai
+//d1 amount reference me
+//d2 e2 null

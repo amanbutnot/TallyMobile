@@ -17,6 +17,39 @@ CREATE TABLE Vouchers_BILLALLOCATIONS (
     PRIMARY KEY(GUID)
 );
 
+insertBillAllocation:
+INSERT INTO Vouchers_BILLALLOCATIONS(
+    GUID,
+    VCH_GUID,
+    VCHTYPE,
+    DATE,
+    DUEDATE,
+    BILLNUMBER,
+    SRNO,
+    CM1,
+    CM2,
+    CM3,
+    BILLID,
+    D1,
+    D2,
+    E2
+)
+VALUES (
+    :guid,
+    :vch_guid,
+    :vchtype,
+    :date,
+    :duedate,
+    :billnumber,
+    :srno,
+    :cm1,
+    :cm2,
+    :cm3,
+    :billid,
+    :d1,
+    :d2,
+    :e2
+);
 
 billReceivableList:
 SELECT
@@ -190,3 +223,6 @@ WHERE BILLID IN (
 GROUP BY CM1
 HAVING SUM(D1) <> 0
 ORDER BY CM1;
+
+
+
