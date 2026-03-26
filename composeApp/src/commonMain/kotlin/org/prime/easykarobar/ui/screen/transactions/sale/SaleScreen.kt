@@ -65,6 +65,7 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -108,6 +109,7 @@ import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.model.transactions.TransportDetails
 import org.prime.easykarobar.ui.printing.salesHtml
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
+import org.prime.easykarobar.ui.screen.transactions.TransactionBillBottomSheet
 import org.prime.easykarobar.ui.shared.composables.DownloadResultDialog
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyAlertBox
@@ -276,6 +278,7 @@ data class SaleScreen(
         var SgstIn by remember { mutableStateOf("") }
         var shareLoading by remember { mutableStateOf(false) }
 
+        var showBillModalSheet by remember { mutableStateOf(false) }
         if (showExitPopup) TallyAlertBox(
             title = "Exit?",
             message = "Do you want to exit",
@@ -779,7 +782,8 @@ data class SaleScreen(
                                                         guid = product.GUID
                                                             ?: pendingSelectedProductGUID ?: "",
                                                         gstPercentage = gstPercentage,
-                                                        taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0,
+                                                        taxCategoryCode = product.TaxCategoryCode?.toInt()
+                                                            ?: 0,
                                                         itemdesc1 = itemDescs.getOrNull(0),
                                                         itemdesc2 = itemDescs.getOrNull(1),
                                                         itemdesc3 = itemDescs.getOrNull(2),
@@ -834,7 +838,8 @@ data class SaleScreen(
                                                         net = net,
                                                         guid = pendingSelectedProductGUID ?: "",
                                                         gstPercentage = gstPercentage,
-                                                        taxCategoryCode = product?.TaxCategoryCode?.toInt() ?: 0,
+                                                        taxCategoryCode = product?.TaxCategoryCode?.toInt()
+                                                            ?: 0,
                                                         itemdesc1 = itemDescs.getOrNull(0),
                                                         itemdesc2 = itemDescs.getOrNull(1),
                                                         itemdesc3 = itemDescs.getOrNull(2),
@@ -857,7 +862,7 @@ data class SaleScreen(
                                                         itemdesc20 = itemDescs.getOrNull(19),
                                                         additionalinfo = additionalInfos.getOrNull(0),
 
-                                                    )
+                                                        )
                                                     editingItem = null
                                                 },
                                                 onBack = {
@@ -888,22 +893,31 @@ data class SaleScreen(
                                                             val newNetAmount: Double
 
                                                             if (taxType == TaxType.EXTRA) {
-                                                                newTaxableAmount = item1.price * newQty
-                                                                newGstAmount = newTaxableAmount * item1.gstPercentage / 100.0
-                                                                newNetAmount = newTaxableAmount + newGstAmount
+                                                                newTaxableAmount =
+                                                                    item1.price * newQty
+                                                                newGstAmount =
+                                                                    newTaxableAmount * item1.gstPercentage / 100.0
+                                                                newNetAmount =
+                                                                    newTaxableAmount + newGstAmount
                                                             } else if (taxType == TaxType.VOUCHER) {
-                                                                newTaxableAmount = item1.price * newQty
+                                                                newTaxableAmount =
+                                                                    item1.price * newQty
                                                                 newGstAmount = 0.0
                                                                 newNetAmount = item1.price * newQty
                                                             } else {
                                                                 if (item1.gstPercentage == 0.0) {
-                                                                    newTaxableAmount = item1.price * newQty
+                                                                    newTaxableAmount =
+                                                                        item1.price * newQty
                                                                     newGstAmount = 0.0
-                                                                    newNetAmount = item1.price * newQty
+                                                                    newNetAmount =
+                                                                        item1.price * newQty
                                                                 } else {
-                                                                    val amount = item1.price * newQty
-                                                                    newTaxableAmount = amount * 100.0 / (100.0 + item1.gstPercentage)
-                                                                    newGstAmount = amount - newTaxableAmount
+                                                                    val amount =
+                                                                        item1.price * newQty
+                                                                    newTaxableAmount =
+                                                                        amount * 100.0 / (100.0 + item1.gstPercentage)
+                                                                    newGstAmount =
+                                                                        amount - newTaxableAmount
                                                                     newNetAmount = amount
                                                                 }
                                                             }
@@ -1059,8 +1073,12 @@ data class SaleScreen(
 
                             AnimatedVisibility(
                                 visible = showTransportDetails,
-                                enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300)),
-                                exit = fadeOut(animationSpec = tween(300)) + shrinkVertically(animationSpec = tween(300))
+                                enter = fadeIn(animationSpec = tween(300)) + expandVertically(
+                                    animationSpec = tween(300)
+                                ),
+                                exit = fadeOut(animationSpec = tween(300)) + shrinkVertically(
+                                    animationSpec = tween(300)
+                                )
                             ) {
                                 ElevatedCard(
                                     modifier = Modifier.fillMaxWidth()
@@ -1181,6 +1199,25 @@ data class SaleScreen(
                                 onbillingShippingSelected = { SselectedBilling = it },
                                 selectedBilling = SselectedBilling
                             )
+
+                            TallyButton(
+                                label = "Bill Reference",
+                                enabled = (selectedLedgerGUID != "") && (!itemsList.isEmpty()), onClick = {
+                                    showBillModalSheet = true
+                                }
+                            )
+
+
+                                TransactionBillBottomSheet(
+                                    cm1 = selectedLedger,
+                                    showBottomSheet = showBillModalSheet,
+                                    ledgerGuid = selectedLedgerGUID,
+                                    onBillsSelected = { },
+                                    onDismiss = { showBillModalSheet = false },
+                                    bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                                    title = "Bill by Bill", totalAmount = grandTotal
+                                )
+
 
                             OptionalFieldCard(
                                 showOptionalField = showOptionalField,
@@ -1361,7 +1398,7 @@ data class SaleScreen(
                                     itemdesc20 = item.itemdesc20,
                                     additionalinfo = item.additionalinfo,
 
-                                )
+                                    )
                             }
 
                             viewmodel.createEditInventoryResponse(
@@ -1789,7 +1826,9 @@ fun SundryCard(
                                         val filtered = newValue.filter { it.isDigit() || it == '.' }
                                         val dotCount = filtered.count { it == '.' }
                                         val validInput = if (dotCount > 1) {
-                                            filtered.substringBefore('.') + "." + filtered.substringAfter('.').replace(".", "")
+                                            filtered.substringBefore('.') + "." + filtered.substringAfter(
+                                                '.'
+                                            ).replace(".", "")
                                         } else filtered
                                         textValue = validInput
                                         fireAmountChange(validInput)
@@ -1814,7 +1853,9 @@ fun SundryCard(
                                                 Text(
                                                     text = if (isPercentage) "0%" else "0.00",
                                                     style = MaterialTheme.typography.bodyMedium.copy(
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                            alpha = 0.5f
+                                                        ),
                                                         textAlign = TextAlign.End
                                                     ),
                                                     modifier = Modifier.fillMaxWidth()
@@ -1860,7 +1901,8 @@ fun SundryCard(
                     IconButton(
                         onClick = {
                             if (isEditing) {
-                                val revertValue = if (sundry.amount == 0.0) "" else sundry.amount.toString()
+                                val revertValue =
+                                    if (sundry.amount == 0.0) "" else sundry.amount.toString()
                                 textValue = revertValue
                                 isEditing = false
                                 focusManager.clearFocus()
@@ -2036,7 +2078,8 @@ fun BorderedInput(
                 val filtered = newValue.text.filter { it.isDigit() || it == '.' }
                 val dotCount = filtered.count { it == '.' }
                 val validText = if (dotCount > 1) {
-                    filtered.substringBefore('.') + "." + filtered.substringAfter('.').replace(".", "")
+                    filtered.substringBefore('.') + "." + filtered.substringAfter('.')
+                        .replace(".", "")
                 } else filtered
                 textFieldValue = newValue.copy(text = validText)
                 onValueChange(validText)
@@ -2092,7 +2135,8 @@ fun TransactionItemBottomList(
         ) {
             Column(modifier = Modifier.fillMaxWidth().fillMaxHeight()) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -2103,7 +2147,11 @@ fun TransactionItemBottomList(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     IconButton(onClick = { onDismiss() }, modifier = Modifier.padding(0.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
                 HorizontalDivider(
@@ -2264,7 +2312,7 @@ fun ExpandedItemEditor1(
     // 3 additional info fields — also keyed on existingItem
     val additionalInfos = remember(existingItem) {
         mutableStateListOf(
-            existingItem?.additionalinfo?: "",
+            existingItem?.additionalinfo ?: "",
         )
     }
 
@@ -2297,6 +2345,7 @@ fun ExpandedItemEditor1(
                 val dis = discountN.toDoubleOrNull() ?: 0.0
                 lp - (lp * dis / 100.0)
             }
+
             PriceEditMode.AMOUNT -> {
                 if (!isAmountManuallyEdited || qtyValue == 0) return@derivedStateOf 0.0
                 val amt = amountN.toDoubleOrNull() ?: 0.0
@@ -2520,37 +2569,37 @@ fun ExpandedItemEditor1(
 
                         // 3 additional info fields — one per row stacked vertically
 
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                Text(
-                                    text = "Info",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .border(
-                                            1.dp,
-                                            MaterialTheme.colorScheme.outline,
-                                            RoundedCornerShape(6.dp)
-                                        )
-                                        .padding(horizontal = 8.dp, vertical = 6.dp)
-                                ) {
-                                    BasicTextField(
-                                        value = additionalInfos[0],
-                                        onValueChange = { additionalInfos[0] = it },
-                                        singleLine = true,
-                                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        ),
-                                        modifier = Modifier.fillMaxWidth()
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Text(
+                                text = "Info",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.outline,
+                                        RoundedCornerShape(6.dp)
                                     )
-                                }
+                                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                BasicTextField(
+                                    value = additionalInfos[0],
+                                    onValueChange = { additionalInfos[0] = it },
+                                    singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                             }
                         }
+                    }
 
                 }
             }

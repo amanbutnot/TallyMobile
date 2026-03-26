@@ -138,7 +138,7 @@ data class OutstandingReportScreen(
                                 dueDate = it.dueDate,
                                 d1 = it.d1,
                                 adjustmentAmount = it.adjustmentAmount,
-                                GroupName = it.GroupName
+                                GroupName = it.GroupName, billId = it.billid.toString()
                             )
                         }
                     } else {
@@ -163,7 +163,7 @@ data class OutstandingReportScreen(
                                 dueDate = it.dueDate,
                                 d1 = it.d1,
                                 adjustmentAmount = it.adjustmentAmount,
-                                GroupName = it.GroupName
+                                GroupName = it.GroupName, billId = it.billid.toString()
                             )
                         }
                     }
@@ -188,7 +188,7 @@ data class OutstandingReportScreen(
                                     d1 = it.d1,
                                     adjustmentAmount = it.adjustmentAmount,
                                     GroupName = it.GroupName,
-                                    itemName = it.ItemName
+                                    itemName = it.ItemName, billId = it.billid.toString()
                                 )
                             }
                     }
@@ -212,7 +212,7 @@ data class OutstandingReportScreen(
                                 d1 = it.d1,
                                 adjustmentAmount = it.adjustmentAmount,
                                 GroupName = it.GroupName,
-                                itemName = it.ItemName
+                                itemName = it.ItemName, billId = it.billid.toString()
                             )
                         }
                     }
@@ -235,7 +235,7 @@ data class OutstandingReportScreen(
                                 dueDate = it.dueDate,
                                 d1 = it.d1,
                                 adjustmentAmount = it.adjustmentAmount,
-                                GroupName = it.GroupName
+                                GroupName = it.GroupName, billId = it.billid.toString()
                             )
                         }
                     } else {
@@ -259,7 +259,7 @@ data class OutstandingReportScreen(
                                 dueDate = it.dueDate,
                                 d1 = it.d1,
                                 adjustmentAmount = it.adjustmentAmount,
-                                GroupName = it.GroupName
+                                GroupName = it.GroupName, billId = it.billid.toString()
                             )
                         }
                     }
@@ -829,6 +829,7 @@ data class DataList(
     val date: String?,
     val vchType: String?,
     val billNumber: String?,
+    val billId:String?,
     val cm1: String?,
     val dueDate: String?,
     val d1: Double?,
