@@ -38,6 +38,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.jetbrains.compose.resources.painterResource
 import org.prime.easykarobar.business.viewmodel.AuthViewModel
+import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.LoginRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.startup.GoogleDriveDownloadScreen
@@ -181,6 +182,13 @@ object LoginScreen : Screen {
                                         Password = password
                                     ),
                                     onSuccess = {
+                                        SharedPrefs.LoginData.save(
+                                            SharedPrefs.LoginDataModel(
+                                                username = email.trim(),
+                                                password = password.trim(),
+                                                list = CompanyList(emptyList()),
+                                            )
+                                        )
                                         nav.push(GoogleDriveDownloadScreen)
                                     }, onListSuccess = { companyList ->
                                         SharedPrefs.LoginInfo.save(email.trim())

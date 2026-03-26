@@ -35,13 +35,16 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
+import org.prime.easykarobar.business.viewmodel.AuthViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.model.LoginRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.SelectCompanyScreen
 import org.prime.easykarobar.ui.screen.home.tabs.HomeTab
@@ -62,6 +65,7 @@ object Dashboard : Screen {
         val list = queries.selectAll().executeAsList()
         val loginData = SharedPrefs.LoginData.get()
         val hasCompanies = loginData?.list != null
+        val viewModel: AuthViewModel = viewModel { AuthViewModel() }
 
         TabNavigator(HomeTab) { tabNavigator ->
             Scaffold(
@@ -110,7 +114,33 @@ object Dashboard : Screen {
                         },
 
                         actions = {
-                            IconButton(onClick = { nav.push(GoogleDriveDownloadScreen) }) {
+                            IconButton(onClick = {
+                                viewModel.userLogin(
+                                    LoginRequest(
+                                        Username = loginData?.username?:"",
+                                        Password = loginData?.password?:""
+                                    ),
+                                    onSuccess = {
+                                        nav.push(GoogleDriveDownloadScreen)
+                                    }, onListSuccess = { companyList ->
+                                        SharedPrefs.LoginInfo.save(loginData?.username?.trim()?:"")
+                                        SharedPrefs.LoginData.save(
+                                            SharedPrefs.LoginDataModel(
+                                                username =loginData?.username?.trim()?:"",
+                                                password = loginData?.password?.trim()?:"",
+                                                list = companyList,
+                                            )
+                                        )
+                                        nav.push(
+                                            SelectCompanyScreen(
+                                                loginData?.username?.trim()?:"",
+                                                loginData?.password?.trim()?:"",
+                                                companyList
+                                            )
+                                        )
+                                    }
+                                )
+                            }) {
                                 Icon(
                                     Icons.Default.CloudSync,
                                     contentDescription = "Cloud Sync",

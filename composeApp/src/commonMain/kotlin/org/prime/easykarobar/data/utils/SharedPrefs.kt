@@ -29,8 +29,8 @@ object SharedPrefs {
         DistributorData.clear()
         Permissions.clear()
 
-        // login info / cached login request
-        LoginData.clear()
+//        // login info / cached login request
+//        LoginData.clear()
 
         // sync / version data
         LoginVersion.clear()
