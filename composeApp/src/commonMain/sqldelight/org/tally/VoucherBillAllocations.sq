@@ -17,8 +17,12 @@ CREATE TABLE Vouchers_BILLALLOCATIONS (
     PRIMARY KEY(GUID)
 );
 
+deleteOldBillAllocation:
+DELETE FROM Vouchers_BILLALLOCATIONS
+WHERE GUID = :guid;
+
 insertBillAllocation:
-INSERT INTO Vouchers_BILLALLOCATIONS(
+INSERT OR IGNORE INTO Vouchers_BILLALLOCATIONS(
     GUID,
     VCH_GUID,
     VCHTYPE,
@@ -96,7 +100,7 @@ SELECT
 FROM Vouchers_BILLALLOCATIONS AS V
 INNER JOIN (
     SELECT BILLID, ROUND(SUM(D1),3) AS AdjustmentAmount
-    FROM Vouchers_BILLALLOCATIONS
+    FROM Vouchers_BILLALLOCATIONS WHERE 1=1 AND (:filterGuid = 0 OR GUID <>:uniqueID)
     GROUP BY BILLID
 ) AS Adj
 ON V.BILLID = Adj.BILLID
@@ -105,6 +109,32 @@ WHERE V.CM2 IN ('New Ref', 'Advance')
   AND V.D1 < 0
   AND V.CM1 =?
   AND Adj.AdjustmentAmount < 0  AND (:filterCm3 = 0 OR V.CM3 IN :cm3)
+
+ORDER BY V.DATE, V.CM1;
+
+billByPayList:
+SELECT
+    V.VCH_GUID,
+    V.DATE AS date,
+    V.VCHTYPE AS vchType,
+    V.BILLNUMBER AS billNumber,
+    V.CM1 AS cm1,
+    V.DUEDATE AS dueDate,
+    V.BILLID AS billid,
+    V.D1 AS d1,
+    Adj.AdjustmentAmount AS adjustmentAmount,lm.GroupName
+FROM Vouchers_BILLALLOCATIONS AS V
+INNER JOIN (
+    SELECT BILLID, ROUND(SUM(D1),3) AS AdjustmentAmount
+    FROM Vouchers_BILLALLOCATIONS WHERE 1=1 AND (:filterGuid = 0 OR GUID <>:uniqueID)
+    GROUP BY BILLID
+) AS Adj
+ON V.BILLID = Adj.BILLID
+LEFT JOIN LedgerMaster AS lm ON lm.Name = V.CM1
+WHERE V.CM2 IN ('New Ref', 'Advance')
+  AND V.D1 > 0
+  AND V.CM1 =?
+  AND Adj.AdjustmentAmount > 0  AND (:filterCm3 = 0 OR V.CM3 IN :cm3)
 
 ORDER BY V.DATE, V.CM1;
 

@@ -26,6 +26,7 @@ data class TranRequest(
 data class TranResponse(
     val VoucherNumber: String?=null,
     val TransactionID: Int?=null,
+    val uniqueID: String?=null,
 )
 
 @Serializable

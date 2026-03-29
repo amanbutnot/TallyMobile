@@ -6,18 +6,23 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,6 +51,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
+import kotlin.math.absoluteValue
 
 data class SingleEntryReceipt(
     val name: String,
@@ -59,6 +65,10 @@ data class SingleEntryReceipt(
 
         val db = DatabaseHolder.instance
         val nav = LocalNavigator.currentOrThrow
+        var selectedReferences by remember {
+            mutableStateOf(listOf<BillByBillModel>())
+        }
+        var showBillModalSheet by remember { mutableStateOf(false) }
 
         var selectedAccount by rememberSaveable { mutableStateOf(existingTransaction?.C1 ?: "") }
         var selectedAccountGUID by rememberSaveable {
@@ -91,7 +101,13 @@ data class SingleEntryReceipt(
         val state by viewmodel.dataState
 
         val isEdit = existingTransaction != null
+        var uniqueId by remember { mutableStateOf("") }
 
+
+        if (existingTransaction != null) {
+            //TODO: make selectedbills from the list
+            uniqueId = state.data?.uniqueID.toString()
+        }
 
         if (state.isLoading) {
             if (isEdit) {
@@ -150,30 +166,59 @@ data class SingleEntryReceipt(
                         onValueChange = { narration = it },
                         label = "Narration"
                     )
+
+                    if (vchType !in listOf(12, 13, 15)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Bill By Bill Reference",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            TextButton(
+                                onClick = { showBillModalSheet = true },
+                                enabled = (selectedAccount != "") && (amount != "")
+                            ) {
+                                Icon(
+                                    imageVector = if (showBillModalSheet) Icons.Default.RemoveCircleOutline
+                                    else Icons.Default.AddCircleOutline,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (showBillModalSheet) "Remove" else "Add",
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
+                        }
+
+                    }
+
+
+
+                    TransactionBillBottomSheet(
+                        cm1 = selectedAccount,
+                        showBottomSheet = showBillModalSheet,
+                        ledgerGuid = selectedAccountGUID,
+                        initialSelectedBills = selectedReferences,
+                        onBillsSelected = { selectedReferences = it },
+                        onDismiss = { showBillModalSheet = false },
+                        bottomSheetState = rememberModalBottomSheetState(
+                            skipPartiallyExpanded = true
+                        ),
+                        title = "Bill by Bill", totalAmount = amount.toDoubleOrNull() ?: 0.0,
+                        isEdit = isEdit,
+                        uniqueId =uniqueId, vchType = vchType
+                    )
                     TallyButton(
                         onClick = {
 
                             if (isEdit) {
-                                println(
-                                    TranRequest(
-                                        VchType = vchType,
-                                        TransactionID = existingTransaction.TransactionID,
-                                        TranDate = selectedDate,
-                                        CM1 = selectedAccountGUID,
-                                        CM2 = selectedSettlementGUID,
-                                        CM3 = "",
-                                        CM4 = "",
-                                        C1 = selectedAccount,
-                                        C2 = selectedSettlement,
-                                        C3 = "",
-                                        C4 = "",
-                                        D1 = amount.toDouble(),
-                                        D2 = amount.toDouble(),
-                                        D3 = 0.0,
-                                        D4 = 0.0,
-                                        Narration = narration
-                                    )
-                                )
                                 viewmodel.updateSingleTran(
 
                                     TranRequest(
@@ -195,6 +240,81 @@ data class SingleEntryReceipt(
                                         Narration = narration
                                     ),
                                     onSuccess = {
+                                        db.transaction {
+                                            selectedReferences.forEach {
+                                                db.voucherBillAllocationsQueries.deleteOldBillAllocation(
+                                                    state.data?.uniqueID.toString()
+                                                )
+                                            }
+                                        }
+                                        db.transaction {
+                                            selectedReferences.forEachIndexed { index, ref ->
+
+
+                                                db.voucherBillAllocationsQueries.insertBillAllocation(
+                                                    guid = state.data?.uniqueID.toString(),
+
+                                                    vch_guid = state.data?.uniqueID.toString(),
+
+                                                    vchtype = ref.vchType,
+
+                                                    date = ref.date,
+
+                                                    duedate = ref.dueDate,
+
+                                                    billnumber = ref.billNumber,
+
+                                                    // order matters more than you think later
+                                                    srno = (index + 1).toLong(),
+
+                                                    // you're already storing cm1 in data → don’t ignore it
+                                                    cm1 = selectedAccount,
+
+                                                    cm2 = "Agst Ref", // still hardcoded, your call
+
+                                                    cm3 = "",
+
+                                                    billid = ref.billId?.toDoubleOrNull(),
+
+                                                    //TODO: logic for sale me + purc me minus
+                                                    //d1 = ref.d1?.absoluteValue,
+                                                    d1 = when (vchType) {
+                                                        9 -> {
+                                                            ref.d1?.absoluteValue
+                                                        }
+
+                                                        3 -> {
+                                                            ref.d1
+                                                        }
+
+                                                        2 -> {
+                                                            ref.d1
+                                                        }
+
+                                                        10 -> {
+                                                            ref.d1?.absoluteValue
+                                                        }
+
+                                                        14 -> {
+                                                            ref.d1?.absoluteValue
+                                                        }
+
+                                                        16 -> {
+                                                            ref.d1?.absoluteValue
+                                                        }
+
+                                                        else -> {
+                                                            ref.d1?.absoluteValue
+                                                        }
+                                                    },
+
+                                                    d2 = null,
+
+//if pending >0
+                                                    e2 = null
+                                                )
+                                            }
+                                        }
                                         showPopup = true
                                     })
                             } else {
@@ -217,6 +337,81 @@ data class SingleEntryReceipt(
                                         Narration = narration
                                     ),
                                     onSuccess = {
+                                        db.transaction {
+                                            selectedReferences.forEach {
+                                                db.voucherBillAllocationsQueries.deleteOldBillAllocation(
+                                                    state.data?.uniqueID.toString()
+                                                )
+                                            }
+                                        }
+                                        db.transaction {
+                                            selectedReferences.forEachIndexed { index, ref ->
+
+
+                                                db.voucherBillAllocationsQueries.insertBillAllocation(
+                                                    guid = state.data?.uniqueID.toString(),
+
+                                                    vch_guid = state.data?.uniqueID.toString(),
+
+                                                    vchtype = ref.vchType,
+
+                                                    date = ref.date,
+
+                                                    duedate = ref.dueDate,
+
+                                                    billnumber = ref.billNumber,
+
+                                                    // order matters more than you think later
+                                                    srno = (index + 1).toLong(),
+
+                                                    // you're already storing cm1 in data → don’t ignore it
+                                                    cm1 = selectedAccount,
+
+                                                    cm2 = "Agst Ref", // still hardcoded, your call
+
+                                                    cm3 = "",
+
+                                                    billid = ref.billId?.toDoubleOrNull(),
+
+                                                    //TODO: logic for sale me + purc me minus
+                                                    //d1 = ref.d1?.absoluteValue,
+                                                    d1 = when (vchType) {
+                                                        9 -> {
+                                                            ref.d1?.absoluteValue
+                                                        }
+
+                                                        3 -> {
+                                                            ref.d1
+                                                        }
+
+                                                        2 -> {
+                                                            ref.d1
+                                                        }
+
+                                                        10 -> {
+                                                            ref.d1?.absoluteValue
+                                                        }
+
+                                                        14 -> {
+                                                            ref.d1?.absoluteValue
+                                                        }
+
+                                                        16 -> {
+                                                            ref.d1?.absoluteValue
+                                                        }
+
+                                                        else -> {
+                                                            ref.d1?.absoluteValue
+                                                        }
+                                                    },
+
+                                                    d2 = null,
+
+//if pending >0
+                                                    e2 = null
+                                                )
+                                            }
+                                        }
                                         showPopup = true
                                     }
                                 )
@@ -276,8 +471,8 @@ data class SingleEntryReceipt(
                         message = (state.message + " ${state.data?.VoucherNumber ?: ""}"),
                         onDone = {
                             if (state.success) {
-                                    showPopup = false
-                                    nav.pop()
+                                showPopup = false
+                                nav.pop()
 
                             } else {
                                 showPopup = false
