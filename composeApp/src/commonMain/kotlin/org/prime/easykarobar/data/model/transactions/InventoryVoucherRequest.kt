@@ -1,6 +1,7 @@
 package org.prime.easykarobar.data.model.transactions
 
 import kotlinx.serialization.Serializable
+import org.prime.easykarobar.ui.screen.transactions.BillByBillModel
 
 @Serializable
 data class InventoryVoucherRequest(
@@ -17,6 +18,7 @@ data class InventoryVoucherRequest(
     val sundries: List<SundryItem>,
     val Narration: String,
     val transportDetails: TransportDetails,
+    val bills_collection: List<BillByBillModel>,
     val TransactionID: Int? = null, val total_amt: Double
 )
 
@@ -118,7 +120,8 @@ data class BillingItem(
 
 @Serializable
 data class InventoryVoucherResponse(
-    val VoucherNumber: String
+    val VoucherNumber: String,
+    val uniqueID: String,
 )
 
 @Serializable
@@ -172,7 +175,11 @@ data class InventoryItemResponse(
     val other_info: TransportDetails? = null,
     val Others1: String,
     val Others2: String,
-    val items: List<Item>, val taxType: Int, val sundries: List<SundryItem>
+    val items: List<Item>,
+    val taxType: Int,
+    val uniqueID: String?=null,
+    val sundries: List<SundryItem>,
+    val bills_collection: List<BillByBillModel>? = null
 )
 
 @Serializable
@@ -221,4 +228,4 @@ data class Item(
     val itemdesc20: String? = null,
     val additionalinfo: String? = null,
 
-)
+    )

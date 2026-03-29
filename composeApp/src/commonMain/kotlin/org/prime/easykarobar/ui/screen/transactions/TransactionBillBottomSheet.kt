@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,10 +30,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.serialization.Serializable
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
-import org.prime.easykarobar.ui.screen.reports.outstanding.DataList
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import smartSearch
 import kotlin.math.absoluteValue
@@ -43,8 +44,11 @@ fun TransactionBillBottomSheet(
     cm1: String,
     showBottomSheet: Boolean,
     ledgerGuid: String,
-    initialSelectedBills: List<DataList> = emptyList(),
-    onBillsSelected: (List<DataList>) -> Unit,
+    isEdit: Boolean,
+    vchType:Int,
+    uniqueId: String? = null,
+    initialSelectedBills: List<BillByBillModel> = emptyList(),
+    onBillsSelected: (List<BillByBillModel>) -> Unit,
     totalAmount: Double,
     onDismiss: () -> Unit,
     bottomSheetState: SheetState,
@@ -52,24 +56,23 @@ fun TransactionBillBottomSheet(
 ) {
     var query by remember { mutableStateOf("") }
     val db = DatabaseHolder.instance
-    var billList by remember { mutableStateOf<List<DataList>>(emptyList()) }
-    val selectedBills = remember { mutableStateListOf<DataList>() }
+
+    var billList by remember { mutableStateOf<List<BillByBillModel>>(emptyList()) }
+    val selectedBills = remember { mutableStateListOf<BillByBillModel>() }
 
     // ---------------------------
-    // 🔥 Allocation Logic
+    // Allocation Logic
     // ---------------------------
     fun allocateAmounts(
-        selected: List<DataList>,
+        selected: List<BillByBillModel>,
         total: Double
     ): Map<String, Double> {
 
         var remaining = total
 
-        val sorted = selected.sortedBy { it.date } // enforce order
-
-        return sorted.associate { item ->
-            val key = item.billId ?: item.hashCode().toString()
-            val maxAllowed = item.adjustmentAmount?.absoluteValue ?: 0.0
+        return selected.associate { item ->
+            val key = item.billId!!
+            val maxAllowed = item.d1?.absoluteValue ?: 0.0
 
             val allocated = when {
                 remaining <= 0 -> 0.0
@@ -81,16 +84,14 @@ fun TransactionBillBottomSheet(
             key to allocated
         }
     }
-    // recompute allocation whenever selection changes
+
     val allocations by remember(selectedBills, totalAmount) {
         derivedStateOf {
             allocateAmounts(selectedBills, totalAmount)
         }
     }
 
-    val currentAllocatedTotal by remember {
-        derivedStateOf { allocations.values.sum() }
-    }
+    val currentAllocatedTotal = allocations.values.sum()
 
     // ---------------------------
 
@@ -108,24 +109,50 @@ fun TransactionBillBottomSheet(
         if (filterBroker == 1L) perms?.ConfigBroker.parseToStringList() else emptyList()
 
     LaunchedEffect(ledgerGuid) {
-        if (ledgerGuid.isNotEmpty()) {
-            billList = db.voucherBillAllocationsQueries.billByBillList(
-                CM1 = cm1,
-                filterCm3 = filterBroker,
-                cm3 = configBroker
-            ).executeAsList().map {
-                DataList(
-                    VCH_GUID = it.VCH_GUID,
-                    date = it.date,
-                    vchType = it.vchType,
-                    billNumber = it.billNumber,
-                    cm1 = it.cm1,
-                    dueDate = it.dueDate,
-                    d1 = it.d1,
-                    adjustmentAmount = it.adjustmentAmount,
-                    GroupName = it.GroupName,
-                    billId = it.billid.toString()
-                )
+        if(vchType in listOf(9,10,19)){
+            if (ledgerGuid.isNotEmpty()) {
+                billList = db.voucherBillAllocationsQueries.billByPayList(
+                    CM1 = cm1,
+                    filterCm3 = filterBroker,
+                    cm3 = configBroker,
+                    filterGuid = if (isEdit) 1L else 0L,
+                    uniqueID = uniqueId.toString()
+                ).executeAsList().mapIndexed { index, list ->
+                    BillByBillModel(
+                        date = list.date,
+                        vchType = list.vchType,
+                        billNumber = list.billNumber,
+                        cm1 = list.cm1,
+                        dueDate = list.dueDate,
+                        d1 = list.adjustmentAmount,
+                        billId = list.billid.toString(),
+                        SrNo = (index + 1).toString(),
+                        cm2 = "Agst Ref"
+                    )
+                }
+            }
+        }else{
+
+            if (ledgerGuid.isNotEmpty()) {
+                billList = db.voucherBillAllocationsQueries.billByBillList(
+                    CM1 = cm1,
+                    filterCm3 = filterBroker,
+                    cm3 = configBroker,
+                    filterGuid = if (isEdit) 1L else 0L,
+                    uniqueID = uniqueId.toString()
+                ).executeAsList().mapIndexed { index, list ->
+                    BillByBillModel(
+                        date = list.date,
+                        vchType = list.vchType,
+                        billNumber = list.billNumber,
+                        cm1 = list.cm1,
+                        dueDate = list.dueDate,
+                        d1 = list.adjustmentAmount,
+                        billId = list.billid.toString(),
+                        SrNo = (index + 1).toString(),
+                        cm2 = "Agst Ref"
+                    )
+                }
             }
         }
     }
@@ -141,15 +168,13 @@ fun TransactionBillBottomSheet(
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = { onDismiss() },
-            sheetState = bottomSheetState,
+            sheetState = bottomSheetState, modifier = Modifier.navigationBarsPadding(),
             containerColor = MaterialTheme.colorScheme.surface,
-            contentWindowInsets = { WindowInsets(0,0,0,0) }
+            contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
         ) {
             Column(Modifier.fillMaxSize()) {
 
-                // ---------------------------
                 // HEADER
-                // ---------------------------
                 Row(
                     Modifier.fillMaxWidth().padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -166,25 +191,24 @@ fun TransactionBillBottomSheet(
                     }
                 }
 
-                // ---------------------------
                 // LIST
-                // ---------------------------
                 LazyColumn(Modifier.weight(1f)) {
-
                     items(filteredList) { item ->
 
                         val isSelected = selectedBills.any { it.billId == item.billId }
-
                         val allocatedAmount = allocations[item.billId] ?: 0.0
 
-                        val canSelect =
-                            isSelected || currentAllocatedTotal < totalAmount
+                        val pending =
+                            (item.d1?.absoluteValue ?: 0.0) - allocatedAmount.absoluteValue
+
+                        val remaining = totalAmount - currentAllocatedTotal
+                        val canSelect = isSelected || remaining > 0
 
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(8.dp)
-                                .clickable(enabled = canSelect || isSelected) {
+                                .clickable(enabled = canSelect) {
                                     if (isSelected) {
                                         selectedBills.removeAll { it.billId == item.billId }
                                     } else {
@@ -194,7 +218,8 @@ fun TransactionBillBottomSheet(
                             shape = RoundedCornerShape(12.dp),
                             color = if (isSelected)
                                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                         ) {
 
                             Row(Modifier.padding(16.dp)) {
@@ -202,8 +227,8 @@ fun TransactionBillBottomSheet(
                                 Column(Modifier.weight(1f)) {
 
                                     Text("Bill: ${item.billNumber}")
-
-                                    Text("Amt: ${item.d1?.formatToAmtDec()}")
+                                    //add adjusted amount
+                                    Text("Amt: ${item.d1?.absoluteValue?.formatToAmtDec()}")
 
                                     Text(
                                         "Allocated: ${allocatedAmount.formatToAmtDec()}",
@@ -211,8 +236,10 @@ fun TransactionBillBottomSheet(
                                     )
 
                                     Text(
-                                        "Pending: ${item.adjustmentAmount?.formatToAmtDec()}",
-                                        color = MaterialTheme.colorScheme.error
+                                        "Pending: ${pending.formatToAmtDec()}",
+                                        color = if (pending > 0)
+                                            MaterialTheme.colorScheme.error
+                                        else MaterialTheme.colorScheme.primary
                                     )
                                 }
 
@@ -228,9 +255,7 @@ fun TransactionBillBottomSheet(
                     }
                 }
 
-                // ---------------------------
                 // FOOTER
-                // ---------------------------
                 Column(Modifier.padding(16.dp)) {
 
                     val pendingAmount = totalAmount - currentAllocatedTotal
@@ -246,15 +271,40 @@ fun TransactionBillBottomSheet(
 
                     Button(
                         onClick = {
-                            // Map each selected bill with its allocated d1 value
-                            val billsWithAllocations = selectedBills.map { bill ->
-                                val key = bill.billId ?: bill.hashCode().toString()
-                                bill.copy(d1 = allocations[key])
+                            val result = mutableListOf<BillByBillModel>()
+
+                            // Existing selected allocations
+                            selectedBills.forEachIndexed { index, bill ->
+                                val key = bill.billId!!
+                                result.add(
+                                    bill.copy(
+                                        d1 = allocations[key],
+                                        SrNo = (index + 1).toString()
+                                    )
+                                )
                             }
-                            onBillsSelected(billsWithAllocations)
+
+                            // 🔥 Add NEW REF if pending exists
+                            if (pendingAmount > 0) {
+                                result.add(
+                                    BillByBillModel(
+                                        SrNo = (result.size + 1).toString(),
+                                        date = selectedBills.firstOrNull()?.date,
+                                        vchType = selectedBills.firstOrNull()?.vchType,
+                                        billNumber = "",
+                                        billId = "",
+                                        cm1 = cm1,
+                                        cm2 = "New Ref",
+                                        dueDate = selectedBills.firstOrNull()?.date,
+                                        d1 = pendingAmount
+                                    )
+                                )
+                            }
+
+                            onBillsSelected(result)
                             onDismiss()
                         },
-                        enabled = selectedBills.isNotEmpty(),
+                        enabled = selectedBills.isNotEmpty() || totalAmount > 0,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Save (${selectedBills.size})")
@@ -264,3 +314,17 @@ fun TransactionBillBottomSheet(
         }
     }
 }
+
+@Serializable
+data class BillByBillModel(
+    val SrNo: String?,
+    val date: String?,
+    val vchType: String?,
+    val billNumber: String?,
+    val uniqueID: String? = null,
+    val billId: String?,
+    val cm1: String?,
+    val cm2: String?,
+    val d1: Double?,
+    val dueDate: String?,
+)

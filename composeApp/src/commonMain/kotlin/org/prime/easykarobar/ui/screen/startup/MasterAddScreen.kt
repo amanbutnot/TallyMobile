@@ -25,6 +25,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.business.viewmodel.masters.AccountViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.ui.screen.home.Dashboard
+import kotlin.math.absoluteValue
 
 object MasterAddScreen : Screen {
 
@@ -90,6 +91,46 @@ object MasterAddScreen : Screen {
                                 ?: 0.0,
                             product_guid = data.id.toString()
                         )
+                    }
+                    state.data?.data_bills?.forEach { data ->
+                        db.transaction {
+
+
+                            db.voucherBillAllocationsQueries.insertBillAllocation(
+                                guid = data.uniqueID.toString(),
+
+                                vch_guid = data.uniqueID.toString(),
+
+                                vchtype = data.vchType,
+
+                                date = data.date,
+
+                                duedate = data.dueDate,
+
+                                billnumber = data.billNumber,
+
+                                // order matters more than you think later
+                                srno = data.SrNo?.toLong(),
+
+                                // you're already storing cm1 in data → don’t ignore it
+                                cm1 = data.cm1.toString(),
+
+                                cm2 = data.cm2.toString(), // still hardcoded, your call
+
+                                cm3 = "",
+
+                                billid = data.billId?.toDoubleOrNull(),
+
+                                //TODO: logic for sale me + purc me minus
+                                d1 = data.d1?.absoluteValue,
+
+                                d2 = null,
+
+
+                                e2 = null
+                            )
+                        }
+
                     }
                 }
                 nav.replaceAll(Dashboard)

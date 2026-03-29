@@ -108,7 +108,7 @@ import org.prime.easykarobar.data.model.transactions.InventoryVoucherRequest
 import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.model.transactions.TransportDetails
 import org.prime.easykarobar.ui.printing.salesHtml
-import org.prime.easykarobar.ui.screen.reports.outstanding.DataList
+import org.prime.easykarobar.ui.screen.transactions.BillByBillModel
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionBillBottomSheet
 import org.prime.easykarobar.ui.shared.composables.DownloadResultDialog
@@ -135,7 +135,6 @@ import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.round
 import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 fun formatTwo(value: Double): String {
     val cents = round(value * 100).toLong()
@@ -243,6 +242,7 @@ data class SaleScreen(
         val oneState by viewmodel.oneState
         val deleteState by viewmodel.deleteState
         val scope = rememberCoroutineScope()
+        var uniqueId by remember { mutableStateOf("") }
 
         var showDeleteDialog by remember { mutableStateOf(false) }
         var showEmptyBarcode by remember { mutableStateOf(false) }
@@ -253,7 +253,7 @@ data class SaleScreen(
         }
         var focusedSundryGuid by remember { mutableStateOf<String?>(null) }
 
-        var showTransportDetails by remember { mutableStateOf(isEdit) }
+        var showTransportDetails by remember { mutableStateOf(false) }
         var transportName by remember { mutableStateOf("") }
         var gstRrNo by remember { mutableStateOf("") }
         var vehicleNo by remember { mutableStateOf("") }
@@ -261,14 +261,14 @@ data class SaleScreen(
         var pincode by remember { mutableStateOf("") }
         var demoBarcodeName by remember { mutableStateOf("") }
         var gstRrDate by remember { mutableStateOf(CurrentDate()) }
-        var SshowShippingDetails by remember { mutableStateOf(isEdit) }
+        var SshowShippingDetails by remember { mutableStateOf(false) }
         var SbillingShipping by remember { mutableStateOf(false) }
         var SselectedBilling by remember { mutableStateOf("") }
 
         val optionalFields = remember {
             mutableStateListOf(*Array(20) { "" })
         }
-        var showOptionalField by remember { mutableStateOf(isEdit) }
+        var showOptionalField by remember { mutableStateOf(false) }
 
         var SpartyName by remember { mutableStateOf("") }
         var Saddress1 by remember { mutableStateOf("") }
@@ -282,7 +282,7 @@ data class SaleScreen(
         var SgstIn by remember { mutableStateOf("") }
         var shareLoading by remember { mutableStateOf(false) }
         var selectedReferences by remember {
-            mutableStateOf(listOf<DataList>())
+            mutableStateOf(listOf<BillByBillModel>())
         }
         var showBillModalSheet by remember { mutableStateOf(false) }
         if (showExitPopup) TallyAlertBox(
@@ -423,6 +423,13 @@ data class SaleScreen(
                 message = "Are you sure you want to delete this voucher",
                 onConfirm = {
                     scope.launch {
+                        db.transaction {
+                            selectedReferences.forEach {
+                                db.voucherBillAllocationsQueries.deleteOldBillAllocation(
+                                    state.data?.uniqueID.toString()
+                                )
+                            }
+                        }
                         tranId?.let {
                             viewmodel.deleteInventoryVch(
                                 tranId = it, vchType = vchType
@@ -588,6 +595,11 @@ data class SaleScreen(
                 optionalFields[19] = data.other_info?.OptionalField20 ?: ""
                 SgstIn = data.other_info?.SgstIn ?: ""
                 SbillingShipping = data.other_info?.SbillingShipping ?: false
+                data.bills_collection?.let {
+                    selectedReferences = it
+                }
+                println(data.uniqueID.toString())
+                uniqueId = data.uniqueID.toString()
             }
         }
 
@@ -1206,25 +1218,53 @@ data class SaleScreen(
                                 selectedBilling = SselectedBilling
                             )
 
-                            TallyButton(
-                                label = "Bill Reference",
-                                enabled = (selectedLedgerGUID != "") && (!itemsList.isEmpty()),
-                                onClick = {
-                                    showBillModalSheet = true
+                            if (vchType !in listOf(12, 13, 15)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Bill By Bill Reference",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    TextButton(
+                                        onClick = { showBillModalSheet = true },
+                                        enabled = (selectedLedgerGUID != "") && (!itemsList.isEmpty())
+                                    ) {
+                                        Icon(
+                                            imageVector = if (showTransportDetails) Icons.Default.RemoveCircleOutline
+                                            else Icons.Default.AddCircleOutline,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = if (showBillModalSheet) "Remove" else "Add",
+                                            style = MaterialTheme.typography.labelLarge
+                                        )
+                                    }
                                 }
-                            )
+
+                            }
+
 
 
                             TransactionBillBottomSheet(
                                 cm1 = selectedLedger,
                                 showBottomSheet = showBillModalSheet,
                                 ledgerGuid = selectedLedgerGUID,
+                                initialSelectedBills = selectedReferences,
                                 onBillsSelected = { selectedReferences = it },
                                 onDismiss = { showBillModalSheet = false },
                                 bottomSheetState = rememberModalBottomSheetState(
                                     skipPartiallyExpanded = true
                                 ),
-                                title = "Bill by Bill", totalAmount = grandTotal
+                                title = "Bill by Bill", totalAmount = grandTotal,
+                                isEdit = isEdit,
+                                uniqueId = uniqueId, vchType = vchType
                             )
 
 
@@ -1464,17 +1504,25 @@ data class SaleScreen(
                                         OptionalField18 = optionalFields[17],
                                         OptionalField19 = optionalFields[18],
                                         OptionalField20 = optionalFields[19],
-                                    )
+                                    ),
+                                    bills_collection = selectedReferences
                                 ),
                                 onSuccess = {
                                     db.transaction {
+                                        selectedReferences.forEach {
+                                            db.voucherBillAllocationsQueries.deleteOldBillAllocation(
+                                                state.data?.uniqueID.toString()
+                                            )
+                                        }
+                                    }
+                                    db.transaction {
                                         selectedReferences.forEachIndexed { index, ref ->
 
-                                            val guid = Uuid.random().toString()
-                                            db.voucherBillAllocationsQueries.insertBillAllocation(
-                                                guid = "999$guid",
 
-                                                vch_guid = ref.VCH_GUID.toString(),
+                                            db.voucherBillAllocationsQueries.insertBillAllocation(
+                                                guid = state.data?.uniqueID.toString(),
+
+                                                vch_guid = state.data?.uniqueID.toString(),
 
                                                 vchtype = ref.vchType,
 
@@ -1485,10 +1533,10 @@ data class SaleScreen(
                                                 billnumber = ref.billNumber,
 
                                                 // order matters more than you think later
-                                                srno = (index+1).toLong(),
+                                                srno = (index + 1).toLong(),
 
                                                 // you're already storing cm1 in data → don’t ignore it
-                                                cm1 =selectedLedger,
+                                                cm1 = selectedLedger,
 
                                                 cm2 = "Agst Ref", // still hardcoded, your call
 
@@ -1497,11 +1545,20 @@ data class SaleScreen(
                                                 billid = ref.billId?.toDoubleOrNull(),
 
                                                 //TODO: logic for sale me + purc me minus
-                                                d1 = ref.d1?.absoluteValue,
+                                                //d1 = ref.d1?.absoluteValue,
+                                                d1 = when(vchType){
+                                                    9->{ref.d1?.absoluteValue}
+                                                    3->{ref.d1}
+                                                    2->{ref.d1}
+                                                    10->{ref.d1?.absoluteValue}
+                                                    14->{ref.d1?.absoluteValue}
+                                                    16->{ref.d1?.absoluteValue}
+                                                    else->{ref.d1?.absoluteValue}
+                                                },
 
                                                 d2 = null,
 
-
+//if pending >0
                                                 e2 = null
                                             )
                                         }
