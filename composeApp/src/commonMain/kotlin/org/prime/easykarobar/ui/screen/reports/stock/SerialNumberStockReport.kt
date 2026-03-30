@@ -1,0 +1,329 @@
+package org.prime.easykarobar.ui.screen.reports.stock
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.style.TextAlign
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.launch
+import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.formatToAmtDec
+import org.prime.easykarobar.data.expect.formatToQtyDec
+import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.printing.Quadruple
+import org.prime.easykarobar.ui.printing.fourHeaderHtml
+import org.prime.easykarobar.ui.screen.reports.productReport.SerialNumberReport
+import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheet
+import org.prime.easykarobar.ui.shared.composables.MenuItemData
+import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
+import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
+import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
+import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
+import org.prime.easykarobar.ui.shared.globalShared.getProductSerialNo
+import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
+import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
+import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
+import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
+import org.prime.easykarobar.ui.shared.reportsShared.TableCell
+import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
+import org.prime.easykarobar.ui.shared.reportsShared.TallyReportHeaderCard
+import org.prime.easykarobar.ui.shared.reportsShared.TallyReportLazyList
+import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
+import org.tally.SerialNoReport
+import smartSearch
+import kotlin.math.absoluteValue
+
+data class SerialNumberStockReport(val isDirect:Boolean, val godownCode:String?=null) : Screen {
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    override fun Content() {
+
+        val db = DatabaseHolder.instance
+
+        var list by remember { mutableStateOf<List<SerialNoReport>>(emptyList()) }
+        var isLoading by remember { mutableStateOf(true) }
+        var showSearchBar by remember { mutableStateOf(false) }
+        var searchQuery by remember { mutableStateOf("") }
+        val focusRequester = remember { FocusRequester() }
+        val nav = LocalNavigator.currentOrThrow
+        var shareLoading by remember { mutableStateOf(false) }
+        val scope = rememberCoroutineScope()
+        var showGroupFilterSheet by remember { mutableStateOf(false) }
+        val productGroups = remember {
+            db.productGroupMasterQueries.selectAll(
+                filterGroup = filterItemGroups(),
+                groupCodes = itemGroupCodes()
+            ).executeAsList()
+        }
+        var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
+        val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+
+        val column1Weight = 0.5f
+        val column2Weight = 0.2f
+        val column3Weight = 0.2f
+        val column4Weight = 0.4f
+
+
+
+
+        LaunchedEffect(Unit) {
+            isLoading = true
+            list = getProductSerialNo(db,isDirect,godownCode)
+            println("Group list is : $list")
+
+            isLoading = false
+
+
+        }
+        LaunchedEffect(showSearchBar) {
+            if (showSearchBar) {
+                focusRequester.requestFocus()
+            }
+        }
+        val groupFilteredList = if (selectedGroups.isEmpty()) {
+            list
+        } else {
+            list.filter { it.GroupName in getProductsGroupCodesByName(selectedGroups) }
+        }
+        val filteredList = smartSearch(
+            list = groupFilteredList,
+            query = searchQuery,
+            selectors = listOf(
+                { it.ProductName },
+            )
+        )
+
+
+        val totalQty = filteredList.sumOf { it.Value1?.toDouble() ?: 0.0 }
+        val totalAmt = filteredList.sumOf { it.Value3?.toDouble() ?: 0.0 }
+        val rows: List<Quadruple<String, String, String, String>> = filteredList.map { item ->
+            Quadruple(
+                item.ProductName ?: "",
+                item.UnitName ?: "",
+                item.Value1?.toDouble()?.formatToQtyDec() ?: "-",
+                item.Value3?.toDouble()?.formatToAmtDec() ?: ""
+            )
+        }
+
+        val menuItems = listOf(
+            MenuItemData(
+                title = "Download",
+                icon = Icons.Default.Download,
+                onClick = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = "Stock",
+                            htmlContent = fourHeaderHtml(
+                                title = "Stock",
+                                headers = Quadruple("Item Name", "Unit", "Qty", "Amount"),
+                                rows = rows,
+                                total1 = totalQty.formatToQtyDec(),
+                                total2 = totalAmt.formatToAmtDec()
+                            ),
+                            action = PdfAction.Download,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }
+            ),
+            MenuItemData(
+                title = "Share",
+                icon = Icons.Default.Share,
+                onClick = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = "Stock",
+                            htmlContent = fourHeaderHtml(
+                                title = "Stock",
+                                headers = Quadruple("Item Name", "Unit", "Qty", "Amount"),
+                                rows = rows,
+                                total1 = totalQty.formatToQtyDec(),
+                                total2 = totalAmt.formatToAmtDec()
+
+                            ),
+                            action = PdfAction.Share,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }
+            )
+        )
+        if (shareLoading) {
+            TallyLoadingDialog("Generating Report")
+        }
+
+        GroupFilterBottomSheet(
+            show = showGroupFilterSheet,
+            items = productGroups, // can be any list
+            selectedItems = selectedGroups,
+            itemNameSelector = { it.Name },
+            onSelectedItemsChange = { selectedGroups = it },
+            onDismiss = { showGroupFilterSheet = false },
+            bottomSheetState = bottomSheetState
+        )
+
+
+        TallyReportScaffold(
+            "Item Serial Number Wise", showBottomBar = true,
+            showSearchAction = true,
+            showBurgerMenu = true,
+            menuItems = menuItems,
+            onSearchClick = { showSearchBar = !showSearchBar },
+            bottomBarContent = {
+                TallyReportBottomBar(
+                    columns = listOf(
+                        ReportColumn(
+                            "Total Qty: ${filteredList.count()}",
+                            column1Weight,
+                            TextAlign.Start
+                        ),
+                        ReportColumn(
+                            totalAmt.absoluteValue.formatToAmtDec(),
+                            column3Weight,
+                            TextAlign.End
+                        )
+                    ),
+                )
+            },
+            content = { paddingValues ->
+                if (isLoading) {
+                    Box(
+                        Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        TallyCircularLoader()
+                    }
+                } else {
+                    Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                        if (showSearchBar) {
+                            TallySearchBar(
+                                searchQuery = searchQuery,
+                                onQueryChange = { searchQuery = it },
+                                modifier = Modifier.focusRequester(focusRequester)
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = { showGroupFilterSheet = true }) {
+                                Text("Group Filter")
+                            }
+                        }
+                        TallyReportHeaderCard(
+                            columns = listOf(
+                                ReportColumn(
+                                    "Item Name",
+                                    column1Weight,
+                                    TextAlign.Start
+                                ),
+//                                ReportColumn(
+//                                    "Unit",
+//                                    column2Weight,
+//                                    TextAlign.End
+//                                ),
+                                ReportColumn(
+                                    "Qty",
+                                    column3Weight,
+                                    TextAlign.End
+                                ),
+                                ReportColumn(
+                                    "Amount",
+                                    column4Weight,
+                                    TextAlign.End
+                                )
+                            )
+                        )
+
+                        TallyReportLazyList(
+                            items = filteredList,
+                            onItemClick = { item ->
+                                //TODO: this is the StockItemReportListScreen
+
+
+                                nav.push(
+                                    SerialNumberReport(
+                                        item.MasterCode1?.toInt().toString(),
+                                        godownCode = godownCode,
+                                        isMain = false,
+                                        isDirect = false
+                                    )
+                                )
+
+                            },
+                            key = { item ->
+                                buildString {
+                                    append(item.ProductName)
+                                    append('|')
+                                    append(item.GroupName)
+                                    append('|')
+                                    append(item.MasterCode1)
+                                }
+                            },
+                            content = { item ->
+                                TableCell(
+                                    text = item.ProductName ?: "",
+                                    weight = column1Weight,
+                                    textAlign = TextAlign.Start,
+                                    isHeader = false
+                                )
+                                //TODO: ENABLE LATER
+//
+//                                TableCell(
+//                                    text = item.Item_Unit.toString(),
+//                                    weight = column2Weight,
+//                                    textAlign = TextAlign.End,
+//                                    isHeader = false
+//                                )
+
+
+                                TableCell(
+                                    text = if (SharedPrefs.Permissions.get()?.FilterQty == "False" || SharedPrefs.Permissions.get()?.FilterQty == null) item.Value1
+                                        ?.formatToQtyDec() ?: "-" else "",
+                                    weight = column3Weight,
+                                    textAlign = TextAlign.End,
+                                    isHeader = false
+                                )
+
+
+
+                                TableCell(
+                                    text = if (SharedPrefs.Permissions.get()?.FilterAmount == "False" || SharedPrefs.Permissions.get()?.FilterAmount == null) item.Value3
+                                        ?.formatToAmtDec() ?: "-" else "",
+                                    weight = column4Weight,
+                                    textAlign = TextAlign.End,
+                                    isHeader = false
+                                )
+                            }
+                        )
+                    }
+                }
+            })
+    }
+}

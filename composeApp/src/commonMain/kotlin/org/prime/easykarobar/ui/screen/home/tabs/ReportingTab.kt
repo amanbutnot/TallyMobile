@@ -55,13 +55,16 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.screen.reports.godown.GodownClosingStockListScreen
+import org.prime.easykarobar.ui.screen.reports.godown.MCSerialNoReport
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportFilterScreen
-import org.prime.easykarobar.ui.screen.reports.pendingOrder.OrderReportSelectScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingSelectScreen
+import org.prime.easykarobar.ui.screen.reports.pendingOrder.OrderReportSelectScreen
 import org.prime.easykarobar.ui.screen.reports.productReport.ProductReportScreen
+import org.prime.easykarobar.ui.screen.reports.productReport.SerialNumberReport
 import org.prime.easykarobar.ui.screen.reports.registers.RegisterSelectScreen
 import org.prime.easykarobar.ui.screen.reports.salesman.SalesmanTargetFilterScreen
 import org.prime.easykarobar.ui.screen.reports.stock.ParameterReportScreen
+import org.prime.easykarobar.ui.screen.reports.stock.SerialNumberStockReport
 import org.prime.easykarobar.ui.screen.reports.stock.StockReportScreen
 import org.prime.easykarobar.ui.screen.reports.trialBalance.TrialBalanceScreen
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
@@ -104,11 +107,14 @@ object ReportingTab : Tab {
                 Report.TrialBalance,
                 Report.Registers,
                 Report.StockReport,
+             //   Report.SerialNumberReport,
+                Report.SerialNumberWise,
                 Report.ProductStock,
                 Report.ParameterReport,
 //                Report.PendingOrders,
 //                Report.Quotations,
                 Report.GoDownWiseClosingStock,
+                Report.MCSerialNumberReport,
                 Report.SalesmanWise,
                 Report.Order,
             )
@@ -154,6 +160,22 @@ object ReportingTab : Tab {
                                     )
 
                                 }
+                                Report.SerialNumberReport -> {
+                                    salesmanPermission(
+                                        "D11",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = { nav?.push(SerialNumberStockReport(true,"0")) }
+                                    )
+
+                                }
+                                Report.SerialNumberWise -> {
+                                    salesmanPermission(
+                                        "D11",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = { nav?.push(SerialNumberReport(isMain = true, isDirect = true, godownCode = "0")) }
+                                    )
+
+                                }
                                 //TODO: make D value for parameter report
                                 Report.ParameterReport -> {
                                     salesmanPermission(
@@ -182,6 +204,20 @@ object ReportingTab : Tab {
                                         successBlock = {
                                             nav?.push(
                                                 GodownClosingStockListScreen
+                                            )
+                                        }
+                                    )
+
+                                }
+                                Report.MCSerialNumberReport -> {
+
+
+                                    salesmanPermission(
+                                        "D12",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
+                                            nav?.push(
+                                                MCSerialNoReport
                                             )
                                         }
                                     )
@@ -263,9 +299,12 @@ sealed class Report(val title: String, val icon: ImageVector) {
     object TrialBalance : Report("Trial Balance", Icons.Default.Scale)
     object Registers : Report("Registers", Icons.AutoMirrored.Default.ListAlt)
     object StockReport : Report("Stock Report", Icons.Default.Inventory)
+    object SerialNumberReport : Report("Item Serial No. Wise CLosing Stock", Icons.Default.Inventory)
+    object SerialNumberWise : Report("Serial Number WIse", Icons.Default.Inventory)
     object PendingOrders : Report("Pending Orders", Icons.Default.ShoppingCart)
     object Quotations : Report("Quotations", Icons.Default.Description)
     object GoDownWiseClosingStock : Report("Godown Wise Closing Stock", Icons.Default.Description)
+    object MCSerialNumberReport : Report("MC Serial Number Report", Icons.Default.Description)
     object ProductStock : Report("Barcode Report", Icons.Default.QrCodeScanner)
     object ParameterReport : Report("Parameter Report", Icons.Default.ProductionQuantityLimits)
     object SalesmanWise : Report("Salesman Wise Target", Icons.Default.TrackChanges)

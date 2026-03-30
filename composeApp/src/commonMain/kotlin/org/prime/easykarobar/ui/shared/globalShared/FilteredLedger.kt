@@ -7,6 +7,7 @@ import org.tally.GetProductParamStockList
 import org.tally.GetProductStockItemList
 import org.tally.LedgerMaster
 import org.tally.Products
+import org.tally.SerialNoReport
 
 // Extension functions
 fun String?.parseToDoubleList(): List<Double> {
@@ -152,6 +153,50 @@ fun getProductStockItems(db: TallyDatabase): List<GetProductStockItemList> {
         .executeAsList()
 }
 
+fun getProductSerialNo(
+    db: TallyDatabase,
+    isMain: Boolean,
+    godownName: String? = null
+): List<SerialNoReport> {
+    val perms = SharedPrefs.Permissions.get()
+    println("IS MAIN" + isMain)
+    println(godownName)
+    if (perms == null) {
+        return db.productSerialNoQueries
+            .serialNoReport(
+                filterGroup = 0,
+                groupCodes = emptyList(),
+                filterExclude = 0,
+                excludeGuids = emptyList(),
+                filterGodown = 0,
+                godownCodes = emptyList(),
+                filterSingle = if (isMain) 0L else 1L,
+                includeSingle = godownName
+            )
+            .executeAsList()
+    }
+
+    val filterExclude = if (perms.FilterItems == "Y") 1L else 0L
+    val filterGodown = if (perms.FilterGodown == "Y") 1L else 0L
+
+    val excludeGuids =
+        if (filterExclude == 1L) perms.ConfigItems.parseToStringList() else emptyList()
+    val godownCodes =
+        if (filterGodown == 1L) perms.ConfigGodown.parseToStringList() else emptyList()
+
+    return db.productSerialNoQueries
+        .serialNoReport(
+            groupCodes = itemGroupCodes(),
+            godownCodes = godownCodes,
+            excludeGuids = excludeGuids,
+            filterGroup = filterItemGroups(),
+            filterExclude = filterExclude,
+            filterGodown = filterGodown, filterSingle = if (isMain) 0L else 1L,
+            includeSingle = godownName
+        )
+        .executeAsList()
+}
+
 
 fun getProductParamStockItems(db: TallyDatabase): List<GetProductParamStockList> {
     val perms = SharedPrefs.Permissions.get()
@@ -171,7 +216,7 @@ fun getProductParamStockItems(db: TallyDatabase): List<GetProductParamStockList>
             .getProductParamStockList(
                 productGuid = null,
                 filterParam1 = 0,
-                configParam1 = emptyList(),     filterGroup = filterGroup,
+                configParam1 = emptyList(), filterGroup = filterGroup,
                 groupCodes = groupCodes,
                 filterExclude = filterExclude,
                 excludeGuids = excludeGuids,
@@ -188,7 +233,7 @@ fun getProductParamStockItems(db: TallyDatabase): List<GetProductParamStockList>
         .getProductParamStockList(
             productGuid = null,
             filterParam1 = filterParams,
-            configParam1 = paramCodes,     filterGroup = filterGroup,
+            configParam1 = paramCodes, filterGroup = filterGroup,
             groupCodes = groupCodes,
             filterExclude = filterExclude,
             excludeGuids = excludeGuids,
