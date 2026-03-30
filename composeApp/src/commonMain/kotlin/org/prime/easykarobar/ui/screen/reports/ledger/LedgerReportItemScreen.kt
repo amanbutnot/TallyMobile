@@ -462,7 +462,7 @@ data class LedgerReportItemScreen(
 
                             if (isBusy()) {
                                 LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                                    itemsIndexed(ledgerReportItemList) { index, item ->
+                                    itemsIndexed(ledgerStockBusyItemList) { index, item ->
                                         Card(
                                             modifier = Modifier
                                                 .fillMaxWidth()
@@ -482,11 +482,11 @@ data class LedgerReportItemScreen(
                                                     stockColumn1Weight
                                                 )
                                                 TableCell(
-                                                    item.LedgerName ?: "",
+                                                    item.CM1 ?: "",
                                                     stockColumn2Weight + stockColumn3Weight
                                                 )
                                                 TableCell(
-                                                    item.DebitAmt?.formatToAmtDec().toString(),
+                                                    item.D1?.formatToAmtDec().toString(),
                                                     stockColumn5Weight,
                                                     textAlign = TextAlign.End,
                                                     isHeader = false
@@ -494,7 +494,7 @@ data class LedgerReportItemScreen(
 //println("D3 iS : ${item.D3}")
 
                                                 TableCell(
-                                                    item.CreditAmt?.formatToAmtDec().toString()
+                                                    item.D3?.formatToAmtDec().toString()
                                                         .toString(),
                                                     stockColumn5Weight,
                                                     textAlign = TextAlign.End
