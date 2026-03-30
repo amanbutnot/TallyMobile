@@ -195,7 +195,9 @@ fun TransactionBillBottomSheet(
                 LazyColumn(Modifier.weight(1f)) {
                     items(filteredList) { item ->
 
-                        val isSelected = selectedBills.any { it.billId == item.billId }
+                        val isSelected = selectedBills.any {
+                            it.billId == item.billId
+                        }
                         val allocatedAmount = allocations[item.billId] ?: 0.0
 
                         val pending =
@@ -203,7 +205,36 @@ fun TransactionBillBottomSheet(
 
                         val remaining = totalAmount - currentAllocatedTotal
                         val canSelect = isSelected || remaining > 0
+                        println("""
+================ BILL DEBUG ================
 
+Item.billId = ${item.billId}
+
+SelectedBills.size = ${selectedBills.size}
+SelectedBills IDs = ${selectedBills.joinToString { it.billId.toString() }}
+
+AllocatedAmount = ${allocations[item.billId]}
+Full Allocations Map = $allocations
+
+d1 = ${item.d1}
+d1(abs) = ${item.d1?.absoluteValue}
+
+pending = $pending
+
+totalAmount = $totalAmount
+currentAllocatedTotal = $currentAllocatedTotal
+remaining = $remaining
+
+---- MATCH CHECK ----
+${selectedBills.joinToString("\n") { bill ->
+                            "Selected.billId=${bill.billId} == Item.billId=${item.billId} -> ${bill.billId == item.billId}"
+                        }}
+
+Final isSelected = $isSelected
+canSelect = $canSelect
+
+============================================
+""".trimIndent())
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()

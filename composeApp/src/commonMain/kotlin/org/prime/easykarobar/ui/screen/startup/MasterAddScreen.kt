@@ -25,6 +25,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.business.viewmodel.masters.AccountViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.ui.screen.home.Dashboard
+import org.prime.easykarobar.ui.screen.transactions.sale.makeNegativeConditional
 import kotlin.math.absoluteValue
 
 object MasterAddScreen : Screen {
@@ -122,7 +123,37 @@ object MasterAddScreen : Screen {
                                 billid = data.billId?.toDoubleOrNull(),
 
                                 //TODO: logic for sale me + purc me minus
-                                d1 = data.d1?.absoluteValue,
+                                d1 = when (data.vchType?.toIntOrNull()?:3) {
+                                    9 -> {
+                                        makeNegativeConditional( data.d1 ?:0.0)
+                                    }
+
+                                    3 -> {
+                                        data.d1
+                                    }
+
+                                    2 -> {
+                                        data.d1
+                                    }
+
+                                    10 -> {
+                                        makeNegativeConditional( data.d1 ?:0.0)
+                                    }
+
+                                    14 -> {
+                                        makeNegativeConditional( data.d1 ?:0.0)
+                                    }
+                                    19 -> {
+                                        makeNegativeConditional( data.d1 ?:0.0)
+                                    }
+                                    16 -> {
+                                        data.d1?.absoluteValue
+                                    }
+
+                                    else -> {
+                                        data.d1?.absoluteValue
+                                    }
+                                },
 
                                 d2 = null,
 

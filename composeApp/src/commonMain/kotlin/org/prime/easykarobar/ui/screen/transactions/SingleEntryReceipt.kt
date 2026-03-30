@@ -46,12 +46,15 @@ import org.prime.easykarobar.data.model.transactions.TranListResponse
 import org.prime.easykarobar.data.model.transactions.TranRequest
 import org.prime.easykarobar.ui.printing.EntryTypesHtml
 import org.prime.easykarobar.ui.printing.entryTypesHtml
+import org.prime.easykarobar.ui.screen.transactions.sale.makeNegativeConditional
 import org.prime.easykarobar.ui.shared.composables.DownloadResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import kotlin.math.absoluteValue
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 data class SingleEntryReceipt(
     val name: String,
@@ -59,7 +62,7 @@ data class SingleEntryReceipt(
     val existingTransaction: TranListResponse? = null
 ) : Screen {
 
-    @OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class, ExperimentalUuidApi::class)
     @Composable
     override fun Content() {
 
@@ -107,6 +110,7 @@ data class SingleEntryReceipt(
         if (existingTransaction != null) {
             //TODO: make selectedbills from the list
             uniqueId = state.data?.uniqueID.toString()
+            selectedReferences = existingTransaction.bills_collection
         }
 
         if (state.isLoading) {
@@ -222,8 +226,8 @@ data class SingleEntryReceipt(
                                 viewmodel.updateSingleTran(
 
                                     TranRequest(
-                                        VchType = vchType,
                                         TransactionID = existingTransaction.TransactionID,
+                                        VchType = vchType,
                                         TranDate = selectedDate,
                                         CM1 = selectedAccountGUID,
                                         CM2 = selectedSettlementGUID,
@@ -237,7 +241,7 @@ data class SingleEntryReceipt(
                                         D2 = amount.toDouble(),
                                         D3 = 0.0,
                                         D4 = 0.0,
-                                        Narration = narration
+                                        Narration = narration,bills_collection = selectedReferences
                                     ),
                                     onSuccess = {
                                         db.transaction {
@@ -252,7 +256,7 @@ data class SingleEntryReceipt(
 
 
                                                 db.voucherBillAllocationsQueries.insertBillAllocation(
-                                                    guid = state.data?.uniqueID.toString(),
+                                                    guid = "${state.data?.uniqueID}-${Uuid.random()}",
 
                                                     vch_guid = state.data?.uniqueID.toString(),
 
@@ -280,7 +284,7 @@ data class SingleEntryReceipt(
                                                     //d1 = ref.d1?.absoluteValue,
                                                     d1 = when (vchType) {
                                                         9 -> {
-                                                            ref.d1?.absoluteValue
+                                                            makeNegativeConditional( ref.d1 ?:0.0)
                                                         }
 
                                                         3 -> {
@@ -292,11 +296,14 @@ data class SingleEntryReceipt(
                                                         }
 
                                                         10 -> {
-                                                            ref.d1?.absoluteValue
+                                                            makeNegativeConditional( ref.d1 ?:0.0)
                                                         }
 
                                                         14 -> {
-                                                            ref.d1?.absoluteValue
+                                                            makeNegativeConditional( ref.d1 ?:0.0)
+                                                        }
+                                                        19 -> {
+                                                            makeNegativeConditional( ref.d1 ?:0.0)
                                                         }
 
                                                         16 -> {
@@ -334,7 +341,7 @@ data class SingleEntryReceipt(
                                         D2 = amount.toDouble(),
                                         D3 = 0.0,
                                         D4 = 0.0,
-                                        Narration = narration
+                                        Narration = narration,  bills_collection = selectedReferences
                                     ),
                                     onSuccess = {
                                         db.transaction {
@@ -349,7 +356,7 @@ data class SingleEntryReceipt(
 
 
                                                 db.voucherBillAllocationsQueries.insertBillAllocation(
-                                                    guid = state.data?.uniqueID.toString(),
+                                                    guid = "${state.data?.uniqueID}-${Uuid.random()}",
 
                                                     vch_guid = state.data?.uniqueID.toString(),
 
@@ -377,7 +384,7 @@ data class SingleEntryReceipt(
                                                     //d1 = ref.d1?.absoluteValue,
                                                     d1 = when (vchType) {
                                                         9 -> {
-                                                            ref.d1?.absoluteValue
+                                                            makeNegativeConditional( ref.d1 ?:0.0)
                                                         }
 
                                                         3 -> {
@@ -389,13 +396,15 @@ data class SingleEntryReceipt(
                                                         }
 
                                                         10 -> {
-                                                            ref.d1?.absoluteValue
+                                                            makeNegativeConditional( ref.d1 ?:0.0)
                                                         }
 
                                                         14 -> {
-                                                            ref.d1?.absoluteValue
+                                                            makeNegativeConditional( ref.d1 ?:0.0)
                                                         }
-
+                                                        19 -> {
+                                                            makeNegativeConditional( ref.d1 ?:0.0)
+                                                        }
                                                         16 -> {
                                                             ref.d1?.absoluteValue
                                                         }

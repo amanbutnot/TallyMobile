@@ -135,6 +135,7 @@ import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.round
 import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 fun formatTwo(value: Double): String {
     val cents = round(value * 100).toLong()
@@ -426,7 +427,8 @@ data class SaleScreen(
                         db.transaction {
                             selectedReferences.forEach {
                                 db.voucherBillAllocationsQueries.deleteOldBillAllocation(
-                                    state.data?.uniqueID.toString()
+//                                    state.data?.uniqueID.toString()
+                                    oneState.data?.uniqueID.toString()
                                 )
                             }
                         }
@@ -1516,11 +1518,12 @@ data class SaleScreen(
                                         }
                                     }
                                     db.transaction {
+                                        println(selectedReferences.size)
                                         selectedReferences.forEachIndexed { index, ref ->
 
 
                                             db.voucherBillAllocationsQueries.insertBillAllocation(
-                                                guid = state.data?.uniqueID.toString(),
+                                                guid = "${state.data?.uniqueID}-${Uuid.random()}",
 
                                                 vch_guid = state.data?.uniqueID.toString(),
 
@@ -1544,22 +1547,44 @@ data class SaleScreen(
 
                                                 billid = ref.billId?.toDoubleOrNull(),
 
-                                                //TODO: logic for sale me + purc me minus
-                                                //d1 = ref.d1?.absoluteValue,
-                                                d1 = when(vchType){
-                                                    9->{ref.d1?.absoluteValue}
-                                                    3->{ref.d1}
-                                                    2->{ref.d1}
-                                                    10->{ref.d1?.absoluteValue}
-                                                    14->{ref.d1?.absoluteValue}
-                                                    16->{ref.d1?.absoluteValue}
-                                                    else->{ref.d1?.absoluteValue}
-                                                },
 
-                                                d2 = null,
+
+                                            //TODO: logic for sale me + purc me minus
+                                            //d1 = ref.d1?.absoluteValue,
+                                            d1 = when (vchType) {
+                                                9 -> {
+                                                  makeNegativeConditional( ref.d1 ?:0.0)
+                                                }
+
+                                                3 -> {
+                                                    ref.d1
+                                                }
+
+                                                2 -> {
+                                                    ref.d1
+                                                }
+
+                                                10 -> {
+                                                    makeNegativeConditional( ref.d1 ?:0.0)
+                                                }
+
+                                                14 -> {
+                                                    makeNegativeConditional( ref.d1 ?:0.0)
+                                                }
+
+                                                16 -> {
+                                                    ref.d1?.absoluteValue
+                                                }
+
+                                                else -> {
+                                                    ref.d1?.absoluteValue
+                                                }
+                                            },
+
+                                            d2 = null,
 
 //if pending >0
-                                                e2 = null
+                                            e2 = null
                                             )
                                         }
                                     }
@@ -2781,3 +2806,12 @@ enum class PriceEditMode {
 //billid reference me aarha hai
 //d1 amount reference me
 //d2 e2 null
+
+
+fun makeNegativeConditional(number: Double): Double {
+    return if (number >= 0) {
+        -number
+    } else {
+        number
+    }
+}

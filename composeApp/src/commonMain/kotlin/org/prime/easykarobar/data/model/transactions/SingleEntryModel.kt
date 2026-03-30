@@ -1,6 +1,7 @@
 package org.prime.easykarobar.data.model.transactions
 
 import kotlinx.serialization.Serializable
+import org.prime.easykarobar.ui.screen.transactions.BillByBillModel
 
 @Serializable
 data class TranRequest(
@@ -19,7 +20,8 @@ data class TranRequest(
     val D2: Double,
     val D3: Double,
     val D4: Double,
-    val Narration: String
+    val Narration: String,
+    val bills_collection: List<BillByBillModel>
 )
 
 @Serializable
@@ -57,5 +59,5 @@ data class TranListResponse(
     val D3: Double,
     val D4: Double,
     val Narration: String,
-    val CreatedAt: String
+    val CreatedAt: String,    val bills_collection: List<BillByBillModel>
 )
