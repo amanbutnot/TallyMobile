@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,8 +30,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import kotlinx.coroutines.Dispatchers
@@ -54,11 +51,11 @@ import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
-import org.tally.SerialNoEnterReport
+import org.tally.BatchNoEnterReport
 import smartSearch
 import kotlin.math.absoluteValue
 
-data class SerialNumberReport(
+data class BatchNoReport(
     val productGuid: String? = null,
     val isMain: Boolean,
     val isDirect: Boolean,
@@ -69,7 +66,7 @@ data class SerialNumberReport(
     override fun Content() {
         val db = DatabaseHolder.instance
 
-        var list by remember { mutableStateOf<List<SerialNoEnterReport>>(emptyList()) }
+        var list by remember { mutableStateOf<List<BatchNoEnterReport>>(emptyList()) }
         var isLoading by remember { mutableStateOf(true) }
         var showSearchBar by remember { mutableStateOf(false) }
         var searchQuery by remember { mutableStateOf("") }
@@ -98,7 +95,7 @@ data class SerialNumberReport(
                     if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
                 println("IS MAIN $isMain and $productGuid")
                 println("IS MAING $isDirect and $godownCode")
-                list = db.productSerialNoQueries.serialNoEnterReport(
+                list = db.productBatchNoQueries.batchNoEnterReport(
                     filterGroup = filterGroup,
                     groupCodes = filterItemGroupCodes(),
                     filterExclude = filterExclude,
@@ -106,7 +103,7 @@ data class SerialNumberReport(
                     filterGodown = filterGodown,
                     godownCodes = godownCodes,
                     filterSingle = if (isMain) 0L else 1L,
-                    includeSingle = productGuid?.toDoubleOrNull() ?: 0.0,
+                    includeSingle = productGuid,
                     filterSingleG = if (isDirect) 0L else 1L,
                     includeSingleG = godownCode
                 ).executeAsList()
@@ -180,11 +177,11 @@ data class SerialNumberReport(
 
 
         TallyReportScaffold(
-            title = "Serial No. Report",
+            title = "Batch No. Report",
             showBottomBar = true,
             showSearchAction = true,
             showBurgerMenu = false,
-           // menuItems = menuItems,
+            // menuItems = menuItems,
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
                 TallyReportBottomBar(
@@ -263,7 +260,7 @@ data class SerialNumberReport(
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             Text(
-                                                text = it.SerialNo.toString(),
+                                                text = it.BatchNo.toString(),
                                                 style = MaterialTheme.typography.bodyLarge,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -290,33 +287,4 @@ data class SerialNumberReport(
                 }
             })
     }
-}
-
-
-@Composable
-fun TableCellFixed(
-    text: String,
-    width: Dp,
-    modifier: Modifier = Modifier,
-    textAlign: TextAlign = TextAlign.Start,
-    isHeader: Boolean = false
-) {
-    Text(
-        text = text,
-        modifier = modifier.width(width).padding(horizontal = 8.dp),
-        textAlign = textAlign,
-        style = if (isHeader) {
-            MaterialTheme.typography.titleSmall
-        } else {
-            MaterialTheme.typography.bodyMedium
-        },
-        fontWeight = if (isHeader) FontWeight.Bold else FontWeight.Normal,
-        color = if (isHeader) {
-            MaterialTheme.colorScheme.onPrimaryContainer
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        },
-        maxLines = if (isHeader) 1 else 2,
-        overflow = TextOverflow.Ellipsis
-    )
 }

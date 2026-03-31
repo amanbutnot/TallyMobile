@@ -3,6 +3,7 @@ package org.prime.easykarobar.ui.shared.globalShared
 import kotlinx.datetime.LocalDate
 import org.prime.easykarobar.TallyDatabase
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.tally.BatchNoReport
 import org.tally.GetProductParamStockList
 import org.tally.GetProductStockItemList
 import org.tally.LedgerMaster
@@ -186,6 +187,50 @@ fun getProductSerialNo(
 
     return db.productSerialNoQueries
         .serialNoReport(
+            groupCodes = itemGroupCodes(),
+            godownCodes = godownCodes,
+            excludeGuids = excludeGuids,
+            filterGroup = filterItemGroups(),
+            filterExclude = filterExclude,
+            filterGodown = filterGodown, filterSingle = if (isMain) 0L else 1L,
+            includeSingle = godownName
+        )
+        .executeAsList()
+}
+
+fun getProductBatchNo(
+    db: TallyDatabase,
+    isMain: Boolean,
+    godownName: String? = null
+): List<BatchNoReport> {
+    val perms = SharedPrefs.Permissions.get()
+    println("IS MAIN" + isMain)
+    println(godownName)
+    if (perms == null) {
+        return db.productBatchNoQueries
+            .batchNoReport(
+                filterGroup = 0,
+                groupCodes = emptyList(),
+                filterExclude = 0,
+                excludeGuids = emptyList(),
+                filterGodown = 0,
+                godownCodes = emptyList(),
+                filterSingle = if (isMain) 0L else 1L,
+                includeSingle = godownName
+            )
+            .executeAsList()
+    }
+
+    val filterExclude = if (perms.FilterItems == "Y") 1L else 0L
+    val filterGodown = if (perms.FilterGodown == "Y") 1L else 0L
+
+    val excludeGuids =
+        if (filterExclude == 1L) perms.ConfigItems.parseToStringList() else emptyList()
+    val godownCodes =
+        if (filterGodown == 1L) perms.ConfigGodown.parseToStringList() else emptyList()
+
+    return db.productBatchNoQueries
+        .batchNoReport(
             groupCodes = itemGroupCodes(),
             godownCodes = godownCodes,
             excludeGuids = excludeGuids,

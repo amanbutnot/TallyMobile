@@ -1,0 +1,66 @@
+CREATE TABLE ProductBatchNo (
+    BatchNo TEXT,
+    MasterCode1 TEXT,
+    MasterCode2 TEXT,
+    Value1 REAL,
+    Value2 REAL,
+    Value3 REAL,
+    SalePrice REAL,
+    MRP REAL,
+    Rate REAL,
+    MFGDate TEXT,
+    DueDate TEXT,
+    GUID TEXT UNIQUE
+);
+
+
+mcBatchNoReport:
+SELECT
+    SUM(pps.Value1) AS Item_Qty,
+    SUM(pps.Value3) AS Item_Amt,
+    g.Name          AS Item_Godown,
+    g.GUID         AS Item_GodownCode,
+    ''              AS UnitName,
+    g.Name          AS GodownName
+FROM ProductBatchNo AS pps
+JOIN GodownMaster AS g
+    ON g.GUID = pps.MasterCode2
+LEFT JOIN Products AS p
+    ON p.GUID = pps.MasterCode1
+WHERE
+  (:filterGroup = 0 OR p.GroupCode IN :groupCodes)
+                          AND (:filterExclude = 0 OR p.GUID NOT IN :excludeGuids)
+                          AND (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes)
+GROUP BY g.GUID
+ORDER BY g.Name;
+
+batchNoReport:
+SELECT
+pps.MasterCode1,
+    p.Name AS ProductName,
+    p.UnitName,p.GroupName AS GroupName,ROUND(Sum(pps.Value1),3) AS Value1,ROUND(Sum(pps.Value2),3) AS Value2,ROUND(Sum(pps.Value3),3) AS Value3
+FROM ProductBatchNo pps
+JOIN Products p ON p.GUID = pps.MasterCode1
+WHERE
+    (:filterGroup = 0 OR p.GroupCode IN :groupCodes)
+    AND (:filterExclude = 0 OR p.GUID NOT IN :excludeGuids)
+    AND (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes)
+       AND (:filterSingle = 0 OR pps.MasterCode2 = :includeSingle)
+GROUP BY pps.MasterCode1,p.Name,  p.UnitName,p.GroupName HAVING ROUND(Sum(pps.Value1),3) <>0
+ORDER BY p.Name;
+
+batchNoEnterReport:
+SELECT BatchNo,
+pps.MasterCode1,
+    p.Name AS ProductName,
+    p.UnitName,p.GroupName AS GroupName,ROUND(Sum(pps.Value1),3) AS Value1,ROUND(Sum(pps.Value2),3) AS Value2,ROUND(Sum(pps.Value3),3) AS Value3
+FROM ProductBatchNo pps
+JOIN Products p ON p.GUID = pps.MasterCode1
+WHERE
+    (:filterGroup = 0 OR p.GroupCode IN :groupCodes)
+    AND (:filterExclude = 0 OR p.GUID NOT IN :excludeGuids)
+     AND (:filterSingle = 0 OR pps.MasterCode1 = :includeSingle)
+     AND (:filterSingleG = 0 OR pps.MasterCode2 = :includeSingleG)
+    AND (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes)
+GROUP BY pps.MasterCode1,p.Name,  p.UnitName,p.GroupName , BatchNo HAVING ROUND(Sum(pps.Value1),3) <>0
+ORDER BY p.Name,BatchNo;

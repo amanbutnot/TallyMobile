@@ -33,7 +33,7 @@ import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.data.utils.showAmtToSalesman
 import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.threeHeaderHtml
-import org.prime.easykarobar.ui.screen.reports.stock.SerialNumberStockReport
+import org.prime.easykarobar.ui.screen.reports.stock.BatchNumberStockReport
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
@@ -50,16 +50,16 @@ import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportLazyList
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
-import org.tally.McSerialNoReport
+import org.tally.McBatchNoReport
 import smartSearch
 import kotlin.math.absoluteValue
 
-object MCSerialNoReport : Screen {
+object MCBatchNoReport : Screen {
     @Composable
     override fun Content() {
         val db = DatabaseHolder.instance
         val nav = LocalNavigator.currentOrThrow
-        var list by remember { mutableStateOf<List<McSerialNoReport>>(emptyList()) }
+        var list by remember { mutableStateOf<List<McBatchNoReport>>(emptyList()) }
         var isLoading by remember { mutableStateOf(true) }
         var showSearchBar by remember { mutableStateOf(false) }
         var searchQuery by remember { mutableStateOf("") }
@@ -92,7 +92,7 @@ object MCSerialNoReport : Screen {
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
-                list = db.productSerialNoQueries.mcSerialNoReport(
+                list = db.productBatchNoQueries.mcBatchNoReport(
                     filterGodown = filterGodown,
                     godownCodes = godownCodes,
                     filterGroup = filterItemGroups(),
@@ -132,9 +132,9 @@ object MCSerialNoReport : Screen {
                 onClick = {
                     scope.launch {
                         handlePdfAction(
-                            fileName = "MC Wise Serial Number",
+                            fileName = "MC Wise Batch Number",
                             htmlContent = threeHeaderHtml(
-                                title = "MC Wise Serial Number",
+                                title = "MC Wise Batch Number",
                                 headers = Triple("Account Name", "Qty", "Amount"),
                                 rows = rows,
                                 totalDebit = totalQty.formatToAmtDec().toDouble(),
@@ -153,9 +153,9 @@ object MCSerialNoReport : Screen {
                 onClick = {
                     scope.launch {
                         handlePdfAction(
-                            fileName = "MC Wise Serial Number",
+                            fileName = "MC Wise Batch Number",
                             htmlContent = threeHeaderHtml(
-                                title = "MC Wise Serial Number",
+                                title = "MC Wise Batch Number",
                                 headers = Triple("Account Name", "Debit", "Credit"),
                                 rows = rows,
                                 totalDebit = totalQty.formatToAmtDec().toDouble(),
@@ -175,7 +175,7 @@ object MCSerialNoReport : Screen {
 
 
         TallyReportScaffold(
-            "MC Wise Serial Number", showBottomBar = true,
+            "MC Wise Batch Number", showBottomBar = true,
             showBurgerMenu = true, menuItems = menuItems,
             showSearchAction = true,
             onSearchClick = { showSearchBar = !showSearchBar },
@@ -244,7 +244,13 @@ object MCSerialNoReport : Screen {
                         TallyReportLazyList(
                             items = filteredList,
                             onItemClick = { item ->
-                                nav.push(SerialNumberStockReport(false, item.Item_GodownCode?.toInt().toString(),false))
+                                nav.push(
+                                    BatchNumberStockReport(
+                                        false,
+                                        item.Item_GodownCode?.toInt().toString(),
+                                        false
+                                    )
+                                )
                             }, key = { item ->
                                 buildString {
                                     append(item.Item_Godown)

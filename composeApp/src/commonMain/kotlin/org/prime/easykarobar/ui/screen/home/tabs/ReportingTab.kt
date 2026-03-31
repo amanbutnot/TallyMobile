@@ -16,17 +16,23 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ListAlt
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Assessment
-import androidx.compose.material.icons.filled.AssignmentLate
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Inventory
-import androidx.compose.material.icons.filled.ProductionQuantityLimits
+import androidx.compose.material.icons.filled.Balance
+import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Numbers
+import androidx.compose.material.icons.filled.PendingActions
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.Scale
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.ShoppingCartCheckout
-import androidx.compose.material.icons.filled.TrackChanges
+import androidx.compose.material.icons.filled.RequestQuote
+import androidx.compose.material.icons.filled.Tag
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.ViewModule
+import androidx.compose.material.icons.filled.Warehouse
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -55,14 +61,17 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.screen.reports.godown.GodownClosingStockListScreen
+import org.prime.easykarobar.ui.screen.reports.godown.MCBatchNoReport
 import org.prime.easykarobar.ui.screen.reports.godown.MCSerialNoReport
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportFilterScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingSelectScreen
 import org.prime.easykarobar.ui.screen.reports.pendingOrder.OrderReportSelectScreen
+import org.prime.easykarobar.ui.screen.reports.productReport.BatchNoReport
 import org.prime.easykarobar.ui.screen.reports.productReport.ProductReportScreen
 import org.prime.easykarobar.ui.screen.reports.productReport.SerialNumberReport
 import org.prime.easykarobar.ui.screen.reports.registers.RegisterSelectScreen
 import org.prime.easykarobar.ui.screen.reports.salesman.SalesmanTargetFilterScreen
+import org.prime.easykarobar.ui.screen.reports.stock.BatchNumberStockReport
 import org.prime.easykarobar.ui.screen.reports.stock.ParameterReportScreen
 import org.prime.easykarobar.ui.screen.reports.stock.SerialNumberStockReport
 import org.prime.easykarobar.ui.screen.reports.stock.StockReportScreen
@@ -107,14 +116,17 @@ object ReportingTab : Tab {
                 Report.TrialBalance,
                 Report.Registers,
                 Report.StockReport,
-             //   Report.SerialNumberReport,
+                Report.SerialNumberReport,
+                Report.BatchNumberReport,
                 Report.SerialNumberWise,
+                Report.BatchNumberWise,
                 Report.ProductStock,
                 Report.ParameterReport,
 //                Report.PendingOrders,
 //                Report.Quotations,
                 Report.GoDownWiseClosingStock,
                 Report.MCSerialNumberReport,
+                Report.MCBatchNumberReport,
                 Report.SalesmanWise,
                 Report.Order,
             )
@@ -164,7 +176,21 @@ object ReportingTab : Tab {
                                     salesmanPermission(
                                         "D11",
                                         accessDeniedBlock = { showDeniedDialog = true },
-                                        successBlock = { nav?.push(SerialNumberStockReport(true,"0")) }
+                                        successBlock = { nav?.push(SerialNumberStockReport(true,"0",true)) }
+                                    )
+
+                                }
+                                Report.BatchNumberReport -> {
+                                    salesmanPermission(
+                                        "D11",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = { nav?.push(
+                                            BatchNumberStockReport(
+                                                true,
+                                                "0",
+                                                true
+                                            )
+                                        ) }
                                     )
 
                                 }
@@ -173,6 +199,14 @@ object ReportingTab : Tab {
                                         "D11",
                                         accessDeniedBlock = { showDeniedDialog = true },
                                         successBlock = { nav?.push(SerialNumberReport(isMain = true, isDirect = true, godownCode = "0")) }
+                                    )
+
+                                }
+                                Report.BatchNumberWise -> {
+                                    salesmanPermission(
+                                        "D11",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = { nav?.push(BatchNoReport(isMain = true, isDirect = true, godownCode = "0")) }
                                     )
 
                                 }
@@ -218,6 +252,21 @@ object ReportingTab : Tab {
                                         successBlock = {
                                             nav?.push(
                                                 MCSerialNoReport
+                                            )
+                                        }
+                                    )
+
+                                }
+
+                                Report.MCBatchNumberReport -> {
+
+
+                                    salesmanPermission(
+                                        "D12",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
+                                            nav?.push(
+                                                MCBatchNoReport
                                             )
                                         }
                                     )
@@ -294,19 +343,95 @@ fun ReportButton(
 }
 
 sealed class Report(val title: String, val icon: ImageVector) {
-    object Ledger : Report("Ledger", Icons.Default.AccountBalance)
-    object Outstanding : Report("Outstanding", Icons.Default.AssignmentLate)
-    object TrialBalance : Report("Trial Balance", Icons.Default.Scale)
-    object Registers : Report("Registers", Icons.AutoMirrored.Default.ListAlt)
-    object StockReport : Report("Stock Report", Icons.Default.Inventory)
-    object SerialNumberReport : Report("Item Serial No. Wise CLosing Stock", Icons.Default.Inventory)
-    object SerialNumberWise : Report("Serial Number WIse", Icons.Default.Inventory)
-    object PendingOrders : Report("Pending Orders", Icons.Default.ShoppingCart)
-    object Quotations : Report("Quotations", Icons.Default.Description)
-    object GoDownWiseClosingStock : Report("Godown Wise Closing Stock", Icons.Default.Description)
-    object MCSerialNumberReport : Report("MC Serial Number Report", Icons.Default.Description)
-    object ProductStock : Report("Barcode Report", Icons.Default.QrCodeScanner)
-    object ParameterReport : Report("Parameter Report", Icons.Default.ProductionQuantityLimits)
-    object SalesmanWise : Report("Salesman Wise Target", Icons.Default.TrackChanges)
-    object Order : Report("Order Report", Icons.Default.ShoppingCartCheckout)
+
+    object Ledger : Report(
+        "Ledger",
+        Icons.Default.AccountBalance
+    )
+
+    object Outstanding : Report(
+        "Outstanding",
+        Icons.Default.WarningAmber   // better than AssignmentLate (clear urgency)
+    )
+
+    object TrialBalance : Report(
+        "Trial Balance",
+        Icons.Default.Balance       // Scale is fine but Balance is clearer if available
+    )
+
+    object Registers : Report(
+        "Registers",
+        Icons.AutoMirrored.Default.ListAlt
+    )
+
+    object StockReport : Report(
+        "Stock Report",
+        Icons.Default.Inventory2     // better than plain Inventory
+    )
+
+    object SerialNumberReport : Report(
+        "Item Serial No. Wise Closing Stock",
+        Icons.Default.Numbers        // directly represents serial numbers
+    )
+
+    object BatchNumberReport : Report(
+        "Item Batch No. Wise Closing Stock",
+        Icons.Default.Layers         // batch = grouped items
+    )
+
+    object SerialNumberWise : Report(
+        "Serial Number Wise",
+        Icons.Default.Tag            // tagging items individually
+    )
+
+    object BatchNumberWise : Report(
+        "Batch Number Wise",
+        Icons.Default.ViewModule     // grouped layout feel
+    )
+
+    object PendingOrders : Report(
+        "Pending Orders",
+        Icons.Default.PendingActions
+    )
+
+    object Quotations : Report(
+        "Quotations",
+        Icons.Default.RequestQuote
+    )
+
+    object GoDownWiseClosingStock : Report(
+        "Godown Wise Closing Stock",
+        Icons.Default.Warehouse      // if not available, fallback below
+        // Icons.Default.Store
+    )
+
+    object MCSerialNumberReport : Report(
+        "MC Serial Number Report",
+        Icons.Default.ConfirmationNumber
+    )
+
+    object MCBatchNumberReport : Report(
+        "MC Batch Number Report",
+        Icons.Default.Layers
+    )
+
+    object ProductStock : Report(
+        "Barcode Report",
+        Icons.Default.QrCodeScanner
+    )
+
+    object ParameterReport : Report(
+        "Parameter Report",
+        Icons.Default.Tune
+    )
+
+    object SalesmanWise : Report(
+        "Salesman Wise Target",
+        Icons.Default.Person
+    )
+
+    object Order : Report(
+        "Order Report",
+        Icons.AutoMirrored.Filled.ReceiptLong
+    )
 }

@@ -36,7 +36,6 @@ import org.prime.easykarobar.data.expect.formatToQtyDec
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.printing.Quadruple
 import org.prime.easykarobar.ui.printing.fourHeaderHtml
-import org.prime.easykarobar.ui.screen.reports.productReport.SerialNumberReport
 import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheet
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
@@ -44,7 +43,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
-import org.prime.easykarobar.ui.shared.globalShared.getProductSerialNo
+import org.prime.easykarobar.ui.shared.globalShared.getProductBatchNo
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
@@ -54,18 +53,18 @@ import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportLazyList
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
-import org.tally.SerialNoReport
+import org.tally.BatchNoReport
 import smartSearch
 import kotlin.math.absoluteValue
 
-data class SerialNumberStockReport(val isDirect:Boolean, val godownCode:String?=null,val mcWise:Boolean) : Screen {
+data class BatchNumberStockReport(val isDirect:Boolean, val godownCode:String?=null, val mcWise:Boolean) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
 
         val db = DatabaseHolder.instance
 
-        var list by remember { mutableStateOf<List<SerialNoReport>>(emptyList()) }
+        var list by remember { mutableStateOf<List<BatchNoReport>>(emptyList()) }
         var isLoading by remember { mutableStateOf(true) }
         var showSearchBar by remember { mutableStateOf(false) }
         var searchQuery by remember { mutableStateOf("") }
@@ -94,7 +93,7 @@ data class SerialNumberStockReport(val isDirect:Boolean, val godownCode:String?=
 
         LaunchedEffect(Unit) {
             isLoading = true
-            list = getProductSerialNo(db,isDirect,godownCode)
+            list = getProductBatchNo(db,isDirect,godownCode)
             println("Group list is : $list")
 
             isLoading = false
@@ -190,7 +189,7 @@ data class SerialNumberStockReport(val isDirect:Boolean, val godownCode:String?=
 
 
         TallyReportScaffold(
-            "Item Serial Number Wise", showBottomBar = true,
+            "Item Batch Number Wise", showBottomBar = true,
             showSearchAction = true,
             showBurgerMenu = true,
             menuItems = menuItems,
@@ -268,7 +267,7 @@ data class SerialNumberStockReport(val isDirect:Boolean, val godownCode:String?=
 
 
                                 nav.push(
-                                    SerialNumberReport(
+                                    org.prime.easykarobar.ui.screen.reports.productReport.BatchNoReport(
                                         item.MasterCode1?.toInt().toString(),
                                         godownCode = godownCode,
                                         isMain = false,
