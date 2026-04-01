@@ -3,14 +3,19 @@ package org.prime.easykarobar.ui.screen.home.tabs
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,6 +40,7 @@ import androidx.compose.material.icons.filled.Warehouse
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -51,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.annotation.InternalVoyagerApi
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -101,196 +108,248 @@ object ReportingTab : Tab {
 
         val colors = MaterialTheme.colorScheme
         val nav = LocalNavigator.currentOrThrow.parent
-        Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
-            Text(
-                text = "Reports",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Medium,
-                color = colors.onBackground,
-                modifier = Modifier.padding(20.dp).padding(bottom = 8.dp),
-            )
 
-            val reports = listOf(
-                Report.Ledger,
-                Report.Outstanding,
-                Report.TrialBalance,
-                Report.Registers,
-                Report.StockReport,
-                Report.SerialNumberReport,
-                Report.BatchNumberReport,
-                Report.SerialNumberWise,
-                Report.BatchNumberWise,
-                Report.ProductStock,
-                Report.ParameterReport,
-//                Report.PendingOrders,
-//                Report.Quotations,
-                Report.GoDownWiseClosingStock,
-                Report.MCSerialNumberReport,
-                Report.MCBatchNumberReport,
-                Report.SalesmanWise,
-                Report.Order,
+        val reportGroups = listOf(
+            ReportGroup(
+                "Accounting",
+                listOf(Report.Ledger, Report.Outstanding, Report.TrialBalance, Report.Registers)
+            ),
+            ReportGroup(
+                "Inventory",
+                listOf(
+                    Report.GoDownWiseClosingStock,
+                    Report.Order,
+                    Report.SalesmanWise,
+                    Report.ProductStock
+                )
+            ),
+            ReportGroup(
+                "Stock",
+                listOf(Report.StockReport)
+            ),
+            ReportGroup("Parameter", listOf(Report.ParameterReport)),
+            ReportGroup("Batch", listOf(Report.BatchNumberWise, Report.BatchNumberReport, Report.MCBatchNumberReport)),
+            ReportGroup(
+                "Serial Number",
+                listOf(Report.SerialNumberWise, Report.SerialNumberReport, Report.MCSerialNumberReport)
             )
+        )
 
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colors.background)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth()  .padding(20.dp),
             ) {
-                items(reports) { report ->
-                    ReportButton(
-                        icon = report.icon,
-                        title = report.title,
-                        onClick = {
-                            //TODO: add appropriate screens
-                            when (report) {
-                                Report.Ledger -> {
-                                    salesmanPermission(
-                                        "D7",
-                                        accessDeniedBlock = { showDeniedDialog = true },
-                                        successBlock = { nav?.push(LedgerReportFilterScreen()) }
-                                    )
-                                }
-
-                                Report.Outstanding -> nav?.push(OutstandingSelectScreen)
-                                Report.PendingOrders -> nav?.push(Dashboard)
-                                Report.Quotations -> nav?.push(Dashboard)
-                                Report.ProductStock -> nav?.push(
-                                    ProductReportScreen(
-                                        null,
-                                        isMain = true
-                                    )
-                                )
-
-                                Report.Registers -> nav?.push(RegisterSelectScreen)
-                                Report.StockReport -> {
-                                    salesmanPermission(
-                                        "D11",
-                                        accessDeniedBlock = { showDeniedDialog = true },
-                                        successBlock = { nav?.push(StockReportScreen) }
-                                    )
-
-                                }
-                                Report.SerialNumberReport -> {
-                                    salesmanPermission(
-                                        "D11",
-                                        accessDeniedBlock = { showDeniedDialog = true },
-                                        successBlock = { nav?.push(SerialNumberStockReport(true,"0",true)) }
-                                    )
-
-                                }
-                                Report.BatchNumberReport -> {
-                                    salesmanPermission(
-                                        "D11",
-                                        accessDeniedBlock = { showDeniedDialog = true },
-                                        successBlock = { nav?.push(
-                                            BatchNumberStockReport(
-                                                true,
-                                                "0",
-                                                true
-                                            )
-                                        ) }
-                                    )
-
-                                }
-                                Report.SerialNumberWise -> {
-                                    salesmanPermission(
-                                        "D11",
-                                        accessDeniedBlock = { showDeniedDialog = true },
-                                        successBlock = { nav?.push(SerialNumberReport(isMain = true, isDirect = true, godownCode = "0")) }
-                                    )
-
-                                }
-                                Report.BatchNumberWise -> {
-                                    salesmanPermission(
-                                        "D11",
-                                        accessDeniedBlock = { showDeniedDialog = true },
-                                        successBlock = { nav?.push(BatchNoReport(isMain = true, isDirect = true, godownCode = "0")) }
-                                    )
-
-                                }
-                                //TODO: make D value for parameter report
-                                Report.ParameterReport -> {
-                                    salesmanPermission(
-                                        "D11",
-                                        accessDeniedBlock = { showDeniedDialog = true },
-                                        successBlock = { nav?.push(ParameterReportScreen) }
-                                    )
-
-                                }
-
-                                Report.TrialBalance -> {
-                                    salesmanPermission(
-                                        "D10",
-                                        accessDeniedBlock = { showDeniedDialog = true },
-                                        successBlock = { nav?.push(TrialBalanceScreen) }
-                                    )
-
-                                }
-
-                                Report.GoDownWiseClosingStock -> {
-
-
-                                    salesmanPermission(
-                                        "D12",
-                                        accessDeniedBlock = { showDeniedDialog = true },
-                                        successBlock = {
-                                            nav?.push(
-                                                GodownClosingStockListScreen
-                                            )
-                                        }
-                                    )
-
-                                }
-                                Report.MCSerialNumberReport -> {
-
-
-                                    salesmanPermission(
-                                        "D12",
-                                        accessDeniedBlock = { showDeniedDialog = true },
-                                        successBlock = {
-                                            nav?.push(
-                                                MCSerialNoReport
-                                            )
-                                        }
-                                    )
-
-                                }
-
-                                Report.MCBatchNumberReport -> {
-
-
-                                    salesmanPermission(
-                                        "D12",
-                                        accessDeniedBlock = { showDeniedDialog = true },
-                                        successBlock = {
-                                            nav?.push(
-                                                MCBatchNoReport
-                                            )
-                                        }
-                                    )
-
-                                }
-
-                                Report.SalesmanWise -> {
-                                    nav?.push(SalesmanTargetFilterScreen)
-                                }
-
-                                Report.Order -> {
-                                    nav?.push(OrderReportSelectScreen)
-                                }
-
-                            }
-                        }
-                    )
-                }
+                Text(
+                    text = tabNav.current.options.title,
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.onBackground
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "View your reports",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onBackground.copy(alpha = 0.7f)
+                )
             }
 
+            // ── Report grid ─────────────────────────────────────────────────
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 8.dp,
+                    bottom = 24.dp
+                ),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                reportGroups.forEach { group ->
+                    // Section header
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 20.dp, bottom = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(3.dp)
+                                    .height(14.dp)
+                                    .background(
+                                        color = colors.primary,
+                                        shape = RoundedCornerShape(2.dp)
+                                    )
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = group.title.uppercase(),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    letterSpacing = 1.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp
+                                ),
+                                color = colors.primary
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            HorizontalDivider(
+                                modifier = Modifier.weight(1f),
+                                thickness = 0.8.dp,
+                                color = colors.outlineVariant.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
+
+                    items(group.reports) { report ->
+                        ReportButton(
+                            icon = report.icon,
+                            title = report.title,
+                            onClick = {
+                                when (report) {
+                                    Report.Ledger -> {
+                                        salesmanPermission(
+                                            "D7",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = { nav?.push(LedgerReportFilterScreen()) }
+                                        )
+                                    }
+
+                                    Report.Outstanding -> nav?.push(OutstandingSelectScreen)
+                                    Report.PendingOrders -> nav?.push(Dashboard)
+                                    Report.Quotations -> nav?.push(Dashboard)
+                                    Report.ProductStock -> nav?.push(
+                                        ProductReportScreen(null, isMain = true)
+                                    )
+
+                                    Report.Registers -> nav?.push(RegisterSelectScreen)
+                                    Report.StockReport -> {
+                                        salesmanPermission(
+                                            "D11",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = { nav?.push(StockReportScreen) }
+                                        )
+                                    }
+
+                                    Report.SerialNumberReport -> {
+                                        salesmanPermission(
+                                            "D11",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(
+                                                    SerialNumberStockReport(true, "0", true)
+                                                )
+                                            }
+                                        )
+                                    }
+
+                                    Report.BatchNumberReport -> {
+                                        salesmanPermission(
+                                            "D11",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(
+                                                    BatchNumberStockReport(true, "0", true)
+                                                )
+                                            }
+                                        )
+                                    }
+
+                                    Report.SerialNumberWise -> {
+                                        salesmanPermission(
+                                            "D11",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(
+                                                    SerialNumberReport(
+                                                        isMain = true,
+                                                        isDirect = true,
+                                                        godownCode = "0"
+                                                    )
+                                                )
+                                            }
+                                        )
+                                    }
+
+                                    Report.BatchNumberWise -> {
+                                        salesmanPermission(
+                                            "D11",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(
+                                                    BatchNoReport(
+                                                        isMain = true,
+                                                        isDirect = true,
+                                                        godownCode = "0"
+                                                    )
+                                                )
+                                            }
+                                        )
+                                    }
+
+                                    Report.ParameterReport -> {
+                                        salesmanPermission(
+                                            "D11",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = { nav?.push(ParameterReportScreen) }
+                                        )
+                                    }
+
+                                    Report.TrialBalance -> {
+                                        salesmanPermission(
+                                            "D10",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = { nav?.push(TrialBalanceScreen) }
+                                        )
+                                    }
+
+                                    Report.GoDownWiseClosingStock -> {
+                                        salesmanPermission(
+                                            "D12",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = { nav?.push(GodownClosingStockListScreen) }
+                                        )
+                                    }
+
+                                    Report.MCSerialNumberReport -> {
+                                        salesmanPermission(
+                                            "D12",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = { nav?.push(MCSerialNoReport) }
+                                        )
+                                    }
+
+                                    Report.MCBatchNumberReport -> {
+                                        salesmanPermission(
+                                            "D12",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = { nav?.push(MCBatchNoReport) }
+                                        )
+                                    }
+
+                                    Report.SalesmanWise -> nav?.push(SalesmanTargetFilterScreen)
+                                    Report.Order -> nav?.push(OrderReportSelectScreen)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 }
 
+// ── Data ────────────────────────────────────────────────────────────────────
+
+private data class ReportGroup(val title: String, val reports: List<Report>)
+
+// ── Report card ──────────────────────────────────────────────────────────────
 
 @Composable
 fun ReportButton(
@@ -299,139 +358,86 @@ fun ReportButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
+
     Card(
-        modifier = modifier.height(140.dp),
+        modifier = modifier
+            .height(90.dp)
+            .fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = colors.surface
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp,
-            pressedElevation = 8.dp
+            defaultElevation = 0.dp,
+            pressedElevation = 0.dp
         ),
-        border = BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-        ),
-        onClick = { onClick() }
+        border = BorderStroke(1.dp, colors.outlineVariant.copy(alpha = 0.6f)),
+        onClick = onClick
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(vertical = 12.dp, horizontal = 8.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(40.dp)
-            )
+            // Icon container with tinted background
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(
+                        color = colors.primary,
+                        shape = RoundedCornerShape(8.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = colors.primaryContainer,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(7.dp))
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 12.sp,
+                    lineHeight = 12.sp,
+                    fontWeight = FontWeight.Medium
+                ),
+                color = colors.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Medium, overflow = TextOverflow.Ellipsis, maxLines = 2
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 2
             )
         }
     }
 }
 
+// ── Report definitions (unchanged) ──────────────────────────────────────────
+
 sealed class Report(val title: String, val icon: ImageVector) {
 
-    object Ledger : Report(
-        "Ledger",
-        Icons.Default.AccountBalance
-    )
-
-    object Outstanding : Report(
-        "Outstanding",
-        Icons.Default.WarningAmber   // better than AssignmentLate (clear urgency)
-    )
-
-    object TrialBalance : Report(
-        "Trial Balance",
-        Icons.Default.Balance       // Scale is fine but Balance is clearer if available
-    )
-
-    object Registers : Report(
-        "Registers",
-        Icons.AutoMirrored.Default.ListAlt
-    )
-
-    object StockReport : Report(
-        "Stock Report",
-        Icons.Default.Inventory2     // better than plain Inventory
-    )
-
-    object SerialNumberReport : Report(
-        "Item Serial No. Wise Closing Stock",
-        Icons.Default.Numbers        // directly represents serial numbers
-    )
-
-    object BatchNumberReport : Report(
-        "Item Batch No. Wise Closing Stock",
-        Icons.Default.Layers         // batch = grouped items
-    )
-
-    object SerialNumberWise : Report(
-        "Serial Number Wise",
-        Icons.Default.Tag            // tagging items individually
-    )
-
-    object BatchNumberWise : Report(
-        "Batch Number Wise",
-        Icons.Default.ViewModule     // grouped layout feel
-    )
-
-    object PendingOrders : Report(
-        "Pending Orders",
-        Icons.Default.PendingActions
-    )
-
-    object Quotations : Report(
-        "Quotations",
-        Icons.Default.RequestQuote
-    )
-
-    object GoDownWiseClosingStock : Report(
-        "Godown Wise Closing Stock",
-        Icons.Default.Warehouse      // if not available, fallback below
-        // Icons.Default.Store
-    )
-
-    object MCSerialNumberReport : Report(
-        "MC Serial Number Report",
-        Icons.Default.ConfirmationNumber
-    )
-
-    object MCBatchNumberReport : Report(
-        "MC Batch Number Report",
-        Icons.Default.Layers
-    )
-
-    object ProductStock : Report(
-        "Barcode Report",
-        Icons.Default.QrCodeScanner
-    )
-
-    object ParameterReport : Report(
-        "Parameter Report",
-        Icons.Default.Tune
-    )
-
-    object SalesmanWise : Report(
-        "Salesman Wise Target",
-        Icons.Default.Person
-    )
-
-    object Order : Report(
-        "Order Report",
-        Icons.AutoMirrored.Filled.ReceiptLong
-    )
+    object Ledger : Report("Ledger", Icons.Default.AccountBalance)
+    object Outstanding : Report("Outstanding", Icons.Default.WarningAmber)
+    object TrialBalance : Report("Trial Balance", Icons.Default.Balance)
+    object Registers : Report("Registers", Icons.AutoMirrored.Default.ListAlt)
+    object StockReport : Report("Stock Report", Icons.Default.Inventory2)
+    object SerialNumberReport : Report("Item Summary", Icons.Default.Numbers)
+    object BatchNumberReport : Report("Batch Summary", Icons.Default.Layers)
+    object SerialNumberWise : Report("Item Summary", Icons.Default.Tag)
+    object BatchNumberWise : Report("Item Summary", Icons.Default.ViewModule)
+    object PendingOrders : Report("Pending Orders", Icons.Default.PendingActions)
+    object Quotations : Report("Quotations", Icons.Default.RequestQuote)
+    object GoDownWiseClosingStock : Report("Godown Stock", Icons.Default.Warehouse)
+    object MCSerialNumberReport : Report("Godown Summary", Icons.Default.ConfirmationNumber)
+    object MCBatchNumberReport : Report("Godown Summary", Icons.Default.Layers)
+    object ProductStock : Report("Barcode Report", Icons.Default.QrCodeScanner)
+    object ParameterReport : Report("Parameter Report", Icons.Default.Tune)
+    object SalesmanWise : Report("Salesman Target", Icons.Default.Person)
+    object Order : Report("Order Report", Icons.AutoMirrored.Filled.ReceiptLong)
 }
