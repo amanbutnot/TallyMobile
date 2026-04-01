@@ -37,7 +37,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.Check
@@ -54,9 +53,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
@@ -102,6 +103,7 @@ import org.prime.easykarobar.business.viewmodel.transactions.InventoryVoucherVie
 import org.prime.easykarobar.data.expect.BarcodeScanResult
 import org.prime.easykarobar.data.expect.BarcodeScannerLauncher
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.formatToQtyDec
 import org.prime.easykarobar.data.expect.rememberBarcodeScanner
 import org.prime.easykarobar.data.model.transactions.BillingItem
 import org.prime.easykarobar.data.model.transactions.InventoryVoucherRequest
@@ -112,6 +114,7 @@ import org.prime.easykarobar.ui.screen.transactions.BillByBillModel
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionBillBottomSheet
 import org.prime.easykarobar.ui.shared.composables.DownloadResultDialog
+import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheet
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyAlertBox
 import org.prime.easykarobar.ui.shared.composables.TallyButton
@@ -125,6 +128,7 @@ import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
+import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.isBusy
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
@@ -160,6 +164,7 @@ data class InvoiceItem(
     val guid: String = "",
     // Item descriptions
     val itemdesc1: String? = null,
+    val CD: String? = null,
     val itemdesc2: String? = null,
     val itemdesc3: String? = null,
     val itemdesc4: String? = null,
@@ -200,7 +205,10 @@ data class SaleScreen(
     val enableUpdateButton: Boolean = true
 ) : Screen {
 
-    @OptIn(ExperimentalMaterial3Api::class, InternalVoyagerApi::class, ExperimentalUuidApi::class)
+    @OptIn(
+        ExperimentalMaterial3Api::class, InternalVoyagerApi::class, ExperimentalUuidApi::class,
+        ExperimentalMaterial3ExpressiveApi::class
+    )
     @Composable
     override fun Content() {
         var showExitPopup by remember { mutableStateOf(false) }
@@ -229,6 +237,7 @@ data class SaleScreen(
         var showWarningMessage by remember { mutableStateOf(false) }
         var showSundrySheet by remember { mutableStateOf(false) }
         var showResultDialog by remember { mutableStateOf(false) }
+        var showGroupFilterSheet by remember { mutableStateOf(false) }
 
         var editingItem by remember { mutableStateOf<InvoiceItem?>(null) }
 
@@ -238,6 +247,19 @@ data class SaleScreen(
         val ledgerList = getLedgerMasters(db)
         val busyLedgerList = db.bSMasterQueries.selectAll().executeAsList()
         val itemsList = getItemMasters(db)
+        var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
+        val groupFilteredList = if (selectedGroups.isEmpty()) {
+            itemsList
+        } else {
+            itemsList.filter { it.GroupName in getProductsGroupCodesByName(selectedGroups) }
+        }
+        val productGroups = remember {
+            db.productGroupMasterQueries.selectAll(
+                filterGroup = filterItemGroups(),
+                groupCodes = itemGroupCodes()
+            ).executeAsList()
+        }
+
         val viewmodel: InventoryVoucherViewModel = viewModel { InventoryVoucherViewModel() }
         val state by viewmodel.dataState
         val oneState by viewmodel.oneState
@@ -253,6 +275,7 @@ data class SaleScreen(
             mutableStateOf<BarcodeScannerLauncher?>(null)
         }
         var focusedSundryGuid by remember { mutableStateOf<String?>(null) }
+        val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
         var showTransportDetails by remember { mutableStateOf(false) }
         var transportName by remember { mutableStateOf("") }
@@ -393,6 +416,15 @@ data class SaleScreen(
                 }
             }
         }
+        GroupFilterBottomSheet(
+            show = showGroupFilterSheet,
+            items = productGroups, // can be any list
+            selectedItems = selectedGroups,
+            itemNameSelector = { it.Name },
+            onSelectedItemsChange = { selectedGroups = it },
+            onDismiss = { showGroupFilterSheet = false },
+            bottomSheetState = bottomSheetState
+        )
 
         if (showAddMorePopup) {
             TallyAlertBox(
@@ -527,6 +559,7 @@ data class SaleScreen(
                         itemdesc3 = it.itemdesc3,
                         itemdesc4 = it.itemdesc4,
                         itemdesc5 = it.itemdesc5,
+                        CD = it.CD,
                         itemdesc6 = it.itemdesc6,
                         itemdesc7 = it.itemdesc7,
                         itemdesc8 = it.itemdesc8,
@@ -789,7 +822,7 @@ data class SaleScreen(
                                                 initialDiscount = pending.discountPercentage,
                                                 taxType = taxType,
                                                 existingItem = pending,
-                                                onAdd = { qty, unitPrice, discount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos ->
+                                                onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos ->
                                                     selectedItems = selectedItems + InvoiceItem(
                                                         name = product.Name ?: pending.name,
                                                         price = unitPrice,
@@ -797,6 +830,7 @@ data class SaleScreen(
                                                         discountPercentage = discount,
                                                         listPrice = listPriceText,
                                                         taxable = taxable,
+                                                        CD = compoundDiscount,
                                                         gstAmt = gstAmount,
                                                         net = net,
                                                         guid = product.GUID
@@ -846,7 +880,7 @@ data class SaleScreen(
                                                 initialQuantity = pending.qty,
                                                 taxType = taxType,
                                                 existingItem = pending,
-                                                onAdd = { qty, unitPrice, discount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos ->
+                                                onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos ->
                                                     selectedItems = selectedItems + InvoiceItem(
                                                         name = pending.name,
                                                         price = unitPrice,
@@ -854,6 +888,7 @@ data class SaleScreen(
                                                         discountPercentage = discount,
                                                         listPrice = listPriceText,
                                                         taxable = taxable,
+                                                        CD = compoundDiscount,
                                                         gstAmt = gstAmount,
                                                         net = net,
                                                         guid = pendingSelectedProductGUID ?: "",
@@ -963,9 +998,15 @@ data class SaleScreen(
 
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.Center,
+                                        horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
+                                        TextButton(onClick = {
+                                            showGroupFilterSheet = true
+                                        }) {
+                                            Text("Group Filter")
+                                        }
+
                                         SmallAddButton(
                                             label = "Add More Item",
                                             enabled = editingItem == null
@@ -1298,7 +1339,7 @@ data class SaleScreen(
                 SelectionSheetItem(
                     show = showItemSheet,
                     title = "Select Item",
-                    options = itemsList,
+                    options = groupFilteredList,
                     onSelect = { itemName ->
                         pendingSelectedProductName = itemName.Name
                         pendingSelectedProductGUID = itemName.GUID
@@ -1548,43 +1589,42 @@ data class SaleScreen(
                                                 billid = ref.billId?.toDoubleOrNull(),
 
 
+                                                //TODO: logic for sale me + purc me minus
+                                                //d1 = ref.d1?.absoluteValue,
+                                                d1 = when (vchType) {
+                                                    9 -> {
+                                                        makeNegativeConditional(ref.d1 ?: 0.0)
+                                                    }
 
-                                            //TODO: logic for sale me + purc me minus
-                                            //d1 = ref.d1?.absoluteValue,
-                                            d1 = when (vchType) {
-                                                9 -> {
-                                                  makeNegativeConditional( ref.d1 ?:0.0)
-                                                }
+                                                    3 -> {
+                                                        ref.d1
+                                                    }
 
-                                                3 -> {
-                                                    ref.d1
-                                                }
+                                                    2 -> {
+                                                        ref.d1
+                                                    }
 
-                                                2 -> {
-                                                    ref.d1
-                                                }
+                                                    10 -> {
+                                                        makeNegativeConditional(ref.d1 ?: 0.0)
+                                                    }
 
-                                                10 -> {
-                                                    makeNegativeConditional( ref.d1 ?:0.0)
-                                                }
+                                                    14 -> {
+                                                        makeNegativeConditional(ref.d1 ?: 0.0)
+                                                    }
 
-                                                14 -> {
-                                                    makeNegativeConditional( ref.d1 ?:0.0)
-                                                }
+                                                    16 -> {
+                                                        ref.d1?.absoluteValue
+                                                    }
 
-                                                16 -> {
-                                                    ref.d1?.absoluteValue
-                                                }
+                                                    else -> {
+                                                        ref.d1?.absoluteValue
+                                                    }
+                                                },
 
-                                                else -> {
-                                                    ref.d1?.absoluteValue
-                                                }
-                                            },
-
-                                            d2 = null,
+                                                d2 = null,
 
 //if pending >0
-                                            e2 = null
+                                                e2 = null
                                             )
                                         }
                                     }
@@ -2184,7 +2224,8 @@ fun BorderedInput(
     value: String,
     onValueChange: (String) -> Unit,
     keyboardType: KeyboardType = KeyboardType.Text,
-    isEnabled: Boolean = true
+    isEnabled: Boolean = true,
+    showPlus: Boolean = false
 ) {
     var textFieldValue by remember { mutableStateOf(TextFieldValue(value)) }
     val interactionSource = remember { MutableInteractionSource() }
@@ -2208,7 +2249,8 @@ fun BorderedInput(
         BasicTextField(
             value = textFieldValue,
             onValueChange = { newValue ->
-                val filtered = newValue.text.filter { it.isDigit() || it == '.' }
+                val filtered =
+                    newValue.text.filter { it.isDigit() || it == '.' || if (showPlus) it == '+' else it == '.' }
                 val dotCount = filtered.count { it == '.' }
                 val validText = if (dotCount > 1) {
                     filtered.substringBefore('.') + "." + filtered.substringAfter('.')
@@ -2219,7 +2261,7 @@ fun BorderedInput(
             },
             enabled = isEnabled,
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -2343,17 +2385,28 @@ fun TransactionItemBottomList(
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                            Box(modifier = Modifier.fillMaxWidth()) {
                                 if (itemContent != null) {
                                     itemContent(item.Name.toString())
                                 } else {
-                                    Text(
-                                        text = item.Name.toString(),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
+                                    ListItem(modifier = Modifier.fillMaxWidth(), headlineContent = {
+                                        Text(
+                                            text = item.Name.toString(),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }, trailingContent = {
+                                        Text(
+                                            text = item.N1?.formatToQtyDec() ?: "-",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    })
+
                                 }
                             }
                         }
@@ -2367,7 +2420,6 @@ fun TransactionItemBottomList(
 // ─────────────────────────────────────────────────────────────────────────────
 // ExpandedItemEditor1 — now with collapsible descriptions panel
 // ─────────────────────────────────────────────────────────────────────────────
-
 @Composable
 fun ExpandedItemEditor1(
     name: String,
@@ -2381,6 +2433,7 @@ fun ExpandedItemEditor1(
         qty: Int,
         unitPrice: Double,
         discount: Double,
+        compoundDiscount: String?, // NEW
         listPrice: Double,
         taxable: Double,
         gstAmount: Double,
@@ -2392,6 +2445,7 @@ fun ExpandedItemEditor1(
     onCancel: () -> Unit,
     onBack: () -> Unit,
 ) {
+
     var qtyN by remember { mutableStateOf(if (initialQuantity == 0) "" else initialQuantity.toString()) }
     var listPriceN by remember { mutableStateOf(defaultListPrice.toString()) }
     var discountN by remember { mutableStateOf(initialDiscount.toString()) }
@@ -2400,7 +2454,22 @@ fun ExpandedItemEditor1(
     var editMode by remember { mutableStateOf(PriceEditMode.LIST_PRICE) }
     var isAmountManuallyEdited by remember { mutableStateOf(false) }
 
-    // Description visibility toggle — auto-open if any saved desc value exists
+    val isCompoundDiscount by derivedStateOf {
+        discountN.contains("+")
+    }
+
+    fun applyCompoundDiscount(base: Double, discountStr: String): Double {
+        val parts = discountStr.split("+")
+            .mapNotNull { it.toDoubleOrNull() }
+            .take(5)
+
+        var result = base
+        for (d in parts) {
+            result -= result * d / 100.0
+        }
+        return result
+    }
+
     var showDescriptions by remember(existingItem) {
         val hasAnyDesc = existingItem != null && listOf(
             existingItem.itemdesc1, existingItem.itemdesc2, existingItem.itemdesc3,
@@ -2415,8 +2484,6 @@ fun ExpandedItemEditor1(
         mutableStateOf(hasAnyDesc)
     }
 
-    // 20 item description fields — keyed on existingItem so they re-init when
-    // the editor is opened for an existing item (async load case)
     val itemDescs = remember(existingItem) {
         mutableStateListOf(
             existingItem?.itemdesc1 ?: "",
@@ -2442,16 +2509,12 @@ fun ExpandedItemEditor1(
         )
     }
 
-    // 3 additional info fields — also keyed on existingItem
     val additionalInfos = remember(existingItem) {
         mutableStateListOf(
             existingItem?.additionalinfo ?: "",
         )
     }
 
-    // Safety net: if existingItem arrives late (async), sync list contents
-    // without re-creating the list object (preserves any user edits made
-    // before the data arrived, overwriting only if the item actually changed)
     LaunchedEffect(existingItem) {
         existingItem ?: return@LaunchedEffect
         val descs = listOf(
@@ -2469,14 +2532,17 @@ fun ExpandedItemEditor1(
 
     val qtyValue = qtyN.toIntOrNull()?.takeIf { it > 0 } ?: 0
 
-    /* ── price logic ─────────────────────────────────────────────────────── */
-
     val unitPrice by derivedStateOf {
         when (editMode) {
             PriceEditMode.LIST_PRICE, PriceEditMode.DISCOUNT -> {
                 val lp = listPriceN.toDoubleOrNull() ?: 0.0
-                val dis = discountN.toDoubleOrNull() ?: 0.0
-                lp - (lp * dis / 100.0)
+
+                if (isCompoundDiscount) {
+                    applyCompoundDiscount(lp, discountN)
+                } else {
+                    val dis = discountN.toDoubleOrNull() ?: 0.0
+                    lp - (lp * dis / 100.0)
+                }
             }
 
             PriceEditMode.AMOUNT -> {
@@ -2493,8 +2559,6 @@ fun ExpandedItemEditor1(
     val amount by derivedStateOf {
         if (qtyValue > 0) unitPrice * qtyValue else 0.0
     }
-
-    /* ── tax calculation ─────────────────────────────────────────────────── */
 
     val taxableAmount: Double
     val gstAmount: Double
@@ -2518,8 +2582,6 @@ fun ExpandedItemEditor1(
 
     val isAddEnabled = qtyValue > 0
 
-    /* ── UI ──────────────────────────────────────────────────────────────── */
-
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.small,
@@ -2529,228 +2591,84 @@ fun ExpandedItemEditor1(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Header
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(name, fontWeight = FontWeight.SemiBold)
-                    Text(
-                        "Configure item before adding",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
-                }
-            }
 
-            // Qty / List Price / Discount / Amount
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Qty", style = MaterialTheme.typography.labelSmall)
+                    Text("Qty")
                     BorderedInput(
                         value = qtyN,
                         onValueChange = {
                             isAmountManuallyEdited = false
                             editMode = PriceEditMode.LIST_PRICE
                             qtyN = it.filter(Char::isDigit)
-                        },
-                        keyboardType = KeyboardType.Number
+                        }
                     )
                 }
+
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("List Price", style = MaterialTheme.typography.labelSmall)
+                    Text("List Price")
                     BorderedInput(
                         value = listPriceN,
                         onValueChange = {
                             isAmountManuallyEdited = false
                             editMode = PriceEditMode.LIST_PRICE
                             listPriceN = it
-                        },
-                        keyboardType = KeyboardType.Decimal
+                        }
                     )
                 }
+
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Discount %", style = MaterialTheme.typography.labelSmall)
+                    Text("Discount %")
                     BorderedInput(
                         value = discountN,
                         onValueChange = {
-                            val filtered = it.filter { c -> c.isDigit() || c == '.' }
-                            val value = filtered.toDoubleOrNull()
-                            if (value == null || value <= 100.0) {
-                                isAmountManuallyEdited = false
-                                editMode = PriceEditMode.DISCOUNT
-                                discountN = filtered
-                            }
-                        },
-                        keyboardType = KeyboardType.Decimal
+                            val filtered = it.filter { c -> c.isDigit() || c == '.' || c == '+' }
+
+                            val parts = filtered.split("+").take(5) // max 5 segments
+                            val finalValue = parts.joinToString("+")
+
+                            isAmountManuallyEdited = false
+                            editMode = PriceEditMode.DISCOUNT
+                            discountN = finalValue
+                        }, keyboardType = KeyboardType.Text, showPlus = true
                     )
                 }
+
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Amount", style = MaterialTheme.typography.labelSmall)
+                    Text("Amount")
                     BorderedInput(
                         value = if (isAmountManuallyEdited) amountN else formatTwo(amount),
                         onValueChange = {
                             isAmountManuallyEdited = true
                             editMode = PriceEditMode.AMOUNT
                             amountN = it
-                        },
-                        keyboardType = KeyboardType.Decimal
+                        }
                     )
                 }
             }
 
-            // Summary row
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row {
                 SummaryCell("Taxable", taxableAmount)
-                SummaryCell("GST %", gstPercentage, suffix = "%")
+                SummaryCell("GST %", gstPercentage, "%")
                 SummaryCell("GST Amt", gstAmount)
                 SummaryCell("Net", netAmount, highlight = true)
             }
 
-            // ── "Add Descriptions" toggle button ──────────────────────────
-            TextButton(
-                onClick = { showDescriptions = !showDescriptions },
-                modifier = Modifier.align(Alignment.Start)
-            ) {
-                Icon(
-                    imageVector = if (showDescriptions) Icons.Default.RemoveCircleOutline
-                    else Icons.Default.AddCircleOutline,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    text = if (showDescriptions) "Hide Descriptions" else "Add Descriptions",
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-
-            // ── Collapsible descriptions panel ────────────────────────────
-            AnimatedVisibility(
-                visible = showDescriptions,
-                enter = fadeIn(tween(250)) + expandVertically(tween(250)),
-                exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
-            ) {
-                Surface(
-                    shape = MaterialTheme.shapes.small,
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // Section label
-                        Text(
-                            text = "ITEM DESCRIPTIONS",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary,
-                            letterSpacing = 0.5.sp
-                        )
-
-                        // 20 description fields — one per row stacked vertically
-                        for (idx in 0 until 20) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                Text(
-                                    text = "Desc ${idx + 1}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .border(
-                                            1.dp,
-                                            MaterialTheme.colorScheme.outline,
-                                            RoundedCornerShape(6.dp)
-                                        )
-                                        .padding(horizontal = 8.dp, vertical = 6.dp)
-                                ) {
-                                    BasicTextField(
-                                        value = itemDescs[idx],
-                                        onValueChange = { itemDescs[idx] = it },
-                                        singleLine = true,
-                                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        ),
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(Modifier.height(4.dp))
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                            thickness = 0.5.dp
-                        )
-                        Spacer(Modifier.height(2.dp))
-
-                        // Additional info section label
-                        Text(
-                            text = "ADDITIONAL INFO",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary,
-                            letterSpacing = 0.5.sp
-                        )
-
-                        // 3 additional info fields — one per row stacked vertically
-
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            Text(
-                                text = "Info",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .border(
-                                        1.dp,
-                                        MaterialTheme.colorScheme.outline,
-                                        RoundedCornerShape(6.dp)
-                                    )
-                                    .padding(horizontal = 8.dp, vertical = 6.dp)
-                            ) {
-                                BasicTextField(
-                                    value = additionalInfos[0],
-                                    onValueChange = { additionalInfos[0] = it },
-                                    singleLine = true,
-                                    textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    ),
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                        }
-                    }
-
-                }
-            }
-
-            // Actions
             Row(
                 horizontalArrangement = Arrangement.End,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 TextButton(onClick = onCancel) { Text("Cancel") }
-                Spacer(Modifier.width(8.dp))
+
                 Button(
                     enabled = isAddEnabled,
                     onClick = {
                         onAdd(
                             qtyValue,
                             unitPrice,
-                            discountN.toDoubleOrNull() ?: 0.0,
+                            if (isCompoundDiscount) 0.0 else discountN.toDoubleOrNull() ?: 0.0,
+                            if (isCompoundDiscount) discountN else null,
                             listPriceN.toDoubleOrNull() ?: 0.0,
                             taxableAmount,
                             gstAmount,
@@ -2760,7 +2678,9 @@ fun ExpandedItemEditor1(
                             additionalInfos.map { it.ifBlank { null } },
                         )
                     }
-                ) { Text("Add") }
+                ) {
+                    Text("Add")
+                }
             }
         }
     }

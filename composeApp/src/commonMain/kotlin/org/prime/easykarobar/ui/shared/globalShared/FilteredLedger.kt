@@ -66,38 +66,41 @@ fun getItemMasters(db: TallyDatabase): List<Products> {
     val perms = SharedPrefs.Permissions.get()
     val filterIGRP = perms?.FilterIGRP == "Y"
     val filterItems = perms?.FilterItems == "Y"
+    val showZeroGroup = if(SharedPrefs.ShowZeroStock.get() == false)1L else 0L
 
     println(filterItems)
     println(filterIGRP)
 
     return when {
         perms == null -> {
-            db.productsQueries.selectAll()
+            db.productsQueries.selectAll(
+                applyN1Filter = showZeroGroup
+            )
                 .executeAsList()
         }
         // Both filters active
         filterIGRP && filterItems -> {
             val excludeGuids = perms.ConfigItems.parseToStringList()
-            db.productsQueries.selectAllFilterAGRP(filterItemGroupCodes(), excludeGuids)
+            db.productsQueries.selectAllFilterAGRP(filterItemGroupCodes(), excludeGuids, applyN1Filter = showZeroGroup)
                 .executeAsList()
         }
 
         // Only GroupCode filter
         filterIGRP -> {
-            db.productsQueries.selectByGroupCode(filterItemGroupCodes())
+            db.productsQueries.selectByGroupCode(filterItemGroupCodes(), applyN1Filter = showZeroGroup)
                 .executeAsList()
         }
 
         // Only GUID exclusion
         filterItems -> {
             val excludeGuids = perms.ConfigItems.parseToStringList()
-            db.productsQueries.selectExcludingGuid(excludeGuids)
+            db.productsQueries.selectExcludingGuid(excludeGuids, applyN1Filter = showZeroGroup)
                 .executeAsList()
         }
 
         // No filters
         else -> {
-            db.productsQueries.selectAll()
+            db.productsQueries.selectAll( applyN1Filter = showZeroGroup)
                 .executeAsList()
         }
     }

@@ -200,6 +200,7 @@ data class Item(
     //gst
     val tax_rate1: String,
     val tax_rate2: String,
+    val CD: String?=null,
     //gst amount
     val taxamt1: String,
     val taxamt2: String,
