@@ -25,7 +25,7 @@ CREATE TABLE Products (
     VendorCode REAL,
     MaintainStock REAL,
     ALTERID TEXT,
-    GUID TEXT UNIQUE
+    GUID TEXT UNIQUE,N1 REAL
 );
 
 existingItems:
@@ -91,27 +91,28 @@ WHERE Name= :itemName AND (:filterGroup = 0 OR Products.GroupCode IN :groupCodes
   COLLATE NOCASE;
 
 
--- All filters
 selectAllFilterAGRP:
 SELECT * FROM Products
-WHERE GroupCode IN ? AND GUID NOT IN ?
+WHERE GroupCode IN ?
+  AND GUID NOT IN ?
+  AND (:applyN1Filter = 0 OR N1 > 0)
 ORDER BY Name;
 
--- Only GroupCode filter
 selectByGroupCode:
 SELECT * FROM Products
 WHERE GroupCode IN ?
+  AND (:applyN1Filter = 0 OR N1 > 0)
 ORDER BY Name;
 
--- Only GUID exclusion
 selectExcludingGuid:
 SELECT * FROM Products
 WHERE GUID NOT IN ?
+  AND (:applyN1Filter = 0 OR N1 > 0)
 ORDER BY Name;
 
--- No filters
 selectAll:
 SELECT * FROM Products
+WHERE (:applyN1Filter = 0 OR N1 > 0)
 ORDER BY Name;
 
 -- Distributor

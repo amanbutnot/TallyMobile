@@ -38,6 +38,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -83,6 +84,9 @@ object SettingScreen : Screen {
         val queries = db.companyInformationQueries
         val compInfo = queries.getCompanyInformation().executeAsOne()
         var showAlertBox by remember { mutableStateOf(false) }
+        var zeroStock by remember { mutableStateOf(true) }
+
+        zeroStock = SharedPrefs.ShowZeroStock.get()?:true
 
         val colors = MaterialTheme.colorScheme
         TallyScaffold("Profile", content = { innerPadding ->
@@ -314,6 +318,10 @@ object SettingScreen : Screen {
                             "Lasy Synced from Software",
                             compInfo.C8.toString()
                         )
+                        ZeroBillingToggleRow(zeroStock, onCheckedChange = {
+                            SharedPrefs.ShowZeroStock.save(it)
+                            zeroStock = it
+                        })
                     }
                 }
 
@@ -471,5 +479,40 @@ private fun ProfileItem(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun ZeroBillingToggleRow(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = "Show Zero Stock in billing",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Text(
+                text = "Include items with zero stock in billing",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange
+        )
     }
 }

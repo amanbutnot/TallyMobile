@@ -156,6 +156,7 @@ class AuthViewModel : ViewModel() {
 
                             SharedPrefs.Token.save(loginData.token)
                             SharedPrefs.FileId.save(loginData.C9)
+                            SharedPrefs.ShowZeroStock.save(true)
 
                             // Save username ONCE
                             SharedPrefs.LoginInfo.save(loginRequest.Username.trim())

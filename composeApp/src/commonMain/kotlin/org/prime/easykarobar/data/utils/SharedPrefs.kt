@@ -51,6 +51,21 @@ object SharedPrefs {
         }
     }
 
+    object ShowZeroStock {
+        private const val KEY = "ShowZeroStock"
+        fun save(value: Boolean) {
+            settings.putBoolean(KEY, value)
+        }
+
+        fun get(): Boolean? {
+            return settings.getBooleanOrNull(KEY)
+        }
+
+        fun clear() {
+            settings.remove(KEY)
+        }
+    }
+
     object LoginData {
         private const val KEY = "login_request"
         fun save(login: LoginDataModel) {
