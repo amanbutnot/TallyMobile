@@ -303,6 +303,7 @@ data class SaleScreen(
         var SmobileNo by remember { mutableStateOf("") }
         var Semail by remember { mutableStateOf("") }
         var SitPan by remember { mutableStateOf("") }
+        var SadharNo by remember { mutableStateOf("") }
         var SgstIn by remember { mutableStateOf("") }
         var shareLoading by remember { mutableStateOf(false) }
         var selectedReferences by remember {
@@ -519,13 +520,20 @@ data class SaleScreen(
 
         val itemsTotal by derivedStateOf {
             selectedItems.sumOf { item ->
+                // Apply compound discount if it exists
+                val effectivePrice = if (item.CD.isNotBlank() && item.CD.contains("+")) {
+                    applyCompoundDiscount(item.listPrice, item.CD)
+                } else {
+                    item.price
+                }
+
                 if (taxType == TaxType.EXTRA) {
-                    val taxable = item.price * item.qty
+                    val taxable = effectivePrice * item.qty
                     taxable + taxable * item.gstPercentage / 100.0
                 } else if (taxType == TaxType.VOUCHER) {
-                    item.price * item.qty
+                    effectivePrice * item.qty
                 } else {
-                    item.price * item.qty
+                    effectivePrice * item.qty
                 }
             }
         }
@@ -600,6 +608,7 @@ data class SaleScreen(
                 pincode = data.other_info?.pincode ?: ""
                 gstRrDate = data.other_info?.grDate ?: CurrentDate()
                 SpartyName = data.other_info?.SpartyName ?: ""
+                SadharNo = data.other_info?.Saadhar ?: ""
                 Saddress1 = data.other_info?.Saddress1 ?: ""
                 Saddress2 = data.other_info?.Saddress2 ?: ""
                 Saddress3 = data.other_info?.Saddress3 ?: ""
@@ -1257,6 +1266,8 @@ data class SaleScreen(
                                 onPanChange = { SitPan = it },
                                 gstIn = SgstIn,
                                 onGstChange = { SgstIn = it },
+                                adharNo = SadharNo,
+                                onAdharChange = {SadharNo = it},
                                 onbillingShippingSelected = { SselectedBilling = it },
                                 selectedBilling = SselectedBilling
                             )
@@ -1524,6 +1535,7 @@ data class SaleScreen(
                                         Saddress4 = Saddress4,
                                         SshipState = SshipState,
                                         SmobileNo = SmobileNo,
+                                        Saadhar = SadharNo,
                                         Semail = Semail,
                                         SitPan = SitPan,
                                         SgstIn = SgstIn,
@@ -1758,19 +1770,25 @@ fun CompactItemCard(
     onEdit: () -> Unit,
     index: Int
 ) {
-//    val displayedTotal = remember(item, gstPercentage, taxType) {
-//        if (taxType == TaxType.EXTRA) {
-//            val taxable = item.price * item.qty
-//            taxable + taxable * gstPercentage / 100.0
-//        } else {
-//            item.price * item.qty
-//        }
-//    }
     val displayedTotal = remember(item, gstPercentage, taxType) {
-        item.net
+        // Apply compound discount if it exists
+        val effectivePrice = if (item.CD.isNotBlank() && item.CD.contains("+")) {
+            applyCompoundDiscount(item.listPrice, item.CD)
+        } else {
+            item.price
+        }
+
+        if (taxType == TaxType.EXTRA) {
+            val taxable = effectivePrice * item.qty
+            taxable + taxable * gstPercentage / 100.0
+        } else {
+            effectivePrice * item.qty
+        }
     }
-    val displayedPrice = remember(item) {
-        if (item.qty > 0) item.net / item.qty else item.price
+    val effectivePrice = if (item.CD.isNotBlank() && item.CD.contains("+")) {
+        applyCompoundDiscount(item.listPrice, item.CD)
+    } else {
+        item.price
     }
 
     Surface(
@@ -1818,7 +1836,7 @@ fun CompactItemCard(
                             onIncrease = { onQuantityChange(item.qty + 1) }
                         )
                         Text(
-                            text = "x ${formatTwo(displayedPrice)}",
+                            text = "x ${formatTwo(item.price)}",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -2741,4 +2759,18 @@ fun makeNegativeConditional(number: Double): Double {
     } else {
         number
     }
+}
+
+fun applyCompoundDiscount(basePrice: Double, compoundDiscountStr: String): Double {
+    if (compoundDiscountStr.isBlank()) return basePrice
+
+    val parts = compoundDiscountStr.split("+")
+        .mapNotNull { it.trim().toDoubleOrNull() }
+        .take(5)
+
+    var result = basePrice
+    for (discount in parts) {
+        result -= result * discount / 100.0
+    }
+    return result
 }

@@ -37,6 +37,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import org.prime.easykarobar.ui.screen.masters.INDIAN_STATES
+import org.prime.easykarobar.ui.screen.masters.TallyDropdownWithCustom
 import org.prime.easykarobar.ui.screen.transactions.TransactionOneBottomSheet
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
 
@@ -77,7 +79,9 @@ fun ShippingCard(
     onGstChange: (String) -> Unit,
 
     selectedBilling: String,
-    onbillingShippingSelected: (String) -> Unit
+    onbillingShippingSelected: (String) -> Unit,
+    adharNo: String,
+    onAdharChange: (String) -> Unit
 ) {
 
     Row(
@@ -269,21 +273,18 @@ fun ShippingCard(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                TallyDropdownWithCustom(
+                    label = "State *",
+                    options = INDIAN_STATES,
+                    selected = state,
+                    onSelect = onStateChange ,
+                    isError = false
+                )
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-
-                    TallyTextField(
-                        value = state,
-                        onValueChange = onStateChange,
-                        label = "State",
-                        placeholder = "Enter State",
-                        isPassword = false,
-                        isNumber = false,
-                        modifier = Modifier.weight(1f)
-                    )
-
                     TallyTextField(
                         value = mobileNo,
                         onValueChange = onMobileChange,
@@ -310,6 +311,16 @@ fun ShippingCard(
                     onValueChange = onPanChange,
                     label = "IT Pan",
                     placeholder = "Enter IT Pan",
+                    isPassword = false,
+                    isNumber = false,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                TallyTextField(
+                    value = adharNo,
+                    onValueChange = onAdharChange,
+                    label = "Adhar No.",
+                    placeholder = "Enter Adhar Number",
                     isPassword = false,
                     isNumber = false,
                     modifier = Modifier.fillMaxWidth()
