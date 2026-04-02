@@ -76,6 +76,7 @@ data class TransportDetails(
     val OptionalField18: String? = null,
     val OptionalField19: String? = null,
     val OptionalField20: String? = null,
+    val Saadhar: String? = null,
 
     )
 
@@ -178,7 +179,7 @@ data class InventoryItemResponse(
     val Others2: String,
     val items: List<Item>,
     val taxType: Int,
-    val uniqueID: String?=null,
+    val uniqueID: String? = null,
     val sundries: List<SundryItem>,
     val bills_collection: List<BillByBillModel>? = null
 )

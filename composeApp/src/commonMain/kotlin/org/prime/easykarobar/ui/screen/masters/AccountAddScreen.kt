@@ -142,7 +142,7 @@ private const val CUSTOM_OPTION = "Other (type manually)…"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TallyDropdownWithCustom(
+fun TallyDropdownWithCustom(
     label: String,
     options: List<String>,
     selected: String,
@@ -163,7 +163,7 @@ private fun TallyDropdownWithCustom(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding( vertical = 6.dp)
     ) {
         ExposedDropdownMenuBox(
             expanded = expanded,
@@ -476,7 +476,7 @@ private val COUNTRIES = listOf(
     "India", "USA", "UK", "UAE", "Singapore", "Australia", "Canada"
 )
 
-private val INDIAN_STATES = listOf(
+val INDIAN_STATES = listOf(
     "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
     "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
     "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",

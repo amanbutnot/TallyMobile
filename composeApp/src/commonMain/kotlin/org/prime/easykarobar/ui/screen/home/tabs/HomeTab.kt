@@ -1,6 +1,7 @@
 package org.prime.easykarobar.ui.screen.home.tabs
 
 import CurrentDate
+import OutstandingDate
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -250,7 +251,7 @@ object HomeTab : Tab {
                                                     nav?.push(
                                                         OutstandingReportScreen(
                                                             name = "Bill Receivable",
-                                                            startDate = StartDate(),
+                                                            startDate = OutstandingDate(),
                                                             endDate = CurrentDate(),
                                                             cm1 = ""
                                                         )
@@ -265,7 +266,7 @@ object HomeTab : Tab {
                                                     nav?.push(
                                                         OutstandingReportScreen(
                                                             name = "Bill Payable",
-                                                            startDate = StartDate(),
+                                                            startDate = OutstandingDate(),
                                                             endDate = CurrentDate(),
                                                             cm1 = ""
                                                         )
