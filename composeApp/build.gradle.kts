@@ -7,7 +7,7 @@ import java.util.TimeZone
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
- //   alias(libs.plugins.kotlinCocoapods)
+    //   alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlin.serialization)
@@ -38,7 +38,7 @@ kotlin {
             baseName = "ComposeApp"
             isStatic = true
 
-          //  linkerOpts("-lsqlite3")
+            //  linkerOpts("-lsqlite3")
         }
     }
 
@@ -59,7 +59,8 @@ kotlin {
             //html to pdf
             implementation("com.itextpdf:html2pdf:6.2.1")
             implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
-
+//excel writer
+            implementation("org.apache.poi:poi-ooxml:5.2.5")
 
 
         }
@@ -71,7 +72,7 @@ kotlin {
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
-         //   implementation(libs.androidx.lifecycle.runtimeCompose)
+            //   implementation(libs.androidx.lifecycle.runtimeCompose)
 
             //Navigation
             implementation(libs.voyager.navigator)
@@ -91,7 +92,7 @@ kotlin {
 
             //For base64 and byte conversion
             implementation(libs.okio) // or latest
-         //   implementation(libs.okio.zip) // or latest
+            //   implementation(libs.okio.zip) // or latest
 
 
             //Material Icons
@@ -134,12 +135,10 @@ kotlin {
 //            implementation("network.chaintech:cmp-easy-permission:1.0.3")
 
 
-
-
         }
         nativeMain.dependencies {
             implementation(libs.ktor.client.darwin)
-         //   implementation(libs.okio.zip)
+            //   implementation(libs.okio.zip)
 
             //SqlDelight
             implementation(libs.native.driver)

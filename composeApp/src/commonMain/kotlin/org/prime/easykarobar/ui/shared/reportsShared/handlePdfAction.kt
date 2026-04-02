@@ -8,6 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
+import org.prime.easykarobar.data.expect.createExcel
 import org.prime.easykarobar.data.expect.createPdfFromHtml
 import org.prime.easykarobar.data.expect.sharePdf
 import kotlin.time.Clock
@@ -15,13 +16,15 @@ import kotlin.time.ExperimentalTime
 
 enum class PdfAction {
     Download,
-    Share
+    Share, DownloadExcel, ShareExcel
 }
 
 suspend fun handlePdfAction(
     fileName: String,
     htmlContent: String,
     action: PdfAction,
+    headers: List<String>? = null,
+    rows: List<List<String>>? = null,
     onLoadingChange: (Boolean) -> Unit
 ) {
     println("📄 [handlePdfAction] Started — fileName: $fileName | action: $action")
@@ -31,10 +34,18 @@ suspend fun handlePdfAction(
     println("📄 [handlePdfAction] Loading state set to true")
 
     delay(100)
+    var filePath = ""
 
     try {
         println("📄 [handlePdfAction] Calling createPdfFromHtml...")
-        val filePath = createPdfFromHtml(htmlContent, fileName)
+        filePath = if (action == PdfAction.Download || action == PdfAction.Share) {
+            createPdfFromHtml(htmlContent, fileName)
+        } else {
+            createExcel(
+                "Trial Balance",
+                headers as List<String>, rows as List<List<String>>
+            )
+        }
         println("📄 [handlePdfAction] createPdfFromHtml returned path: $filePath")
 
         if (filePath.isEmpty()) {
@@ -59,10 +70,27 @@ suspend fun handlePdfAction(
                     println("✅ [handlePdfAction] File written successfully")
                 }
             }
+
             PdfAction.Share -> {
                 println("📄 [handlePdfAction] Action: Share — calling sharePdf")
                 sharePdf(filePath)
                 println("📄 [handlePdfAction] sharePdf call returned")
+            }
+
+            PdfAction.ShareExcel -> {}
+            PdfAction.DownloadExcel -> {
+                val uniqueName = generateUniqueFileName(fileName)
+                val file = FileKit.openFileSaver(
+                    suggestedName = uniqueName,
+                    extension = "xlsx"
+                )
+                if (file == null) {
+                    println("⚠️ [handlePdfAction] File saver returned null — user may have cancelled")
+                } else {
+                    println("📄 [handlePdfAction] Writing to file: $file")
+                    file.write(PlatformFile(filePath))
+                    println("✅ [handlePdfAction] File written successfully")
+                }
             }
         }
     } catch (e: Exception) {

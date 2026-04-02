@@ -89,6 +89,23 @@ object TrialBalanceScreen : Screen {
 
             Triple(item.CM1 ?: "", debit, credit)
         }
+        val rowsExcel: List<List<String>> = list.map { item ->
+            val balance = item.ClsnBal ?: 0.0
+
+            val debit = if (balance < 0.0)
+                balance.absoluteValue.formatToAmtDec()
+            else ""
+
+            val credit = if (balance > 0.0)
+                balance.absoluteValue.formatToAmtDec()
+            else ""
+
+            listOf(
+                item.CM1 ?: "",
+                debit,
+                credit
+            )
+        }
         val perms = SharedPrefs.Permissions.get()
         val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
         val filterAccounts = if (perms?.FilterAccounts == "Y") 1L else 0L
@@ -111,6 +128,29 @@ object TrialBalanceScreen : Screen {
                                 date = StartDate()
                             ),
                             action = PdfAction.Download,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
+                }
+            ),
+            MenuItemData(
+                title = "Download Excel",
+                icon = Icons.Default.Download,
+                onClick = {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = "Trial Balance",
+                            headers = listOf("Account Name", "Debit", "Credit"),
+                            rows = rowsExcel,
+                            htmlContent = threeHeaderHtml(
+                                title = "Trial Balance",
+                                headers = Triple("Account Name", "Debit", "Credit"),
+                                rows = rows,
+                                totalDebit = totalDebit.formatToAmtDec().stringToDouble(),
+                                totalCredit = totalCredit.formatToAmtDec().stringToDouble(),
+                                date = StartDate()
+                            ),
+                            action = PdfAction.DownloadExcel,
                             onLoadingChange = { shareLoading = it }
                         )
                     }
