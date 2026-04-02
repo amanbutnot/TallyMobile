@@ -84,6 +84,7 @@ data class TransportDetails(
 data class BillingItem(
     val product_id: String,
     val product_name: String,
+    val CD: String,
     val quantity: Int,
     val list_price: Double,
     val discount_percent: Double? = null,
@@ -200,7 +201,7 @@ data class Item(
     //gst
     val tax_rate1: String,
     val tax_rate2: String,
-    val CD: String?=null,
+    val CD: String,
     //gst amount
     val taxamt1: String,
     val taxamt2: String,

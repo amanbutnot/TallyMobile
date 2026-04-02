@@ -164,7 +164,7 @@ data class InvoiceItem(
     val guid: String = "",
     // Item descriptions
     val itemdesc1: String? = null,
-    val CD: String? = null,
+    val CD: String,
     val itemdesc2: String? = null,
     val itemdesc3: String? = null,
     val itemdesc4: String? = null,
@@ -408,7 +408,7 @@ data class SaleScreen(
                         net = netAmount,
                         guid = product.GUID ?: pendingSelectedProductGUID.orEmpty(),
                         gstPercentage = gstPercentage,
-                        taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0
+                        taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0,CD = ""
                     )
 
                     displayItemName = product.Name.orEmpty()
@@ -674,7 +674,7 @@ data class SaleScreen(
                     net = 0.0,
                     guid = pendingSelectedProductGUID ?: "",
                     gstPercentage = 0.0,
-                    taxCategoryCode = taxCategoryCode.toInt()
+                    taxCategoryCode = taxCategoryCode.toInt(),CD=""
                 )
                 showItemSheet = false
                 pendingSelectedProductName = null
@@ -830,7 +830,7 @@ data class SaleScreen(
                                                         discountPercentage = discount,
                                                         listPrice = listPriceText,
                                                         taxable = taxable,
-                                                        CD = compoundDiscount,
+                                                        CD = compoundDiscount.toString(),
                                                         gstAmt = gstAmount,
                                                         net = net,
                                                         guid = product.GUID
@@ -888,7 +888,7 @@ data class SaleScreen(
                                                         discountPercentage = discount,
                                                         listPrice = listPriceText,
                                                         taxable = taxable,
-                                                        CD = compoundDiscount,
+                                                        CD = compoundDiscount.toString(),
                                                         gstAmt = gstAmount,
                                                         net = net,
                                                         guid = pendingSelectedProductGUID ?: "",
@@ -1467,6 +1467,7 @@ data class SaleScreen(
                                     net = item.net,
                                     gstAmt = item.gstAmt,
                                     guid = item.guid,
+                                    CD=item.CD,
                                     // Pass through all description fields
                                     itemdesc1 = item.itemdesc1,
                                     itemdesc2 = item.itemdesc2,
