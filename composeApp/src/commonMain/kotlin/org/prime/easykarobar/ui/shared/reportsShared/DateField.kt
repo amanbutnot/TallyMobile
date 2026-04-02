@@ -35,6 +35,7 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.number
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
+import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -142,9 +143,9 @@ fun TallyDatePicker(
         confirmButton = {
             TextButton(
                 onClick = {
-                    if(datePickerState.selectedDateMillis ==null){
+                    if (datePickerState.selectedDateMillis == null) {
                         onDismiss()
-                    }else{
+                    } else {
                         onDateSelected(formatEpochMillisToDate(datePickerState.selectedDateMillis))
                         onDismiss()
                     }
@@ -186,6 +187,12 @@ fun CurrentDate(): String {
     return today.toString()
 }
 
+@OptIn(ExperimentalTime::class)
+fun OutstandingDate(): String {
+    val db = DatabaseHolder.instance
+    val date = db.voucherBillAllocationsQueries.outstandingDate().executeAsOneOrNull()
+    return date?.MIN ?: CurrentDate()
+}
 
 
 fun getMonthRange(monthName: String, year: Int): Pair<String, String> {
@@ -218,7 +225,7 @@ fun getMonthRange(monthName: String, year: Int): Pair<String, String> {
 fun isLeapYear(year: Int): Boolean =
     (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
 
-fun String.yymmdd():String{
+fun String.yymmdd(): String {
     val s = this.split("-")
     val day = s[0]
     val month = s[1]

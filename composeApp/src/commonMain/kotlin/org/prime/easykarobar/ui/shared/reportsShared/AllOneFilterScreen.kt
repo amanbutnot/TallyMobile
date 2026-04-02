@@ -2,6 +2,7 @@
 package org.prime.easykarobar.ui.shared.reportsShared
 
 import CurrentDate
+import OutstandingDate
 import TallyDatePickerRow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -263,7 +264,7 @@ fun AllOneFilterScreen(
                                     label = "Start Date",
                                     selectedDate = startDate,
                                     onDateSelected = { startDate = it },
-                                    defaultDate = CurrentDate()
+                                    defaultDate = OutstandingDate()
                                 )
                             }
 

@@ -55,6 +55,10 @@ VALUES (
     :e2
 );
 
+
+outstandingDate:
+SELECT MIN(DATE) FROM Vouchers_BILLALLOCATIONS;
+
 billReceivableList:
 SELECT
     V.VCH_GUID,

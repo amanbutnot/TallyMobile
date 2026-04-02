@@ -1,6 +1,7 @@
 package org.prime.easykarobar.ui.screen.reports.outstanding
 
 import CurrentDate
+import OutstandingDate
 import TallyDatePickerRow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
@@ -250,7 +251,7 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
                                 startDate = it
 
                             },
-                            defaultDate = CurrentDate()
+                            defaultDate = OutstandingDate()
                         )
 
 

@@ -75,7 +75,7 @@ WHERE BILLID IN (
     WHERE CM2 IN ('New Ref', 'Advance')
       AND D1 < 0
 
-AND DATE >= ?1
+
 AND DATE <= ?2 AND (:filterCm3 = 0 OR Vouchers_BILLALLOCATIONS.CM3 IN :cm3) AND CM1 IN (
                                                                                     SELECT Name
                                                                                    FROM LedgerMaster
@@ -96,7 +96,7 @@ WHERE BILLID IN (
     WHERE CM2 IN ('New Ref', 'Advance')
       AND D1 > 0
 
-AND DATE >= ?1
+
 AND DATE <= ?2 AND (:filterCm3 = 0 OR Vouchers_BILLALLOCATIONS.CM3 IN :cm3) AND CM1 IN (
                                                                                     SELECT Name
                                                                                    FROM LedgerMaster
