@@ -819,7 +819,7 @@ data class SaleScreen(
                                                     else product.PurcPrice ?: 0.0
                                                 else pending.listPrice,
                                                 initialQuantity = pending.qty,
-                                                initialDiscount = pending.discountPercentage,
+                                                initialDiscount = pending.CD.ifBlank { pending.discountPercentage.toString() },
                                                 taxType = taxType,
                                                 existingItem = pending,
                                                 onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos ->
@@ -876,7 +876,7 @@ data class SaleScreen(
                                             ExpandedItemEditor1(
                                                 name = pending.name,
                                                 defaultListPrice = pending.listPrice,
-                                                initialDiscount = pending.discountPercentage,
+                                                initialDiscount = pending.CD.ifBlank { pending.discountPercentage.toString() },
                                                 initialQuantity = pending.qty,
                                                 taxType = taxType,
                                                 existingItem = pending,
@@ -1758,13 +1758,19 @@ fun CompactItemCard(
     onEdit: () -> Unit,
     index: Int
 ) {
+//    val displayedTotal = remember(item, gstPercentage, taxType) {
+//        if (taxType == TaxType.EXTRA) {
+//            val taxable = item.price * item.qty
+//            taxable + taxable * gstPercentage / 100.0
+//        } else {
+//            item.price * item.qty
+//        }
+//    }
     val displayedTotal = remember(item, gstPercentage, taxType) {
-        if (taxType == TaxType.EXTRA) {
-            val taxable = item.price * item.qty
-            taxable + taxable * gstPercentage / 100.0
-        } else {
-            item.price * item.qty
-        }
+        item.net
+    }
+    val displayedPrice = remember(item) {
+        if (item.qty > 0) item.net / item.qty else item.price
     }
 
     Surface(
@@ -1812,7 +1818,7 @@ fun CompactItemCard(
                             onIncrease = { onQuantityChange(item.qty + 1) }
                         )
                         Text(
-                            text = "x ${formatTwo(item.price)}",
+                            text = "x ${formatTwo(displayedPrice)}",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -2428,7 +2434,7 @@ fun ExpandedItemEditor1(
     gstPercentage: Double,
     initialQuantity: Int? = 0,
     taxType: TaxType,
-    initialDiscount: Double,
+    initialDiscount: String,
     existingItem: InvoiceItem? = null,
     onAdd: (
         qty: Int,
