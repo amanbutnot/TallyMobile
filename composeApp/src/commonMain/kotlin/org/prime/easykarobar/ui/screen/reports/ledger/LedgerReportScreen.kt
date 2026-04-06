@@ -93,7 +93,7 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                     CM1 = accountName,
                     DATE = startDate,
                     DATE_ = endDate
-                ).executeAsList()
+                ).executeAsList().filter { it.VchType != "Opening" }
                 println("DB Ended")
 
                 val opening = db.vouchersLedgersQueries
@@ -402,7 +402,7 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                             horizontalArrangement = Arrangement.End
                         ) {
                             Text(
-                                "Opening: ${openingBalance?.OpeningBal?.absoluteValue?.formatToAmtDec()} $openingBalType",
+                                "Opening: ${openingBalance?.OpeningBal?.absoluteValue?.formatToAmtDec()?:"0.0"} $openingBalType",
                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.onBackground
                             )

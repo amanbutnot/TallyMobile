@@ -13,6 +13,7 @@ CREATE TABLE Vouchers_Ledgers (
     D3 REAL,
     E1 TEXT,
     E2 TEXT,
+    FinYr TEXT,
     E3 TEXT
 );
 
@@ -27,6 +28,7 @@ FROM Vouchers_Ledgers WHERE CM1 IN (
                                                     WHERE (:groupFilter = 0 OR GroupCode IN ?)
                                                       AND (:excludeFilter = 0 OR GUID NOT IN ?)
                                                 )
+                                                 AND  ( DATE>=:startDate OR  (  VchType='Opening' AND DATE=:endDate)  )
 GROUP BY CM1
 ORDER BY CM1;
 
@@ -49,7 +51,7 @@ ORDER BY VL.DATE, VL.VOUCHERNUMBER;
 
 
 ledgerOpeningBalance:
-SELECT Sum(D1) AS OpeningBal  FROM Vouchers_Ledgers WHERE CM1=? AND DATE<?;
+SELECT Sum(D1) AS OpeningBal  FROM Vouchers_Ledgers WHERE CM1=? AND DATE<?     AND ( (VchType = 'Opening' AND FinYr = 2026) OR  ( VchType <> 'Opening') ) ;
 
 ledgerReportItemList:
 SELECT SRNO,CM1 AS LedgerName, D2 AS CreditAmt,D3 AS DebitAmt FROM Vouchers_Ledgers WHERE VCH_GUID  =? ORDER BY SRNO;

@@ -403,7 +403,7 @@ data class LedgerReportItemScreen(
 
 
                             Text(
-                                if (isBusy()) "Bill Sundry" else "Ledger Details:",
+                                if (isBusy() && ledgerStockItemList.isNotEmpty()) "Bill Sundry" else "Ledger Details:",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                             )
                             Spacer(Modifier.height(4.dp))
@@ -460,7 +460,7 @@ data class LedgerReportItemScreen(
                             }
 
 
-                            if (isBusy()) {
+                            if (isBusy() && ledgerStockItemList.isNotEmpty()) {
                                 LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
                                     itemsIndexed(ledgerStockBusyItemList) { index, item ->
                                         Card(
@@ -566,7 +566,7 @@ data class LedgerReportItemScreen(
                                         (stockColumn1Weight + stockColumn2Weight + stockColumn3Weight + stockColumn4Weight),
                                         TextAlign.End
                                     ),
-                                    if (isBusy()) {
+                                    if (isBusy() && ledgerStockItemList.isNotEmpty()) {
                                         ReportColumn(
                                             vouchers?.D1?.absoluteValue?.formatToAmtDec()
                                                 .toString(),

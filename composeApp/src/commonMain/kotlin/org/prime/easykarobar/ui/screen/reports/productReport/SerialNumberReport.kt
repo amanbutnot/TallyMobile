@@ -23,7 +23,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,7 +74,6 @@ data class SerialNumberReport(
         var searchQuery by remember { mutableStateOf("") }
         val focusRequester = remember { FocusRequester() }
         var shareLoading by remember { mutableStateOf(false) }
-        val scope = rememberCoroutineScope()
         var showGroupFilterSheet by remember { mutableStateOf(false) }
         val productGroups = remember { db.productGroupMasterQueries.selectAll(   filterGroup = filterItemGroups(),
             groupCodes = itemGroupCodes()).executeAsList() }
@@ -85,9 +83,6 @@ data class SerialNumberReport(
             isLoading = true
             withContext(Dispatchers.IO) {
                 val perms = SharedPrefs.Permissions.get()
-                val enableParam = if (perms?.FilterParam1 == "Y") 1L else 0L
-                val paramFilters =
-                    if (enableParam == 1L) perms?.ConfigParam1.parseToStringList() else emptyList()
                 val filterGroup = if (perms?.FilterIGRP == "Y") 1L else 0L
                 val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
                 val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L

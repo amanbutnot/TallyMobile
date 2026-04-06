@@ -38,6 +38,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.globalShared.PreviousDate
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
@@ -188,7 +189,9 @@ object TrialBalanceScreen : Screen {
                     groupFilter = filterAGRP,
                     GroupCode = filterGroupCodes(),
                     excludeFilter = filterAccounts,
-                    GUID = excludeGuids
+                    GUID = excludeGuids,
+                    startDate = StartDate(),
+                    endDate = PreviousDate()
                 ).executeAsList()
                 withContext(Dispatchers.Main) {
                     isLoading = false
