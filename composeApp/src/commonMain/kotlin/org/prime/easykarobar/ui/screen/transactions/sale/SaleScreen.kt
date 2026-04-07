@@ -109,6 +109,7 @@ import org.prime.easykarobar.data.model.transactions.BillingItem
 import org.prime.easykarobar.data.model.transactions.InventoryVoucherRequest
 import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.model.transactions.TransportDetails
+import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.printing.salesHtml
 import org.prime.easykarobar.ui.screen.transactions.BillByBillModel
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
@@ -125,15 +126,19 @@ import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.globalShared.filterItemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.isBusy
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
+import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
+import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.Products
+import org.tally.SerialNoEnterReport
 import yymmdd
 import kotlin.math.abs
 import kotlin.math.absoluteValue
@@ -212,6 +217,7 @@ data class SaleScreen(
     @Composable
     override fun Content() {
         var showExitPopup by remember { mutableStateOf(false) }
+        var showSerialNumberBottomSheet by remember { mutableStateOf(false) }
         BackHandler(true) {
             showExitPopup = true
         }
@@ -248,6 +254,8 @@ data class SaleScreen(
         val busyLedgerList = db.bSMasterQueries.selectAll().executeAsList()
         val itemsList = getItemMasters(db)
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
+        var selectedSerialNo by remember { mutableStateOf<List<SerialNoEnterReport>>(emptyList()) }
+        var serialNoTotal by remember { mutableStateOf(0.0) }
         val groupFilteredList = if (selectedGroups.isEmpty()) {
             itemsList
         } else {
@@ -409,7 +417,7 @@ data class SaleScreen(
                         net = netAmount,
                         guid = product.GUID ?: pendingSelectedProductGUID.orEmpty(),
                         gstPercentage = gstPercentage,
-                        taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0,CD = ""
+                        taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0, CD = ""
                     )
 
                     displayItemName = product.Name.orEmpty()
@@ -666,29 +674,34 @@ data class SaleScreen(
         if (state.isLoading) {
             TallyLoadingDialog(if (isEdit) "Editing transaction" else "Creating transaction")
         }
-
-        LaunchedEffect(pendingSelectedProductName) {
-            pendingSelectedProductName?.let { name ->
-                val prod = itemsList.find { it.Name == name }
-                val price = if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
-                val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
-                editingItem = InvoiceItem(
-                    name = name,
-                    price = price,
-                    qty = 1,
-                    discountPercentage = 0.0,
-                    listPrice = 0.0,
-                    taxable = 0.0,
-                    gstAmt = 0.0,
-                    net = 0.0,
-                    guid = pendingSelectedProductGUID ?: "",
-                    gstPercentage = 0.0,
-                    taxCategoryCode = taxCategoryCode.toInt(),CD=""
-                )
-                showItemSheet = false
-                pendingSelectedProductName = null
-            }
-        }
+//
+//        LaunchedEffect(pendingSelectedProductName,serialNoTotal) {
+//            pendingSelectedProductName?.let { name ->
+//                val prod = itemsList.find { it.Name == name }
+////                val price = if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
+//                val price = if (serialNoTotal != 0.0) {
+//                    serialNoTotal
+//                } else {
+//                    if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
+//                }
+//                val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
+//                editingItem = InvoiceItem(
+//                    name = name,
+//                    price = price,
+//                    qty = 1,
+//                    discountPercentage = 0.0,
+//                    listPrice = 0.0,
+//                    taxable = 0.0,
+//                    gstAmt = 0.0,
+//                    net = 0.0,
+//                    guid = pendingSelectedProductGUID ?: "",
+//                    gstPercentage = 0.0,
+//                    taxCategoryCode = taxCategoryCode.toInt(), CD = ""
+//                )
+//                showItemSheet = false
+//                pendingSelectedProductName = null
+//            }
+//        }
 
         if (showEmptyBarcode) {
             TallyResultDialog(
@@ -1267,7 +1280,7 @@ data class SaleScreen(
                                 gstIn = SgstIn,
                                 onGstChange = { SgstIn = it },
                                 adharNo = SadharNo,
-                                onAdharChange = {SadharNo = it},
+                                onAdharChange = { SadharNo = it },
                                 onbillingShippingSelected = { SselectedBilling = it },
                                 selectedBilling = SselectedBilling
                             )
@@ -1352,10 +1365,104 @@ data class SaleScreen(
                     title = "Select Item",
                     options = groupFilteredList,
                     onSelect = { itemName ->
-                        pendingSelectedProductName = itemName.Name
-                        pendingSelectedProductGUID = itemName.GUID
+
+                        val perms = SharedPrefs.Permissions.get()
+                        val filterGroup = if (perms?.FilterIGRP == "Y") 1L else 0L
+                        val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
+                        val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L
+
+                        val excludeGuids =
+                            if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
+
+                        val godownCodes =
+                            if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
+
+                        val list = db.productSerialNoQueries.serialNoEnterReport(
+                            filterGroup = filterGroup,
+                            groupCodes = filterItemGroupCodes(),
+                            filterExclude = filterExclude,
+                            excludeGuids = excludeGuids,
+                            filterGodown = filterGodown,
+                            godownCodes = godownCodes,
+                            filterSingle = 1L,
+                            includeSingle = itemName.GUID?.toDoubleOrNull() ?: 0.0,
+                            filterSingleG = 0L,
+                            includeSingleG = ""
+                        ).executeAsList()
+
+                        val prod = itemsList.find { it.Name == itemName.Name }
+
+                        // ✅ CASE 1: NO SERIAL NUMBERS → create immediately
+                        if (list.isEmpty()) {
+                            val price = if (isSale) {
+                                prod?.SalesPrice ?: 0.0
+                            } else {
+                                prod?.PurcPrice ?: 0.0
+                            }
+
+                            val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
+
+                            editingItem = InvoiceItem(
+                                name = itemName.Name.toString(),
+                                price = price,
+                                qty = 1,
+                                discountPercentage = 0.0,
+                                listPrice = 0.0,
+                                taxable = 0.0,
+                                gstAmt = 0.0,
+                                net = 0.0,
+                                guid = itemName.GUID ?: "",
+                                gstPercentage = 0.0,
+                                taxCategoryCode = taxCategoryCode.toInt(),
+                                CD = ""
+                            )
+
+                            showItemSheet = false
+                        }
+                        // ✅ CASE 2: HAS SERIAL NUMBERS → wait for user
+                        else {
+                            pendingSelectedProductName = itemName.Name
+                            pendingSelectedProductGUID = itemName.GUID
+                            showSerialNumberBottomSheet = true
+                        }
                     },
                     onDismiss = { showItemSheet = false }
+                )
+                SerialNumberBottomSheet(
+                    productGuid = pendingSelectedProductGUID.toString(),
+                    show = showSerialNumberBottomSheet,
+                    onDismiss = { showSerialNumberBottomSheet = false },
+                    onSerialNumbersSelected = { selectedList ->
+
+                        println("selected list " + selectedList)
+                        val total = selectedList.sumOf { it.Value3 ?: 0.0 }
+                        val prod = itemsList.find { it.Name == pendingSelectedProductName }
+
+                        val price = total
+                        val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
+
+                        editingItem = InvoiceItem(
+                            name = pendingSelectedProductName ?: "",
+                            price = price,
+                            qty = 1,
+                            discountPercentage = 0.0,
+                            listPrice = price,
+                            taxable = 0.0,
+                            gstAmt = 0.0,
+                            net = 0.0,
+                            guid = pendingSelectedProductGUID ?: "",
+                            gstPercentage = 0.0,
+                            taxCategoryCode = taxCategoryCode.toInt(),
+                            CD = ""
+                        )
+
+                        selectedSerialNo = selectedList
+                        showSerialNumberBottomSheet = false
+
+                        // cleanup
+                        pendingSelectedProductName = null
+                        pendingSelectedProductGUID = null
+                    }
                 )
 
                 if (isBusy()) {
@@ -1478,7 +1585,7 @@ data class SaleScreen(
                                     net = item.net,
                                     gstAmt = item.gstAmt,
                                     guid = item.guid,
-                                    CD=item.CD,
+                                    CD = item.CD,
                                     // Pass through all description fields
                                     itemdesc1 = item.itemdesc1,
                                     itemdesc2 = item.itemdesc2,
