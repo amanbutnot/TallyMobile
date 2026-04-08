@@ -4,14 +4,15 @@ import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 
 data class OutstandingRow(
-    val name:String,
+    val name: String,
     val date: String,
     val vchType: String,
     val refNo: String,
     val refAmount: Double,
     val pendingAmount: Double,
     val dueDate: String,
-    val dueDays: String
+    val dueDays: String,
+    val adjustedAmount: String
 )
 
 fun outstandingHtml(
@@ -59,6 +60,7 @@ fun outstandingHtml(
                     <th>Party Name</th>
                     <th>Ref. No.</th>
                     <th>Ref. Amt.</th>
+                    <th>Adjusted Amt.</th>
                     <th>Pending Amt.</th>
                     <th>Due Date</th>
                     <th>Due Days</th>
@@ -75,6 +77,7 @@ fun outstandingHtml(
                 <td>${row.name}</td>
                 <td>${row.refNo}</td>
                 <td class="number">${row.refAmount}</td>
+                <td class="number">${row.adjustedAmount}</td>
                 <td class="number">${row.pendingAmount}</td>
                 <td>${if (row.dueDate.isNotEmpty()) Tdate(row.dueDate) else ""}</td>
                 <td>${row.dueDays}</td>
@@ -170,6 +173,7 @@ fun partyWiseOutstanding(
                     <th>Type</th>
                     <th>Ref. No.</th>
                     <th>Ref. Amt.</th>
+                    <th>Adjusted Amt.</th>
                     <th>Pending Amt.</th>
                     <th>Due Date</th>
                     <th>Due Days</th>
@@ -185,6 +189,7 @@ fun partyWiseOutstanding(
                     <td>${row.vchType}</td>
                     <td>${row.refNo}</td>
                     <td class="number">${row.refAmount}</td>
+                    <td class="number">${row.adjustedAmount}</td>
                     <td class="number">${row.pendingAmount}</td>
                     <td>${if (row.dueDate.isNotEmpty()) Tdate(row.dueDate) else ""}</td>
                     <td>${row.dueDays}</td>
@@ -199,6 +204,7 @@ fun partyWiseOutstanding(
                 <tr>
                     <th colspan="3">Grand Total</th>
                     <th class="number">${party.totalRefAmt}</th>
+                    <th class="number"></th>
                     <th class="number">${party.totalPendingAmt}</th>
                     <th colspan="2"></th>
                 </tr>

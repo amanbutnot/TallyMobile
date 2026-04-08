@@ -65,15 +65,15 @@ data class Distributor(
 
 @Serializable
 data class Permissions(
-    val FilterAGRP: String?=null,
-    val ConfigAGRP: String?=null,
-    val FilterAccounts: String?=null,
-    val ConfigAccounts: String?=null,
-    val FilterIGRP: String?=null,
-    val ConfigIGRP: String?=null,
-    val FilterItems: String?=null,
-    val ConfigItems: String?=null,
-    val FilterMobile: String?=null,
+    val FilterAGRP: String? = null,
+    val ConfigAGRP: String? = null,
+    val FilterAccounts: String? = null,
+    val ConfigAccounts: String? = null,
+    val FilterIGRP: String? = null,
+    val ConfigIGRP: String? = null,
+    val FilterItems: String? = null,
+    val ConfigItems: String? = null,
+    val FilterMobile: String? = null,
     val FilterGodown: String? = null,
     val ConfigGodown: String? = null,
     val FilterParam1: String? = null,
@@ -82,56 +82,76 @@ data class Permissions(
     val ConfigBroker: String? = null,
     val FilterAmount: String? = null,
     val FilterQty: String? = null,
-    val D1: Int?=null,
-    val D2: Int?=null,
-    val D3: Int?=null,
-    val D4: Int?=null,
-    val D5: Int?=null,
-    val D6: Int?=null,
-    val D7: Int?=null,
-    val D8: Int?=null,
-    val D9: Int?=null,
-    val D10: Int?=null,
-    val D11: Int?=null,
-    val D12: Int?=null,
-    val D13: Int?=null,
-    val D14: Int?=null,
-    val D15: Int?=null,
-    val D16: Int?=null,
-    val D17: Int?=null,
-    val D18: Int?=null,
-    val D19: Int?=null,
-    val D20: Int?=null,
-    val D21: Int?=null,
-    val D22: Int?=null,
-    val D23: Int?=null,
-    val D24: Int?=null,
-    val D25: Int?=null,
-    val D26: Int?=null,
-    val D27: Int?=null,
-    val D28: Int?=null,
-    val D29: Int?=null,
-    val D30: Int?=null,
-    val D31: Int?=null,
-    val D32: Int?=null,
-    val D33: Int?=null,
-    val D34: Int?=null,
-    val D35: Int?=null,
-    val D36: Int?=null,
-    val D37: Int?=null,
-    val D38: Int?=null,
-    val D39: Int?=null,
-    val D40: Int?=null,
-    val D41: Int?=null,
-    val D42: Int?=null,
-    val D43: Int?=null,
-    val D44: Int?=null,
-    val D45: Int?=null,
-    val D46: Int?=null,
-    val D47: Int?=null,
-    val D48: Int?=null,
-    val D49: Int?=null,
-    val D50: Int?=null
+    val D1: Int? = null,
+    val D2: Int? = null,
+    val D3: Int? = null,
+    val D4: Int? = null,
+    val D5: Int? = null,
+    val D6: Int? = null,
+    val D7: Int? = null,
+    val D8: Int? = null,
+    val D9: Int? = null,
+    val D10: Int? = null,
+    val D11: Int? = null,
+    val D12: Int? = null,
+    val D13: Int? = null,
+    val D14: Int? = null,
+    val D15: Int? = null,
+    val D16: Int? = null,
+    val D17: Int? = null,
+    val D18: Int? = null,
+    val D19: Int? = null,
+    val D20: Int? = null,
+    val D21: Int? = null,
+    val D22: Int? = null,
+    val D23: Int? = null,
+    val D24: Int? = null,
+    val D25: Int? = null,
+    val D26: Int? = null,
+    val D27: Int? = null,
+    val D28: Int? = null,
+    val D29: Int? = null,
+    val D30: Int? = null,
+    val D31: Int? = null,
+    val D32: Int? = null,
+    val D33: Int? = null,
+    val D34: Int? = null,
+    val D35: Int? = null,
+    val D36: Int? = null,
+    val D37: Int? = null,
+    val D38: Int? = null,
+    val D39: Int? = null,
+    val D40: Int? = null,
+    val D41: Int? = null,
+    val D42: Int? = null,
+    val D43: Int? = null,
+    val D44: Int? = null,
+    val D45: Int? = null,
+    val D46: Int? = null,
+    val D47: Int? = null,
+    val D48: Int? = null,
+    val D49: Int? = null,
+    val D50: Int? = null,
+    val ED1: Int? = null,
+    val ED2: Int? = null,
+    val ED3: Int? = null,
+    val ED4: Int? = null,
+    val ED5: Int? = null,
+    val ED6: Int? = null,
+    val ED7: Int? = null,
+    val ED8: Int? = null,
+    val ED9: Int? = null,
+    val ED10: Int? = null,
+    val ED11: Int? = null,
+    val ED12: Int? = null,
+    val ED13: Int? = null,
+    val ED14: Int? = null,
+    val ED15: Int? = null,
+    val ED16: Int? = null,
+    val ED17: Int? = null,
+    val ED18: Int? = null,
+    val ED19: Int? = null,
+    val ED20: Int? = null,
 ) {
     fun isEnabled(flag: String): Boolean {
         return when (flag) {
@@ -185,6 +205,26 @@ data class Permissions(
             "D48" -> D48 == 0
             "D49" -> D49 == 0
             "D50" -> D50 == 0
+            "ED1" -> ED1 == 0
+            "ED2" -> ED1 == 0
+            "ED3" -> ED1 == 0
+            "ED4" -> ED1 == 0
+            "ED5" -> ED1 == 0
+            "ED6" -> ED1 == 0
+            "ED7" -> ED1 == 0
+            "ED8" -> ED1 == 0
+            "ED9" -> ED1 == 0
+            "ED10" -> ED1 == 0
+            "ED11" -> ED1 == 0
+            "ED12" -> ED1 == 0
+            "ED13" -> ED1 == 0
+            "ED14" -> ED1 == 0
+            "ED15" -> ED1 == 0
+            "ED16" -> ED1 == 0
+            "ED17" -> ED1 == 0
+            "ED18" -> ED1 == 0
+            "ED19" -> ED1 == 0
+            "ED20" -> ED1 == 0
             else -> false
         }
     }
@@ -229,11 +269,11 @@ fun payableDashboardPerms(): Boolean {
 }
 
 fun saleDashboardPerms(): Boolean {
-    return perms?.D34== 0
+    return perms?.D34 == 0
 }
 
 fun receiptsDashboardPerms(): Boolean {
-    return perms?.D35 ==0
+    return perms?.D35 == 0
 }
 
 @Serializable

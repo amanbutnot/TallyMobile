@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Note
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Business
@@ -36,6 +37,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.NoteAlt
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingBasket
@@ -517,6 +519,8 @@ fun ExpandableGrid() {
         "Attendance" to Icons.Default.LocationOn,
         "Check In/Out" to Icons.Default.LocationCity,
         "Contra" to Icons.Default.Payment,
+        "Debit Note" to Icons.AutoMirrored.Filled.Note,
+        "Credit Note" to Icons.Default.NoteAlt,
         //     "Account" to Icons.Default.AccountBox
     )
 
@@ -722,6 +726,22 @@ fun ExpandableGrid() {
 
                                         "Account" -> {
                                             nav?.push(AccountAddScreen)
+                                        }
+                                        "Debit Note" -> {
+                                            nav?.push(
+                                                SingleEntryReceipt(
+                                                    item.first,
+                                                    vchType = 17
+                                                )
+                                            )
+                                        }
+                                        "Credit Note" -> {
+                                            nav?.push(
+                                                SingleEntryReceipt(
+                                                    item.first,
+                                                    vchType = 18
+                                                )
+                                            )
                                         }
                                     }
                                 }

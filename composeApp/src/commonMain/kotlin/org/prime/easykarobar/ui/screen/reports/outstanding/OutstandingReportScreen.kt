@@ -339,6 +339,8 @@ data class OutstandingReportScreen(
                         refNo = item.billNumber ?: "",
                         refAmount = item.d1?.absoluteValue ?: 0.0,
                         pendingAmount = item.adjustmentAmount?.absoluteValue ?: 0.0,
+                        adjustedAmount = ((item.d1?.absoluteValue?:0.0) -
+                                (item.adjustmentAmount?.absoluteValue ?:0.0)).formatToAmtDec(),
                         dueDate = item.dueDate ?: "",
                         dueDays = DueDays(endDate, item.dueDate.toString()),
                         name = item.cm1.toString(),
@@ -373,6 +375,7 @@ data class OutstandingReportScreen(
 
                 val rows = items.map { item ->
                     OutstandingRow(
+                        name = item.cm1.toString(),
                         date = item.date ?: "",
                         vchType = item.vchType ?: "",
                         refNo = item.billNumber ?: "",
@@ -380,7 +383,8 @@ data class OutstandingReportScreen(
                         pendingAmount = item.adjustmentAmount?.absoluteValue ?: 0.0,
                         dueDate = item.dueDate ?: "",
                         dueDays = DueDays(endDate, item.dueDate.toString()),
-                        name = item.cm1.toString(),
+                        adjustedAmount = ((item.d1?.absoluteValue?:0.0) -
+                                (item.adjustmentAmount?.absoluteValue ?:0.0)).formatToAmtDec(),
                     )
                 }
 
@@ -685,6 +689,21 @@ data class OutstandingReportScreen(
                                                     )
                                                 }
                                                 Spacer(Modifier.height(4.dp))
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    TableCell(
+                                                        "Adjusted Amt: ${
+                                                            ((item.d1?.absoluteValue?:0.0) -
+                                                                    (item.adjustmentAmount?.absoluteValue ?:0.0)).formatToAmtDec()
+                                                        }",
+                                                        1f,
+                                                        textAlign = TextAlign.Start,
+                                                        isHeader = false
+                                                    )
+                                                }
+                                                Spacer(Modifier.height(4.dp))
                                                 Row {
                                                     TableCell(
                                                         "Due: ${Tdate(item.dueDate.toString())} (${
@@ -829,7 +848,7 @@ data class DataList(
     val date: String?,
     val vchType: String?,
     val billNumber: String?,
-    val billId:String?,
+    val billId: String?,
     val cm1: String?,
     val dueDate: String?,
     val d1: Double?,

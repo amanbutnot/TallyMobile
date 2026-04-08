@@ -19,7 +19,7 @@ data class InventoryVoucherRequest(
     val Narration: String,
     val transportDetails: TransportDetails,
     val bills_collection: List<BillByBillModel>,
-    val TransactionID: Int? = null, val total_amt: Double
+    val TransactionID: Int? = null, val total_amt: Double, val item_serial: List<String>
 )
 
 @Serializable
@@ -180,6 +180,7 @@ data class InventoryItemResponse(
     val items: List<Item>,
     val taxType: Int,
     val uniqueID: String? = null,
+    val item_serial: List<String> = emptyList(),
     val sundries: List<SundryItem>,
     val bills_collection: List<BillByBillModel>? = null
 )
