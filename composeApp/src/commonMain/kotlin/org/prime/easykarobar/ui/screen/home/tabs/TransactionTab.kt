@@ -1,5 +1,8 @@
 package org.prime.easykarobar.ui.screen.home.tabs
 
+//import network.chaintech.cmpeasypermission.PermissionState
+//import network.chaintech.cmpeasypermission.RequestPermission
+//import network.chaintech.cmpeasypermission.ui.DialogParams
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -11,17 +14,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Note
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Money
+import androidx.compose.material.icons.filled.NoteAlt
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Work
@@ -50,9 +54,6 @@ import cafe.adriel.voyager.navigator.internal.BackHandler
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
-//import network.chaintech.cmpeasypermission.PermissionState
-//import network.chaintech.cmpeasypermission.RequestPermission
-//import network.chaintech.cmpeasypermission.ui.DialogParams
 import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.ui.screen.attendance.AttendanceListScreen
 import org.prime.easykarobar.ui.screen.transactions.SingleEntryFilterScreen
@@ -96,7 +97,9 @@ object TransactionTab : Tab {
             TransactionType("Journal", Icons.Default.AccountBalance),
             TransactionType("Contra", Icons.Default.Money),
             TransactionType("Check in/out", Icons.Default.Work),
-            TransactionType("Attendance", Icons.Default.Work)
+            TransactionType("Attendance", Icons.Default.Work),
+            TransactionType("Debit Note", Icons.AutoMirrored.Filled.Note),
+            TransactionType("Credit Note", Icons.Default.NoteAlt)
         )
 
         val inventoryList = listOf(
@@ -363,6 +366,35 @@ object TransactionTab : Tab {
                                     )
                                 }
                             )
+                        }
+                        6 -> {
+//                            salesmanPermission(
+//                                "D28",
+//                                accessDeniedBlock = { showDeniedDialog = true },
+//                                successBlock = {
+                                    nav?.push(
+                                        SingleEntryFilterScreen(
+                                            type.name,
+                                            vchType = 17
+                                        )
+                                    )
+//                                }
+//                            )
+
+                        }
+                        7 -> {
+//                            salesmanPermission(
+//                                "D28",
+//                                accessDeniedBlock = { showDeniedDialog = true },
+//                                successBlock = {
+                                    nav?.push(
+                                        SingleEntryFilterScreen(
+                                            type.name,
+                                            vchType = 18
+                                        )
+                                    )
+//                                }
+//                            )
 
                         }
                     }

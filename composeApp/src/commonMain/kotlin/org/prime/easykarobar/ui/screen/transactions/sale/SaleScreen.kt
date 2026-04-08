@@ -105,6 +105,7 @@ import org.prime.easykarobar.data.expect.BarcodeScannerLauncher
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToQtyDec
 import org.prime.easykarobar.data.expect.rememberBarcodeScanner
+import org.prime.easykarobar.data.model.hasSalesmanPermission
 import org.prime.easykarobar.data.model.transactions.BillingItem
 import org.prime.easykarobar.data.model.transactions.InventoryVoucherRequest
 import org.prime.easykarobar.data.model.transactions.SundryItem
@@ -138,7 +139,6 @@ import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.Products
-import org.tally.SerialNoEnterReport
 import yymmdd
 import kotlin.math.abs
 import kotlin.math.absoluteValue
@@ -254,7 +254,7 @@ data class SaleScreen(
         val busyLedgerList = db.bSMasterQueries.selectAll().executeAsList()
         val itemsList = getItemMasters(db)
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
-        var selectedSerialNo by remember { mutableStateOf<List<SerialNoEnterReport>>(emptyList()) }
+        var selectedSerialNo by remember { mutableStateOf<List<String>>(emptyList()) }
         var serialNoTotal by remember { mutableStateOf(0.0) }
         val groupFilteredList = if (selectedGroups.isEmpty()) {
             itemsList
@@ -652,6 +652,7 @@ data class SaleScreen(
                 }
                 println(data.uniqueID.toString())
                 uniqueId = data.uniqueID.toString()
+                selectedSerialNo = data.item_serial
             }
         }
 
@@ -1456,7 +1457,7 @@ data class SaleScreen(
                             CD = ""
                         )
 
-                        selectedSerialNo = selectedList
+                        selectedSerialNo = selectedList.map { it.SerialNo.toString() }
                         showSerialNumberBottomSheet = false
 
                         // cleanup
@@ -1668,7 +1669,8 @@ data class SaleScreen(
                                         OptionalField19 = optionalFields[18],
                                         OptionalField20 = optionalFields[19],
                                     ),
-                                    bills_collection = selectedReferences
+                                    bills_collection = selectedReferences,
+                                    item_serial = selectedSerialNo
                                 ),
                                 onSuccess = {
                                     db.transaction {
@@ -1765,7 +1767,7 @@ data class SaleScreen(
                             },
                             enabled = if (isEdit) enableUpdateButton
                             else selectedLedger.isNotEmpty() && selectedItems.isNotEmpty(),
-                            label = if (isEdit) "Update" else "Create Invoice",
+                            label = if (isEdit) "Update" else "Create",
                             backgroundColor = MaterialTheme.colorScheme.primary
                         )
 
@@ -2742,6 +2744,7 @@ fun ExpandedItemEditor1(
                     Text("List Price")
                     BorderedInput(
                         value = listPriceN,
+                        isEnabled = hasSalesmanPermission("D36"),
                         onValueChange = {
                             isAmountManuallyEdited = false
                             editMode = PriceEditMode.LIST_PRICE
@@ -2754,6 +2757,7 @@ fun ExpandedItemEditor1(
                     Text("Discount %")
                     BorderedInput(
                         value = discountN,
+                        isEnabled = hasSalesmanPermission("D37"),
                         onValueChange = {
                             val filtered = it.filter { c -> c.isDigit() || c == '.' || c == '+' }
 
@@ -2771,6 +2775,7 @@ fun ExpandedItemEditor1(
                     Text("Amount")
                     BorderedInput(
                         value = if (isAmountManuallyEdited) amountN else formatTwo(amount),
+                        isEnabled = hasSalesmanPermission("D36"),
                         onValueChange = {
                             isAmountManuallyEdited = true
                             editMode = PriceEditMode.AMOUNT
@@ -2881,3 +2886,21 @@ fun applyCompoundDiscount(basePrice: Double, compoundDiscountStr: String): Doubl
     }
     return result
 }
+
+//  enabled =
+//                            listOf(
+//                                selectedAccount,
+//                                selectedAccountGUID,
+//                                selectedSettlement,
+//                                selectedSettlementGUID,
+//                                amount,
+//                                selectedDate
+//                            ).all(String::isNotEmpty) &&
+//                                    (!isEdit || hasSalesmanPermission("ED$vchType")),
+
+
+// enabled = if (isEdit) {
+//                                enableUpdateButton && hasSalesmanPermission("ED$vchType")
+//                            } else {
+//                                selectedLedger.isNotEmpty() && selectedItems.isNotEmpty()
+//                            },

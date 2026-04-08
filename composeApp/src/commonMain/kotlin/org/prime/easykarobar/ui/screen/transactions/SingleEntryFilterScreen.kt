@@ -19,7 +19,7 @@ data class SingleEntryFilterScreen(val name: String, val vchType: Int) : Screen 
             buttonText = "Show List",
             showAddButton = true,
             onAddButtonClick = {  when (vchType) {
-                14, 19, 16, 15 -> {
+                14, 19, 16, 15,18,17 -> {
                     nav.push(
                         SingleEntryReceipt(
                             vchType = vchType,
@@ -40,7 +40,7 @@ data class SingleEntryFilterScreen(val name: String, val vchType: Int) : Screen 
             }},
             onGenerateClick = {
                 when (vchType) {
-                    14, 19, 16, 15 -> {
+                    14, 19, 16, 15,17,18 -> {
                         nav.push(
                             SingleEntryListScreen(
                                 startDate = it.startDate,

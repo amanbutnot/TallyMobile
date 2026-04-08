@@ -217,7 +217,7 @@ data class SingleEntryReceipt(
                         ),
                         title = "Bill by Bill", totalAmount = amount.toDoubleOrNull() ?: 0.0,
                         isEdit = isEdit,
-                        uniqueId =uniqueId, vchType = vchType
+                        uniqueId = uniqueId, vchType = vchType
                     )
                     TallyButton(
                         onClick = {
@@ -241,7 +241,7 @@ data class SingleEntryReceipt(
                                         D2 = amount.toDouble(),
                                         D3 = 0.0,
                                         D4 = 0.0,
-                                        Narration = narration,bills_collection = selectedReferences
+                                        Narration = narration, bills_collection = selectedReferences
                                     ),
                                     onSuccess = {
                                         db.transaction {
@@ -284,7 +284,7 @@ data class SingleEntryReceipt(
                                                     //d1 = ref.d1?.absoluteValue,
                                                     d1 = when (vchType) {
                                                         9 -> {
-                                                            makeNegativeConditional( ref.d1 ?:0.0)
+                                                            makeNegativeConditional(ref.d1 ?: 0.0)
                                                         }
 
                                                         3 -> {
@@ -296,14 +296,15 @@ data class SingleEntryReceipt(
                                                         }
 
                                                         10 -> {
-                                                            makeNegativeConditional( ref.d1 ?:0.0)
+                                                            makeNegativeConditional(ref.d1 ?: 0.0)
                                                         }
 
-                                                        14 -> {
-                                                            makeNegativeConditional( ref.d1 ?:0.0)
+                                                        14, 17 -> {
+                                                            makeNegativeConditional(ref.d1 ?: 0.0)
                                                         }
-                                                        19 -> {
-                                                            makeNegativeConditional( ref.d1 ?:0.0)
+
+                                                        18, 19 -> {
+                                                            makeNegativeConditional(ref.d1 ?: 0.0)
                                                         }
 
                                                         16 -> {
@@ -341,7 +342,7 @@ data class SingleEntryReceipt(
                                         D2 = amount.toDouble(),
                                         D3 = 0.0,
                                         D4 = 0.0,
-                                        Narration = narration,  bills_collection = selectedReferences
+                                        Narration = narration, bills_collection = selectedReferences
                                     ),
                                     onSuccess = {
                                         db.transaction {
@@ -384,7 +385,7 @@ data class SingleEntryReceipt(
                                                     //d1 = ref.d1?.absoluteValue,
                                                     d1 = when (vchType) {
                                                         9 -> {
-                                                            makeNegativeConditional( ref.d1 ?:0.0)
+                                                            makeNegativeConditional(ref.d1 ?: 0.0)
                                                         }
 
                                                         3 -> {
@@ -396,15 +397,17 @@ data class SingleEntryReceipt(
                                                         }
 
                                                         10 -> {
-                                                            makeNegativeConditional( ref.d1 ?:0.0)
+                                                            makeNegativeConditional(ref.d1 ?: 0.0)
                                                         }
 
                                                         14 -> {
-                                                            makeNegativeConditional( ref.d1 ?:0.0)
+                                                            makeNegativeConditional(ref.d1 ?: 0.0)
                                                         }
+
                                                         19 -> {
-                                                            makeNegativeConditional( ref.d1 ?:0.0)
+                                                            makeNegativeConditional(ref.d1 ?: 0.0)
                                                         }
+
                                                         16 -> {
                                                             ref.d1?.absoluteValue
                                                         }

@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.PendingActions
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Person4
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.RequestQuote
 import androidx.compose.material.icons.filled.Tag
@@ -120,6 +121,7 @@ object ReportingTab : Tab {
                     Report.GoDownWiseClosingStock,
                     Report.Order,
                     Report.SalesmanWise,
+                    Report.SalesmanGroupWise,
                     Report.ProductStock
                 )
             ),
@@ -333,7 +335,8 @@ object ReportingTab : Tab {
                                         )
                                     }
 
-                                    Report.SalesmanWise -> nav?.push(SalesmanTargetFilterScreen)
+                                    Report.SalesmanWise -> nav?.push(SalesmanTargetFilterScreen(false))
+                                    Report.SalesmanGroupWise -> nav?.push(SalesmanTargetFilterScreen(true))
                                     Report.Order -> nav?.push(OrderReportSelectScreen)
                                 }
                             }
@@ -439,5 +442,6 @@ sealed class Report(val title: String, val icon: ImageVector) {
     object ProductStock : Report("Barcode Report", Icons.Default.QrCodeScanner)
     object ParameterReport : Report("Parameter Report", Icons.Default.Tune)
     object SalesmanWise : Report("Salesman Target", Icons.Default.Person)
+    object SalesmanGroupWise : Report("Salesman Group Wise Target", Icons.Default.Person4)
     object Order : Report("Order Report", Icons.AutoMirrored.Filled.ReceiptLong)
 }
