@@ -1,5 +1,7 @@
 package org.prime.easykarobar.ui.printing
 
+import org.prime.easykarobar.data.expect.formatToAmtDec
+import org.prime.easykarobar.data.expect.formatToQtyDec
 import org.prime.easykarobar.ui.screen.reports.salesman.SalesmanData
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 
@@ -12,8 +14,10 @@ fun salesmanReportHtml(
     totalTargetAmt: Double,
     totalAchAmt: Double,
     totalBalAmt: Double,
-
 ): String {
+
+    val hasGroup = rows.any { it.groupName != null }
+
     val html = StringBuilder()
 
     html.append(
@@ -28,7 +32,7 @@ fun salesmanReportHtml(
             td.number { text-align: right; }
             td.name { text-align: left; }
             h1, h3 { text-align: center; margin-bottom: 4px; }
-            th.number {text-align: right}
+            th.number { text-align: right; }
         </style>
         </head>
         <body>
@@ -38,6 +42,7 @@ fun salesmanReportHtml(
         <table>
             <tr>
                 <th>Salesman</th>
+                ${if (hasGroup) "<th>Group</th>" else ""}
                 <th>Target Qty</th>
                 <th>Achieved Qty</th>
                 <th>Balance Qty</th>
@@ -48,33 +53,36 @@ fun salesmanReportHtml(
         """.trimIndent()
     )
 
+    // Rows
     rows.forEach {
         html.append(
             """
             <tr>
                 <td class="name">${it.name}</td>
-                <td class="number">${it.targetQty}</td>
-                <td class="number">${it.achievedQty}</td>
-                <td class="number">${it.balanceQty}</td>
-                <td class="number">${it.targetAmt}</td>
-                <td class="number">${it.achievedAmt}</td>
-                <td class="number">${it.balanceAmt}</td>
+                ${if (hasGroup) "<td class=\"name\">${it.groupName ?: ""}</td>" else ""}
+                <td class="number">${it.targetQty.formatToQtyDec()}</td>
+                <td class="number">${it.achievedQty.formatToQtyDec()}</td>
+                <td class="number">${it.balanceQty.formatToQtyDec()}</td>
+                <td class="number">${it.targetAmt.formatToAmtDec()}</td>
+                <td class="number">${it.achievedAmt.formatToAmtDec()}</td>
+                <td class="number">${it.balanceAmt.formatToAmtDec()}</td>
             </tr>
             """.trimIndent()
         )
     }
 
-    // Footer totals
+    // Totals (aligned properly — no shifting bugs)
     html.append(
         """
         <tr>
             <th>Total</th>
-            <th class="number">$totalTargetQty</th>
-            <th class="number">$totalAchQty</th>
-            <th class="number">$totalBalQty</th>
-            <th class="number">$totalTargetAmt</th>
-            <th class="number">$totalAchAmt</th>
-            <th class="number">$totalBalAmt</th>
+            ${if (hasGroup) "<th></th>" else ""}
+            <th class="number">${totalTargetQty.formatToQtyDec()}</th>
+            <th class="number">${totalAchQty.formatToQtyDec()}</th>
+            <th class="number">${totalBalQty.formatToQtyDec()}</th>
+            <th class="number">${totalTargetAmt.formatToAmtDec()}</th>
+            <th class="number">${totalAchAmt.formatToAmtDec()}</th>
+            <th class="number">${totalBalAmt.formatToAmtDec()}</th>
         </tr>
         </table>
         </body>

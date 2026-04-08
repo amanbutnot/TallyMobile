@@ -30,6 +30,7 @@ WHERE
     AND Vouchers_StockItems.DATE <= :toDate
     AND VchType = 'Sales'
     AND (:salesmanName IS NULL OR SalesManTarget.SalesmanName = :salesmanName)
+    AND (Tr3='Basic' OR Tr3 IS NULL)
 GROUP BY
     SalesManTarget.SalesmanName,
     SalesManTarget.TrMonth,
@@ -37,3 +38,50 @@ GROUP BY
     SalesManTarget.Tr1,
     SalesManTarget.Tr2
 ORDER BY SalesmanName;
+
+getSalesmanGroupTargets:
+SELECT
+    SMT.SalesmanName AS SalesmanName,
+    PGM.Name AS GroupName,
+    SMT.TrMonth AS trMonth,
+    SMT.TrYear AS trYear,
+    SMT.Tr1 AS TargetQty,
+    SMT.Tr2 AS TargetAmt,
+    SMT.Tr4 AS groupGuid,
+
+    SUM(COALESCE(VSI.D1, 0) * -1) AS AchQty,
+    SUM(COALESCE(VSI.D3, 0) * -1) AS AchAmt
+
+FROM SalesManTarget SMT
+
+LEFT JOIN ProductGroupMaster PGM
+    ON PGM.GUID = SMT.Tr4
+
+LEFT JOIN Products P
+    ON P.GroupCode = SMT.Tr4
+
+LEFT JOIN Vouchers_StockItems VSI
+    ON VSI.CM1 = P.Name
+    AND VSI.CM4 = SMT.SalesmanName
+    AND VSI.DATE >= :fromDate
+    AND VSI.DATE <= :toDate
+    AND VSI.VchType = 'Sales'
+
+WHERE
+    SMT.TrMonth = :trMonth
+    AND SMT.TrYear = :trYear
+    AND SMT.Tr3 = 'Group'
+    AND SMT.Tr1 > 0    AND (:salesmanName IS NULL OR SMT.SalesmanName = :salesmanName)
+
+
+GROUP BY
+    SMT.SalesmanName,
+    PGM.Name,
+    SMT.TrMonth,
+    SMT.TrYear,
+    SMT.Tr1,
+    SMT.Tr2,
+    SMT.Tr4
+
+ORDER BY
+    SMT.SalesmanName;

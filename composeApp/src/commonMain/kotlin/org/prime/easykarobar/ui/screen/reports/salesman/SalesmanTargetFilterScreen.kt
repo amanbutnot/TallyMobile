@@ -22,12 +22,12 @@ import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-object SalesmanTargetFilterScreen : Screen {
+data class SalesmanTargetFilterScreen(val isGroup: Boolean) : Screen {
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
     @Composable
     override fun Content() {
         TallyScaffold(
-            title = "Salesman Wise Target",
+            title = if(isGroup)"Salesman Group Wise Target" else "Salesman Wise Target",
             showBottomBar = false,
             bottomBarContent = { },
             content = { paddingValues ->
@@ -136,10 +136,20 @@ object SalesmanTargetFilterScreen : Screen {
                     TallyButton(
                         label = "Generate Report",
                         onClick = {
-                           nav.push(SalesmanTargetReportScreen(
-                               month = selectedMonth.name,
-                               year = selectedYear
-                           ))
+                            if (isGroup) {
+                                nav.push(
+                                    SalesmanGroupWiseTargetReport(
+                                        selectedMonth.name, selectedYear
+                                    )
+                                )
+                            } else {
+                                nav.push(
+                                    SalesmanTargetReportScreen(
+                                        month = selectedMonth.name,
+                                        year = selectedYear
+                                    )
+                                )
+                            }
                         },
                         enabled = (selectedMonth.name.isNotEmpty() && selectedYear.toString()
                             .isNotEmpty()),

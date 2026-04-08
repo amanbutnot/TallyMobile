@@ -2,12 +2,9 @@ package org.prime.easykarobar.ui.screen.reports.salesman
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,7 +16,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,13 +24,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import getMonthRange
 import kotlinx.coroutines.launch
@@ -51,13 +44,13 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
-import org.tally.GetSalesmanTargets
+import org.tally.GetSalesmanGroupTargets
 
-data class SalesmanTargetReportScreen(val month: String, val year: Int) : Screen {
+data class SalesmanGroupWiseTargetReport(val month: String, val year: Int) : Screen {
     @Composable
     override fun Content() {
         val scope = rememberCoroutineScope()
-        val list = remember { mutableStateOf<List<GetSalesmanTargets>>(emptyList()) }
+        val list = remember { mutableStateOf<List<GetSalesmanGroupTargets>>(emptyList()) }
         val isLoading = remember { mutableStateOf(false) }
         var shareLoading by remember { mutableStateOf(false) }
         val db = DatabaseHolder.instance
@@ -67,7 +60,7 @@ data class SalesmanTargetReportScreen(val month: String, val year: Int) : Screen
         }
         LaunchedEffect(Unit) {
             isLoading.value = true
-            list.value = db.salesManTargetQueries.getSalesmanTargets(
+            list.value = db.salesManTargetQueries.getSalesmanGroupTargets(
                 trMonth = month.take(3).lowercase().replaceFirstChar { it.uppercase() },
                 trYear = year.toString(),
                 fromDate = range.first,
@@ -82,6 +75,7 @@ data class SalesmanTargetReportScreen(val month: String, val year: Int) : Screen
         val salesmanData = list.value.map {
             SalesmanData(
                 name = it.SalesmanName.toString(),
+                groupName = it.GroupName.toString(),
                 targetQty = it.TargetQty ?: 0.0,
                 achievedQty = it.AchQty ?: 0.0,
                 balanceQty = (it.TargetQty ?: 0.0) - (it.AchQty ?: 0.0),
@@ -106,9 +100,9 @@ data class SalesmanTargetReportScreen(val month: String, val year: Int) : Screen
                 onClick = {
                     scope.launch {
                         handlePdfAction(
-                            fileName = "SalesmanWiseReport",
+                            fileName = "SalesmanGroupWiseReport",
                             htmlContent = salesmanReportHtml(
-                                title = "Target for ($month $year)",
+                                title = "Target for Group ($month $year)",
                                 rows = salesmanData,
                                 totalTargetQty = totalTargetQty,
                                 totalAchQty = totalAchQty,
@@ -129,9 +123,9 @@ data class SalesmanTargetReportScreen(val month: String, val year: Int) : Screen
                 onClick = {
                     scope.launch {
                         handlePdfAction(
-                            fileName = "SalesmanWiseReport",
+                            fileName = "SalesmanGroupWiseReport",
                             htmlContent = salesmanReportHtml(
-                                title = "Target for ($month $year)",
+                                title = "Target for Group ($month $year)",
                                 rows = salesmanData,
                                 totalTargetQty = totalTargetQty,
                                 totalAchQty = totalAchQty,
@@ -164,7 +158,7 @@ data class SalesmanTargetReportScreen(val month: String, val year: Int) : Screen
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(salesmanData) { salesman ->
-                            SalesmanItem(salesman)
+                            SalesmanGroupItem(salesman)
                         }
                         item {
                             Spacer(modifier = Modifier.height(8.dp))
@@ -176,19 +170,8 @@ data class SalesmanTargetReportScreen(val month: String, val year: Int) : Screen
     }
 }
 
-data class SalesmanData(
-    val name: String,
-    val groupName:String?=null,
-    val targetQty: Double,
-    val achievedQty: Double,
-    val balanceQty: Double,
-    val targetAmt: Double,
-    val achievedAmt: Double,
-    val balanceAmt: Double
-)
-
 @Composable
-fun SalesmanItem(salesman: SalesmanData) {
+fun SalesmanGroupItem(salesman: SalesmanData) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -203,6 +186,13 @@ fun SalesmanItem(salesman: SalesmanData) {
                 text = salesman.name,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = salesman.groupName.toString(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
@@ -243,122 +233,3 @@ fun SalesmanItem(salesman: SalesmanData) {
     }
 }
 
-data class MetricData(val label: String, val value: String, val color: Color)
-
-@Composable
-fun MetricSection(title: String, metrics: List<MetricData>) {
-    Column {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            letterSpacing = 0.5.sp
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            metrics.forEach { metric ->
-                MetricCard(metric)
-            }
-        }
-    }
-}
-
-@Composable
-fun RowScope.MetricCard(metric: MetricData) {
-    Column(
-        modifier = Modifier.weight(1f),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = metric.label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = metric.value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = metric.color,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
-fun TotalBottomBar(salesmanData: List<SalesmanData>) {
-    val totalTargetQty = salesmanData.sumOf { it.targetQty }
-    val totalAchievedQty = salesmanData.sumOf { it.achievedQty }
-    val totalBalanceQty = salesmanData.sumOf { it.balanceQty }
-    val totalTargetAmt = salesmanData.sumOf { it.targetAmt }
-    val totalAchievedAmt = salesmanData.sumOf { it.achievedAmt }
-    val totalBalanceAmt = salesmanData.sumOf { it.balanceAmt }
-
-    Surface(
-        modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
-        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = "Total Targets",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Quantity Totals
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                TotalMetric("Target Qty", totalTargetQty.formatToQtyDec(), Color(0xFF2196F3))
-                TotalMetric("Achieved Qty", totalAchievedQty.formatToQtyDec(), Color(0xFF4CAF50))
-                TotalMetric("Balance Qty", totalBalanceQty.formatToQtyDec(), Color(0xFFFF9800))
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Amount Totals
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                TotalMetric("Target Amt", totalTargetAmt.formatToAmtDec(), Color(0xFF2196F3))
-                TotalMetric("Achieved Amt", totalAchievedAmt.formatToAmtDec(), Color(0xFF4CAF50))
-                TotalMetric("Balance Amt", totalBalanceAmt.formatToAmtDec(), Color(0xFFFF9800))
-            }
-        }
-    }
-}
-
-@Composable
-fun RowScope.TotalMetric(label: String, value: String, color: Color) {
-    Column(
-        modifier = Modifier.weight(1f),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = color,
-            textAlign = TextAlign.Center
-        )
-    }
-}
