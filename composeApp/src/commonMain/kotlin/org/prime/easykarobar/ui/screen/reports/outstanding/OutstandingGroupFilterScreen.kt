@@ -66,6 +66,7 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
             var selectedGuid by rememberSaveable { mutableStateOf("") }
             var showBottomSheet by remember { mutableStateOf(false) }
             var showError by remember { mutableStateOf(false) }
+            var calculateDays by rememberSaveable { mutableStateOf("Bill Date") }
             val db = DatabaseHolder.instance
             val list = db.ledgerGroupMasterQueries.selectAll(
                 filterGroup = filterAGRPGroups(),
@@ -277,6 +278,100 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
                                 endDate = it
                             }
                         )
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = "Calculate due dates based on",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                // All Accounts Option
+                                Surface(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable {
+                                            calculateDays = "Bill Date"
+                                        },
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (calculateDays == "Bill Date")
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.surfaceContainer,
+                                    border = BorderStroke(
+                                        1.5.dp,
+                                        if (calculateDays == "Bill Date")
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.outlineVariant
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        RadioButton(
+                                            selected = calculateDays == "Bill Date",
+                                            onClick = null,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            "Bill Date",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = if (calculateDays == "Bill Date")
+                                                MaterialTheme.colorScheme.onPrimaryContainer
+                                            else
+                                                MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+
+                                // Single Account Option
+                                Surface(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { calculateDays = "Due Date" },
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (calculateDays == "Due Date")
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.surfaceContainer,
+                                    border = BorderStroke(
+                                        1.5.dp,
+                                        if (calculateDays == "Due Date")
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.outlineVariant
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        RadioButton(
+                                            selected = calculateDays == "Due Date",
+                                            onClick = null,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            "Due Date",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = if (calculateDays == "Due Date")
+                                                MaterialTheme.colorScheme.onPrimaryContainer
+                                            else
+                                                MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+                        }
 
 
                         TransactionBottomSheet(
@@ -341,7 +436,7 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
                                     name = name,
                                     startDate = startDate,
                                     endDate = endDate,
-                                    guid = if (reportType == "ALL") null else selectedGuid.toDouble(),
+                                    guid = if (reportType == "ALL") null else selectedGuid.toDouble(),calculateDays=calculateDays,
 
                                     account = selectedAccount
                                 )

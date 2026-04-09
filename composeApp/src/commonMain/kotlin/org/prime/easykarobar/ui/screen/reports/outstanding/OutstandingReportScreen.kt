@@ -78,7 +78,11 @@ import smartSearch
 import kotlin.math.absoluteValue
 
 data class OutstandingReportScreen(
-    val name: String, val startDate: String, val endDate: String, val cm1: String? = null
+    val name: String,
+    val startDate: String,
+    val endDate: String,
+    val cm1: String? = null,
+    val calculateDays: String
 ) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -339,8 +343,8 @@ data class OutstandingReportScreen(
                         refNo = item.billNumber ?: "",
                         refAmount = item.d1?.absoluteValue ?: 0.0,
                         pendingAmount = item.adjustmentAmount?.absoluteValue ?: 0.0,
-                        adjustedAmount = ((item.d1?.absoluteValue?:0.0) -
-                                (item.adjustmentAmount?.absoluteValue ?:0.0)).formatToAmtDec(),
+                        adjustedAmount = ((item.d1?.absoluteValue ?: 0.0) -
+                                (item.adjustmentAmount?.absoluteValue ?: 0.0)).formatToAmtDec(),
                         dueDate = item.dueDate ?: "",
                         dueDays = DueDays(endDate, item.dueDate.toString()),
                         name = item.cm1.toString(),
@@ -383,8 +387,8 @@ data class OutstandingReportScreen(
                         pendingAmount = item.adjustmentAmount?.absoluteValue ?: 0.0,
                         dueDate = item.dueDate ?: "",
                         dueDays = DueDays(endDate, item.dueDate.toString()),
-                        adjustedAmount = ((item.d1?.absoluteValue?:0.0) -
-                                (item.adjustmentAmount?.absoluteValue ?:0.0)).formatToAmtDec(),
+                        adjustedAmount = ((item.d1?.absoluteValue ?: 0.0) -
+                                (item.adjustmentAmount?.absoluteValue ?: 0.0)).formatToAmtDec(),
                     )
                 }
 
@@ -695,8 +699,8 @@ data class OutstandingReportScreen(
                                                 ) {
                                                     TableCell(
                                                         "Adjusted Amt: ${
-                                                            ((item.d1?.absoluteValue?:0.0) -
-                                                                    (item.adjustmentAmount?.absoluteValue ?:0.0)).formatToAmtDec()
+                                                            ((item.d1?.absoluteValue ?: 0.0) -
+                                                                    (item.adjustmentAmount?.absoluteValue ?: 0.0)).formatToAmtDec()
                                                         }",
                                                         1f,
                                                         textAlign = TextAlign.Start,
@@ -708,7 +712,8 @@ data class OutstandingReportScreen(
                                                     TableCell(
                                                         "Due: ${Tdate(item.dueDate.toString())} (${
                                                             DueDays(
-                                                                endDate, item.dueDate.toString()
+                                                                endDate,
+                                                                if (calculateDays == "Due Date") item.dueDate.toString() else item.date.toString()
                                                             ) + " Days"
                                                         })",
                                                         1f,
@@ -857,3 +862,7 @@ data class DataList(
     val itemName: String? = null  // Add this field
 )
 
+
+//bill date = date
+//due date =  due date
+//filter

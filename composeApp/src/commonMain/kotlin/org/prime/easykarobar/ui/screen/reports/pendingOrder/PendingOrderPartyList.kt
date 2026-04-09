@@ -228,7 +228,7 @@ data class PendingOrderPartyList(
                                     name = name,
                                     startDate = startDate,
                                     endDate = endDate,
-                                    cm1 = item.PartyName
+                                    cm1 = item.PartyName,       calculateDays = "Due Date",
                                 )
                             )
                         },

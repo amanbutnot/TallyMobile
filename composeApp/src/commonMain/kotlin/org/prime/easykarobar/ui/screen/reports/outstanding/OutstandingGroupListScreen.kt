@@ -52,7 +52,8 @@ data class OutstandingGroupListScreen(
     val startDate: String,
     val endDate: String,
     val guid: Double? = null,
-    val account: String
+    val account: String,
+    val calculateDays: String
 ) :
     Screen {
     @Composable
@@ -143,7 +144,11 @@ data class OutstandingGroupListScreen(
                     cm3 = configBroker,
                     filterGroupCode = filterAGRP,
                     //filterGroupCode = 1,
-                    groupCode = if(guid==null) filterGroupCodes() else filterOneGroupCode(listOf(guid.toString())),
+                    groupCode = if (guid == null) filterGroupCodes() else filterOneGroupCode(
+                        listOf(
+                            guid.toString()
+                        )
+                    ),
                     excludeFilter = filterAccounts,
                     GUID = excludeGuids,
                 ).executeAsList()
@@ -241,7 +246,7 @@ data class OutstandingGroupListScreen(
                                         name = name,
                                         startDate = startDate,
                                         endDate = endDate,
-                                        cm1 = item.Party
+                                        cm1 = item.Party, calculateDays = calculateDays,
                                     )
                                 )
                             }, key = { item ->

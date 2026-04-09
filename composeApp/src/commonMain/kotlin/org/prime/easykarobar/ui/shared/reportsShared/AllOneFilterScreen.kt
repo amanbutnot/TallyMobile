@@ -60,6 +60,7 @@ fun AllOneFilterScreen(
     title: String,
     showStartDate: Boolean,
     showEndDate: Boolean,
+    showDueDate: Boolean,
     buttonText: String = "Generate Report",
     onGenerateClick: (GenerateOneAllReportData) -> Unit
 ) {
@@ -74,6 +75,7 @@ fun AllOneFilterScreen(
         var selectedGUID by rememberSaveable { mutableStateOf("") }
         var showBottomSheet by remember { mutableStateOf(false) }
         var reportType by rememberSaveable { mutableStateOf("ALL") }
+        var calculateDays by rememberSaveable { mutableStateOf("Bill Date") }
 
         val db = DatabaseHolder.instance
         val list = getLedgerMasters(db)
@@ -315,6 +317,102 @@ fun AllOneFilterScreen(
                     }
                 }
             }
+            if(showDueDate){
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Calculate due dates based on",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // All Accounts Option
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    calculateDays = "Bill Date"
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (calculateDays == "Bill Date")
+                                MaterialTheme.colorScheme.primaryContainer
+                            else
+                                MaterialTheme.colorScheme.surfaceContainer,
+                            border = BorderStroke(
+                                1.5.dp,
+                                if (calculateDays == "Bill Date")
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.outlineVariant
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                RadioButton(
+                                    selected = calculateDays == "Bill Date",
+                                    onClick = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    "Bill Date",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (calculateDays == "Bill Date")
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        // Single Account Option
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { calculateDays = "Due Date" },
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (calculateDays == "Due Date")
+                                MaterialTheme.colorScheme.primaryContainer
+                            else
+                                MaterialTheme.colorScheme.surfaceContainer,
+                            border = BorderStroke(
+                                1.5.dp,
+                                if (calculateDays == "Due Date")
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.outlineVariant
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                RadioButton(
+                                    selected = calculateDays == "Due Date",
+                                    onClick = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    "Due Date",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (calculateDays == "Due Date")
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -331,7 +429,7 @@ fun AllOneFilterScreen(
                                 accountGUID = selectedGUID,
                                 accountName = selectedAccount,
                                 startDate = startDate,
-                                endDate = endDate
+                                endDate = endDate,calculateDays=calculateDays
                             )
                         )
                     }
@@ -362,5 +460,6 @@ data class GenerateOneAllReportData(
     val accountGUID: String,
     val accountName: String,
     val startDate: String,
-    val endDate: String
+    val endDate: String,
+    val calculateDays: String
 )
