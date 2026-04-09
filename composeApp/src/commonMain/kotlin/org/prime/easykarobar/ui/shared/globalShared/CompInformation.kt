@@ -8,6 +8,12 @@ fun CompanyName(): String {
     return row?.T1 ?: ""
 }
 
+fun SerialNumberRegister(): Double {
+    val db = DatabaseHolder.instance
+    val row = db.companyInformationQueries.selectAll().executeAsOneOrNull()
+    return row?.D21 ?: 1.0
+}
+
 fun getDateFormat(): String {
     val db = DatabaseHolder.instance
     val row = db.companyInformationQueries.getCompanyInformation().executeAsOneOrNull()

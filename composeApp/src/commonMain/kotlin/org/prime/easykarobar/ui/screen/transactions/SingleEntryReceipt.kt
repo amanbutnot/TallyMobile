@@ -42,6 +42,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.business.viewmodel.transactions.SingleEntryViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.model.hasSalesmanPermission
 import org.prime.easykarobar.data.model.transactions.TranListResponse
 import org.prime.easykarobar.data.model.transactions.TranRequest
 import org.prime.easykarobar.ui.printing.EntryTypesHtml
@@ -431,14 +432,16 @@ data class SingleEntryReceipt(
 
 
                         },
-                        enabled = listOf(
-                            selectedAccount,
-                            selectedAccountGUID,
-                            selectedSettlement,
-                            selectedSettlementGUID,
-                            amount,
-                            selectedDate
-                        ).all { it.isNotEmpty() },
+                        enabled =
+                            listOf(
+                                selectedAccount,
+                                selectedAccountGUID,
+                                selectedSettlement,
+                                selectedSettlementGUID,
+                                amount,
+                                selectedDate
+                            ).all(String::isNotEmpty) &&
+                                    (!isEdit || hasSalesmanPermission("ED$vchType")),
                         label = if (isEdit) "Modify" else "Create",
                         backgroundColor = MaterialTheme.colorScheme.primary
                     )

@@ -37,6 +37,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.globalShared.SerialNumberRegister
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
@@ -75,13 +76,20 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
         val totalAmt = list.sumOf { it.D1 ?: 0.0 }
 
         val perms = SharedPrefs.Permissions.get()
-        val filterAGRP = if (perms?.FilterAGRP == "Y")1L else 0L
-        val filterAccounts = if(perms?.FilterAccounts == "Y")  1L else 0L
+        val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
+        val filterAccounts = if (perms?.FilterAccounts == "Y") 1L else 0L
         val excludeGuids = perms?.ConfigAccounts.parseToStringList()
         val filterBroker = if (perms?.FilterBroker == "Y") 1L else 0L
         val configBroker =
             if (filterBroker == 1L) perms?.ConfigBroker.parseToStringList() else emptyList()
+println("meow ${when (name) {
+    "Sales", "Purchase" -> 1L
+    "Receipt", "Payment" -> {
+        if (SerialNumberRegister() == 0.0) 2L else 1L
+    }
 
+    else -> 1L
+}}")
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
@@ -94,7 +102,14 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                     excludeFilter = filterAccounts,
                     GUID = excludeGuids,
                     filterCm3 = filterBroker,
-                    cm3 = configBroker
+                    cm3 = configBroker, srNo = when (name) {
+                        "Sales", "Purchase" -> 1L
+                        "Receipt", "Payment" -> {
+                            if (SerialNumberRegister() == 0.0) 2L else 1L
+                        }
+
+                        else -> 1L
+                    }
                 ).executeAsList()
                 withContext(Dispatchers.Main) {
                     isLoading = false
@@ -291,3 +306,5 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
             })
     }
 }
+
+//srno 0 =2, 1=1 (receipt payment)

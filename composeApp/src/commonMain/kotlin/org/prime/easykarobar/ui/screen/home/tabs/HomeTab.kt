@@ -255,7 +255,7 @@ object HomeTab : Tab {
                                                             name = "Bill Receivable",
                                                             startDate = OutstandingDate(),
                                                             endDate = CurrentDate(),
-                                                            cm1 = ""
+                                                            cm1 = "",       calculateDays = "Due Date",
                                                         )
                                                     )
                                                 }
@@ -270,7 +270,7 @@ object HomeTab : Tab {
                                                             name = "Bill Payable",
                                                             startDate = OutstandingDate(),
                                                             endDate = CurrentDate(),
-                                                            cm1 = ""
+                                                            cm1 = "",       calculateDays = "Due Date",
                                                         )
                                                     )
                                                 }

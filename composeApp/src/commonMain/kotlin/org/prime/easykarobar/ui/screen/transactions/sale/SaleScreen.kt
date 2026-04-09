@@ -88,6 +88,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -811,7 +812,17 @@ data class SaleScreen(
                             SectionCard(
                                 title = "ITEMS",
                                 count = selectedItems.size,
-                                headerAction = {}
+                                headerAction = {
+
+                                    TextButton(onClick = {
+                                        showItemSheet = true
+                                    }, enabled = editingItem == null) {
+                                        Text(
+                                            "Add More Item",
+                                            textDecoration = TextDecoration.Underline
+                                        )
+                                    }
+                                }
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     val pending = editingItem
@@ -1028,13 +1039,6 @@ data class SaleScreen(
                                             showGroupFilterSheet = true
                                         }) {
                                             Text("Group Filter")
-                                        }
-
-                                        SmallAddButton(
-                                            label = "Add More Item",
-                                            enabled = editingItem == null
-                                        ) {
-                                            showItemSheet = true
                                         }
                                     }
 
@@ -1765,8 +1769,11 @@ data class SaleScreen(
                                     createO()
                                 }
                             },
-                            enabled = if (isEdit) enableUpdateButton
-                            else selectedLedger.isNotEmpty() && selectedItems.isNotEmpty(),
+                            enabled = if (isEdit) {
+                                enableUpdateButton && hasSalesmanPermission("ED$vchType")
+                            } else {
+                                selectedLedger.isNotEmpty() && selectedItems.isNotEmpty()
+                            },
                             label = if (isEdit) "Update" else "Create",
                             backgroundColor = MaterialTheme.colorScheme.primary
                         )
@@ -2886,21 +2893,3 @@ fun applyCompoundDiscount(basePrice: Double, compoundDiscountStr: String): Doubl
     }
     return result
 }
-
-//  enabled =
-//                            listOf(
-//                                selectedAccount,
-//                                selectedAccountGUID,
-//                                selectedSettlement,
-//                                selectedSettlementGUID,
-//                                amount,
-//                                selectedDate
-//                            ).all(String::isNotEmpty) &&
-//                                    (!isEdit || hasSalesmanPermission("ED$vchType")),
-
-
-// enabled = if (isEdit) {
-//                                enableUpdateButton && hasSalesmanPermission("ED$vchType")
-//                            } else {
-//                                selectedLedger.isNotEmpty() && selectedItems.isNotEmpty()
-//                            },

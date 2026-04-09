@@ -274,7 +274,8 @@ data class AttendanceScreen(
                                                                 name = "Bill Receivable",
                                                                 startDate = StartDate(),
                                                                 endDate = CurrentDate(),
-                                                                cm1 = selectedAccount
+                                                                cm1 = selectedAccount,
+                                                                calculateDays = "Due Date",
                                                             )
                                                         )
                                                     }
@@ -312,7 +313,8 @@ data class AttendanceScreen(
                                                         name = "Pending Sale Order",
                                                         startDate = StartDate(),
                                                         endDate = CurrentDate(),
-                                                        cm1 = selectedAccount
+                                                        cm1 = selectedAccount,
+                                                        calculateDays = "Due Date",
                                                     )
                                                 )
                                             }
@@ -331,7 +333,8 @@ data class AttendanceScreen(
                                                                 name = "Bill Payable",
                                                                 startDate = StartDate(),
                                                                 endDate = CurrentDate(),
-                                                                cm1 = selectedAccount
+                                                                cm1 = selectedAccount,
+                                                                calculateDays = "Due Date",
                                                             )
                                                         )
                                                     }

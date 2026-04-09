@@ -28,7 +28,8 @@ FROM Vouchers_Ledgers WHERE CM1 IN (
                                                     WHERE (:groupFilter = 0 OR GroupCode IN ?)
                                                       AND (:excludeFilter = 0 OR GUID NOT IN ?)
                                                 )
-                                                 AND  ( DATE>=:startDate OR  (  VchType='Opening' AND DATE=:endDate)  )
+                                                --for financial year
+                                                -- AND  ( DATE>=:startDate OR  (  VchType='Opening' AND DATE=:endDate)  )
 GROUP BY CM1
 ORDER BY CM1;
 
@@ -66,7 +67,7 @@ WHERE VchType=? AND (:filterCm3 = 0 OR Vouchers_Ledgers.CM2 IN :cm3) AND CM1 IN 
                         WHERE (:groupFilter = 0 OR GroupCode IN ?)
                           AND (:excludeFilter = 0 OR GUID NOT IN ?)
                     )
-  AND SRNO=1
+  AND SRNO=:srNo
   AND DATE>=?
   AND DATE<=?
 ORDER BY DATE ;
