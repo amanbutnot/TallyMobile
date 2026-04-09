@@ -124,7 +124,7 @@ object ShoppingScreen : Screen {
         val db = DatabaseHolder.instance
         val list = db.productsQueries.getProductsForDis(
             filterGroup = filterItemGroups(),
-            groupCodes = itemGroupCodes()
+            groupCodes = itemGroupCodes(), productCode = null
         ).executeAsList()
         val categoryList = db.productsQueries.productCategoriesForDis(       filterGroup = filterItemGroups(),
             groupCodes = itemGroupCodes()).executeAsList()

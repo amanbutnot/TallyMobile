@@ -156,5 +156,5 @@ COALESCE(
     ) AS discounted_price
 
 FROM Products
-WHERE (:filterGroup = 0 OR Products.GroupCode IN :groupCodes)
+WHERE (:filterGroup = 0 OR Products.GroupCode IN :groupCodes) AND (:productCode IS NULL OR Products.GroupCode = :productCode)
 ORDER BY Name;

@@ -60,8 +60,11 @@ data class AllProductScreen(
             val perms = SharedPrefs.Permissions.get()
             val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
             val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
-            val list = db.productsQueries.getProductsForDis(    filterGroup = filterAGRP,
-                groupCodes = groupCodes).executeAsList()
+            println("Product code is $productCode")
+            val list = db.productsQueries.getProductsForDis(
+                filterGroup = filterAGRP,
+                groupCodes = groupCodes, productCode = productCode
+            ).executeAsList()
             val viewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
 
             TallyScaffold(
