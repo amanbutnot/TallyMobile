@@ -52,7 +52,7 @@ ORDER BY VL.DATE, VL.VOUCHERNUMBER;
 
 
 ledgerOpeningBalance:
-SELECT Sum(D1) AS OpeningBal  FROM Vouchers_Ledgers WHERE CM1=? AND DATE<?     AND ( (VchType = 'Opening' AND FinYr = 2026) OR  ( VchType <> 'Opening') ) ;
+SELECT Sum(D1) AS OpeningBal  FROM Vouchers_Ledgers WHERE CM1=? AND DATE<?;
 
 ledgerReportItemList:
 SELECT SRNO,CM1 AS LedgerName, D2 AS CreditAmt,D3 AS DebitAmt FROM Vouchers_Ledgers WHERE VCH_GUID  =? ORDER BY SRNO;
