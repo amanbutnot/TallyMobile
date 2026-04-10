@@ -318,10 +318,10 @@ object SettingScreen : Screen {
                             "Lasy Synced from Software",
                             compInfo.C8.toString()
                         )
-                        ZeroBillingToggleRow(zeroStock, onCheckedChange = {
+                        TallyToggleRow(checked = zeroStock, onCheckedChange = {
                             SharedPrefs.ShowZeroStock.save(it)
                             zeroStock = it
-                        })
+                        },title="Show Zero Stock in billing",desc="Include items with zero stock in billing")
                     }
                 }
 
@@ -483,7 +483,8 @@ private fun ProfileItem(
 }
 
 @Composable
-fun ZeroBillingToggleRow(
+fun TallyToggleRow(
+    title:String,desc:String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
@@ -498,13 +499,13 @@ fun ZeroBillingToggleRow(
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = "Show Zero Stock in billing",
+                text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
-                text = "Include items with zero stock in billing",
+                text =desc,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -137,7 +137,6 @@ fun entryTypesHtml(
 
                 <h2>${CompanyName()}</h2>
                 <div>${compInfo?.T3 ?: ""}</div>
-                <div>Pincode : 134003, Haryana</div>
                 <div>Tel : ${SharedPrefs.User.get()?.Mobile ?: ""}</div>
                 <div>Email : ${SharedPrefs.User.get()?.Email ?: ""}</div>
             </div>
