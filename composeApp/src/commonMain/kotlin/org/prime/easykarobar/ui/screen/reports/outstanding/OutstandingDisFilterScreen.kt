@@ -23,7 +23,8 @@ object OutstandingDisFilterScreen : Screen {
                         name = "Bill Receivable",
                         startDate = it.startDate,
                         endDate = it.endDate,
-                        cm1 = SharedPrefs.DistributorData.get()?.ledger_name,       calculateDays = "Due Date",
+                        cm1 = SharedPrefs.DistributorData.get()?.ledger_name,
+                        calculateDays = "Due Date",showOtherToggle = false,
                     )
                 )
             }

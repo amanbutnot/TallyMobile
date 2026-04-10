@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.ui.screen.home.TallyToggleRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
@@ -61,6 +62,7 @@ fun AllOneFilterScreen(
     showStartDate: Boolean,
     showEndDate: Boolean,
     showDueDate: Boolean,
+    showOtherToggle: Boolean,
     buttonText: String = "Generate Report",
     onGenerateClick: (GenerateOneAllReportData) -> Unit
 ) {
@@ -71,6 +73,7 @@ fun AllOneFilterScreen(
         var endDate by rememberSaveable { mutableStateOf(CurrentDate()) }
         var selectedAccount by rememberSaveable { mutableStateOf("") }
         var showError by remember { mutableStateOf(false) }
+        var showOther by remember { mutableStateOf(false) }
 
         var selectedGUID by rememberSaveable { mutableStateOf("") }
         var showBottomSheet by remember { mutableStateOf(false) }
@@ -103,7 +106,10 @@ fun AllOneFilterScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                border = BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -224,7 +230,10 @@ fun AllOneFilterScreen(
                                     .clickable { showBottomSheet = true },
                                 shape = RoundedCornerShape(8.dp),
                                 color = MaterialTheme.colorScheme.surfaceContainer,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                                border = BorderStroke(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                                )
                             )
                             {
                                 Row(
@@ -317,7 +326,7 @@ fun AllOneFilterScreen(
                     }
                 }
             }
-            if(showDueDate){
+            if (showDueDate) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = "Calculate due dates based on",
@@ -413,6 +422,14 @@ fun AllOneFilterScreen(
                     }
                 }
             }
+            if (showOtherToggle) {
+                TallyToggleRow(
+                    title = if (title == "Bill Receivable Filter") "Show Bill Payable Data" else "Show Bill Receivable Data",
+                    desc = "Show More Data as well",
+                    checked = showOther,
+                    onCheckedChange = { showOther = it }
+                )
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -420,16 +437,16 @@ fun AllOneFilterScreen(
             TallyButton(
                 label = buttonText,
                 onClick = {
-                    if(parseDate(startDate)>parseDate(endDate)){
+                    if (parseDate(startDate) > parseDate(endDate)) {
                         showError = true
-                    }else{
+                    } else {
                         showError = false
                         onGenerateClick(
                             GenerateOneAllReportData(
                                 accountGUID = selectedGUID,
                                 accountName = selectedAccount,
                                 startDate = startDate,
-                                endDate = endDate,calculateDays=calculateDays
+                                endDate = endDate, calculateDays = calculateDays,showOtherToggle=showOther
                             )
                         )
                     }
@@ -461,5 +478,6 @@ data class GenerateOneAllReportData(
     val accountName: String,
     val startDate: String,
     val endDate: String,
-    val calculateDays: String
+    val calculateDays: String,
+    val showOtherToggle: Boolean
 )

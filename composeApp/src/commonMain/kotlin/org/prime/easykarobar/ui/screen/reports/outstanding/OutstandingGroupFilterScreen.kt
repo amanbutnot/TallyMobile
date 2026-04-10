@@ -45,6 +45,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.ui.screen.home.TallyToggleRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
@@ -65,6 +66,7 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
             var selectedAccount by rememberSaveable { mutableStateOf("") }
             var selectedGuid by rememberSaveable { mutableStateOf("") }
             var showBottomSheet by remember { mutableStateOf(false) }
+            var showOther by remember { mutableStateOf(false) }
             var showError by remember { mutableStateOf(false) }
             var calculateDays by rememberSaveable { mutableStateOf("Bill Date") }
             val db = DatabaseHolder.instance
@@ -372,7 +374,12 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
                                 }
                             }
                         }
-
+                        TallyToggleRow(
+                            title = if (name == "Bill Receivable") "Show Bill Payable Data" else "Show Bill Receivable Data",
+                            desc = "Show More Data as well",
+                            checked = showOther,
+                            onCheckedChange = { showOther = it }
+                        )
 
                         TransactionBottomSheet(
                             showBottomSheet = showBottomSheet,
@@ -436,9 +443,11 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
                                     name = name,
                                     startDate = startDate,
                                     endDate = endDate,
-                                    guid = if (reportType == "ALL") null else selectedGuid.toDouble(),calculateDays=calculateDays,
+                                    guid = if (reportType == "ALL") null else selectedGuid.toDouble(),
+                                    calculateDays = calculateDays,
 
-                                    account = selectedAccount
+                                    account = selectedAccount,
+                                    showOtherToggle = showOther
                                 )
                             )
                         }

@@ -82,7 +82,8 @@ data class OutstandingReportScreen(
     val startDate: String,
     val endDate: String,
     val cm1: String? = null,
-    val calculateDays: String
+    val calculateDays: String,
+    val showOtherToggle: Boolean
 ) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -131,7 +132,8 @@ data class OutstandingReportScreen(
                             DATE_ = endDate,
                             CM1 = cm1,
                             filterCm3 = filterBroker,
-                            cm3 = configBroker
+                            cm3 = configBroker,
+                            showToggle = if(showOtherToggle)0L else 1L
                         ).executeAsList().map {
                             DataList(
                                 VCH_GUID = it.VCH_GUID,
@@ -156,7 +158,8 @@ data class OutstandingReportScreen(
                             groupFilter = filterAGRP,
                             GroupCode = filterGroupCodes(),
                             excludeFilter = filterAccounts,
-                            GUID = excludeGuids
+                            GUID = excludeGuids,
+                            showToggle = if(showOtherToggle)0L else 1L
                         ).executeAsList().map {
                             DataList(
                                 VCH_GUID = it.VCH_GUID,
@@ -228,7 +231,8 @@ data class OutstandingReportScreen(
                             DATE_ = endDate,
                             CM1 = cm1,
                             filterCm3 = filterBroker,
-                            cm3 = configBroker
+                            cm3 = configBroker,
+                            showToggle = if(showOtherToggle)0L else 1L
                         ).executeAsList().map {
                             DataList(
                                 VCH_GUID = it.VCH_GUID,
@@ -252,7 +256,8 @@ data class OutstandingReportScreen(
                             groupFilter = filterAGRP,
                             GroupCode = filterGroupCodes(),
                             excludeFilter = filterAccounts,
-                            GUID = excludeGuids
+                            GUID = excludeGuids,
+                            showToggle = if(showOtherToggle)0L else 1L
                         ).executeAsList().map {
                             DataList(
                                 VCH_GUID = it.VCH_GUID,
@@ -863,6 +868,5 @@ data class DataList(
 )
 
 
-//bill date = date
-//due date =  due date
-//filter
+//bill rec= show payable data
+//bill payable= show rec data

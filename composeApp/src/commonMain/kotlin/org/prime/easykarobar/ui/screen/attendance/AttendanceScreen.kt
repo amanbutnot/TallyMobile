@@ -275,7 +275,7 @@ data class AttendanceScreen(
                                                                 startDate = StartDate(),
                                                                 endDate = CurrentDate(),
                                                                 cm1 = selectedAccount,
-                                                                calculateDays = "Due Date",
+                                                                calculateDays = "Due Date",showOtherToggle = false,
                                                             )
                                                         )
                                                     }
@@ -314,7 +314,7 @@ data class AttendanceScreen(
                                                         startDate = StartDate(),
                                                         endDate = CurrentDate(),
                                                         cm1 = selectedAccount,
-                                                        calculateDays = "Due Date",
+                                                        calculateDays = "Due Date",showOtherToggle = false,
                                                     )
                                                 )
                                             }
@@ -334,7 +334,7 @@ data class AttendanceScreen(
                                                                 startDate = StartDate(),
                                                                 endDate = CurrentDate(),
                                                                 cm1 = selectedAccount,
-                                                                calculateDays = "Due Date",
+                                                                calculateDays = "Due Date",showOtherToggle = false,
                                                             )
                                                         )
                                                     }

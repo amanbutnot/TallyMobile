@@ -16,6 +16,7 @@ data class OutstandingFilterScreen(val name: String) : Screen {
             showStartDate = true,
             showEndDate = true,
             showDueDate = true,
+            showOtherToggle = true,
             onGenerateClick = {
                 if (name == "Bill Receivable" || name == "Bill Payable" || (name == "Pending Sale Order" && it.accountName != "") || (name == "Pending Purchase Order" && it.accountName != "")) {
                     nav.push(
@@ -23,7 +24,7 @@ data class OutstandingFilterScreen(val name: String) : Screen {
                             name = name,
                             startDate = it.startDate,
                             endDate = it.endDate,
-                            cm1 = it.accountName, calculateDays = it.calculateDays
+                            cm1 = it.accountName, calculateDays = it.calculateDays,showOtherToggle = it.showOtherToggle
                         )
                     )
                 } else {

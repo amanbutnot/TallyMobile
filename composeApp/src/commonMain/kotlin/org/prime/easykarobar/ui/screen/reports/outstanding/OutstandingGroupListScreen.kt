@@ -53,7 +53,7 @@ data class OutstandingGroupListScreen(
     val endDate: String,
     val guid: Double? = null,
     val account: String,
-    val calculateDays: String
+    val calculateDays: String,val showOtherToggle: Boolean
 ) :
     Screen {
     @Composable
@@ -150,7 +150,7 @@ data class OutstandingGroupListScreen(
                         )
                     ),
                     excludeFilter = filterAccounts,
-                    GUID = excludeGuids,
+                    GUID = excludeGuids,    showToggle = if(showOtherToggle)0L else 1L
                 ).executeAsList()
                 println(list)
             }
@@ -246,7 +246,7 @@ data class OutstandingGroupListScreen(
                                         name = name,
                                         startDate = startDate,
                                         endDate = endDate,
-                                        cm1 = item.Party, calculateDays = calculateDays,
+                                        cm1 = item.Party, calculateDays = calculateDays,showOtherToggle = showOtherToggle,
                                     )
                                 )
                             }, key = { item ->
