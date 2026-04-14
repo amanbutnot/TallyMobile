@@ -1,7 +1,9 @@
 package org.prime.easykarobar.ui.printing
 
+import org.prime.easykarobar.ui.shared.globalShared.CompanyGst
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.reportsShared.DueDays
 
 data class OutstandingRow(
     val name: String,
@@ -149,7 +151,7 @@ fun partyWiseOutstanding(
         <body>
 
             <h2>${CompanyName()}</h2>
-            <h3>GSTIN : </h3>
+            <h3>GSTIN : ${CompanyGst()}</h3>
             <h2>$title</h2>
             <h3>On Basis of : $onBasis</h3>
             <h4>
@@ -192,7 +194,10 @@ fun partyWiseOutstanding(
                     <td class="number">${row.adjustedAmount}</td>
                     <td class="number">${row.pendingAmount}</td>
                     <td>${if (row.dueDate.isNotEmpty()) Tdate(row.dueDate) else ""}</td>
-                    <td>${row.dueDays}</td>
+                    <td>${ DueDays(
+                    endDate,
+                    if (onBasis == "Due Date") row.dueDate else row.date
+                ) + " Days"}</td>
                 </tr>
                 """.trimIndent()
             )

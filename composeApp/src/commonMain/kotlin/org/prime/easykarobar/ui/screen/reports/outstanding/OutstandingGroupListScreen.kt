@@ -136,13 +136,14 @@ data class OutstandingGroupListScreen(
             withContext(Dispatchers.IO) {
                 val groupCodes = guid?.let { getPCGroupCodes(it.toString()) } ?: emptyList()
 
+                println("Filter one group code ${filterOneGroupCode(listOf(guid.toString()))}")
                 list = db.voucherBillAllocationsQueries.outstandingGroupList(
                     mode = if (name == "Bill Receivable") 0 else 1,
                     DATE = startDate,
                     DATE_ = endDate,
                     filterCm3 = filterBroker,
                     cm3 = configBroker,
-                    filterGroupCode = filterAGRP,
+                    filterGroupCode = if(guid ==null) filterAGRP else 1L,
                     //filterGroupCode = 1,
                     groupCode = if (guid == null) filterGroupCodes() else filterOneGroupCode(
                         listOf(

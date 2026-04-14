@@ -7,6 +7,11 @@ fun CompanyName(): String {
     val row = db.companyInformationQueries.companyNameQuery().executeAsOneOrNull()
     return row?.T1 ?: ""
 }
+fun CompanyGst(): String {
+    val db = DatabaseHolder.instance
+    val row = db.companyInformationQueries.selectAll().executeAsOneOrNull()
+    return row?.T4 ?: ""
+}
 
 fun SerialNumberRegister(): Double {
     val db = DatabaseHolder.instance
