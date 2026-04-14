@@ -19,7 +19,7 @@ data class InventoryVoucherRequest(
     val Narration: String,
     val transportDetails: TransportDetails,
     val bills_collection: List<BillByBillModel>,
-    val TransactionID: Int? = null, val total_amt: Double, val item_serial: List<String>
+    val TransactionID: Int? = null, val total_amt: Double
 )
 
 @Serializable
@@ -116,7 +116,7 @@ data class BillingItem(
     val itemdesc18: String? = null,
     val itemdesc19: String? = null,
     val itemdesc20: String? = null,
-    val additionalinfo: String? = null,
+    val additionalinfo: String? = null, val item_serial: List<String>
 )
 
 
@@ -230,6 +230,7 @@ data class Item(
     val itemdesc18: String? = null,
     val itemdesc19: String? = null,
     val itemdesc20: String? = null,
+    val item_serial: List<String> = emptyList(),
     val additionalinfo: String? = null,
 
     )

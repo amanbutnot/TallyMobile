@@ -56,6 +56,7 @@ fun SerialNumberBottomSheet(
 
     LaunchedEffect(show) {
         if (show) {
+            println("All selected serial numbers are "  +initialSelectedSerialNumbers)
             selectedSerialNumbers.clear()
             selectedSerialNumbers.addAll(initialSelectedSerialNumbers)
 
