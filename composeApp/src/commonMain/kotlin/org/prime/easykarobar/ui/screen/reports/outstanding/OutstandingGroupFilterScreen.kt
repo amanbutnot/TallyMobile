@@ -45,6 +45,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.model.hasSalesmanPermission
 import org.prime.easykarobar.ui.screen.home.TallyToggleRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
 import org.prime.easykarobar.ui.shared.composables.TallyButton
@@ -374,12 +375,27 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
                                 }
                             }
                         }
-                        TallyToggleRow(
-                            title = if (name == "Bill Receivable") "Show Bill Payable Data" else "Show Bill Receivable Data",
-                            desc = "Show More Data as well",
-                            checked = showOther,
-                            onCheckedChange = { showOther = it }
-                        )
+                     val title = name
+
+
+
+                            if(title == "Bill Receivable" && hasSalesmanPermission("d9")){
+                                TallyToggleRow(
+                                    title = if (title == "Bill Receivable") "Show Bill Payable Data" else "Show Bill Receivable Data",
+                                    desc = "Show More Data as well",
+                                    checked = showOther,
+                                    onCheckedChange = { showOther = it }
+                                )
+                            }
+                            if(title == "Bill Payable" && hasSalesmanPermission("d8")){
+                                TallyToggleRow(
+                                    title = if (title == "Bill Receivable") "Show Bill Payable Data" else "Show Bill Receivable Data",
+                                    desc = "Show More Data as well",
+                                    checked = showOther,
+                                    onCheckedChange = { showOther = it }
+                                )
+                            }
+
 
                         TransactionBottomSheet(
                             showBottomSheet = showBottomSheet,

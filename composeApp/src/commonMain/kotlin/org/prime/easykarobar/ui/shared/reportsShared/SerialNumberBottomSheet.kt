@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,7 +14,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -45,18 +43,35 @@ fun SerialNumberBottomSheet(
     onSerialNumbersSelected: (List<SerialNoEnterReport>) -> Unit,
     initialSelectedSerialNumbers: List<String> = emptyList(),
     title: String = "Select Serial Numbers",
-    sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 ) {
     if (!show) return
 
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val db = DatabaseHolder.instance
-    var serialNumbers by remember { mutableStateOf<List<SerialNoEnterReport>>(emptyList()) }
-    val selectedSerialNumbers = remember { mutableStateListOf<String>() }
+    var serialNumbers by remember {
+        mutableStateOf<List<SerialNoEnterReport>>(
+            initialSelectedSerialNumbers.map { serialNo ->
+                SerialNoEnterReport(
+                    SerialNo = serialNo,
+                    MasterCode1 = productGuid.toDoubleOrNull(),
+                    ProductName = "",
+                    UnitName = null,
+                    GroupName = null,
+                    Value1 = 1.0,
+                    Value2 = 0.0,
+                    Value3 = 0.0, MasterCode2 = ""
+                )
+            }
+        )
+    }
+    val selectedSerialNumbers = remember(show) { mutableStateListOf<String>().apply { addAll(initialSelectedSerialNumbers) } }
     var searchQuery by remember { mutableStateOf("") }
 
     LaunchedEffect(show) {
         if (show) {
-            println("All selected serial numbers are "  +initialSelectedSerialNumbers)
+            println("All selected serial numbers are " + initialSelectedSerialNumbers)
+            // We don't clear selectedSerialNumbers here if we already initialized it, 
+            // but for safety with re-opens:
             selectedSerialNumbers.clear()
             selectedSerialNumbers.addAll(initialSelectedSerialNumbers)
 
@@ -68,7 +83,7 @@ fun SerialNumberBottomSheet(
             val excludeGuids = if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
             val godownCodes = if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
 
-            serialNumbers = db.productSerialNoQueries.serialNoEnterReport(
+            val fetchedSerials = db.productSerialNoQueries.serialNoEnterReport(
                 filterGroup = filterGroup,
                 groupCodes = filterItemGroupCodes(),
                 filterExclude = filterExclude,
@@ -80,6 +95,26 @@ fun SerialNumberBottomSheet(
                 filterSingleG = 0L,
                 includeSingleG = ""
             ).executeAsList()
+
+            println("Fetched serials size: ${fetchedSerials.size} for productGuid: $productGuid")
+
+            // Ensure initial selected serials are in the list even if query doesn't return them (e.g. if already sold)
+            val missingSerials = initialSelectedSerialNumbers.filter { initial ->
+                fetchedSerials.none { it.SerialNo == initial }
+            }.map { serialNo ->
+                SerialNoEnterReport(
+                    SerialNo = serialNo,
+                    MasterCode1 = productGuid.toDoubleOrNull(),
+                    ProductName = "",
+                    UnitName = null,
+                    GroupName = null,
+                    Value1 = 1.0,
+                    Value2 = 0.0,
+                    Value3 = 0.0, MasterCode2 = ""
+                )
+            }
+
+            serialNumbers = fetchedSerials + missingSerials
         }
     }
 
@@ -94,7 +129,7 @@ fun SerialNumberBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        modifier = Modifier.navigationBarsPadding(),
+        modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {

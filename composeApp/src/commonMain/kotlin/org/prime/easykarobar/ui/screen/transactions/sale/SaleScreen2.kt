@@ -136,6 +136,7 @@ import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.Products
+import org.tally.SerialNoEnterReport
 import yymmdd
 import kotlin.math.absoluteValue
 import kotlin.uuid.ExperimentalUuidApi
@@ -198,6 +199,8 @@ data class SaleScreen2(
 
         var pendingSelectedProductName by remember { mutableStateOf<String?>(null) }
         var pendingSelectedProductGUID by remember { mutableStateOf<String?>(null) }
+        var selectedInitialSerialNo by remember { mutableStateOf<List<SerialNoEnterReport>>(emptyList()) }
+        var editingItemIndex by remember { mutableStateOf<Int?>(null) }
 
         val ledgerList = getLedgerMasters(db)
         val busyLedgerList = db.bSMasterQueries.selectAll().executeAsList()
@@ -425,6 +428,18 @@ data class SaleScreen2(
                         itemdesc15 = it.itemdesc15, itemdesc16 = it.itemdesc16, itemdesc17 = it.itemdesc17,
                         itemdesc18 = it.itemdesc18, itemdesc19 = it.itemdesc19, itemdesc20 = it.itemdesc20,
                         additionalinfo = it.additionalinfo,
+                        item_serial = it.item_serial.map { sn ->
+                            SerialNoEnterReport(
+                                SerialNo = sn,
+                                MasterCode1 = it.product_id.toDoubleOrNull(),
+                                ProductName = it.product_name,
+                                UnitName = null,
+                                GroupName = null,
+                                Value1 = 1.0,
+                                Value2 = 0.0,
+                                Value3 = 0.0, MasterCode2 = ""
+                            )
+                        }
                     )
                 }
                 selectedSundries = data.sundries.map { s ->
@@ -583,8 +598,9 @@ data class SaleScreen2(
                                                 initialQuantity = pending.qty,
                                                 initialDiscount = pending.CD.ifBlank { pending.discountPercentage.toString() },
                                                 taxType = taxType, existingItem = pending,
-                                                onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos ->
-                                                    selectedItems = selectedItems + InvoiceItem(
+                                                initialSerialNumbers = pending.item_serial.map { it.SerialNo ?: "" },
+                                                onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers ->
+                                                    val newItem = InvoiceItem(
                                                         name = product.Name ?: pending.name,
                                                         price = unitPrice, qty = qty,
                                                         discountPercentage = discount,
@@ -605,22 +621,51 @@ data class SaleScreen2(
                                                         itemdesc17 = itemDescs.getOrNull(16), itemdesc18 = itemDescs.getOrNull(17),
                                                         itemdesc19 = itemDescs.getOrNull(18), itemdesc20 = itemDescs.getOrNull(19),
                                                         additionalinfo = additionalInfos.getOrNull(0),
+                                                        item_serial = serialNumbers.map { sn ->
+                                                            SerialNoEnterReport(
+                                                                SerialNo = sn,
+                                                                MasterCode1 = product?.GUID?.toDoubleOrNull(),
+                                                                ProductName = pending.name,
+                                                                UnitName = null,
+                                                                GroupName = null,
+                                                                Value1 = 1.0,
+                                                                Value2 = 0.0,
+                                                                MasterCode2 = "", Value3 = 0.0
+                                                            )
+                                                        }
                                                     )
+                                                    val insertAt = editingItemIndex ?: selectedItems.size
+                                                    val mutable = selectedItems.toMutableList()
+                                                    mutable.add(insertAt, newItem)
+                                                    selectedItems = mutable
+                                                    editingItemIndex = null
                                                     editingItem = null
                                                 },
-                                                onBack = { selectedItems = selectedItems + pending; editingItem = null },
+                                                onBack = {
+                                                    val insertAt = editingItemIndex ?: selectedItems.size
+                                                    val mutable = selectedItems.toMutableList()
+                                                    mutable.add(insertAt, pending)
+                                                    selectedItems = mutable
+                                                    editingItemIndex = null
+                                                    editingItem = null
+                                                },
                                                 gstPercentage = gst,
-                                                onCancel = { selectedItems = selectedItems - pending; editingItem = null }
+                                                onCancel = {
+                                                    editingItemIndex = null
+                                                    editingItem = null
+                                                }
                                             )
-                                        } else {
+                                        }
+                                        else {
                                             ExpandedItemEditor1(
                                                 name = pending.name,
                                                 defaultListPrice = pending.listPrice,
                                                 initialDiscount = pending.CD.ifBlank { pending.discountPercentage.toString() },
                                                 initialQuantity = pending.qty,
                                                 taxType = taxType, existingItem = pending,
-                                                onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos ->
-                                                    selectedItems = selectedItems + InvoiceItem(
+                                                initialSerialNumbers = pending.item_serial.map { it.SerialNo ?: "" },
+                                                onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers ->
+                                                    val newItem = InvoiceItem(
                                                         name = pending.name, price = unitPrice, qty = qty,
                                                         discountPercentage = discount, listPrice = listPriceText,
                                                         taxable = taxable, CD = compoundDiscount.toString(),
@@ -639,14 +684,44 @@ data class SaleScreen2(
                                                         itemdesc17 = itemDescs.getOrNull(16), itemdesc18 = itemDescs.getOrNull(17),
                                                         itemdesc19 = itemDescs.getOrNull(18), itemdesc20 = itemDescs.getOrNull(19),
                                                         additionalinfo = additionalInfos.getOrNull(0),
+                                                        item_serial = serialNumbers.map { sn ->
+                                                            SerialNoEnterReport(
+                                                                SerialNo = sn,
+                                                                MasterCode1 = product?.GUID?.toDoubleOrNull(),
+                                                                ProductName = pending.name,
+                                                                UnitName = null,
+                                                                GroupName = null,
+                                                                Value1 = 1.0,
+                                                                Value2 = 0.0,
+                                                                Value3 = 0.0, MasterCode2 = ""
+                                                            )
+                                                        }
                                                     )
+                                                    val insertAt = editingItemIndex ?: selectedItems.size
+                                                    val mutable = selectedItems.toMutableList()
+                                                    mutable.add(insertAt, newItem)
+                                                    selectedItems = mutable
+                                                    editingItemIndex = null
                                                     editingItem = null
                                                 },
-                                                onBack = { selectedItems = selectedItems + pending; editingItem = null },
+                                                onBack = {
+                                                    val insertAt = editingItemIndex ?: selectedItems.size
+                                                    val mutable = selectedItems.toMutableList()
+                                                    mutable.add(insertAt, pending)
+                                                    selectedItems = mutable
+                                                    editingItemIndex = null
+                                                    editingItem = null
+                                                },
                                                 gstPercentage = gst,
-                                                onCancel = { selectedItems = selectedItems - pending; editingItem = null }
+                                                onCancel = {
+                                                    editingItemIndex = null
+                                                    editingItem = null
+                                                }
                                             )
                                         }
+//                                                onCancel = { selectedItems = selectedItems - pending; editingItem = null }
+//                                            )
+//                                        }
                                     }
 
                                     selectedItems.forEachIndexed { index, item ->
@@ -701,11 +776,22 @@ data class SaleScreen2(
                                             onRemove = { selectedItems = selectedItems - item },
                                             onEdit = {
                                                 if (editingItem == null) {
-                                                    selectedItems = selectedItems - item
+                                                    editingItemIndex = index
                                                     editingItem = item
+                                                    selectedItems = selectedItems - item
                                                 }
                                             },
-                                            onSerialNo = { showSerialNumberBottomSheet = true }
+                                            onSerialNo = {
+                                                if (editingItem == null) {
+                                                    editingItemIndex = index
+                                                    editingItem = item
+                                                    selectedItems = selectedItems - item
+                                                    pendingSelectedProductGUID = item.guid
+                                                    pendingSelectedProductName = item.name
+                                                    selectedInitialSerialNo = item.item_serial
+                                                    showSerialNumberBottomSheet = true
+                                                }
+                                            }
                                         )
                                     }
 
@@ -972,20 +1058,53 @@ data class SaleScreen2(
                 SerialNumberBottomSheet(
                     productGuid = pendingSelectedProductGUID.toString(),
                     show = showSerialNumberBottomSheet,
-                    onDismiss = { showSerialNumberBottomSheet = false },
+                    initialSelectedSerialNumbers = selectedInitialSerialNo.map { it.SerialNo ?: "" },
+                    onDismiss = {
+                        if (editingItemIndex != null && editingItem != null) {
+                            val list = selectedItems.toMutableList()
+                            list.add(editingItemIndex!!, editingItem!!)
+                            selectedItems = list
+                        }
+                        showSerialNumberBottomSheet = false
+                        selectedInitialSerialNo = emptyList()
+                        editingItemIndex = null
+                        editingItem = null
+                        pendingSelectedProductName = null
+                        pendingSelectedProductGUID = null
+                    },
                     onSerialNumbersSelected = { selectedList ->
                         val total = selectedList.sumOf { it.Value3 ?: 0.0 }
                         val prod = itemsList.find { it.Name == pendingSelectedProductName }
-                        val price = total
                         val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
-                        editingItem = InvoiceItem(
-                            name = pendingSelectedProductName ?: "", price = price, qty = 1,
-                            discountPercentage = 0.0, listPrice = price, taxable = 0.0,
-                            gstAmt = 0.0, net = 0.0, guid = pendingSelectedProductGUID ?: "",
-                            gstPercentage = 0.0, taxCategoryCode = taxCategoryCode.toInt(), CD = ""
+
+                        val updatedItem = InvoiceItem(
+                            name = pendingSelectedProductName ?: "",
+                            price = if (total > 0) total else (editingItem?.price ?: 0.0),
+                            qty = selectedList.size.coerceAtLeast(1), // Set qty to serial count
+                            discountPercentage = editingItem?.discountPercentage ?: 0.0,
+                            listPrice = if (total > 0) total else (editingItem?.listPrice ?: 0.0),
+                            taxable = editingItem?.taxable ?: 0.0,
+                            gstAmt = editingItem?.gstAmt ?: 0.0,
+                            net = editingItem?.net ?: 0.0,
+                            guid = pendingSelectedProductGUID ?: editingItem?.guid ?: "",
+                            gstPercentage = editingItem?.gstPercentage ?: 0.0,
+                            taxCategoryCode = taxCategoryCode.toInt(),
+                            CD = editingItem?.CD ?: "",
+                            item_serial = selectedList // Store serial list
                         )
-                        selectedSerialNo = selectedList.map { it.SerialNo.toString() }
+
+                        val list = selectedItems.toMutableList()
+                        if (editingItemIndex != null) {
+                            list.add(editingItemIndex!!, updatedItem)
+                        } else {
+                            list.add(updatedItem)
+                        }
+                        selectedItems = list
+
                         showSerialNumberBottomSheet = false
+                        selectedInitialSerialNo = emptyList() // Reset after selection
+                        editingItem = null
+                        editingItemIndex = null
                         pendingSelectedProductName = null
                         pendingSelectedProductGUID = null
                     }
@@ -1069,7 +1188,7 @@ data class SaleScreen2(
                                     itemdesc15 = item.itemdesc15, itemdesc16 = item.itemdesc16,
                                     itemdesc17 = item.itemdesc17, itemdesc18 = item.itemdesc18,
                                     itemdesc19 = item.itemdesc19, itemdesc20 = item.itemdesc20,
-                                    additionalinfo = item.additionalinfo,item_serial = selectedSerialNo
+                                    additionalinfo = item.additionalinfo, item_serial = item.item_serial.map { it.SerialNo?:"" }
                                 )
                             }
                             viewmodel.createEditInventoryResponse(
@@ -1134,6 +1253,21 @@ data class SaleScreen2(
                                                 },
                                                 d2 = null, e2 = null
                                             )
+                                        }
+                                    }
+                                    db.transaction {
+                                        selectedItems.forEach { item ->
+                                            item.item_serial.forEach { serial ->
+                                                db.productSerialNoQueries.insertProductSerialNo(
+                                                    serialNo = serial.SerialNo,
+                                                    masterCode1 = serial.MasterCode1,
+                                                    masterCode2 = serial.MasterCode2, // Godown/MasterCode2
+                                                    value1 = -1.0,
+                                                    value2 = serial.Value2,
+                                                    value3 = serial.Value3,
+                                                    guid = "${state.data?.uniqueID}-$serial-${Uuid.random()}"
+                                                )
+                                            }
                                         }
                                     }
                                     showResultDialog = true
