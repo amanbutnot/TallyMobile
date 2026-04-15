@@ -870,9 +870,11 @@ data class SaleScreen(
                                                         CD = compoundDiscount.toString(),
                                                         gstAmt = gstAmount,
                                                         net = net,
-                                                        guid = product.GUID ?: pendingSelectedProductGUID ?: "",
+                                                        guid = product.GUID
+                                                            ?: pendingSelectedProductGUID ?: "",
                                                         gstPercentage = gstPercentage,
-                                                        taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0,
+                                                        taxCategoryCode = product.TaxCategoryCode?.toInt()
+                                                            ?: 0,
                                                         itemdesc1 = itemDescs.getOrNull(0),
                                                         itemdesc2 = itemDescs.getOrNull(1),
                                                         itemdesc3 = itemDescs.getOrNull(2),
@@ -895,7 +897,8 @@ data class SaleScreen(
                                                         itemdesc20 = itemDescs.getOrNull(19),
                                                         additionalinfo = additionalInfos.getOrNull(0),
                                                     )
-                                                    val insertAt = editingItemIndex ?: selectedItems.size
+                                                    val insertAt =
+                                                        editingItemIndex ?: selectedItems.size
                                                     val mutable = selectedItems.toMutableList()
                                                     mutable.add(insertAt, newItem)
                                                     selectedItems = mutable
@@ -903,7 +906,8 @@ data class SaleScreen(
                                                     editingItem = null
                                                 },
                                                 onBack = {
-                                                    val insertAt = editingItemIndex ?: selectedItems.size
+                                                    val insertAt =
+                                                        editingItemIndex ?: selectedItems.size
                                                     val mutable = selectedItems.toMutableList()
                                                     mutable.add(insertAt, pending)
                                                     selectedItems = mutable
@@ -937,7 +941,8 @@ data class SaleScreen(
                                                         net = net,
                                                         guid = pendingSelectedProductGUID ?: "",
                                                         gstPercentage = gstPercentage,
-                                                        taxCategoryCode = product?.TaxCategoryCode?.toInt() ?: 0,
+                                                        taxCategoryCode = product?.TaxCategoryCode?.toInt()
+                                                            ?: 0,
                                                         itemdesc1 = itemDescs.getOrNull(0),
                                                         itemdesc2 = itemDescs.getOrNull(1),
                                                         itemdesc3 = itemDescs.getOrNull(2),
@@ -960,7 +965,8 @@ data class SaleScreen(
                                                         itemdesc20 = itemDescs.getOrNull(19),
                                                         additionalinfo = additionalInfos.getOrNull(0),
                                                     )
-                                                    val insertAt = editingItemIndex ?: selectedItems.size
+                                                    val insertAt =
+                                                        editingItemIndex ?: selectedItems.size
                                                     val mutable = selectedItems.toMutableList()
                                                     mutable.add(insertAt, newItem)
                                                     selectedItems = mutable
@@ -968,7 +974,8 @@ data class SaleScreen(
                                                     editingItem = null
                                                 },
                                                 onBack = {
-                                                    val insertAt = editingItemIndex ?: selectedItems.size
+                                                    val insertAt =
+                                                        editingItemIndex ?: selectedItems.size
                                                     val mutable = selectedItems.toMutableList()
                                                     mutable.add(insertAt, pending)
                                                     selectedItems = mutable
@@ -1047,10 +1054,14 @@ data class SaleScreen(
                                                 }
                                             },
                                             onSerialNo = {
-                                                pendingSelectedProductGUID = item.guid  // ← ADD THIS
-                                                pendingSelectedProductName = item.name  // ← ADD THIS
-                                                selectedInitialSerialNo = item.item_serial  // ← ADD THIS
-                                                showSerialNumberBottomSheet = true }
+                                                pendingSelectedProductGUID =
+                                                    item.guid  // ← ADD THIS
+                                                pendingSelectedProductName =
+                                                    item.name  // ← ADD THIS
+                                                selectedInitialSerialNo =
+                                                    item.item_serial  // ← ADD THIS
+                                                showSerialNumberBottomSheet = true
+                                            }
                                         )
                                     }
 
@@ -1637,9 +1648,10 @@ data class SaleScreen(
                                     itemdesc18 = item.itemdesc18,
                                     itemdesc19 = item.itemdesc19,
                                     itemdesc20 = item.itemdesc20,
-                                    additionalinfo = item.additionalinfo,item_serial = selectedSerialNo
+                                    additionalinfo = item.additionalinfo,
+                                    item_serial = selectedSerialNo
 
-                                    )
+                                )
                             }
 
                             viewmodel.createEditInventoryResponse(
@@ -2004,7 +2016,7 @@ fun CompactItemCard(
                         }
                     }
                 }
-                TextButton(onClick = onSerialNo){Text("Serial No")}
+                TextButton(onClick = onSerialNo) { Text("Serial No") }
             }
         }
     }
