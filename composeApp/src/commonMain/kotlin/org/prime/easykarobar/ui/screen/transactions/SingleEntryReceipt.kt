@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,9 +43,11 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.business.viewmodel.transactions.SingleEntryViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.hasSalesmanPermission
 import org.prime.easykarobar.data.model.transactions.TranListResponse
 import org.prime.easykarobar.data.model.transactions.TranRequest
+import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.printing.EntryTypesHtml
 import org.prime.easykarobar.ui.printing.entryTypesHtml
 import org.prime.easykarobar.ui.screen.transactions.sale.makeNegativeConditional
@@ -52,7 +55,9 @@ import org.prime.easykarobar.ui.shared.composables.DownloadResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
+import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
+import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import kotlin.math.absoluteValue
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -559,6 +564,23 @@ fun SelectLedgerRow(
     title: String,
     enabled: Boolean = true
 ) {
+    val db = DatabaseHolder.instance
+    val perms = SharedPrefs.Permissions.get()
+    val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
+    val filterAccounts = if (perms?.FilterAccounts == "Y") 1L else 0L
+    val excludeGuids = perms?.ConfigAccounts.parseToStringList()
+    var balance by remember { mutableStateOf(0.0) }
+    LaunchedEffect(selectedAccount) {
+        if (selectedAccount.isNotEmpty()) {
+            balance = db.vouchersLedgersQueries.getLedgerBalance(
+                groupFilter = filterAGRP,
+                GroupCode = filterGroupCodes(),
+                excludeFilter = filterAccounts,
+                GUID = excludeGuids, ledgername = selectedAccount
+            ).executeAsOneOrNull()?.ClsnBal ?: 0.0
+        }
+    }
+
     val borderColor =
         when {
             !enabled -> MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
@@ -649,5 +671,14 @@ fun SelectLedgerRow(
                 )
             }
         }
+
+        Text(
+            text = "Balance: ${balance.absoluteValue.formatToAmtDec()} ${if (balance < 0.0) "Dr" else "Cr"}",
+            style = MaterialTheme.typography.labelMedium,
+            color = if (enabled)
+                MaterialTheme.colorScheme.onSurfaceVariant
+            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            fontWeight = FontWeight.Medium, modifier = Modifier.padding(vertical = 4.dp)
+        )
     }
 }

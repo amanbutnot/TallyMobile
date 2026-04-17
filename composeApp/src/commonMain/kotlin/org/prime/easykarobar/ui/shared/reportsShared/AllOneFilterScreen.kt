@@ -52,7 +52,6 @@ import org.prime.easykarobar.ui.screen.home.TallyToggleRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
-import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.parseDate
 
@@ -70,7 +69,7 @@ fun AllOneFilterScreen(
     val nav = LocalNavigator.currentOrThrow
     TallyScaffold(title, onBack = { nav.pop() }) { paddingValues ->
 
-        var startDate by rememberSaveable { mutableStateOf(StartDate()) }
+        var startDate by rememberSaveable { mutableStateOf(OutstandingDate()) }
         var endDate by rememberSaveable { mutableStateOf(CurrentDate()) }
         var selectedAccount by rememberSaveable { mutableStateOf("") }
         var showError by remember { mutableStateOf(false) }

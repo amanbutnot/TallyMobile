@@ -128,6 +128,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
+import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
@@ -759,7 +760,7 @@ data class SaleScreen(
                 MenuItemData(Icons.Default.Download, "Download", {
                     scope.launch {
                         handlePdfAction(
-                            fileName = name,
+                            fileName = CompanyName(),
                             htmlContent = htmlContent,
                             action = PdfAction.Download,
                             onLoadingChange = { shareLoading = it })
@@ -768,7 +769,7 @@ data class SaleScreen(
                 MenuItemData(Icons.Default.Share, "Share", {
                     scope.launch {
                         handlePdfAction(
-                            fileName = name,
+                            fileName = CompanyName(),
                             htmlContent = htmlContent,
                             action = PdfAction.Share,
                             onLoadingChange = { shareLoading = it })

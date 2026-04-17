@@ -178,7 +178,7 @@ data class CreateDistributorScreen(
                             selectedAccount = selectedAccount,
                             onShowBottomSheet = { showBottomSheet = true },
                             title = "Select Ledger",
-                            enabled = true
+                             enabled = true
                         )
                         Spacer(Modifier.height(16.dp))
 

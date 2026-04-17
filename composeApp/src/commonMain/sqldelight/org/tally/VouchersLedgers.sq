@@ -33,6 +33,21 @@ FROM Vouchers_Ledgers WHERE CM1 IN (
 GROUP BY CM1
 ORDER BY CM1;
 
+getLedgerBalance:
+SELECT
+    CM1,
+    SUM(D1) AS ClsnBal
+FROM Vouchers_Ledgers WHERE CM1 IN (
+                                                    SELECT Name
+                                                    FROM LedgerMaster
+                                                    WHERE (:groupFilter = 0 OR GroupCode IN ?)
+                                                      AND (:excludeFilter = 0 OR GUID NOT IN ?)
+                                                ) AND CM1 = :ledgername
+                                                --for financial year
+                                                -- AND  ( DATE>=:startDate OR  (  VchType='Opening' AND DATE=:endDate)  )
+GROUP BY CM1
+ORDER BY CM1;
+
 
 ledgerReportList:
 SELECT

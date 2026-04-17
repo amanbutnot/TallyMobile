@@ -50,7 +50,6 @@ import org.prime.easykarobar.ui.screen.home.TallyToggleRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
-import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.agrpGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
 import org.prime.easykarobar.ui.shared.globalShared.parseDate
@@ -62,7 +61,7 @@ data class OutstandingGroupFilterScreen(val name: String) : Screen {
 
         val nav = LocalNavigator.currentOrThrow
         TallyScaffold(name, onBack = { nav.pop() }) { paddingValues ->
-            var startDate by rememberSaveable { mutableStateOf(StartDate()) }
+            var startDate by rememberSaveable { mutableStateOf(OutstandingDate()) }
             var endDate by rememberSaveable { mutableStateOf(CurrentDate()) }
             var selectedAccount by rememberSaveable { mutableStateOf("") }
             var selectedGuid by rememberSaveable { mutableStateOf("") }

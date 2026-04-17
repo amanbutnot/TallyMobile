@@ -54,6 +54,7 @@ import org.prime.easykarobar.ui.printing.entryTypesHtml
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyDivider
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
+import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.getNameFromGUID
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
@@ -117,7 +118,7 @@ data class SingleEntryListScreen(
                                             onDownload = { data ->
                                                 scope.launch {
                                                     handlePdfAction(
-                                                        fileName = "${name}_${item.VchNo}",
+                                                        fileName = "${CompanyName()}_${item.VchNo}",
                                                         htmlContent = entryTypesHtml(
                                                             voucherNo = item.VchNo,
                                                             date = item.TranDate,
@@ -136,7 +137,7 @@ data class SingleEntryListScreen(
                                             onShare = { data ->
                                                 scope.launch {
                                                     handlePdfAction(
-                                                        fileName = "${name}_${item.VchNo}",
+                                                        fileName = "${CompanyName()}_${item.VchNo}",
                                                         htmlContent = entryTypesHtml(
                                                             voucherNo = item.VchNo,
                                                             date = item.TranDate,
