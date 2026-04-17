@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -643,7 +644,7 @@ object ItemAddScreen : Screen {
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
-                    .padding(paddingValues)
+                    .padding(paddingValues).navigationBarsPadding()
                     .verticalScroll(scroll)
                     .padding(bottom = 32.dp)
             ) {
@@ -656,8 +657,7 @@ object ItemAddScreen : Screen {
                         value = name,
                         onChange = { v ->
                             name = v
-
-                            if (printName.isEmpty() || printName == name.dropLast(1)) printName = v
+                            printName = v
                         },
                         placeholder = "Enter item name",
                         isError = nameError,
@@ -731,30 +731,32 @@ object ItemAddScreen : Screen {
                         )
                     }
 
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    )
 
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        Box(Modifier.weight(1f)) {
-                            TallyDropdown(
-                                label = "Con Type",
-                                options = CON_TYPE_OPTIONS,
-                                selected = conType,
-                                onSelect = { conType = it }
-                            )
-                        }
-                        Box(Modifier.weight(1f)) {
-                            FormField(
-                                label = "Con Factor",
-                                value = conFactor,
-                                onChange = { conFactor = it },
-                                placeholder = "e.g. 12",
-                                isNumber = true,
-                                isError = conFactorError,
-                                errorMessage = "Cannot be zero or empty"
-                            )
+                    if (!altSameAsMain) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            Box(Modifier.weight(1f)) {
+                                TallyDropdown(
+                                    label = "Con Type",
+                                    options = CON_TYPE_OPTIONS,
+                                    selected = conType,
+                                    onSelect = { conType = it }
+                                )
+                            }
+                            Box(Modifier.weight(1f)) {
+                                FormField(
+                                    label = "Con Factor",
+                                    value = conFactor,
+                                    onChange = { conFactor = it },
+                                    placeholder = "e.g. 12",
+                                    isNumber = true,
+                                    isError = conFactorError,
+                                    errorMessage = "Cannot be zero or empty"
+                                )
+                            }
                         }
                     }
                 }

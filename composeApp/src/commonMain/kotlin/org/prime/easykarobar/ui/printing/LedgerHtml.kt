@@ -1,6 +1,7 @@
 package org.prime.easykarobar.ui.printing
 
 import org.prime.easykarobar.data.expect.formatToAmtDec
+import org.prime.easykarobar.ui.shared.globalShared.CompanyGst
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 
@@ -91,7 +92,7 @@ fun accountLedgerHtml(
         </head>
         <body>
             <h2>${CompanyName()}</h2>
-            <h3>GSTIN :</h3>
+            <h3>GSTIN : ${CompanyGst()}</h3>
             <h2>Account Ledger</h2>
             <h3>Account: $accountName</h3> 
             <h3>From ${Tdate(startDate)} to ${Tdate(endDate)}</h3>

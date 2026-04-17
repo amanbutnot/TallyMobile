@@ -163,7 +163,7 @@ fun TallyDropdownWithCustom(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding( vertical = 6.dp)
+            .padding(vertical = 6.dp)
     ) {
         ExposedDropdownMenuBox(
             expanded = expanded,
@@ -606,9 +606,8 @@ object AccountAddScreen : Screen {
                         onChange = { v ->
                             name = v
                             // Auto-mirror into printName until user manually edits it
-                            if (printName.isEmpty() || printName == name.dropLast(1)) {
-                                printName = v
-                            }
+                            printName = v
+
                         },
                         placeholder = "Enter account name",
                         isError = nameError,
@@ -762,7 +761,10 @@ object AccountAddScreen : Screen {
                     FormField(
                         "Mobile No.",
                         mobile,
-                        { mobile = it },
+                        {
+                            mobile = it
+                            whatsapp = it
+                        },
                         "+91 XXXXX XXXXX",
                         isNumber = true
                     )

@@ -1,12 +1,19 @@
 package org.prime.easykarobar.ui.screen.reports.godown
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,12 +39,14 @@ import org.prime.easykarobar.data.utils.showAmtToSalesman
 import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.Quadruple
 import org.prime.easykarobar.ui.printing.fourHeaderHtml
+import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheet
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
+import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
@@ -52,6 +61,7 @@ import smartSearch
 import kotlin.math.absoluteValue
 
 data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
 
@@ -80,6 +90,25 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
         val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
         val excludeGuids =
             if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
+        var showGroupFilterSheet by remember { mutableStateOf(false) }
+        val productGroups = remember {
+            db.productGroupMasterQueries.selectAll(
+                filterGroup = filterItemGroups(),
+                groupCodes = itemGroupCodes()
+            ).executeAsList()
+        }
+        var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
+        val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        GroupFilterBottomSheet(
+            show = showGroupFilterSheet,
+            items = productGroups, // can be any list
+            selectedItems = selectedGroups,
+            itemNameSelector = { it.Name },
+            onSelectedItemsChange = { selectedGroups = it },
+            onDismiss = { showGroupFilterSheet = false },
+            bottomSheetState = bottomSheetState
+        )
+
 
         LaunchedEffect(Unit) {
             isLoading = true
@@ -103,13 +132,19 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
                 focusRequester.requestFocus()
             }
         }
+
+        val groupFilteredList = if (selectedGroups.isEmpty()) {
+            list
+        } else {
+            list.filter { it.GroupName in getProductsGroupCodesByName(selectedGroups) }
+        }
         val filteredList = smartSearch(
-            list = list,
+            list = groupFilteredList,
             query = searchQuery,
             selectors = listOf { it.ItemName }
         )
 
-        val filteredList1 = filteredList.filter { it.Item_Qty!=0.0 }
+        val filteredList1 = filteredList.filter { it.Item_Qty != 0.0 }
 
         val rows: List<Quadruple<String, String, String, String>> = filteredList.map { item ->
             Quadruple(
@@ -183,13 +218,15 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
                             (column1Weight + column2Weight),
                             TextAlign.Start
                         ),
-                        ReportColumn(if(showQtyToSalesman())
-                            totalQty.absoluteValue.formatToQtyDec() else "",
+                        ReportColumn(
+                            if (showQtyToSalesman())
+                                totalQty.absoluteValue.formatToQtyDec() else "",
                             column3Weight,
                             TextAlign.End
                         ),
-                        ReportColumn(if(showAmtToSalesman())
-                            totalAmt.absoluteValue.formatToAmtDec() else "",
+                        ReportColumn(
+                            if (showAmtToSalesman())
+                                totalAmt.absoluteValue.formatToAmtDec() else "",
                             column4Weight,
                             TextAlign.End
                         )
@@ -213,6 +250,14 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
                                 modifier = Modifier.Companion.focusRequester(focusRequester)
                             )
                         }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = { showGroupFilterSheet = true }) {
+                                Text("Group Filter")
+                            }
+                        }
                         TallyReportHeaderCard(
                             columns = listOf(
                                 ReportColumn(
@@ -220,18 +265,20 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
                                     column1Weight,
                                     TextAlign.Start
                                 ),
+//                                ReportColumn(
+//                                    "Unit",
+//                                    column2Weight,
+//                                    TextAlign.End
+//                                ),
                                 ReportColumn(
-                                    "Unit",
-                                    column2Weight,
-                                    TextAlign.End
-                                ),
-                                ReportColumn(if(showQtyToSalesman())
-                                    "Qty" else "",
+                                    if (showQtyToSalesman())
+                                        "Qty" else "",
                                     column3Weight,
                                     TextAlign.End
                                 ),
-                                ReportColumn(if(showAmtToSalesman())
-                                    "Amount" else "",
+                                ReportColumn(
+                                    if (showAmtToSalesman())
+                                        "Amount" else "",
                                     column4Weight,
                                     TextAlign.End
                                 )
@@ -259,14 +306,14 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
                                     isHeader = false
                                 )
 
+//                                TableCell(
+//                                    text = item.UnitName ?: "",
+//                                    weight = column2Weight,
+//                                    textAlign = TextAlign.Companion.End,
+//                                    isHeader = false
+//                                )
                                 TableCell(
-                                    text = item.UnitName ?: "",
-                                    weight = column2Weight,
-                                    textAlign = TextAlign.Companion.End,
-                                    isHeader = false
-                                )
-                                TableCell(
-                                    text = if(showQtyToSalesman()) {
+                                    text = if (showQtyToSalesman()) {
                                         item.Item_Qty?.formatToQtyDec() ?: "-"
                                     } else "",
                                     weight = column3Weight,
@@ -274,7 +321,9 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
                                     isHeader = false
                                 )
                                 TableCell(
-                                    text = if(showAmtToSalesman()){item.Item_Amt?.formatToAmtDec() ?: "-"} else "",
+                                    text = if (showAmtToSalesman()) {
+                                        item.Item_Amt?.formatToAmtDec() ?: "-"
+                                    } else "",
                                     weight = column4Weight,
                                     textAlign = TextAlign.Companion.End,
                                     isHeader = false
