@@ -29,7 +29,9 @@ import androidx.compose.ui.text.style.TextAlign
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
@@ -104,19 +106,32 @@ object StockReportScreen : Screen {
                 focusRequester.requestFocus()
             }
         }
-        val groupFilteredList = if (selectedGroups.isEmpty()) {
-            list
-        } else {
-            list.filter { it.GroupName in getProductsGroupCodesByName(selectedGroups) }
+        val selectedGroupCodes = remember(selectedGroups) {
+            getProductsGroupCodesByName(selectedGroups).toSet()
         }
-        val filteredList = smartSearch(
-            list = groupFilteredList,
-            query = searchQuery,
-            selectors = listOf(
-                { it.ProductName },
-            )
-        )
+        var filteredList by remember { mutableStateOf<List<GetProductStockItemList>>(emptyList()) }
 
+        LaunchedEffect(list, selectedGroups, searchQuery) {
+            withContext(Dispatchers.Default) {
+                val selectedCodes = getProductsGroupCodesByName(selectedGroups).toSet()
+
+                val groupFiltered = if (selectedCodes.isEmpty()) {
+                    list
+                } else {
+                    list.filter { it.GroupName in selectedCodes }
+                }
+
+                val result = smartSearch(
+                    list = groupFiltered,
+                    query = searchQuery,
+                    selectors = listOf { it.ProductName }
+                )
+
+                withContext(Dispatchers.Main) {
+                    filteredList = result
+                }
+            }
+        }
 
         val totalQty = filteredList.sumOf { it.Value1?.toDouble() ?: 0.0 }
         val totalAmt = filteredList.sumOf { it.Value3?.toDouble() ?: 0.0 }

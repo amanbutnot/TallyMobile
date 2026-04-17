@@ -101,6 +101,7 @@ import org.prime.easykarobar.business.viewmodel.transactions.InventoryVoucherVie
 import org.prime.easykarobar.data.expect.BarcodeScanResult
 import org.prime.easykarobar.data.expect.BarcodeScannerLauncher
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.rememberBarcodeScanner
 import org.prime.easykarobar.data.model.hasSalesmanPermission
 import org.prime.easykarobar.data.model.transactions.BillingItem
@@ -199,7 +200,11 @@ data class SaleScreen2(
 
         var pendingSelectedProductName by remember { mutableStateOf<String?>(null) }
         var pendingSelectedProductGUID by remember { mutableStateOf<String?>(null) }
-        var selectedInitialSerialNo by remember { mutableStateOf<List<SerialNoEnterReport>>(emptyList()) }
+        var selectedInitialSerialNo by remember {
+            mutableStateOf<List<SerialNoEnterReport>>(
+                emptyList()
+            )
+        }
         var editingItemIndex by remember { mutableStateOf<Int?>(null) }
 
         val ledgerList = getLedgerMasters(db)
@@ -281,16 +286,22 @@ data class SaleScreen2(
                 is BarcodeScanResult.Cancelled -> {
                     showQtyPopup = false; return@rememberBarcodeScanner
                 }
+
                 is BarcodeScanResult.Failure -> {
                     showEmptyBarcode = true; return@rememberBarcodeScanner
                 }
+
                 is BarcodeScanResult.Success -> {
                     val barcode = result.value.trim()
-                    if (barcode.isEmpty()) { showEmptyBarcode = true; return@rememberBarcodeScanner }
+                    if (barcode.isEmpty()) {
+                        showEmptyBarcode = true; return@rememberBarcodeScanner
+                    }
                     val product = db.productsQueries.getItemByName(
                         barcode, groupCodes = itemGroupCodes(), filterGroup = filterItemGroups()
                     ).executeAsOneOrNull()
-                    if (product == null) { showEmptyBarcode = true; return@rememberBarcodeScanner }
+                    if (product == null) {
+                        showEmptyBarcode = true; return@rememberBarcodeScanner
+                    }
                     showQtyPopup = false
                     val price = if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
                     val qty = barcodeQty.toIntOrNull() ?: 1
@@ -298,8 +309,12 @@ data class SaleScreen2(
                         db.taxCategoryMastQueries.selectTaxRate(
                             product.TaxCategoryCode?.toInt().toString(), selectedDate
                         ).executeAsOneOrNull() ?: 0.0
-                    } catch (e: Exception) { 0.0 }
-                    val taxableAmount: Double; val gstAmount: Double; val netAmount: Double
+                    } catch (e: Exception) {
+                        0.0
+                    }
+                    val taxableAmount: Double;
+                    val gstAmount: Double;
+                    val netAmount: Double
                     if (taxType == TaxType.EXTRA) {
                         taxableAmount = price * qty
                         gstAmount = taxableAmount * gstPercentage / 100.0
@@ -318,7 +333,8 @@ data class SaleScreen2(
                     selectedItems = selectedItems + InvoiceItem(
                         name = product.Name.orEmpty(), price = price, qty = qty,
                         discountPercentage = 0.0,
-                        listPrice = if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0,
+                        listPrice = if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice
+                            ?: 0.0,
                         taxable = taxableAmount, gstAmt = gstAmount, net = netAmount,
                         guid = product.GUID ?: pendingSelectedProductGUID.orEmpty(),
                         gstPercentage = gstPercentage,
@@ -374,7 +390,9 @@ data class SaleScreen2(
             confirmButtonText = "OK", cancelButtonText = "Cancel",
             onConfirm = {
                 if (barcodeQty.isBlank()) qtyError = true
-                else { qtyError = false; showQtyPopup = false; scannerLauncher?.launch() }
+                else {
+                    qtyError = false; showQtyPopup = false; scannerLauncher?.launch()
+                }
             },
             onCancel = { showQtyPopup = false }, onDismiss = { showQtyPopup = false },
             content = {
@@ -414,19 +432,37 @@ data class SaleScreen2(
                 taxType = if (data.taxType == 1) TaxType.EXTRA else TaxType.INCLUSIVE
                 selectedItems = data.items.map {
                     InvoiceItem(
-                        name = it.product_name, price = it.price.toDouble(),
-                        listPrice = it.list_price.toDouble(), qty = it.quantity,
+                        name = it.product_name,
+                        price = it.price.toDouble(),
+                        listPrice = it.list_price.toDouble(),
+                        qty = it.quantity,
                         discountPercentage = it.discount_percent.toDouble(),
-                        taxable = it.item_amount.toDouble(), gstAmt = it.taxamt1.toDouble(),
-                        net = it.total_amt.toDouble(), gstPercentage = it.tax_rate1.toDouble(),
+                        taxable = it.item_amount.toDouble(),
+                        gstAmt = it.taxamt1.toDouble(),
+                        net = it.total_amt.toDouble(),
+                        gstPercentage = it.tax_rate1.toDouble(),
                         taxCategoryCode = 0,
-                        itemdesc1 = it.itemdesc1, itemdesc2 = it.itemdesc2, itemdesc3 = it.itemdesc3,
-                        itemdesc4 = it.itemdesc4, itemdesc5 = it.itemdesc5, CD = it.CD,
-                        itemdesc6 = it.itemdesc6, itemdesc7 = it.itemdesc7, itemdesc8 = it.itemdesc8,
-                        itemdesc9 = it.itemdesc9, itemdesc10 = it.itemdesc10, itemdesc11 = it.itemdesc11,
-                        itemdesc12 = it.itemdesc12, itemdesc13 = it.itemdesc13, itemdesc14 = it.itemdesc14,
-                        itemdesc15 = it.itemdesc15, itemdesc16 = it.itemdesc16, itemdesc17 = it.itemdesc17,
-                        itemdesc18 = it.itemdesc18, itemdesc19 = it.itemdesc19, itemdesc20 = it.itemdesc20,
+                        itemdesc1 = it.itemdesc1,
+                        itemdesc2 = it.itemdesc2,
+                        itemdesc3 = it.itemdesc3,
+                        itemdesc4 = it.itemdesc4,
+                        itemdesc5 = it.itemdesc5,
+                        CD = it.CD,
+                        itemdesc6 = it.itemdesc6,
+                        itemdesc7 = it.itemdesc7,
+                        itemdesc8 = it.itemdesc8,
+                        itemdesc9 = it.itemdesc9,
+                        itemdesc10 = it.itemdesc10,
+                        itemdesc11 = it.itemdesc11,
+                        itemdesc12 = it.itemdesc12,
+                        itemdesc13 = it.itemdesc13,
+                        itemdesc14 = it.itemdesc14,
+                        itemdesc15 = it.itemdesc15,
+                        itemdesc16 = it.itemdesc16,
+                        itemdesc17 = it.itemdesc17,
+                        itemdesc18 = it.itemdesc18,
+                        itemdesc19 = it.itemdesc19,
+                        itemdesc20 = it.itemdesc20,
                         additionalinfo = it.additionalinfo,
                         item_serial = it.item_serial.map { sn ->
                             SerialNoEnterReport(
@@ -443,9 +479,11 @@ data class SaleScreen2(
                     )
                 }
                 selectedSundries = data.sundries.map { s ->
-                    SundryItem(name = s.name, amount = s.amount, guid = s.guid,
+                    SundryItem(
+                        name = s.name, amount = s.amount, guid = s.guid,
                         i1 = s.i1, i2 = s.i2, d2 = s.d2, rate = s.rate,
-                        srno = s.srno, percentValue = s.percentValue)
+                        srno = s.srno, percentValue = s.percentValue
+                    )
                 }
                 transportName = data.other_info?.transportName ?: ""
                 gstRrNo = data.other_info?.gstNum ?: ""
@@ -493,8 +531,11 @@ data class SaleScreen2(
 
         val sundriesTotal = selectedSundries.fold(0.0) { runningTotal, sundry ->
             val baseAmount = itemsTotal + runningTotal
-            val sundryValue = if (sundry.i2 == 1) baseAmount * (sundry.amount / 100.0) else sundry.amount
-            when (sundry.i1) { 0 -> runningTotal - sundryValue; else -> runningTotal + sundryValue }
+            val sundryValue =
+                if (sundry.i2 == 1) baseAmount * (sundry.amount / 100.0) else sundry.amount
+            when (sundry.i1) {
+                0 -> runningTotal - sundryValue; else -> runningTotal + sundryValue
+            }
         }
 
         val grandTotal = itemsTotal + sundriesTotal
@@ -526,13 +567,15 @@ data class SaleScreen2(
             menuItems = listOf(
                 MenuItemData(Icons.Default.Download, "Download", {
                     scope.launch {
-                        handlePdfAction(fileName = name, htmlContent = htmlContent,
+                        handlePdfAction(
+                            fileName = name, htmlContent = htmlContent,
                             action = PdfAction.Download, onLoadingChange = { shareLoading = it })
                     }
                 }),
                 MenuItemData(Icons.Default.Share, "Share", {
                     scope.launch {
-                        handlePdfAction(fileName = name, htmlContent = htmlContent,
+                        handlePdfAction(
+                            fileName = name, htmlContent = htmlContent,
                             action = PdfAction.Share, onLoadingChange = { shareLoading = it })
                     }
                 }),
@@ -559,21 +602,39 @@ data class SaleScreen2(
                                 colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
                             ) {
-                                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    TallyDatePickerRow(label = "Entry Date", selectedDate = selectedDate,
-                                        onDateSelected = { selectedDate = it }, defaultDate = CurrentDate())
-                                    SelectLedgerRow(selectedAccount = selectedLedger,
-                                        onShowBottomSheet = { showLedgerSheet = true }, title = "Party Ledger")
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    TallyDatePickerRow(
+                                        label = "Entry Date",
+                                        selectedDate = selectedDate,
+                                        onDateSelected = { selectedDate = it },
+                                        defaultDate = CurrentDate()
+                                    )
+                                    SelectLedgerRow(
+                                        selectedAccount = selectedLedger,
+                                        onShowBottomSheet = { showLedgerSheet = true },
+                                        title = "Party Ledger"
+                                    )
                                 }
                             }
 
-                            TaxTypeSelector(selectedTaxType = taxType, onTaxTypeSelected = { taxType = it })
+                            TaxTypeSelector(
+                                selectedTaxType = taxType,
+                                onTaxTypeSelected = { taxType = it })
 
                             SectionCard(
                                 title = "ITEMS", count = selectedItems.size,
                                 headerAction = {
-                                    TextButton(onClick = { showItemSheet = true }, enabled = editingItem == null) {
-                                        Text("Add More Item", textDecoration = TextDecoration.Underline)
+                                    TextButton(
+                                        onClick = { showItemSheet = true },
+                                        enabled = editingItem == null
+                                    ) {
+                                        Text(
+                                            "Add More Item",
+                                            textDecoration = TextDecoration.Underline
+                                        )
                                     }
                                 }
                             ) {
@@ -587,39 +648,59 @@ data class SaleScreen2(
                                             else db.taxCategoryMastQueries.selectTaxRate(
                                                 pending.taxCategoryCode.toString(), selectedDate
                                             ).executeAsOneOrNull() ?: 0.0
-                                        } catch (e: Exception) { 0.0 }
+                                        } catch (e: Exception) {
+                                            0.0
+                                        }
 
                                         if (product != null) {
                                             ExpandedItemEditor1(
                                                 name = product.Name ?: pending.name,
                                                 defaultListPrice = if (pending.listPrice == 0.0)
-                                                    if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
+                                                    if (isSale) product.SalesPrice
+                                                        ?: 0.0 else product.PurcPrice ?: 0.0
                                                 else pending.listPrice,
                                                 initialQuantity = pending.qty,
                                                 initialDiscount = pending.CD.ifBlank { pending.discountPercentage.toString() },
                                                 taxType = taxType, existingItem = pending,
-                                                initialSerialNumbers = pending.item_serial.map { it.SerialNo ?: "" },
+                                                initialSerialNumbers = pending.item_serial.map {
+                                                    it.SerialNo ?: ""
+                                                },
                                                 onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers ->
                                                     val newItem = InvoiceItem(
                                                         name = product.Name ?: pending.name,
-                                                        price = unitPrice, qty = qty,
+                                                        price = unitPrice,
+                                                        qty = qty,
                                                         discountPercentage = discount,
-                                                        listPrice = listPriceText, taxable = taxable,
+                                                        listPrice = listPriceText,
+                                                        taxable = taxable,
                                                         CD = compoundDiscount.toString(),
-                                                        gstAmt = gstAmount, net = net,
-                                                        guid = product.GUID ?: pendingSelectedProductGUID ?: "",
+                                                        gstAmt = gstAmount,
+                                                        net = net,
+                                                        guid = product.GUID
+                                                            ?: pendingSelectedProductGUID ?: "",
                                                         gstPercentage = gstPercentage,
-                                                        taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0,
-                                                        itemdesc1 = itemDescs.getOrNull(0), itemdesc2 = itemDescs.getOrNull(1),
-                                                        itemdesc3 = itemDescs.getOrNull(2), itemdesc4 = itemDescs.getOrNull(3),
-                                                        itemdesc5 = itemDescs.getOrNull(4), itemdesc6 = itemDescs.getOrNull(5),
-                                                        itemdesc7 = itemDescs.getOrNull(6), itemdesc8 = itemDescs.getOrNull(7),
-                                                        itemdesc9 = itemDescs.getOrNull(8), itemdesc10 = itemDescs.getOrNull(9),
-                                                        itemdesc11 = itemDescs.getOrNull(10), itemdesc12 = itemDescs.getOrNull(11),
-                                                        itemdesc13 = itemDescs.getOrNull(12), itemdesc14 = itemDescs.getOrNull(13),
-                                                        itemdesc15 = itemDescs.getOrNull(14), itemdesc16 = itemDescs.getOrNull(15),
-                                                        itemdesc17 = itemDescs.getOrNull(16), itemdesc18 = itemDescs.getOrNull(17),
-                                                        itemdesc19 = itemDescs.getOrNull(18), itemdesc20 = itemDescs.getOrNull(19),
+                                                        taxCategoryCode = product.TaxCategoryCode?.toInt()
+                                                            ?: 0,
+                                                        itemdesc1 = itemDescs.getOrNull(0),
+                                                        itemdesc2 = itemDescs.getOrNull(1),
+                                                        itemdesc3 = itemDescs.getOrNull(2),
+                                                        itemdesc4 = itemDescs.getOrNull(3),
+                                                        itemdesc5 = itemDescs.getOrNull(4),
+                                                        itemdesc6 = itemDescs.getOrNull(5),
+                                                        itemdesc7 = itemDescs.getOrNull(6),
+                                                        itemdesc8 = itemDescs.getOrNull(7),
+                                                        itemdesc9 = itemDescs.getOrNull(8),
+                                                        itemdesc10 = itemDescs.getOrNull(9),
+                                                        itemdesc11 = itemDescs.getOrNull(10),
+                                                        itemdesc12 = itemDescs.getOrNull(11),
+                                                        itemdesc13 = itemDescs.getOrNull(12),
+                                                        itemdesc14 = itemDescs.getOrNull(13),
+                                                        itemdesc15 = itemDescs.getOrNull(14),
+                                                        itemdesc16 = itemDescs.getOrNull(15),
+                                                        itemdesc17 = itemDescs.getOrNull(16),
+                                                        itemdesc18 = itemDescs.getOrNull(17),
+                                                        itemdesc19 = itemDescs.getOrNull(18),
+                                                        itemdesc20 = itemDescs.getOrNull(19),
                                                         additionalinfo = additionalInfos.getOrNull(0),
                                                         item_serial = serialNumbers.map { sn ->
                                                             SerialNoEnterReport(
@@ -634,7 +715,8 @@ data class SaleScreen2(
                                                             )
                                                         }
                                                     )
-                                                    val insertAt = editingItemIndex ?: selectedItems.size
+                                                    val insertAt =
+                                                        editingItemIndex ?: selectedItems.size
                                                     val mutable = selectedItems.toMutableList()
                                                     mutable.add(insertAt, newItem)
                                                     selectedItems = mutable
@@ -642,7 +724,8 @@ data class SaleScreen2(
                                                     editingItem = null
                                                 },
                                                 onBack = {
-                                                    val insertAt = editingItemIndex ?: selectedItems.size
+                                                    val insertAt =
+                                                        editingItemIndex ?: selectedItems.size
                                                     val mutable = selectedItems.toMutableList()
                                                     mutable.add(insertAt, pending)
                                                     selectedItems = mutable
@@ -655,34 +738,51 @@ data class SaleScreen2(
                                                     editingItem = null
                                                 }
                                             )
-                                        }
-                                        else {
+                                        } else {
                                             ExpandedItemEditor1(
                                                 name = pending.name,
                                                 defaultListPrice = pending.listPrice,
                                                 initialDiscount = pending.CD.ifBlank { pending.discountPercentage.toString() },
                                                 initialQuantity = pending.qty,
                                                 taxType = taxType, existingItem = pending,
-                                                initialSerialNumbers = pending.item_serial.map { it.SerialNo ?: "" },
+                                                initialSerialNumbers = pending.item_serial.map {
+                                                    it.SerialNo ?: ""
+                                                },
                                                 onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers ->
                                                     val newItem = InvoiceItem(
-                                                        name = pending.name, price = unitPrice, qty = qty,
-                                                        discountPercentage = discount, listPrice = listPriceText,
-                                                        taxable = taxable, CD = compoundDiscount.toString(),
-                                                        gstAmt = gstAmount, net = net,
+                                                        name = pending.name,
+                                                        price = unitPrice,
+                                                        qty = qty,
+                                                        discountPercentage = discount,
+                                                        listPrice = listPriceText,
+                                                        taxable = taxable,
+                                                        CD = compoundDiscount.toString(),
+                                                        gstAmt = gstAmount,
+                                                        net = net,
                                                         guid = pendingSelectedProductGUID ?: "",
                                                         gstPercentage = gstPercentage,
-                                                        taxCategoryCode = product?.TaxCategoryCode?.toInt() ?: 0,
-                                                        itemdesc1 = itemDescs.getOrNull(0), itemdesc2 = itemDescs.getOrNull(1),
-                                                        itemdesc3 = itemDescs.getOrNull(2), itemdesc4 = itemDescs.getOrNull(3),
-                                                        itemdesc5 = itemDescs.getOrNull(4), itemdesc6 = itemDescs.getOrNull(5),
-                                                        itemdesc7 = itemDescs.getOrNull(6), itemdesc8 = itemDescs.getOrNull(7),
-                                                        itemdesc9 = itemDescs.getOrNull(8), itemdesc10 = itemDescs.getOrNull(9),
-                                                        itemdesc11 = itemDescs.getOrNull(10), itemdesc12 = itemDescs.getOrNull(11),
-                                                        itemdesc13 = itemDescs.getOrNull(12), itemdesc14 = itemDescs.getOrNull(13),
-                                                        itemdesc15 = itemDescs.getOrNull(14), itemdesc16 = itemDescs.getOrNull(15),
-                                                        itemdesc17 = itemDescs.getOrNull(16), itemdesc18 = itemDescs.getOrNull(17),
-                                                        itemdesc19 = itemDescs.getOrNull(18), itemdesc20 = itemDescs.getOrNull(19),
+                                                        taxCategoryCode = product?.TaxCategoryCode?.toInt()
+                                                            ?: 0,
+                                                        itemdesc1 = itemDescs.getOrNull(0),
+                                                        itemdesc2 = itemDescs.getOrNull(1),
+                                                        itemdesc3 = itemDescs.getOrNull(2),
+                                                        itemdesc4 = itemDescs.getOrNull(3),
+                                                        itemdesc5 = itemDescs.getOrNull(4),
+                                                        itemdesc6 = itemDescs.getOrNull(5),
+                                                        itemdesc7 = itemDescs.getOrNull(6),
+                                                        itemdesc8 = itemDescs.getOrNull(7),
+                                                        itemdesc9 = itemDescs.getOrNull(8),
+                                                        itemdesc10 = itemDescs.getOrNull(9),
+                                                        itemdesc11 = itemDescs.getOrNull(10),
+                                                        itemdesc12 = itemDescs.getOrNull(11),
+                                                        itemdesc13 = itemDescs.getOrNull(12),
+                                                        itemdesc14 = itemDescs.getOrNull(13),
+                                                        itemdesc15 = itemDescs.getOrNull(14),
+                                                        itemdesc16 = itemDescs.getOrNull(15),
+                                                        itemdesc17 = itemDescs.getOrNull(16),
+                                                        itemdesc18 = itemDescs.getOrNull(17),
+                                                        itemdesc19 = itemDescs.getOrNull(18),
+                                                        itemdesc20 = itemDescs.getOrNull(19),
                                                         additionalinfo = additionalInfos.getOrNull(0),
                                                         item_serial = serialNumbers.map { sn ->
                                                             SerialNoEnterReport(
@@ -697,7 +797,8 @@ data class SaleScreen2(
                                                             )
                                                         }
                                                     )
-                                                    val insertAt = editingItemIndex ?: selectedItems.size
+                                                    val insertAt =
+                                                        editingItemIndex ?: selectedItems.size
                                                     val mutable = selectedItems.toMutableList()
                                                     mutable.add(insertAt, newItem)
                                                     selectedItems = mutable
@@ -705,7 +806,8 @@ data class SaleScreen2(
                                                     editingItem = null
                                                 },
                                                 onBack = {
-                                                    val insertAt = editingItemIndex ?: selectedItems.size
+                                                    val insertAt =
+                                                        editingItemIndex ?: selectedItems.size
                                                     val mutable = selectedItems.toMutableList()
                                                     mutable.add(insertAt, pending)
                                                     selectedItems = mutable
@@ -795,12 +897,19 @@ data class SaleScreen2(
                                         )
                                     }
 
-                                    Row(modifier = Modifier.fillMaxWidth(),
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically) {
-                                        TextButton(onClick = { showGroupFilterSheet = true }) { Text("Group Filter") }
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        TextButton(onClick = {
+                                            showGroupFilterSheet = true
+                                        }) { Text("Group Filter") }
                                     }
-                                    if (selectedItems.isNotEmpty()) SubtotalRow("Subtotal", itemsTotal)
+                                    if (selectedItems.isNotEmpty()) SubtotalRow(
+                                        "Subtotal",
+                                        itemsTotal
+                                    )
                                 }
                             }
 
@@ -815,12 +924,19 @@ data class SaleScreen2(
                                             index = index, sundry = sundry,
                                             runningTotal = cumulativeTotal,
                                             onAmountChange = { newAmount, rate, srno, valueToBeSent ->
-                                                selectedSundries = selectedSundries.mapIndexed { i, it ->
-                                                    if (i == index) it.copy(amount = newAmount, rate = rate,
-                                                        srno = srno, percentValue = valueToBeSent) else it
-                                                }
+                                                selectedSundries =
+                                                    selectedSundries.mapIndexed { i, it ->
+                                                        if (i == index) it.copy(
+                                                            amount = newAmount,
+                                                            rate = rate,
+                                                            srno = srno,
+                                                            percentValue = valueToBeSent
+                                                        ) else it
+                                                    }
                                             },
-                                            onRemove = { selectedSundries = selectedSundries - sundry },
+                                            onRemove = {
+                                                selectedSundries = selectedSundries - sundry
+                                            },
                                             shouldFocus = sundry.guid == focusedSundryGuid,
                                             onFocusConsumed = { focusedSundryGuid = null },
                                         )
@@ -830,14 +946,19 @@ data class SaleScreen2(
                                             0 -> cumulativeTotal - sundryValue; else -> cumulativeTotal + sundryValue
                                         }
                                     }
-                                    Row(modifier = Modifier.fillMaxWidth(),
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.Center,
-                                        verticalAlignment = Alignment.CenterVertically) {
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
                                         SmallAddButton(label = if (isBusy()) "Add More Sundry" else "Add More Ledger") {
                                             showSundrySheet = true
                                         }
                                     }
-                                    if (selectedSundries.isNotEmpty()) SubtotalRow("Subtotal", sundriesTotal)
+                                    if (selectedSundries.isNotEmpty()) SubtotalRow(
+                                        "Subtotal",
+                                        sundriesTotal
+                                    )
                                 }
                             }
 
@@ -847,62 +968,134 @@ data class SaleScreen2(
                                 elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    TallyTextField(value = narration, onValueChange = { narration = it },
-                                        modifier = Modifier.fillMaxWidth(), imeAction = ImeAction.Done,
-                                        label = "Narration", isNumber = false, isPassword = false, placeholder = "Narration")
+                                    TallyTextField(
+                                        value = narration,
+                                        onValueChange = { narration = it },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        imeAction = ImeAction.Done,
+                                        label = "Narration",
+                                        isNumber = false,
+                                        isPassword = false,
+                                        placeholder = "Narration"
+                                    )
                                 }
                             }
 
-                            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically) {
-                                Text("Transport Details", style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                TextButton(onClick = { showTransportDetails = !showTransportDetails }) {
-                                    Icon(imageVector = if (showTransportDetails) Icons.Default.RemoveCircleOutline
-                                    else Icons.Default.AddCircleOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Transport Details",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                TextButton(onClick = {
+                                    showTransportDetails = !showTransportDetails
+                                }) {
+                                    Icon(
+                                        imageVector = if (showTransportDetails) Icons.Default.RemoveCircleOutline
+                                        else Icons.Default.AddCircleOutline,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text(text = if (showTransportDetails) "Remove" else "Add",
-                                        style = MaterialTheme.typography.labelLarge)
+                                    Text(
+                                        text = if (showTransportDetails) "Remove" else "Add",
+                                        style = MaterialTheme.typography.labelLarge
+                                    )
                                 }
                             }
 
-                            AnimatedVisibility(visible = showTransportDetails,
+                            AnimatedVisibility(
+                                visible = showTransportDetails,
                                 enter = fadeIn(tween(300)) + expandVertically(tween(300)),
-                                exit = fadeOut(tween(300)) + shrinkVertically(tween(300))) {
+                                exit = fadeOut(tween(300)) + shrinkVertically(tween(300))
+                            ) {
                                 ElevatedCard(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 16.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                                        .padding(bottom = 16.dp),
                                     colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                                     elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
                                 ) {
-                                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                        Text("Transportation Information", style = MaterialTheme.typography.titleSmall,
-                                            color = MaterialTheme.colorScheme.primary)
-                                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
-                                        TallyTextField(value = transportName, onValueChange = { transportName = it },
-                                            label = "Transport Name", placeholder = "Enter transport name",
-                                            isPassword = false, isNumber = false, modifier = Modifier.fillMaxWidth())
-                                        TallyTextField(value = station, onValueChange = { station = it },
-                                            label = "Station", placeholder = "Enter station name",
-                                            isPassword = false, isNumber = false, modifier = Modifier.fillMaxWidth())
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                            TallyTextField(value = gstRrNo, onValueChange = { gstRrNo = it },
-                                                label = "GST/RR No.", placeholder = "Enter number",
-                                                isPassword = false, isNumber = false, modifier = Modifier.weight(1f))
-                                            TallyTextField(value = vehicleNo, onValueChange = { vehicleNo = it },
-                                                label = "Vehicle No.", placeholder = "Enter vehicle no.",
-                                                isPassword = false, isNumber = false, modifier = Modifier.weight(1f))
+                                    Column(
+                                        modifier = Modifier.padding(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        Text(
+                                            "Transportation Information",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        HorizontalDivider(
+                                            color = MaterialTheme.colorScheme.outlineVariant,
+                                            thickness = 1.dp
+                                        )
+                                        TallyTextField(
+                                            value = transportName,
+                                            onValueChange = { transportName = it },
+                                            label = "Transport Name",
+                                            placeholder = "Enter transport name",
+                                            isPassword = false,
+                                            isNumber = false,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                        TallyTextField(
+                                            value = station,
+                                            onValueChange = { station = it },
+                                            label = "Station",
+                                            placeholder = "Enter station name",
+                                            isPassword = false,
+                                            isNumber = false,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            TallyTextField(
+                                                value = gstRrNo,
+                                                onValueChange = { gstRrNo = it },
+                                                label = "GST/RR No.",
+                                                placeholder = "Enter number",
+                                                isPassword = false,
+                                                isNumber = false,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            TallyTextField(
+                                                value = vehicleNo,
+                                                onValueChange = { vehicleNo = it },
+                                                label = "Vehicle No.",
+                                                placeholder = "Enter vehicle no.",
+                                                isPassword = false,
+                                                isNumber = false,
+                                                modifier = Modifier.weight(1f)
+                                            )
                                         }
-                                        Row(modifier = Modifier.fillMaxWidth(),
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                            verticalAlignment = Alignment.Top) {
-                                            TallyTextField(value = pincode, onValueChange = { pincode = it },
-                                                label = "Pincode", placeholder = "Enter pincode",
-                                                isPassword = false, isNumber = false, imeAction = ImeAction.Done,
-                                                modifier = Modifier.weight(1f))
+                                            verticalAlignment = Alignment.Top
+                                        ) {
+                                            TallyTextField(
+                                                value = pincode,
+                                                onValueChange = { pincode = it },
+                                                label = "Pincode",
+                                                placeholder = "Enter pincode",
+                                                isPassword = false,
+                                                isNumber = false,
+                                                imeAction = ImeAction.Done,
+                                                modifier = Modifier.weight(1f)
+                                            )
                                             Box(modifier = Modifier.weight(1f)) {
-                                                TallyDatePickerRow(label = "GR/RR Date", selectedDate = gstRrDate,
-                                                    onDateSelected = { gstRrDate = it }, defaultDate = CurrentDate())
+                                                TallyDatePickerRow(
+                                                    label = "GR/RR Date",
+                                                    selectedDate = gstRrDate,
+                                                    onDateSelected = { gstRrDate = it },
+                                                    defaultDate = CurrentDate()
+                                                )
                                             }
                                         }
                                     }
@@ -914,48 +1107,78 @@ data class SaleScreen2(
                                 onShowChange = { SshowShippingDetails = !SshowShippingDetails },
                                 billingShipping = SbillingShipping,
                                 onBillingShippingChange = { SbillingShipping = it },
-                                partyName = SpartyName, onPartyNameChange = { SpartyName = it },
-                                address1 = Saddress1, onAddressChange1 = { if (it.length < 40) Saddress1 = it },
-                                address2 = Saddress2, onAddressChange2 = { if (it.length < 40) Saddress2 = it },
-                                address3 = Saddress3, onAddressChange3 = { if (it.length < 40) Saddress3 = it },
-                                address4 = Saddress4, onAddressChange4 = { if (it.length < 40) Saddress4 = it },
-                                state = SshipState, onStateChange = { SshipState = it },
-                                mobileNo = SmobileNo, onMobileChange = { SmobileNo = it },
-                                email = Semail, onEmailChange = { Semail = it },
-                                itPan = SitPan, onPanChange = { SitPan = it },
-                                gstIn = SgstIn, onGstChange = { SgstIn = it },
-                                adharNo = SadharNo, onAdharChange = { SadharNo = it },
+                                partyName = SpartyName,
+                                onPartyNameChange = { SpartyName = it },
+                                address1 = Saddress1,
+                                onAddressChange1 = { if (it.length < 40) Saddress1 = it },
+                                address2 = Saddress2,
+                                onAddressChange2 = { if (it.length < 40) Saddress2 = it },
+                                address3 = Saddress3,
+                                onAddressChange3 = { if (it.length < 40) Saddress3 = it },
+                                address4 = Saddress4,
+                                onAddressChange4 = { if (it.length < 40) Saddress4 = it },
+                                state = SshipState,
+                                onStateChange = { SshipState = it },
+                                mobileNo = SmobileNo,
+                                onMobileChange = { SmobileNo = it },
+                                email = Semail,
+                                onEmailChange = { Semail = it },
+                                itPan = SitPan,
+                                onPanChange = { SitPan = it },
+                                gstIn = SgstIn,
+                                onGstChange = { SgstIn = it },
+                                adharNo = SadharNo,
+                                onAdharChange = { SadharNo = it },
                                 onbillingShippingSelected = { SselectedBilling = it },
                                 selectedBilling = SselectedBilling
                             )
 
                             if (vchType !in listOf(12, 13, 15)) {
-                                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                                Row(
+                                    modifier = Modifier.fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically) {
-                                    Text("Bill By Bill Reference", style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "Bill By Bill Reference",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                     TextButton(
                                         onClick = { showBillModalSheet = true },
                                         enabled = selectedLedgerGUID != "" && itemsList.isNotEmpty()
                                     ) {
-                                        Icon(imageVector = if (showBillModalSheet) Icons.Default.RemoveCircleOutline
-                                        else Icons.Default.AddCircleOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Icon(
+                                            imageVector = if (showBillModalSheet) Icons.Default.RemoveCircleOutline
+                                            else Icons.Default.AddCircleOutline,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text(text = if (showBillModalSheet) "Remove" else "Add",
-                                            style = MaterialTheme.typography.labelLarge)
+                                        Text(
+                                            text = if (showBillModalSheet) "Remove" else "Add",
+                                            style = MaterialTheme.typography.labelLarge
+                                        )
                                     }
                                 }
                             }
 
                             TransactionBillBottomSheet(
-                                cm1 = selectedLedger, showBottomSheet = showBillModalSheet,
-                                ledgerGuid = selectedLedgerGUID, initialSelectedBills = selectedReferences,
+                                cm1 = selectedLedger,
+                                showBottomSheet = showBillModalSheet,
+                                ledgerGuid = selectedLedgerGUID,
+                                initialSelectedBills = selectedReferences,
                                 onBillsSelected = { selectedReferences = it },
                                 onDismiss = { showBillModalSheet = false },
-                                bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                                title = "Bill by Bill", totalAmount = grandTotal,
-                                isEdit = isEdit, uniqueId = uniqueId, vchType = vchType
+                                bottomSheetState = rememberModalBottomSheetState(
+                                    skipPartiallyExpanded = true
+                                ),
+                                title = "Bill by Bill",
+                                totalAmount = grandTotal,
+                                isEdit = isEdit,
+                                uniqueId = uniqueId,
+                                vchType = vchType
                             )
 
                             OptionalFieldCard(
@@ -971,7 +1194,8 @@ data class SaleScreen2(
                 // ── Ledger sheet (unchanged) ──────────────────────────────────────
                 SelectionSheet(
                     show = showLedgerSheet, title = "Select Party Ledger",
-                    options = ledgerList.filter { it.L1 == 1.0 || it.L2 == 1.0 || it.L3 == 1.0 }.map { it.Name ?: "" },
+                    options = ledgerList.filter { it.L1 == 1.0 || it.L2 == 1.0 || it.L3 == 1.0 }
+                        .map { it.Name ?: "" },
                     onSelect = { selected ->
                         selectedLedger = selected
                         selectedLedgerGUID = ledgerList.find { l -> l.Name == selected }?.GUID ?: ""
@@ -994,8 +1218,10 @@ data class SaleScreen2(
                             val filterGroup = if (perms?.FilterIGRP == "Y") 1L else 0L
                             val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
                             val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L
-                            val excludeGuids = if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
-                            val godownCodes = if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
+                            val excludeGuids =
+                                if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
+                            val godownCodes =
+                                if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
 
                             val serialList = db.productSerialNoQueries.serialNoEnterReport(
                                 filterGroup = filterGroup, groupCodes = filterItemGroupCodes(),
@@ -1010,15 +1236,20 @@ data class SaleScreen2(
 
                             if (serialList.isEmpty()) {
                                 // No serial numbers — add directly as CompactItemCard
-                                val price = if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
+                                val price =
+                                    if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
                                 val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
                                 val gstPct = try {
                                     db.taxCategoryMastQueries.selectTaxRate(
                                         taxCategoryCode.toInt().toString(), selectedDate
                                     ).executeAsOneOrNull() ?: 0.0
-                                } catch (e: Exception) { 0.0 }
+                                } catch (e: Exception) {
+                                    0.0
+                                }
 
-                                val taxableAmt: Double; val gstAmt: Double; val netAmt: Double
+                                val taxableAmt: Double;
+                                val gstAmt: Double;
+                                val netAmt: Double
                                 if (taxType == TaxType.EXTRA) {
                                     taxableAmt = price * qty
                                     gstAmt = taxableAmt * gstPct / 100.0
@@ -1058,7 +1289,9 @@ data class SaleScreen2(
                 SerialNumberBottomSheet(
                     productGuid = pendingSelectedProductGUID.toString(),
                     show = showSerialNumberBottomSheet,
-                    initialSelectedSerialNumbers = selectedInitialSerialNo.map { it.SerialNo ?: "" },
+                    initialSelectedSerialNumbers = selectedInitialSerialNo.map {
+                        it.SerialNo ?: ""
+                    },
                     onDismiss = {
                         if (editingItemIndex != null && editingItem != null) {
                             val list = selectedItems.toMutableList()
@@ -1114,15 +1347,25 @@ data class SaleScreen2(
                     SelectionSheetThree(
                         show = showSundrySheet, title = "Select Sundry",
                         options = busyLedgerList.map {
-                            SundryItem(name = it.Name.toString(), amount = 0.0, guid = it.GUID.toString(),
+                            SundryItem(
+                                name = it.Name.toString(), amount = 0.0, guid = it.GUID.toString(),
                                 i1 = it.I1?.toInt() ?: 0, i2 = it.I2?.toInt() ?: 0,
-                                d2 = it.D2?.toInt() ?: 0, rate = 0.0, srno = 0, percentValue = 0.0)
+                                d2 = it.D2?.toInt() ?: 0, rate = 0.0, srno = 0, percentValue = 0.0
+                            )
                         },
                         onSelect = { item ->
                             if (!selectedSundries.any { it.name == item.name }) {
-                                val newItem = SundryItem(item.name, 0.0, guid = item.guid,
-                                    i1 = item.i1, i2 = item.i2, d2 = item.d2,
-                                    rate = item.rate, srno = item.srno, percentValue = item.percentValue)
+                                val newItem = SundryItem(
+                                    item.name,
+                                    0.0,
+                                    guid = item.guid,
+                                    i1 = item.i1,
+                                    i2 = item.i2,
+                                    d2 = item.d2,
+                                    rate = item.rate,
+                                    srno = item.srno,
+                                    percentValue = item.percentValue
+                                )
                                 selectedSundries = selectedSundries + newItem
                                 focusedSundryGuid = newItem.guid
                             }
@@ -1135,8 +1378,10 @@ data class SaleScreen2(
                         options = ledgerList.map { Pair(it.Name ?: "", it.GUID ?: "") },
                         onSelect = { sundryName, GUID ->
                             if (!selectedSundries.any { it.name == sundryName }) {
-                                val newItem = SundryItem(sundryName, 0.0, guid = GUID,
-                                    i1 = 0, i2 = 0, d2 = 0, rate = 0.0, srno = 0, percentValue = 0.0)
+                                val newItem = SundryItem(
+                                    sundryName, 0.0, guid = GUID,
+                                    i1 = 0, i2 = 0, d2 = 0, rate = 0.0, srno = 0, percentValue = 0.0
+                                )
                                 selectedSundries = selectedSundries + newItem
                                 focusedSundryGuid = GUID
                             }
@@ -1156,16 +1401,29 @@ data class SaleScreen2(
             },
             showBottomBar = true,
             bottomBarContent = {
-                Surface(modifier = Modifier.fillMaxWidth(), shadowElevation = 12.dp,
-                    tonalElevation = 2.dp, color = MaterialTheme.colorScheme.surface) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(), shadowElevation = 12.dp,
+                    tonalElevation = 2.dp, color = MaterialTheme.colorScheme.surface
+                ) {
                     Column(modifier = Modifier.padding(16.dp).navigationBarsPadding()) {
-                        Column(horizontalAlignment = Alignment.End, modifier = Modifier.fillMaxWidth()) {
-                            Text("TOTAL", style = MaterialTheme.typography.labelSmall,
+                        Column(
+                            horizontalAlignment = Alignment.End,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                "TOTAL",
+                                style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.8.sp)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                letterSpacing = 0.8.sp
+                            )
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text(text = formatTwo(grandTotal), style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            Text(
+                                text = formatTwo(grandTotal),
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
 
                         fun createO() {
@@ -1173,22 +1431,40 @@ data class SaleScreen2(
                                 val prod = itemsList.find { it.Name == item.name }
                                 BillingItem(
                                     product_id = prod?.ID?.toString() ?: "",
-                                    product_name = item.name, quantity = item.qty,
-                                    list_price = item.listPrice, discount_percent = item.discountPercentage,
-                                    discount_amt = null, tax_rate1 = item.gstPercentage, tax_rate2 = 0.0,
-                                    taxable = item.taxable, net = item.net, gstAmt = item.gstAmt,
-                                    guid = item.guid, CD = item.CD,
-                                    itemdesc1 = item.itemdesc1, itemdesc2 = item.itemdesc2,
-                                    itemdesc3 = item.itemdesc3, itemdesc4 = item.itemdesc4,
-                                    itemdesc5 = item.itemdesc5, itemdesc6 = item.itemdesc6,
-                                    itemdesc7 = item.itemdesc7, itemdesc8 = item.itemdesc8,
-                                    itemdesc9 = item.itemdesc9, itemdesc10 = item.itemdesc10,
-                                    itemdesc11 = item.itemdesc11, itemdesc12 = item.itemdesc12,
-                                    itemdesc13 = item.itemdesc13, itemdesc14 = item.itemdesc14,
-                                    itemdesc15 = item.itemdesc15, itemdesc16 = item.itemdesc16,
-                                    itemdesc17 = item.itemdesc17, itemdesc18 = item.itemdesc18,
-                                    itemdesc19 = item.itemdesc19, itemdesc20 = item.itemdesc20,
-                                    additionalinfo = item.additionalinfo, item_serial = item.item_serial.map { it.SerialNo?:"" }
+                                    product_name = item.name,
+                                    quantity = item.qty,
+                                    list_price = item.listPrice,
+                                    discount_percent = item.discountPercentage,
+                                    discount_amt = null,
+                                    tax_rate1 = item.gstPercentage,
+                                    tax_rate2 = 0.0,
+                                    taxable = item.taxable,
+                                    net = item.net,
+                                    gstAmt = item.gstAmt,
+                                    guid = item.guid,
+                                    CD = item.CD,
+                                    itemdesc1 = item.itemdesc1,
+                                    itemdesc2 = item.itemdesc2,
+                                    itemdesc3 = item.itemdesc3,
+                                    itemdesc4 = item.itemdesc4,
+                                    itemdesc5 = item.itemdesc5,
+                                    itemdesc6 = item.itemdesc6,
+                                    itemdesc7 = item.itemdesc7,
+                                    itemdesc8 = item.itemdesc8,
+                                    itemdesc9 = item.itemdesc9,
+                                    itemdesc10 = item.itemdesc10,
+                                    itemdesc11 = item.itemdesc11,
+                                    itemdesc12 = item.itemdesc12,
+                                    itemdesc13 = item.itemdesc13,
+                                    itemdesc14 = item.itemdesc14,
+                                    itemdesc15 = item.itemdesc15,
+                                    itemdesc16 = item.itemdesc16,
+                                    itemdesc17 = item.itemdesc17,
+                                    itemdesc18 = item.itemdesc18,
+                                    itemdesc19 = item.itemdesc19,
+                                    itemdesc20 = item.itemdesc20,
+                                    additionalinfo = item.additionalinfo,
+                                    item_serial = item.item_serial.map { it.SerialNo ?: "" }
                                 )
                             }
                             viewmodel.createEditInventoryResponse(
@@ -1202,25 +1478,44 @@ data class SaleScreen2(
                                     TranDate = selectedDate.yymmdd(), Narration = narration,
                                     TransactionID = tranId, total_amt = grandTotal,
                                     transportDetails = TransportDetails(
-                                        transportName = transportName, station = station,
-                                        gstNum = gstRrNo, vehicleNum = vehicleNo,
-                                        pincode = pincode, grDate = gstRrDate,
-                                        SpartyName = SpartyName, Saddress1 = Saddress1,
-                                        Saddress2 = Saddress2, Saddress3 = Saddress3,
-                                        Saddress4 = Saddress4, SshipState = SshipState,
-                                        SmobileNo = SmobileNo, Saadhar = SadharNo,
-                                        Semail = Semail, SitPan = SitPan, SgstIn = SgstIn,
+                                        transportName = transportName,
+                                        station = station,
+                                        gstNum = gstRrNo,
+                                        vehicleNum = vehicleNo,
+                                        pincode = pincode,
+                                        grDate = gstRrDate,
+                                        SpartyName = SpartyName,
+                                        Saddress1 = Saddress1,
+                                        Saddress2 = Saddress2,
+                                        Saddress3 = Saddress3,
+                                        Saddress4 = Saddress4,
+                                        SshipState = SshipState,
+                                        SmobileNo = SmobileNo,
+                                        Saadhar = SadharNo,
+                                        Semail = Semail,
+                                        SitPan = SitPan,
+                                        SgstIn = SgstIn,
                                         SbillingShipping = SbillingShipping,
-                                        OptionalField1 = optionalFields[0], OptionalField2 = optionalFields[1],
-                                        OptionalField3 = optionalFields[2], OptionalField4 = optionalFields[3],
-                                        OptionalField5 = optionalFields[4], OptionalField6 = optionalFields[5],
-                                        OptionalField7 = optionalFields[6], OptionalField8 = optionalFields[7],
-                                        OptionalField9 = optionalFields[8], OptionalField10 = optionalFields[9],
-                                        OptionalField11 = optionalFields[10], OptionalField12 = optionalFields[11],
-                                        OptionalField13 = optionalFields[12], OptionalField14 = optionalFields[13],
-                                        OptionalField15 = optionalFields[14], OptionalField16 = optionalFields[15],
-                                        OptionalField17 = optionalFields[16], OptionalField18 = optionalFields[17],
-                                        OptionalField19 = optionalFields[18], OptionalField20 = optionalFields[19],
+                                        OptionalField1 = optionalFields[0],
+                                        OptionalField2 = optionalFields[1],
+                                        OptionalField3 = optionalFields[2],
+                                        OptionalField4 = optionalFields[3],
+                                        OptionalField5 = optionalFields[4],
+                                        OptionalField6 = optionalFields[5],
+                                        OptionalField7 = optionalFields[6],
+                                        OptionalField8 = optionalFields[7],
+                                        OptionalField9 = optionalFields[8],
+                                        OptionalField10 = optionalFields[9],
+                                        OptionalField11 = optionalFields[10],
+                                        OptionalField12 = optionalFields[11],
+                                        OptionalField13 = optionalFields[12],
+                                        OptionalField14 = optionalFields[13],
+                                        OptionalField15 = optionalFields[14],
+                                        OptionalField16 = optionalFields[15],
+                                        OptionalField17 = optionalFields[16],
+                                        OptionalField18 = optionalFields[17],
+                                        OptionalField19 = optionalFields[18],
+                                        OptionalField20 = optionalFields[19],
                                     ),
                                     bills_collection = selectedReferences,
                                 ),
@@ -1288,7 +1583,9 @@ data class SaleScreen2(
 
                         if (viewmodel.dataState.value.error != null) TallyResultDialog(
                             message = viewmodel.dataState.value.error ?: "Error",
-                            onDone = { viewmodel.clearError() }, isSuccess = false, confirmText = "Ok"
+                            onDone = { viewmodel.clearError() },
+                            isSuccess = false,
+                            confirmText = "Ok"
                         )
 
                         if (showWarningMessage) TallyAlertBox(
@@ -1372,8 +1669,12 @@ fun MultiSelectItemSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(title, style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                     if (pendingMap.value.isNotEmpty()) {
                         Text(
                             text = "${pendingMap.value.size} item${if (pendingMap.value.size > 1) "s" else ""} selected",
@@ -1383,8 +1684,10 @@ fun MultiSelectItemSheet(
                     }
                 }
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "Close",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(
+                        Icons.Default.Close, contentDescription = "Close",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
@@ -1409,12 +1712,16 @@ fun MultiSelectItemSheet(
                 }
                 if (filteredList.isEmpty()) {
                     item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
-                            contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.Search, contentDescription = null,
+                                Icon(
+                                    Icons.Default.Search, contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                                    modifier = Modifier.size(32.dp))
+                                    modifier = Modifier.size(32.dp)
+                                )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = if (query.isBlank()) "No items available" else "No results found",
@@ -1429,18 +1736,23 @@ fun MultiSelectItemSheet(
                     val guid = product.GUID.orEmpty()
                     val isSelected = guid in pendingMap.value
                     val pendingItem = pendingMap.value[guid]
-                    val listPrice = if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
+                    val listPrice =
+                        if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
 
                     MultiSelectItemRow(
                         product = product,
                         listPrice = listPrice,
+                        stock = product.N1?.formatToAmtDec()?:"-",
                         isSelected = isSelected,
                         pendingQty = pendingItem?.qty ?: "1",
                         onToggle = {
                             pendingMap.value = if (isSelected) {
                                 pendingMap.value - guid
                             } else {
-                                pendingMap.value + (guid to PendingMultiItem(product = product, qty = "1"))
+                                pendingMap.value + (guid to PendingMultiItem(
+                                    product = product,
+                                    qty = "1"
+                                ))
                             }
                         },
                         onQtyChange = { newQty ->
@@ -1500,13 +1812,17 @@ fun MultiSelectItemRow(
     pendingQty: String,
     onToggle: () -> Unit,
     onQtyChange: (String) -> Unit,
+    stock: String,
 ) {
     val focusRequester = remember { FocusRequester() }
 
     // Auto-focus qty field when row becomes selected
     LaunchedEffect(isSelected) {
         if (isSelected) {
-            try { focusRequester.requestFocus() } catch (_: Exception) {}
+            try {
+                focusRequester.requestFocus()
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -1521,7 +1837,10 @@ fun MultiSelectItemRow(
         else
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         shape = RoundedCornerShape(10.dp),
-        border = if (isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+        border = if (isSelected) BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+        )
         else null
     ) {
         Row(
@@ -1552,11 +1871,16 @@ fun MultiSelectItemRow(
                 )
                 if (listPrice > 0.0) {
                     Text(
-                        text = "₹ ${formatTwo(listPrice)}",
+                        text = formatTwo(listPrice),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                Text(
+                    text = "Stock: $stock",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             // Qty stepper — only visible when selected
@@ -1577,17 +1901,21 @@ fun MultiSelectItemRow(
                         },
                         modifier = Modifier.size(32.dp)
                     ) {
-                        Icon(Icons.Default.Remove, contentDescription = "Decrease",
+                        Icon(
+                            Icons.Default.Remove, contentDescription = "Decrease",
                             modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
 
                     // Qty text field
                     Box(
                         modifier = Modifier
                             .width(52.dp)
-                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
-                                RoundedCornerShape(6.dp))
+                            .border(
+                                1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                                RoundedCornerShape(6.dp)
+                            )
                             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(6.dp))
                             .padding(horizontal = 6.dp, vertical = 6.dp),
                         contentAlignment = Alignment.Center
@@ -1607,9 +1935,11 @@ fun MultiSelectItemRow(
                         },
                         modifier = Modifier.size(32.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Increase",
+                        Icon(
+                            Icons.Default.Add, contentDescription = "Increase",
                             modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary)
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
@@ -1647,9 +1977,12 @@ fun BasicQtyField(
         decorationBox = { inner ->
             Box(contentAlignment = Alignment.Center) {
                 if (value.isEmpty()) {
-                    Text("1", style = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                        textAlign = TextAlign.Center))
+                    Text(
+                        "1", style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                            textAlign = TextAlign.Center
+                        )
+                    )
                 }
                 inner()
             }

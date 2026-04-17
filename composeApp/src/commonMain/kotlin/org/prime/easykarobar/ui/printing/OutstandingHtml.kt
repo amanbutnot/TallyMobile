@@ -177,8 +177,8 @@ fun partyWiseOutstanding(
                     <th>Ref. Amt.</th>
                     <th>Adjusted Amt.</th>
                     <th>Pending Amt.</th>
-                    <th>Due Date</th>
-                    <th>Due Days</th>
+                    <th>$onBasis</th>
+                    <th>${if(onBasis=="Bill Date") "Bill Days" else "Due Days"}</th>
                 </tr>
             """.trimIndent()
         )

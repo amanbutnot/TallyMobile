@@ -66,7 +66,8 @@ fun TallyTextField(
         keyboardOptions = KeyboardOptions.Default.copy(
             keyboardType = if (isNumber) KeyboardType.Number else KeyboardType.Text,
             // Number keyboard on iOS has no Done key, so we don't set ImeAction for it
-            imeAction = if (isNumber) ImeAction.Default else imeAction,
+//            imeAction = if (isNumber) ImeAction.Default else imeAction,
+            imeAction =  imeAction,
             capitalization = if (isNumber || isPassword) KeyboardCapitalization.None else KeyboardCapitalization.Sentences
         ),
         keyboardActions = KeyboardActions(

@@ -133,7 +133,7 @@ data class OutstandingReportScreen(
                             CM1 = cm1,
                             filterCm3 = filterBroker,
                             cm3 = configBroker,
-                            showToggle = if(showOtherToggle)0L else 1L
+                            showToggle = if (showOtherToggle) 0L else 1L
                         ).executeAsList().map {
                             DataList(
                                 VCH_GUID = it.VCH_GUID,
@@ -159,7 +159,7 @@ data class OutstandingReportScreen(
                             GroupCode = filterGroupCodes(),
                             excludeFilter = filterAccounts,
                             GUID = excludeGuids,
-                            showToggle = if(showOtherToggle)0L else 1L
+                            showToggle = if (showOtherToggle) 0L else 1L
                         ).executeAsList().map {
                             DataList(
                                 VCH_GUID = it.VCH_GUID,
@@ -232,7 +232,7 @@ data class OutstandingReportScreen(
                             CM1 = cm1,
                             filterCm3 = filterBroker,
                             cm3 = configBroker,
-                            showToggle = if(showOtherToggle)0L else 1L
+                            showToggle = if (showOtherToggle) 0L else 1L
                         ).executeAsList().map {
                             DataList(
                                 VCH_GUID = it.VCH_GUID,
@@ -257,7 +257,7 @@ data class OutstandingReportScreen(
                             GroupCode = filterGroupCodes(),
                             excludeFilter = filterAccounts,
                             GUID = excludeGuids,
-                            showToggle = if(showOtherToggle)0L else 1L
+                            showToggle = if (showOtherToggle) 0L else 1L
                         ).executeAsList().map {
                             DataList(
                                 VCH_GUID = it.VCH_GUID,
@@ -359,7 +359,7 @@ data class OutstandingReportScreen(
                 return partyWiseOutstanding(
                     title = if (name == "Bill Receivable") "Bills Receivable" else "Bills Payable",
                     accountName = "All Accounts",
-                    onBasis = "Due Date",
+                    onBasis = if (calculateDays == "Due Date") "Due Date" else "Bill Date",
                     startDate = startDate,
                     endDate = endDate,
                     billStatusDate = endDate,

@@ -77,7 +77,8 @@ SELECT
     g.Name          AS Item_Godown,
     ''              AS UnitName,
     g.Name          AS GodownName,
-    p.Name          AS ItemName
+    p.Name          AS ItemName,
+    p.GroupName     AS GroupName
 FROM ProductStock AS pps
 JOIN GodownMaster AS g
     ON g.GUID = pps.MasterCode2
