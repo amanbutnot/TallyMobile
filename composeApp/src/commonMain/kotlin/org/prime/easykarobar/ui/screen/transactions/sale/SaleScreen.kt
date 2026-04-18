@@ -192,7 +192,7 @@ data class InvoiceItem(
     val itemdesc17: String? = null,
     val itemdesc18: String? = null,
     val itemdesc19: String? = null,
-    val itemdesc20: String? = null, 
+    val itemdesc20: String? = null,
     val item_serial: List<@Contextual SerialNoEnterReport> = emptyList(),
     // Additional info
     val additionalinfo: String? = null,
@@ -240,7 +240,11 @@ data class SaleScreen(
         var taxType by remember { mutableStateOf(TaxType.INCLUSIVE) }
 
         var selectedItems by remember { mutableStateOf<List<InvoiceItem>>(emptyList()) }
-        var selectedInitialSerialNo by remember { mutableStateOf<List<SerialNoEnterReport>>(emptyList()) }
+        var selectedInitialSerialNo by remember {
+            mutableStateOf<List<SerialNoEnterReport>>(
+                emptyList()
+            )
+        }
         var selectedSundries by remember { mutableStateOf<List<SundryItem>>(emptyList()) }
 
         var showLedgerSheet by remember { mutableStateOf(false) }
@@ -751,32 +755,35 @@ data class SaleScreen(
             )
         )
 
+      val menuList =   buildList {
+            add(MenuItemData(Icons.Default.Download, "Download", {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = CompanyName(),
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it })
+                }
+            }))
+            add( MenuItemData(Icons.Default.Share, "Share", {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = CompanyName(),
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it })
+                }
+            }))
+            if(enableUpdateButton){
+                MenuItemData(Icons.Default.Delete, "Delete", { showDeleteDialog = true })
+            }
+        }
         TallyReportScaffold(
             showBurgerMenu = isEdit,
             onBackClick = { showExitPopup = true },
             showBarcodeIcon = true,
             onBarcodeClick = { showQtyPopup = true },
-            menuItems = listOf(
-                MenuItemData(Icons.Default.Download, "Download", {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = CompanyName(),
-                            htmlContent = htmlContent,
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it })
-                    }
-                }),
-                MenuItemData(Icons.Default.Share, "Share", {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = CompanyName(),
-                            htmlContent = htmlContent,
-                            action = PdfAction.Share,
-                            onLoadingChange = { shareLoading = it })
-                    }
-                }),
-                MenuItemData(Icons.Default.Delete, "Delete", { showDeleteDialog = true })
-            ),
+            menuItems = menuList,
             title = if (isEdit) "Edit $name" else name,
             content = { paddingValues ->
 
@@ -875,7 +882,9 @@ data class SaleScreen(
                                                 initialDiscount = pending.CD.ifBlank { pending.discountPercentage.toString() },
                                                 taxType = taxType,
                                                 existingItem = pending,
-                                                initialSerialNumbers = pending.item_serial.map { it.SerialNo ?: "" },
+                                                initialSerialNumbers = pending.item_serial.map {
+                                                    it.SerialNo ?: ""
+                                                },
                                                 onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers ->
                                                     val newItem = InvoiceItem(
                                                         name = product.Name ?: pending.name,
@@ -945,14 +954,14 @@ data class SaleScreen(
                                                 },
                                                 gstPercentage = gst,
                                                 onCancel = {
-                                                if (editingItemIndex != null && editingItem != null) {
-                                                    val list = selectedItems.toMutableList()
-                                                    list.add(editingItemIndex!!, editingItem!!)
-                                                    selectedItems = list
+                                                    if (editingItemIndex != null && editingItem != null) {
+                                                        val list = selectedItems.toMutableList()
+                                                        list.add(editingItemIndex!!, editingItem!!)
+                                                        selectedItems = list
+                                                    }
+                                                    editingItemIndex = null
+                                                    editingItem = null
                                                 }
-                                                editingItemIndex = null
-                                                editingItem = null
-                                            }
                                             )
                                         } else {
                                             ExpandedItemEditor1(
@@ -962,7 +971,9 @@ data class SaleScreen(
                                                 initialQuantity = pending.qty,
                                                 taxType = taxType,
                                                 existingItem = pending,
-                                                initialSerialNumbers = pending.item_serial.map { it.SerialNo ?: "" },
+                                                initialSerialNumbers = pending.item_serial.map {
+                                                    it.SerialNo ?: ""
+                                                },
                                                 onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers ->
                                                     val newItem = InvoiceItem(
                                                         name = pending.name,
@@ -1031,14 +1042,14 @@ data class SaleScreen(
                                                 },
                                                 gstPercentage = gst,
                                                 onCancel = {
-                                                if (editingItemIndex != null && editingItem != null) {
-                                                    val list = selectedItems.toMutableList()
-                                                    list.add(editingItemIndex!!, editingItem!!)
-                                                    selectedItems = list
+                                                    if (editingItemIndex != null && editingItem != null) {
+                                                        val list = selectedItems.toMutableList()
+                                                        list.add(editingItemIndex!!, editingItem!!)
+                                                        selectedItems = list
+                                                    }
+                                                    editingItemIndex = null
+                                                    editingItem = null
                                                 }
-                                                editingItemIndex = null
-                                                editingItem = null
-                                            }
                                             )
                                         }
                                     }
@@ -1524,7 +1535,9 @@ data class SaleScreen(
                 SerialNumberBottomSheet(
                     productGuid = pendingSelectedProductGUID.toString(),
                     show = showSerialNumberBottomSheet,
-                    initialSelectedSerialNumbers = selectedInitialSerialNo.map { it.SerialNo ?: "" },
+                    initialSelectedSerialNumbers = selectedInitialSerialNo.map {
+                        it.SerialNo ?: ""
+                    },
                     onDismiss = {
                         if (editingItemIndex != null && editingItem != null) {
                             val list = selectedItems.toMutableList()
@@ -1719,7 +1732,7 @@ data class SaleScreen(
                                     itemdesc19 = item.itemdesc19,
                                     itemdesc20 = item.itemdesc20,
                                     additionalinfo = item.additionalinfo,
-                                    item_serial = item.item_serial.map { it.SerialNo?:"" }
+                                    item_serial = item.item_serial.map { it.SerialNo ?: "" }
 
                                 )
                             }
@@ -1790,7 +1803,7 @@ data class SaleScreen(
                                             )
                                         }
                                     }
-                                    db.transaction{
+                                    db.transaction {
 
                                     }
                                     db.transaction {
@@ -1870,7 +1883,8 @@ data class SaleScreen(
                                                 db.productSerialNoQueries.insertProductSerialNo(
                                                     serialNo = serialObj.SerialNo,
                                                     masterCode1 = item.guid.toDoubleOrNull(),
-                                                    masterCode2 = serialObj.UnitName ?: "", // Using UnitName as MasterCode2 placeholder if applicable
+                                                    masterCode2 = serialObj.UnitName
+                                                        ?: "", // Using UnitName as MasterCode2 placeholder if applicable
                                                     value1 = -1.0,
                                                     value2 = serialObj.Value2 ?: 0.0,
                                                     value3 = serialObj.Value3 ?: 0.0,

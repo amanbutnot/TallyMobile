@@ -557,7 +557,7 @@ fun ExpandableGrid() {
                                                 nav?.push(
                                                     SingleEntryReceipt(
                                                         item.first,
-                                                        vchType = 14
+                                                        vchType = 14, showPdc = true
                                                     )
                                                 )
                                             })
@@ -569,7 +569,7 @@ fun ExpandableGrid() {
                                                 nav?.push(
                                                     SingleEntryReceipt(
                                                         item.first,
-                                                        vchType = 19
+                                                        vchType = 19, showPdc = true
                                                     )
                                                 )
                                             })

@@ -45,7 +45,7 @@ fun TransactionBillBottomSheet(
     showBottomSheet: Boolean,
     ledgerGuid: String,
     isEdit: Boolean,
-    vchType:Int,
+    vchType: Int,
     uniqueId: String? = null,
     initialSelectedBills: List<BillByBillModel> = emptyList(),
     onBillsSelected: (List<BillByBillModel>) -> Unit,
@@ -109,7 +109,7 @@ fun TransactionBillBottomSheet(
         if (filterBroker == 1L) perms?.ConfigBroker.parseToStringList() else emptyList()
 
     LaunchedEffect(ledgerGuid) {
-        if(vchType in listOf(9,10,19)){
+        if (vchType in listOf(9, 10, 19)) {
             if (ledgerGuid.isNotEmpty()) {
                 billList = db.voucherBillAllocationsQueries.billByPayList(
                     CM1 = cm1,
@@ -131,7 +131,7 @@ fun TransactionBillBottomSheet(
                     )
                 }
             }
-        }else{
+        } else {
 
             if (ledgerGuid.isNotEmpty()) {
                 billList = db.voucherBillAllocationsQueries.billByBillList(
@@ -205,36 +205,6 @@ fun TransactionBillBottomSheet(
 
                         val remaining = totalAmount - currentAllocatedTotal
                         val canSelect = isSelected || remaining > 0
-                        println("""
-================ BILL DEBUG ================
-
-Item.billId = ${item.billId}
-
-SelectedBills.size = ${selectedBills.size}
-SelectedBills IDs = ${selectedBills.joinToString { it.billId.toString() }}
-
-AllocatedAmount = ${allocations[item.billId]}
-Full Allocations Map = $allocations
-
-d1 = ${item.d1}
-d1(abs) = ${item.d1?.absoluteValue}
-
-pending = $pending
-
-totalAmount = $totalAmount
-currentAllocatedTotal = $currentAllocatedTotal
-remaining = $remaining
-
----- MATCH CHECK ----
-${selectedBills.joinToString("\n") { bill ->
-                            "Selected.billId=${bill.billId} == Item.billId=${item.billId} -> ${bill.billId == item.billId}"
-                        }}
-
-Final isSelected = $isSelected
-canSelect = $canSelect
-
-============================================
-""".trimIndent())
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -304,34 +274,43 @@ canSelect = $canSelect
                         onClick = {
                             val result = mutableListOf<BillByBillModel>()
 
-                            // Existing selected allocations
                             selectedBills.forEachIndexed { index, bill ->
+
                                 val key = bill.billId!!
-                                result.add(
-                                    bill.copy(
-                                        d1 = allocations[key],
-                                        SrNo = (index + 1).toString()
-                                    )
-                                )
-                            }
+                                val allocated = allocations[key] ?: 0.0
+                                val fullAmount = bill.d1?.absoluteValue ?: 0.0
 
-                            // 🔥 Add NEW REF if pending exists
-                            if (pendingAmount > 0) {
-                                result.add(
-                                    BillByBillModel(
-                                        SrNo = (result.size + 1).toString(),
-                                        date = selectedBills.firstOrNull()?.date,
-                                        vchType = selectedBills.firstOrNull()?.vchType,
-                                        billNumber = "",
-                                        billId = "",
-                                        cm1 = cm1,
-                                        cm2 = "New Ref",
-                                        dueDate = selectedBills.firstOrNull()?.date,
-                                        d1 = pendingAmount
+                                // ✅ 1. Add allocated part (Agst Ref)
+                                if (allocated > 0) {
+                                    result.add(
+                                        bill.copy(
+                                            d1 = allocated,
+                                            SrNo = (result.size + 1).toString(),
+                                            cm2 = "Agst Ref"
+                                        )
                                     )
-                                )
-                            }
+                                }
 
+                                // 🔥 2. Add remaining as NEW REF (THIS IS YOUR LOGIC)
+                                val remaining = fullAmount - allocated
+
+                                if (remaining > 0) {
+                                    result.add(
+                                        BillByBillModel(
+                                            SrNo = (result.size + 1).toString(),
+                                            date = bill.date,
+                                            vchType = bill.vchType,
+                                            billNumber = "", // or generate new ref name
+                                            billId = null, // new entity
+                                            cm1 = cm1,
+                                            cm2 = "New Ref",
+                                            dueDate = bill.dueDate,
+                                            d1 = remaining
+                                        )
+                                    )
+                                }
+                            }
+                            println("BIlls selected $result")
                             onBillsSelected(result)
                             onDismiss()
                         },
