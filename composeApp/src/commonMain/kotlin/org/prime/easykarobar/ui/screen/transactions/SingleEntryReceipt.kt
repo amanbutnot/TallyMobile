@@ -2,12 +2,17 @@ package org.prime.easykarobar.ui.screen.transactions
 
 import CurrentDate
 import TallyDatePickerRow
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,6 +25,8 @@ import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,6 +40,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,7 +73,8 @@ import kotlin.uuid.Uuid
 data class SingleEntryReceipt(
     val name: String,
     val vchType: Int,
-    val existingTransaction: TranListResponse? = null
+    val existingTransaction: TranListResponse? = null,
+    val showPdc: Boolean = false
 ) : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalUuidApi::class)
@@ -78,6 +87,11 @@ data class SingleEntryReceipt(
             mutableStateOf(listOf<BillByBillModel>())
         }
         var showBillModalSheet by remember { mutableStateOf(false) }
+        var pdcType by remember {
+            mutableStateOf(
+                existingTransaction?.pdcType ?: PDCTYPE.REGULAR.name
+            )
+        }
 
         var selectedAccount by rememberSaveable { mutableStateOf(existingTransaction?.C1 ?: "") }
         var selectedAccountGUID by rememberSaveable {
@@ -98,11 +112,17 @@ data class SingleEntryReceipt(
                 existingTransaction?.TranDate ?: CurrentDate()
             )
         }
+        var selectedPdcDate by rememberSaveable {
+            mutableStateOf(
+                existingTransaction?.pdcDate ?: CurrentDate()
+            )
+        }
 
 
         var showPopup by remember { mutableStateOf(false) }
         var showBottomSheet by rememberSaveable { mutableStateOf(false) }
         var showSettlementBottomSheet by rememberSaveable { mutableStateOf(false) }
+        var showPdcDate by rememberSaveable { mutableStateOf(false) }
         val list = getLedgerMasters(db)
 
 
@@ -112,7 +132,8 @@ data class SingleEntryReceipt(
         val isEdit = existingTransaction != null
         var uniqueId by remember { mutableStateOf("") }
 
-
+        if (pdcType == PDCTYPE.PDC.name) showPdcDate = true
+        if (pdcType == PDCTYPE.REGULAR.name) showPdcDate = false
         if (existingTransaction != null) {
             //TODO: make selectedbills from the list
             uniqueId = state.data?.uniqueID.toString()
@@ -151,6 +172,24 @@ data class SingleEntryReceipt(
 
                         )
 
+                    if (showPdc) {
+                        PdcTypeSelector(
+                            pdcType = PDCTYPE.valueOf(pdcType),
+                            onChange = {
+                                pdcType = it.name
+                            }
+                        )
+                    }
+                    AnimatedVisibility(visible = showPdcDate) {
+                        TallyDatePickerRow(
+                            label = "PDC Date",
+                            selectedDate = selectedPdcDate,
+                            onDateSelected = { selectedPdcDate = it },
+                            defaultDate = CurrentDate(),
+
+                            )
+                    }
+
                     SelectLedgerRow(
                         selectedAccount = selectedAccount,
                         onShowBottomSheet = { showBottomSheet = true },
@@ -167,14 +206,10 @@ data class SingleEntryReceipt(
                     )
 
                     TallyAmountField(
-                        value = amount,
-                        onValueChange = { amount = it },
-                        label = "Amount"
+                        value = amount, onValueChange = { amount = it }, label = "Amount"
                     )
                     TallyNarrationField(
-                        value = narration,
-                        onValueChange = { narration = it },
-                        label = "Narration"
+                        value = narration, onValueChange = { narration = it }, label = "Narration"
                     )
 
                     if (vchType !in listOf(12, 13, 15)) {
@@ -221,9 +256,11 @@ data class SingleEntryReceipt(
                         bottomSheetState = rememberModalBottomSheetState(
                             skipPartiallyExpanded = true
                         ),
-                        title = "Bill by Bill", totalAmount = amount.toDoubleOrNull() ?: 0.0,
+                        title = "Bill by Bill",
+                        totalAmount = amount.toDoubleOrNull() ?: 0.0,
                         isEdit = isEdit,
-                        uniqueId = uniqueId, vchType = vchType
+                        uniqueId = uniqueId,
+                        vchType = vchType
                     )
                     TallyButton(
                         onClick = {
@@ -247,9 +284,11 @@ data class SingleEntryReceipt(
                                         D2 = amount.toDouble(),
                                         D3 = 0.0,
                                         D4 = 0.0,
-                                        Narration = narration, bills_collection = selectedReferences
-                                    ),
-                                    onSuccess = {
+                                        Narration = narration,
+                                        bills_collection = selectedReferences,
+                                        pdcDate = if (showPdcDate) selectedPdcDate else null,
+                                        pdcType = if (showPdcDate) PDCTYPE.PDC.name else PDCTYPE.REGULAR.name,
+                                    ), onSuccess = {
                                         db.transaction {
                                             selectedReferences.forEach {
                                                 db.voucherBillAllocationsQueries.deleteOldBillAllocation(
@@ -348,9 +387,11 @@ data class SingleEntryReceipt(
                                         D2 = amount.toDouble(),
                                         D3 = 0.0,
                                         D4 = 0.0,
-                                        Narration = narration, bills_collection = selectedReferences
-                                    ),
-                                    onSuccess = {
+                                        pdcDate = if (showPdcDate) selectedPdcDate else null,
+                                        pdcType = if (showPdcDate) PDCTYPE.PDC.name else PDCTYPE.REGULAR.name,
+                                        Narration = narration,
+                                        bills_collection = selectedReferences
+                                    ), onSuccess = {
                                         db.transaction {
                                             selectedReferences.forEach {
                                                 db.voucherBillAllocationsQueries.deleteOldBillAllocation(
@@ -431,22 +472,19 @@ data class SingleEntryReceipt(
                                             }
                                         }
                                         showPopup = true
-                                    }
-                                )
+                                    })
                             }
 
 
                         },
-                        enabled =
-                            listOf(
-                                selectedAccount,
-                                selectedAccountGUID,
-                                selectedSettlement,
-                                selectedSettlementGUID,
-                                amount,
-                                selectedDate
-                            ).all(String::isNotEmpty) &&
-                                    (!isEdit || hasSalesmanPermission("ED$vchType")),
+                        enabled = listOf(
+                            selectedAccount,
+                            selectedAccountGUID,
+                            selectedSettlement,
+                            selectedSettlementGUID,
+                            amount,
+                            selectedDate
+                        ).all(String::isNotEmpty) && (!isEdit || hasSalesmanPermission("ED$vchType")),
                         label = if (isEdit) "Modify" else "Create",
                         backgroundColor = MaterialTheme.colorScheme.primary
                     )
@@ -529,28 +567,20 @@ fun InfoRow(label: String, value: String) {
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium.copy(
+                text = label, style = MaterialTheme.typography.bodyMedium.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                modifier = Modifier.weight(1f, fill = false)
+                ), modifier = Modifier.weight(1f, fill = false)
             )
 
             Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
-                ),
-                textAlign = TextAlign.End,
-                modifier = Modifier.padding(start = 16.dp)
+                text = value, style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary
+                ), textAlign = TextAlign.End, modifier = Modifier.padding(start = 16.dp)
             )
         }
     }
@@ -576,51 +606,43 @@ fun SelectLedgerRow(
                 groupFilter = filterAGRP,
                 GroupCode = filterGroupCodes(),
                 excludeFilter = filterAccounts,
-                GUID = excludeGuids, ledgername = selectedAccount
+                GUID = excludeGuids,
+                ledgername = selectedAccount
             ).executeAsOneOrNull()?.ClsnBal ?: 0.0
         }
     }
 
-    val borderColor =
-        when {
-            !enabled -> MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-            selectedAccount.isNotEmpty() ->
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+    val borderColor = when {
+        !enabled -> MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+        selectedAccount.isNotEmpty() -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
 
-            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-        }
+        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+    }
 
-    val bgColor =
-        if (enabled) MaterialTheme.colorScheme.surfaceContainerLow
-        else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+    val bgColor = if (enabled) MaterialTheme.colorScheme.surfaceContainerLow
+    else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
 
-    val textColor =
-        when {
-            !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-            selectedAccount.isEmpty() ->
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+    val textColor = when {
+        !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+        selectedAccount.isEmpty() -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
 
-            else -> MaterialTheme.colorScheme.onSurface
-        }
+        else -> MaterialTheme.colorScheme.onSurface
+    }
 
-    val iconColor =
-        when {
-            !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-            selectedAccount.isEmpty() ->
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+    val iconColor = when {
+        !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+        selectedAccount.isEmpty() -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
 
-            else -> MaterialTheme.colorScheme.primary
-        }
+        else -> MaterialTheme.colorScheme.primary
+    }
 
     Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(
             text = "Select $title",
             style = MaterialTheme.typography.labelMedium,
-            color = if (enabled)
-                MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
             else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
             fontWeight = FontWeight.Medium
         )
@@ -633,8 +655,7 @@ fun SelectLedgerRow(
             enabled = enabled,
             onClick = {
                 if (enabled) onShowBottomSheet()
-            }
-        ) {
+            }) {
             Row(
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -664,8 +685,7 @@ fun SelectLedgerRow(
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = null,
-                    tint = if (enabled)
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    tint = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
                     modifier = Modifier.size(18.dp)
                 )
@@ -675,10 +695,85 @@ fun SelectLedgerRow(
         Text(
             text = "Balance: ${balance.absoluteValue.formatToAmtDec()} ${if (balance < 0.0) "Dr" else "Cr"}",
             style = MaterialTheme.typography.labelMedium,
-            color = if (enabled)
-                MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
             else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-            fontWeight = FontWeight.Medium, modifier = Modifier.padding(vertical = 4.dp)
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(vertical = 4.dp)
         )
+    }
+}
+
+enum class PDCTYPE {
+    REGULAR, PDC
+}
+
+@Composable
+fun PdcTypeSelector(
+    pdcType: PDCTYPE,
+    onChange: (PDCTYPE) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        PDCTYPE.entries.forEach { type ->
+            val isSelected = pdcType == type
+
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable { onChange(type) },
+                shape = RoundedCornerShape(10.dp),
+                border = BorderStroke(
+                    width = if (isSelected) 1.5.dp else 1.dp,
+                    color = if (isSelected)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.outlineVariant
+                ),
+                color = if (isSelected)
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                else
+                    MaterialTheme.colorScheme.surface
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Box(
+                        modifier = Modifier.size(18.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        RadioButton(
+                            selected = isSelected,
+                            onClick = null,
+                            modifier = Modifier.size(18.dp),
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = MaterialTheme.colorScheme.primary,
+                                unselectedColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = when (type) {
+                            PDCTYPE.REGULAR -> "Regular"
+                            PDCTYPE.PDC -> "PDC"
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
+                        color = if (isSelected)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
     }
 }

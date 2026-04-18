@@ -21,14 +21,16 @@ data class TranRequest(
     val D3: Double,
     val D4: Double,
     val Narration: String,
-    val bills_collection: List<BillByBillModel>
+    val bills_collection: List<BillByBillModel>,
+    val pdcDate: String? = null,
+    val pdcType: String
 )
 
 @Serializable
 data class TranResponse(
-    val VoucherNumber: String?=null,
-    val TransactionID: Int?=null,
-    val uniqueID: String?=null,
+    val VoucherNumber: String? = null,
+    val TransactionID: Int? = null,
+    val uniqueID: String? = null,
 )
 
 @Serializable
@@ -50,6 +52,8 @@ data class TranListResponse(
     val CM2: String,
     val CM3: String,
     val CM4: String,
+    val pdcDate: String?=null,
+    val pdcType: String?=null,
     val C1: String,
     val C2: String,
     val C3: String,
@@ -59,5 +63,5 @@ data class TranListResponse(
     val D3: Double,
     val D4: Double,
     val Narration: String,
-    val CreatedAt: String,    val bills_collection: List<BillByBillModel>
+    val CreatedAt: String, val bills_collection: List<BillByBillModel>
 )

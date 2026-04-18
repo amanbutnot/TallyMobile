@@ -18,29 +18,32 @@ data class SingleEntryFilterScreen(val name: String, val vchType: Int) : Screen 
             showAccountSelect = false,
             buttonText = "Show List",
             showAddButton = true,
-            onAddButtonClick = {  when (vchType) {
-                14, 19, 16, 15,18,17 -> {
-                    nav.push(
-                        SingleEntryReceipt(
-                            vchType = vchType,
-                            name = name
+            onAddButtonClick = {
+                when (vchType) {
+                    14, 19, 16, 15, 18, 17 -> {
+                        nav.push(
+                            SingleEntryReceipt(
+                                vchType = vchType,
+                                name = name,
+                                showPdc = vchType == 19 || vchType == 14
+                            )
                         )
-                    )
-                }
+                    }
 
-                12, 3, 9, 13, 10, 2, 7 -> {
-                    nav.push(
-                        SaleScreen(
-                            vchType = vchType,
-                            name = name
+                    12, 3, 9, 13, 10, 2, 7 -> {
+                        nav.push(
+                            SaleScreen(
+                                vchType = vchType,
+                                name = name
+                            )
                         )
-                    )
-                }
+                    }
 
-            }},
+                }
+            },
             onGenerateClick = {
                 when (vchType) {
-                    14, 19, 16, 15,17,18 -> {
+                    14, 19, 16, 15, 17, 18 -> {
                         nav.push(
                             SingleEntryListScreen(
                                 startDate = it.startDate,

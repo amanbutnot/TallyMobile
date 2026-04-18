@@ -157,7 +157,7 @@ data class SingleEntryListScreen(
                                                 SingleEntryReceipt(
                                                     name = name,
                                                     vchType = vchType,
-                                                    existingTransaction = item
+                                                    existingTransaction = item , showPdc = vchType == 19 || vchType == 14
                                                 )
                                             )
                                         }
