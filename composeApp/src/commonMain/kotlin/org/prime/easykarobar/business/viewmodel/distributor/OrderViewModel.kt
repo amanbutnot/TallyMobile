@@ -204,6 +204,19 @@ class CartViewModel : ScreenModel {
     fun getProductQuantity(product: GetProductsForDis): Int {
         return _cartItems.find { it.product.product_id == product.product_id }?.quantity?.value ?: 0
     }
+
+    fun updateQuantity(product: GetProductsForDis, quantity: Int) {
+        val existingItem = _cartItems.find { it.product.product_id == product.product_id }
+        if (existingItem != null) {
+            if (quantity > 0) {
+                existingItem.quantity.value = quantity
+            } else {
+                _cartItems.remove(existingItem)
+            }
+        } else if (quantity > 0) {
+            _cartItems.add(CartItem(product, mutableStateOf(quantity)))
+        }
+    }
 }
 
 data class CartItem(

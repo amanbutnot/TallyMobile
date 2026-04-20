@@ -58,6 +58,10 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.KeyboardType
 import org.prime.easykarobar.business.viewmodel.distributor.CartItem
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
@@ -281,22 +285,35 @@ private fun CartProductItem(
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.primaryContainer,
-                                MaterialShapes.Slanted.toShape()
-                            )
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = product.quantity.value.toString(),
-                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+                    BasicTextField(
+                        value = product.quantity.value.toString(),
+                        onValueChange = {
+                            val newQty = it.toIntOrNull() ?: 0
+                            viewModel.updateQuantity(product.product, newQty)
+                        },
+                        modifier = Modifier.width(40.dp),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
+                        ),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        decorationBox = { innerTextField ->
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.primaryContainer,
+                                        MaterialShapes.Slanted.toShape()
+                                    )
+                                    .padding(horizontal = 4.dp, vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                innerTextField()
+                            }
+                        }
+                    )
 
                     Spacer(modifier = Modifier.width(12.dp))
 

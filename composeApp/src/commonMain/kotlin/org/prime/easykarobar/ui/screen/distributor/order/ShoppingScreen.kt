@@ -30,6 +30,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -68,7 +70,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -432,10 +436,20 @@ object ShoppingScreen : Screen {
                                 modifier = Modifier.size(20.dp)
                             )
                         }
-                        Text(
-                            text = quantity.toString(),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                        BasicTextField(
+                            value = quantity.toString(),
+                            onValueChange = {
+                                val newQty = it.toIntOrNull() ?: 0
+                                cartViewModel.updateQuantity(product, newQty)
+                            },
+                            modifier = Modifier.width(40.dp),
+                            textStyle = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurface
+                            ),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true
                         )
                         IconButton(onClick = { cartViewModel.increaseQuantity(product) }) {
                             Icon(
@@ -949,9 +963,20 @@ fun ItemCard(
                             modifier = Modifier.size(16.dp)
                         )
                     }
-                    Text(
-                        text = quantity.toString(),
-                        fontSize = 12.sp
+                    BasicTextField(
+                        value = quantity.toString(),
+                        onValueChange = {
+                            val newQty = it.toIntOrNull() ?: 0
+                            viewModel.updateQuantity(item, newQty)
+                        },
+                        modifier = Modifier.width(30.dp),
+                        textStyle = TextStyle(
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true
                     )
                     IconButton(onClick = { viewModel.increaseQuantity(item) }) {
                         Icon(

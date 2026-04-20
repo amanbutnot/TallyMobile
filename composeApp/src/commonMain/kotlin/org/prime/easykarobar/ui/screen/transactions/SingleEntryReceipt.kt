@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AddCircleOutline
@@ -155,7 +157,10 @@ data class SingleEntryReceipt(
             title = if (isEdit) "Edit $name Entry" else "Create $name Entry",
             content = { paddingValues ->
                 Column(
-                    modifier = Modifier.padding(paddingValues).padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(paddingValues).padding(horizontal = 16.dp)
+                        .verticalScroll(
+                            rememberScrollState()
+                        ),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
 
@@ -245,7 +250,7 @@ data class SingleEntryReceipt(
                     }
 
 
-
+                    println("Selected references $selectedReferences")
                     TransactionBillBottomSheet(
                         cm1 = selectedAccount,
                         showBottomSheet = showBillModalSheet,
@@ -344,7 +349,11 @@ data class SingleEntryReceipt(
                                                             makeNegativeConditional(ref.d1 ?: 0.0)
                                                         }
 
-                                                        14, 17 -> {
+                                                        14 -> {
+                                                            ref.d1?.absoluteValue
+                                                        }
+
+                                                        17 -> {
                                                             makeNegativeConditional(ref.d1 ?: 0.0)
                                                         }
 
@@ -371,6 +380,28 @@ data class SingleEntryReceipt(
                                         showPopup = true
                                     })
                             } else {
+                                println(
+                                    "THE SENT IS: " + TranRequest(
+                                        VchType = vchType,
+                                        TranDate = selectedDate,
+                                        CM1 = selectedAccountGUID,
+                                        CM2 = selectedSettlementGUID,
+                                        CM3 = "",
+                                        CM4 = "",
+                                        C1 = selectedAccount,
+                                        C2 = selectedSettlement,
+                                        C3 = "",
+                                        C4 = "",
+                                        D1 = amount.toDouble(),
+                                        D2 = amount.toDouble(),
+                                        D3 = 0.0,
+                                        D4 = 0.0,
+                                        pdcDate = if (showPdcDate) selectedPdcDate else null,
+                                        pdcType = if (showPdcDate) PDCTYPE.PDC.name else PDCTYPE.REGULAR.name,
+                                        Narration = narration,
+                                        bills_collection = selectedReferences
+                                    )
+                                )
                                 viewmodel.addSingleTran(
                                     TranRequest(
                                         VchType = vchType,
@@ -448,7 +479,8 @@ data class SingleEntryReceipt(
                                                         }
 
                                                         14 -> {
-                                                            makeNegativeConditional(ref.d1 ?: 0.0)
+                                                            //makeNegativeConditional(ref.d1 ?: 0.0)
+                                                            ref.d1?.absoluteValue
                                                         }
 
                                                         19 -> {

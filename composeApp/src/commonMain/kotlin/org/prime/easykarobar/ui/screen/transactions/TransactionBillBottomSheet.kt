@@ -71,7 +71,7 @@ fun TransactionBillBottomSheet(
         var remaining = total
 
         return selected.associate { item ->
-            val key = item.billId!!
+            val key = item.billId.toString()
             val maxAllowed = item.d1?.absoluteValue ?: 0.0
 
             val allocated = when {
@@ -273,44 +273,59 @@ fun TransactionBillBottomSheet(
                     Button(
                         onClick = {
                             val result = mutableListOf<BillByBillModel>()
+                            var remainingTotal = totalAmount
 
-                            selectedBills.forEachIndexed { index, bill ->
+                            // ⚠️ IMPORTANT: enforce order (oldest first or SrNo)
+                            val orderedBills = selectedBills.sortedBy { it.SrNo?.toIntOrNull() ?: 0 }
 
-                                val key = bill.billId!!
-                                val allocated = allocations[key] ?: 0.0
-                                val fullAmount = bill.d1?.absoluteValue ?: 0.0
+                            orderedBills.forEach { bill ->
+                                if (remainingTotal <= 0) return@forEach
 
-                                // ✅ 1. Add allocated part (Agst Ref)
-                                if (allocated > 0) {
-                                    result.add(
-                                        bill.copy(
-                                            d1 = allocated,
-                                            SrNo = (result.size + 1).toString(),
-                                            cm2 = "Agst Ref"
+                                val billAmount = bill.d1?.absoluteValue ?: 0.0
+
+                                when {
+                                    // ✅ Case 1: total <= bill → allocate remaining total
+                                    remainingTotal <= billAmount -> {
+                                        result.add(
+                                            bill.copy(
+                                                d1 = remainingTotal,
+                                                SrNo = (result.size + 1).toString(),
+                                                cm2 = "Agst Ref"
+                                            )
                                         )
-                                    )
-                                }
+                                        remainingTotal = 0.0
+                                    }
 
-                                // 🔥 2. Add remaining as NEW REF (THIS IS YOUR LOGIC)
-                                val remaining = fullAmount - allocated
-
-                                if (remaining > 0) {
-                                    result.add(
-                                        BillByBillModel(
-                                            SrNo = (result.size + 1).toString(),
-                                            date = bill.date,
-                                            vchType = bill.vchType,
-                                            billNumber = "", // or generate new ref name
-                                            billId = null, // new entity
-                                            cm1 = cm1,
-                                            cm2 = "New Ref",
-                                            dueDate = bill.dueDate,
-                                            d1 = remaining
+                                    // ✅ Case 2: total > bill → close bill fully
+                                    remainingTotal > billAmount -> {
+                                        result.add(
+                                            bill.copy(
+                                                d1 = billAmount,
+                                                SrNo = (result.size + 1).toString(),
+                                                cm2 = "Agst Ref"
+                                            )
                                         )
-                                    )
+                                        remainingTotal -= billAmount
+                                    }
                                 }
                             }
-                            println("BIlls selected $result")
+                            if (remainingTotal > 0) {
+                                result.add(
+                                    BillByBillModel(
+                                        SrNo = (result.size + 1).toString(),
+                                        date = null,
+                                        vchType = null,
+                                        billNumber = "",
+                                        billId = null,
+                                        cm1 = cm1,
+                                        cm2 = "New Ref",
+                                        dueDate = null,
+                                        d1 = remainingTotal
+                                    )
+                                )
+                            }
+
+                            println("Bills selected $result")
                             onBillsSelected(result)
                             onDismiss()
                         },
