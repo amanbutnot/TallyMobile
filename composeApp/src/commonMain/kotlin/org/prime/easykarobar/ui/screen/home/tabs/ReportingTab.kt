@@ -118,22 +118,30 @@ object ReportingTab : Tab {
             ReportGroup(
                 "Inventory",
                 listOf(
+                    Report.StockReport,
                     Report.GoDownWiseClosingStock,
-                    Report.Order,
-                    Report.SalesmanWise,
-                    Report.SalesmanGroupWise,
-                    Report.ProductStock
                 )
             ),
+            ReportGroup("Parameter", listOf(Report.ParameterReport, Report.ProductStock)),
             ReportGroup(
-                "Stock",
-                listOf(Report.StockReport)
+                "Batch",
+                listOf(Report.BatchNumberWise, Report.BatchNumberReport, Report.MCBatchNumberReport)
             ),
-            ReportGroup("Parameter", listOf(Report.ParameterReport)),
-            ReportGroup("Batch", listOf(Report.BatchNumberWise, Report.BatchNumberReport, Report.MCBatchNumberReport)),
             ReportGroup(
                 "Serial Number",
-                listOf(Report.SerialNumberWise, Report.SerialNumberReport, Report.MCSerialNumberReport)
+                listOf(
+                    Report.SerialNumberWise,
+                    Report.SerialNumberReport,
+                    Report.MCSerialNumberReport
+                )
+            ),
+            ReportGroup("Order", listOf(Report.Order)),
+            ReportGroup(
+                "Salesman",
+                listOf(
+                    Report.SalesmanWise,
+                    Report.SalesmanGroupWise,
+                )
             )
         )
 
@@ -143,7 +151,7 @@ object ReportingTab : Tab {
                 .background(colors.background)
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth()  .padding(20.dp),
+                modifier = Modifier.fillMaxWidth().padding(20.dp),
             ) {
                 Text(
                     text = tabNav.current.options.title,
@@ -226,9 +234,18 @@ object ReportingTab : Tab {
                                     Report.Outstanding -> nav?.push(OutstandingSelectScreen)
                                     Report.PendingOrders -> nav?.push(Dashboard)
                                     Report.Quotations -> nav?.push(Dashboard)
-                                    Report.ProductStock -> nav?.push(
-                                        ProductReportScreen(null, isMain = true)
-                                    )
+                                    Report.ProductStock -> {
+                                        salesmanPermission(
+                                            "D42",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(
+                                                    ProductReportScreen(null, isMain = true)
+                                                )
+                                            }
+                                        )
+                                    }
+
 
                                     Report.Registers -> nav?.push(RegisterSelectScreen)
                                     Report.StockReport -> {
@@ -241,7 +258,7 @@ object ReportingTab : Tab {
 
                                     Report.SerialNumberReport -> {
                                         salesmanPermission(
-                                            "D11",
+                                            "D48",
                                             accessDeniedBlock = { showDeniedDialog = true },
                                             successBlock = {
                                                 nav?.push(
@@ -253,7 +270,7 @@ object ReportingTab : Tab {
 
                                     Report.BatchNumberReport -> {
                                         salesmanPermission(
-                                            "D11",
+                                            "D45",
                                             accessDeniedBlock = { showDeniedDialog = true },
                                             successBlock = {
                                                 nav?.push(
@@ -265,7 +282,7 @@ object ReportingTab : Tab {
 
                                     Report.SerialNumberWise -> {
                                         salesmanPermission(
-                                            "D11",
+                                            "D47",
                                             accessDeniedBlock = { showDeniedDialog = true },
                                             successBlock = {
                                                 nav?.push(
@@ -281,7 +298,7 @@ object ReportingTab : Tab {
 
                                     Report.BatchNumberWise -> {
                                         salesmanPermission(
-                                            "D11",
+                                            "D44",
                                             accessDeniedBlock = { showDeniedDialog = true },
                                             successBlock = {
                                                 nav?.push(
@@ -297,7 +314,7 @@ object ReportingTab : Tab {
 
                                     Report.ParameterReport -> {
                                         salesmanPermission(
-                                            "D11",
+                                            "D43",
                                             accessDeniedBlock = { showDeniedDialog = true },
                                             successBlock = { nav?.push(ParameterReportScreen) }
                                         )
@@ -321,7 +338,7 @@ object ReportingTab : Tab {
 
                                     Report.MCSerialNumberReport -> {
                                         salesmanPermission(
-                                            "D12",
+                                            "D49",
                                             accessDeniedBlock = { showDeniedDialog = true },
                                             successBlock = { nav?.push(MCSerialNoReport) }
                                         )
@@ -329,14 +346,41 @@ object ReportingTab : Tab {
 
                                     Report.MCBatchNumberReport -> {
                                         salesmanPermission(
-                                            "D12",
+                                            "D46",
                                             accessDeniedBlock = { showDeniedDialog = true },
                                             successBlock = { nav?.push(MCBatchNoReport) }
                                         )
                                     }
 
-                                    Report.SalesmanWise -> nav?.push(SalesmanTargetFilterScreen(false))
-                                    Report.SalesmanGroupWise -> nav?.push(SalesmanTargetFilterScreen(true))
+                                    Report.SalesmanWise -> {
+                                        salesmanPermission(
+                                            "D40",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(
+                                                    SalesmanTargetFilterScreen(
+                                                        false
+                                                    )
+                                                )
+                                            }
+                                        )
+                                    }
+
+
+                                    Report.SalesmanGroupWise -> {
+                                        salesmanPermission(
+                                            "D41",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(
+                                                    SalesmanTargetFilterScreen(
+                                                        true
+                                                    )
+                                                )
+                                            }
+                                        )
+                                    }
+
                                     Report.Order -> nav?.push(OrderReportSelectScreen)
                                 }
                             }
@@ -430,7 +474,7 @@ sealed class Report(val title: String, val icon: ImageVector) {
     object TrialBalance : Report("Trial Balance", Icons.Default.Balance)
     object Registers : Report("Registers", Icons.AutoMirrored.Default.ListAlt)
     object StockReport : Report("Stock Report", Icons.Default.Inventory2)
-    object SerialNumberReport : Report("Item Summary", Icons.Default.Numbers)
+    object SerialNumberReport : Report("Serial Summary", Icons.Default.Numbers)
     object BatchNumberReport : Report("Batch Summary", Icons.Default.Layers)
     object SerialNumberWise : Report("Item Summary", Icons.Default.Tag)
     object BatchNumberWise : Report("Item Summary", Icons.Default.ViewModule)

@@ -228,13 +228,13 @@ data class SerialNumberReport(
                                     Row(
                                         modifier = Modifier.fillMaxWidth().padding(8.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
+                                        verticalAlignment = Alignment.Top
                                     ) {
                                         Text(
                                             text = name.toString(),
                                             style = MaterialTheme.typography.headlineLarge,
                                             fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(bottom = 8.dp)
+                                            modifier = Modifier.padding(bottom = 8.dp).weight(1.5f)
                                         )
                                         Text(
                                             text = if (showQtyToSalesman()) {
@@ -242,7 +242,8 @@ data class SerialNumberReport(
                                             } else "",
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(bottom = 8.dp)
+                                            textAlign = TextAlign.End,
+                                            modifier = Modifier.padding(bottom = 8.dp).weight(1f)
                                         )
 
                                     }

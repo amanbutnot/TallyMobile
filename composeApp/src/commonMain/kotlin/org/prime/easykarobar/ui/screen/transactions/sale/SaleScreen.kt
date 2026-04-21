@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -755,7 +756,7 @@ data class SaleScreen(
             )
         )
 
-      val menuList =   buildList {
+        val menuList = buildList {
             add(MenuItemData(Icons.Default.Download, "Download", {
                 scope.launch {
                     handlePdfAction(
@@ -765,7 +766,7 @@ data class SaleScreen(
                         onLoadingChange = { shareLoading = it })
                 }
             }))
-            add( MenuItemData(Icons.Default.Share, "Share", {
+            add(MenuItemData(Icons.Default.Share, "Share", {
                 scope.launch {
                     handlePdfAction(
                         fileName = CompanyName(),
@@ -774,8 +775,11 @@ data class SaleScreen(
                         onLoadingChange = { shareLoading = it })
                 }
             }))
-            if(enableUpdateButton){
-                MenuItemData(Icons.Default.Delete, "Delete", { showDeleteDialog = true })
+            if (enableUpdateButton || SharedPrefs.User.get()?.role == "admin") {
+                add(
+                    MenuItemData(Icons.Default.Delete, "Delete") { showDeleteDialog = true }
+
+                )
             }
         }
         TallyReportScaffold(
@@ -840,11 +844,23 @@ data class SaleScreen(
                                 count = selectedItems.size,
                                 headerAction = {
 
-                                    TextButton(onClick = {
-                                        showItemSheet = true
-                                    }, enabled = editingItem == null) {
+                                    TextButton(
+                                        onClick = { showItemSheet = true },
+                                        enabled = editingItem == null,
+                                        contentPadding = PaddingValues(
+                                            horizontal = 8.dp,
+                                            vertical = 4.dp
+                                        )
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Add,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(Modifier.width(4.dp))
                                         Text(
-                                            "Add More Item",
+                                            "Add more items",
+                                            style = MaterialTheme.typography.labelLarge,
                                             textDecoration = TextDecoration.Underline
                                         )
                                     }

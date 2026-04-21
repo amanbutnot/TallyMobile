@@ -25,6 +25,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -124,6 +125,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
+import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
@@ -558,29 +560,38 @@ data class SaleScreen2(
                 station = station, pincode = pincode, gstRrDate = gstRrDate
             )
         )
+        val menuList = buildList {
+            add(MenuItemData(Icons.Default.Download, "Download", {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = CompanyName(),
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it })
+                }
+            }))
+            add(MenuItemData(Icons.Default.Share, "Share", {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = CompanyName(),
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it })
+                }
+            }))
+            if (enableUpdateButton || SharedPrefs.User.get()?.role == "admin") {
+                add(
+                    MenuItemData(Icons.Default.Delete, "Delete") { showDeleteDialog = true }
 
+                )
+            }
+        }
         TallyReportScaffold(
             showBurgerMenu = isEdit,
             onBackClick = { showExitPopup = true },
             showBarcodeIcon = true,
             onBarcodeClick = { showQtyPopup = true },
-            menuItems = listOf(
-                MenuItemData(Icons.Default.Download, "Download", {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = name, htmlContent = htmlContent,
-                            action = PdfAction.Download, onLoadingChange = { shareLoading = it })
-                    }
-                }),
-                MenuItemData(Icons.Default.Share, "Share", {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = name, htmlContent = htmlContent,
-                            action = PdfAction.Share, onLoadingChange = { shareLoading = it })
-                    }
-                }),
-                MenuItemData(Icons.Default.Delete, "Delete", { showDeleteDialog = true })
-            ),
+            menuItems = menuList,
             title = if (isEdit) "Edit $name" else name,
             content = { paddingValues ->
                 if (isEdit && oneState.isLoading) {
@@ -629,10 +640,21 @@ data class SaleScreen2(
                                 headerAction = {
                                     TextButton(
                                         onClick = { showItemSheet = true },
-                                        enabled = editingItem == null
+                                        enabled = editingItem == null,
+                                        contentPadding = PaddingValues(
+                                            horizontal = 8.dp,
+                                            vertical = 4.dp
+                                        )
                                     ) {
+                                        Icon(
+                                            Icons.Default.Add,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(Modifier.width(4.dp))
                                         Text(
-                                            "Add More Item",
+                                            "Add more items",
+                                            style = MaterialTheme.typography.labelLarge,
                                             textDecoration = TextDecoration.Underline
                                         )
                                     }
@@ -1742,7 +1764,7 @@ fun MultiSelectItemSheet(
                     MultiSelectItemRow(
                         product = product,
                         listPrice = listPrice,
-                        stock = product.N1?.formatToAmtDec()?:"-",
+                        stock = product.N1?.formatToAmtDec() ?: "-",
                         isSelected = isSelected,
                         pendingQty = pendingItem?.qty ?: "1",
                         onToggle = {

@@ -54,6 +54,8 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.data.enums.MasterEnums
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
+import org.prime.easykarobar.data.model.salesmanPermission
+import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.agrpGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
@@ -79,10 +81,21 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
         val showBottomSheet = remember { mutableStateOf(false) }
         val selectedItem = remember { mutableStateOf<Any?>(null) }
         val nav = LocalNavigator.currentOrThrow
+        var showDeniedDialog by remember { mutableStateOf(false) }
+
+        if (showDeniedDialog) {
+            PermissionDeniedDialog { showDeniedDialog = false }
+        }
 
 
-println("FilterGroups in account groups are: ${filterItemGroups()}")
-println("groupCodes in account groups are: ${itemGroupCodes().map { it.toInt().toString() }}")
+        println("FilterGroups in account groups are: ${filterItemGroups()}")
+        println(
+            "groupCodes in account groups are: ${
+                itemGroupCodes().map {
+                    it.toInt().toString()
+                }
+            }"
+        )
         LaunchedEffect(Unit) {
             allItems.value = when (masterEnum) {
 
@@ -107,13 +120,23 @@ println("groupCodes in account groups are: ${itemGroupCodes().map { it.toInt().t
         TallyScaffold(
             title = masterEnum.name.replace("_", " ").lowercase().split(" ")
                 .joinToString(" ") { it.replaceFirstChar { char -> char.uppercaseChar() } },
-           showAddBar = masterEnum == MasterEnums.ACCOUNTS || masterEnum == MasterEnums.ITEMS,
-        //    showAddBar = false,
+            showAddBar = masterEnum == MasterEnums.ACCOUNTS || masterEnum == MasterEnums.ITEMS,
+            //    showAddBar = false,
             onAddClick = {
                 if (masterEnum == MasterEnums.ACCOUNTS) {
-                    nav.push(AccountAddScreen)
+                    salesmanPermission(
+                        "D50",
+                        accessDeniedBlock = { showDeniedDialog = true },
+                        successBlock = {   nav.push(AccountAddScreen) }
+                    )
+
                 } else {
-                    nav.push(ItemAddScreen)
+                    salesmanPermission(
+                        "D51",
+                        accessDeniedBlock = { showDeniedDialog = true },
+                        successBlock = {   nav.push(ItemAddScreen) }
+                    )
+
                 }
             },
             content = { innerPadding ->

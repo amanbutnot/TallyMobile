@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.ui.screen.home.tabs.ReportButton
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingFilterScreen
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
@@ -69,9 +70,14 @@ object OrderReportSelectScreen : Screen {
                         modifier = Modifier.weight(1f),
                         title = "Pending Sale Order",
                         onClick = {
-                            nav.push(
-                                OutstandingFilterScreen("Pending Sale Order")
+                            salesmanPermission(
+                                "D38",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {  nav.push(
+                                    OutstandingFilterScreen("Pending Sale Order")
+                                ) }
                             )
+
 //                            salesmanPermission(
 //                                "D8",
 //                                accessDeniedBlock = { showDeniedDialog = true },
@@ -87,8 +93,12 @@ object OrderReportSelectScreen : Screen {
                         icon = Icons.Default.AssignmentLate,
                         title = "Pending Purchase Order",
                         onClick = {
-                            nav.push(
-                                OutstandingFilterScreen("Pending Purchase Order")
+                            salesmanPermission(
+                                "D39",
+                                accessDeniedBlock = { showDeniedDialog = true },
+                                successBlock = {  nav.push(
+                                    OutstandingFilterScreen("Pending Purchase Order")
+                                ) }
                             )
 //                            salesmanPermission(
 //                                "D9",
