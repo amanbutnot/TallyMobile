@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -58,10 +59,6 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.input.KeyboardType
 import org.prime.easykarobar.business.viewmodel.distributor.CartItem
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
@@ -69,6 +66,7 @@ import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.CreateOrderRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
+import org.prime.easykarobar.ui.shared.composables.QuantityTextField
 import org.prime.easykarobar.ui.shared.composables.TallyAlertBox
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
@@ -285,11 +283,10 @@ private fun CartProductItem(
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    BasicTextField(
-                        value = product.quantity.value.toString(),
-                        onValueChange = {
-                            val newQty = it.toIntOrNull() ?: 0
-                            viewModel.updateQuantity(product.product, newQty)
+                    QuantityTextField(
+                        quantity = product.quantity.value,
+                        onQuantityChange = {
+                            viewModel.updateQuantity(product.product, it)
                         },
                         modifier = Modifier.width(40.dp),
                         textStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -298,8 +295,6 @@ private fun CartProductItem(
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
                         decorationBox = { innerTextField ->
                             Box(
                                 modifier = Modifier

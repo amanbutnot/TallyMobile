@@ -30,8 +30,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -72,7 +70,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -91,6 +88,7 @@ import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.shared.composables.QuantityTextField
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getCategoryImage
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
@@ -436,20 +434,17 @@ object ShoppingScreen : Screen {
                                 modifier = Modifier.size(20.dp)
                             )
                         }
-                        BasicTextField(
-                            value = quantity.toString(),
-                            onValueChange = {
-                                val newQty = it.toIntOrNull() ?: 0
-                                cartViewModel.updateQuantity(product, newQty)
+                        QuantityTextField(
+                            quantity = quantity,
+                            onQuantityChange = {
+                                cartViewModel.updateQuantity(product, it)
                             },
                             modifier = Modifier.width(40.dp),
                             textStyle = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurface
-                            ),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true
+                            )
                         )
                         IconButton(onClick = { cartViewModel.increaseQuantity(product) }) {
                             Icon(
@@ -963,20 +958,17 @@ fun ItemCard(
                             modifier = Modifier.size(16.dp)
                         )
                     }
-                    BasicTextField(
-                        value = quantity.toString(),
-                        onValueChange = {
-                            val newQty = it.toIntOrNull() ?: 0
-                            viewModel.updateQuantity(item, newQty)
+                    QuantityTextField(
+                        quantity = quantity,
+                        onQuantityChange = {
+                            viewModel.updateQuantity(item, it)
                         },
                         modifier = Modifier.width(30.dp),
                         textStyle = TextStyle(
                             fontSize = 12.sp,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurface
-                        ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true
+                        )
                     )
                     IconButton(onClick = { viewModel.increaseQuantity(item) }) {
                         Icon(
