@@ -2,6 +2,8 @@ package org.prime.easykarobar.ui.screen.home.tabs
 
 import CurrentDate
 import OutstandingDate
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,6 +22,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +35,7 @@ import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Cases
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.ExpandMore
@@ -40,6 +45,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.NoteAlt
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingBasket
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Sync
@@ -47,9 +53,13 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DockedSearchBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -91,6 +101,7 @@ import org.prime.easykarobar.ui.screen.home.ROLE
 import org.prime.easykarobar.ui.screen.home.userRole
 import org.prime.easykarobar.ui.screen.masters.AccountAddScreen
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportFilterScreen
+import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingDisFilterScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingReportScreen
 import org.prime.easykarobar.ui.screen.reports.registers.RegisterReportScreen
@@ -108,6 +119,7 @@ import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
 import org.prime.easykarobar.ui.shared.globalShared.filterAccountGroups
 import org.prime.easykarobar.ui.shared.globalShared.filterBroker
 import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
+import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodes
 import kotlin.math.absoluteValue
 
@@ -118,6 +130,7 @@ object HomeTab : Tab {
             return TabOptions(index = 0u, title = "Home", icon = icon)
         }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
 
@@ -129,7 +142,9 @@ object HomeTab : Tab {
 
 
         val reportList = queries.dashboardReportData(
-            StartDate(), CurrentDate(), filterCm3 = filterBroker(),
+            StartDate(),
+            CurrentDate(),
+            filterCm3 = filterBroker(),
             cm3 = configBroker(),
             groupFilter = filterAGRPGroups(),
             GroupCode = filterGroupCodes(),
@@ -146,10 +161,9 @@ object HomeTab : Tab {
             GroupCode_____ = filterGroupCodes(),
             GUID_____ = accountGroupCodes()
         ).executeAsList()
-
-        val filteredReportList = reportList
-            .filter { report -> report.RecType !in listOf(4L, 6L) }
-            .map { report ->
+        val ledgerList = getLedgerMasters(db)
+        val filteredReportList =
+            reportList.filter { report -> report.RecType !in listOf(4L, 6L) }.map { report ->
                 val newRepType = when (report.RecType) {
                     1L -> "Pending Receivables"
                     2L -> "Pending Payables"
@@ -161,12 +175,9 @@ object HomeTab : Tab {
             }
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp).verticalScroll(rememberScrollState()),
+            modifier = Modifier.fillMaxSize().padding(8.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
-        )
-        {
+        ) {
             if (userRole() == ROLE.DISTRIBUTOR) {
                 HeadingTitle("Hi, ${SharedPrefs.DistributorData.get()?.UserName ?: "User"}")
             }
@@ -181,17 +192,22 @@ object HomeTab : Tab {
                 lastSyncDateTime = SharedPrefs.LastSync.get().toString(),
                 modifier = Modifier.clickable {
                     println(getPCGroupCodes("117.0"))
-                }
-            )
+                })
             if (userRole() == ROLE.ADMIN || userRole() == ROLE.SALESMAN) {
+                ModernSearchBar(
+                    ledgerList.map { it.Name.toString() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    nav?.push(
+                        LedgerReportScreen(it, StartDate(), CurrentDate())
+                    )
+                }
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                )
-                {
+                ) {
                     filteredReportList.take(6).chunked(2).forEach { rowItems ->
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth()
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -201,25 +217,22 @@ object HomeTab : Tab {
                                     amount = when (item.RecType) {
                                         1L -> {
                                             if (hasSalesmanPermission("D8")) {
-                                                if (hasSalesmanPermission("D32"))
-                                                    item.PenAmt?.absoluteValue?.formatToAmtDec()
-                                                        ?: "-" else "____"
+                                                if (hasSalesmanPermission("D32")) item.PenAmt?.absoluteValue?.formatToAmtDec()
+                                                    ?: "-" else "____"
                                             } else "X"
                                         }
 
                                         2L -> {
                                             if (hasSalesmanPermission("D9")) {
-                                                if (hasSalesmanPermission("D33"))
-                                                    item.PenAmt?.absoluteValue?.formatToAmtDec()
-                                                        ?: "-" else "____"
+                                                if (hasSalesmanPermission("D33")) item.PenAmt?.absoluteValue?.formatToAmtDec()
+                                                    ?: "-" else "____"
                                             } else "X"
                                         }
 
                                         3L -> {
                                             if (hasSalesmanPermission("D13")) {
-                                                if (hasSalesmanPermission("D34"))
-                                                    item.PenAmt?.absoluteValue?.formatToAmtDec()
-                                                        ?: "-" else "____"
+                                                if (hasSalesmanPermission("D34")) item.PenAmt?.absoluteValue?.formatToAmtDec()
+                                                    ?: "-" else "____"
                                             } else "X"
                                         }
 
@@ -231,9 +244,8 @@ object HomeTab : Tab {
 
                                         5L -> {
                                             if (hasSalesmanPermission("D15")) {
-                                                if (hasSalesmanPermission("D35"))
-                                                    item.PenAmt?.absoluteValue?.formatToAmtDec()
-                                                        ?: "-" else "____"
+                                                if (hasSalesmanPermission("D35")) item.PenAmt?.absoluteValue?.formatToAmtDec()
+                                                    ?: "-" else "____"
                                             } else "X"
                                         }
 
@@ -256,11 +268,12 @@ object HomeTab : Tab {
                                                             name = "Bill Receivable",
                                                             startDate = OutstandingDate(),
                                                             endDate = CurrentDate(),
-                                                            cm1 = "", calculateDays = "Due Date",showOtherToggle = false,
+                                                            cm1 = "",
+                                                            calculateDays = "Due Date",
+                                                            showOtherToggle = false,
                                                         )
                                                     )
-                                                }
-                                            )
+                                                })
 
                                             2L -> salesmanPermission(
                                                 flag = "D9",
@@ -271,11 +284,12 @@ object HomeTab : Tab {
                                                             name = "Bill Payable",
                                                             startDate = OutstandingDate(),
                                                             endDate = CurrentDate(),
-                                                            cm1 = "", calculateDays = "Due Date",showOtherToggle = false,
+                                                            cm1 = "",
+                                                            calculateDays = "Due Date",
+                                                            showOtherToggle = false,
                                                         )
                                                     )
-                                                }
-                                            )
+                                                })
 
                                             3L -> salesmanPermission(
                                                 flag = "D13",
@@ -288,8 +302,7 @@ object HomeTab : Tab {
                                                             endDate = CurrentDate()
                                                         )
                                                     )
-                                                }
-                                            )
+                                                })
 
 //                                            4L -> salesmanPermission(
 //                                                flag = "D14",
@@ -316,8 +329,7 @@ object HomeTab : Tab {
                                                             endDate = CurrentDate()
                                                         )
                                                     )
-                                                }
-                                            )
+                                                })
 
 //                                            6L -> salesmanPermission(
 //                                                flag = "D16",
@@ -342,8 +354,7 @@ object HomeTab : Tab {
                                             contentDescription = null,
                                             modifier = Modifier.size(16.dp)
                                         )
-                                    }
-                                )
+                                    })
                             }
 
                             // Add spacer if odd number of items in last row
@@ -353,7 +364,6 @@ object HomeTab : Tab {
                         }
                     }
                 }
-
                 HeadingTitle("Create")
                 ExpandableGrid()
             } else if (userRole() == ROLE.DISTRIBUTOR) {
@@ -371,8 +381,7 @@ object HomeTab : Tab {
                         icon = Icons.Default.Receipt,
                         onClick = {
                             nav?.push(OutstandingDisFilterScreen)
-                        }
-                    )
+                        })
 
                     // Second Card - Ledger
                     ReportActionCard(
@@ -381,8 +390,7 @@ object HomeTab : Tab {
                         icon = Icons.Default.Cases,
                         onClick = {
                             nav?.push(LedgerReportFilterScreen(showAccount = false))
-                        }
-                    )
+                        })
                     // Second Card - Ledger
                     ReportActionCard(
                         title = "Raise Order",
@@ -390,16 +398,14 @@ object HomeTab : Tab {
                         icon = Icons.Default.ShoppingCart,
                         onClick = {
                             nav?.push(ShoppingScreen)
-                        }
-                    )  // Second Card - Ledger
+                        })  // Second Card - Ledger
                     ReportActionCard(
                         title = "View Order",
                         description = "View your orders",
                         icon = Icons.Default.ShoppingBasket,
                         onClick = {
                             nav?.push(MyOrdersScreen)
-                        }
-                    )
+                        })
                 }
             } else {
                 HeadingTitle("Create")
@@ -422,35 +428,26 @@ fun ReportActionCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
+            width = 1.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
         )
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Icon Container
             Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .background(
-                        MaterialTheme.colorScheme.primaryContainer,
-                        RoundedCornerShape(12.dp)
-                    ),
-                contentAlignment = Alignment.Center
+                modifier = Modifier.size(56.dp).background(
+                    MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp)
+                ), contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
@@ -462,15 +459,12 @@ fun ReportActionCard(
 
             // Text Content
             Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(
+                    text = title, style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    ), color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
@@ -488,9 +482,7 @@ fun ReportActionCard(
                 imageVector = Icons.Default.ExpandMore,
                 contentDescription = "Navigate",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                modifier = Modifier
-                    .size(24.dp)
-                    .padding(start = 4.dp)
+                modifier = Modifier.size(24.dp).padding(start = 4.dp)
             )
         }
     }
@@ -526,227 +518,211 @@ fun ExpandableGrid() {
     )
 
     Column(
-        modifier = Modifier.padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         cardList.chunked(3).forEach { rowItems ->
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Max),
+                modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 rowItems.forEach { item ->
                     Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
+                        modifier = Modifier.weight(1f).fillMaxHeight()
                     ) {
                         CreateCard(
                             name = item.first,
                             icon = item.second,
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .clickable {
-                                    when (item.first) {
+                            modifier = Modifier.fillMaxHeight().clickable {
+                                when (item.first) {
 
-                                        "Receipt" -> salesmanPermission(
-                                            "D17",
-                                            accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = {
-                                                nav?.push(
-                                                    SingleEntryReceipt(
-                                                        item.first,
-                                                        vchType = 14, showPdc = true
-                                                    )
-                                                )
-                                            })
-
-                                        "Payment" -> salesmanPermission(
-                                            "D18",
-                                            accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = {
-                                                nav?.push(
-                                                    SingleEntryReceipt(
-                                                        item.first,
-                                                        vchType = 19, showPdc = true
-                                                    )
-                                                )
-                                            })
-
-                                        "Journal" -> salesmanPermission(
-                                            "D19",
-                                            accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = {
-                                                nav?.push(
-                                                    SingleEntryReceipt(
-                                                        item.first,
-                                                        vchType = 16
-                                                    )
-                                                )
-                                            })
-
-                                        "Sale Order" -> salesmanPermission(
-                                            "D20",
-                                            accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = {
-                                                nav?.push(SaleScreen(item.first, vchType = 12))
-                                            })
-
-                                        "Sale Invoice" -> salesmanPermission(
-                                            "D21",
-                                            accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = {
-                                                nav?.push(SaleScreen2(item.first, vchType = 9))
-                                            })
-
-                                        "Check In/Out" -> salesmanPermission(
-                                            "D22",
-                                            accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = {
-                                                scope.launch {
-                                                    showLoading = true
-                                                    try {
-                                                        val geolocator =
-                                                            Geolocator(Locator.mobile())
-
-                                                        runCatching { geolocator.lastLocation() }
-
-                                                        val result = withTimeoutOrNull(20000) {
-                                                            geolocator.current(Priority.HighAccuracy)
-                                                        }
-
-                                                        when (result) {
-                                                            is GeolocatorResult.Success -> {
-                                                                val c = result.data.coordinates
-
-                                                                nav?.push(
-                                                                    AttendanceScreen(
-                                                                        c.latitude,
-                                                                        c.longitude,
-
-                                                                        isAttendance = false
-                                                                    )
-                                                                )
-                                                            }
-
-                                                            else -> showLocationPopup = true
-                                                        }
-
-                                                    } catch (e: Exception) {
-                                                        showLocationPopup = true
-                                                    } finally {
-                                                        showLoading = false
-                                                    }
-                                                }
-                                            }
-                                        )
-
-                                        "Attendance" -> salesmanPermission(
-                                            "D23",
-                                            accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = {
-                                                scope.launch {
-                                                    showLoading = true
-                                                    try {
-                                                        val geolocator =
-                                                            Geolocator(Locator.mobile())
-
-                                                        runCatching { geolocator.lastLocation() }
-
-                                                        val result = withTimeoutOrNull(20000) {
-                                                            geolocator.current(Priority.HighAccuracy)
-                                                        }
-
-                                                        when (result) {
-                                                            is GeolocatorResult.Success -> {
-                                                                val c = result.data.coordinates
-
-                                                                nav?.push(
-                                                                    AttendanceScreen(
-                                                                        c.latitude,
-                                                                        c.longitude,
-
-                                                                        isAttendance = true
-                                                                    )
-                                                                )
-                                                            }
-
-                                                            else -> showLocationPopup = true
-                                                        }
-
-                                                    } catch (e: Exception) {
-                                                        showLocationPopup = true
-                                                    } finally {
-                                                        showLoading = false
-                                                    }
-                                                }
-                                            }
-                                        )
-
-
-                                        "Sale Return" -> salesmanPermission(
-                                            "D24",
-                                            accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = {
-                                                nav?.push(SaleScreen(item.first, vchType = 3))
-                                            })
-
-                                        "Purchase Order" -> salesmanPermission(
-                                            "D25",
-                                            accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = {
-                                                nav?.push(SaleScreen(item.first, vchType = 13))
-                                            })
-
-                                        "Purchase Invoice" -> salesmanPermission(
-                                            "D26",
-                                            accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = {
-                                                nav?.push(SaleScreen(item.first, vchType = 2))
-                                            })
-
-                                        "Purchase Return" -> salesmanPermission(
-                                            "D27",
-                                            accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = {
-                                                nav?.push(SaleScreen(item.first, vchType = 10))
-                                            })
-
-                                        "Contra" -> salesmanPermission(
-                                            "D28",
-                                            accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = {
-                                                nav?.push(
-                                                    SingleEntryReceipt(
-                                                        item.first,
-                                                        vchType = 15
-                                                    )
-                                                )
-                                            })
-
-                                        "Account" -> {
-                                            nav?.push(AccountAddScreen)
-                                        }
-                                        "Debit Note" -> {
+                                    "Receipt" -> salesmanPermission(
+                                        "D17",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
                                             nav?.push(
                                                 SingleEntryReceipt(
-                                                    item.first,
-                                                    vchType = 17
+                                                    item.first, vchType = 14, showPdc = true
                                                 )
                                             )
-                                        }
-                                        "Credit Note" -> {
+                                        })
+
+                                    "Payment" -> salesmanPermission(
+                                        "D18",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
                                             nav?.push(
                                                 SingleEntryReceipt(
-                                                    item.first,
-                                                    vchType = 18
+                                                    item.first, vchType = 19, showPdc = true
                                                 )
                                             )
-                                        }
+                                        })
+
+                                    "Journal" -> salesmanPermission(
+                                        "D19",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
+                                            nav?.push(
+                                                SingleEntryReceipt(
+                                                    item.first, vchType = 16
+                                                )
+                                            )
+                                        })
+
+                                    "Sale Order" -> salesmanPermission(
+                                        "D20",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
+                                            nav?.push(SaleScreen(item.first, vchType = 12))
+                                        })
+
+                                    "Sale Invoice" -> salesmanPermission(
+                                        "D21",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
+                                            nav?.push(SaleScreen2(item.first, vchType = 9))
+                                        })
+
+                                    "Check In/Out" -> salesmanPermission(
+                                        "D22",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
+                                            scope.launch {
+                                                showLoading = true
+                                                try {
+                                                    val geolocator =
+                                                        Geolocator(Locator.mobile())
+
+                                                    runCatching { geolocator.lastLocation() }
+
+                                                    val result = withTimeoutOrNull(20000) {
+                                                        geolocator.current(Priority.HighAccuracy)
+                                                    }
+
+                                                    when (result) {
+                                                        is GeolocatorResult.Success -> {
+                                                            val c = result.data.coordinates
+
+                                                            nav?.push(
+                                                                AttendanceScreen(
+                                                                    c.latitude, c.longitude,
+
+                                                                    isAttendance = false
+                                                                )
+                                                            )
+                                                        }
+
+                                                        else -> showLocationPopup = true
+                                                    }
+
+                                                } catch (e: Exception) {
+                                                    showLocationPopup = true
+                                                } finally {
+                                                    showLoading = false
+                                                }
+                                            }
+                                        })
+
+                                    "Attendance" -> salesmanPermission(
+                                        "D23",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
+                                            scope.launch {
+                                                showLoading = true
+                                                try {
+                                                    val geolocator =
+                                                        Geolocator(Locator.mobile())
+
+                                                    runCatching { geolocator.lastLocation() }
+
+                                                    val result = withTimeoutOrNull(20000) {
+                                                        geolocator.current(Priority.HighAccuracy)
+                                                    }
+
+                                                    when (result) {
+                                                        is GeolocatorResult.Success -> {
+                                                            val c = result.data.coordinates
+
+                                                            nav?.push(
+                                                                AttendanceScreen(
+                                                                    c.latitude, c.longitude,
+
+                                                                    isAttendance = true
+                                                                )
+                                                            )
+                                                        }
+
+                                                        else -> showLocationPopup = true
+                                                    }
+
+                                                } catch (e: Exception) {
+                                                    showLocationPopup = true
+                                                } finally {
+                                                    showLoading = false
+                                                }
+                                            }
+                                        })
+
+
+                                    "Sale Return" -> salesmanPermission(
+                                        "D24",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
+                                            nav?.push(SaleScreen(item.first, vchType = 3))
+                                        })
+
+                                    "Purchase Order" -> salesmanPermission(
+                                        "D25",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
+                                            nav?.push(SaleScreen(item.first, vchType = 13))
+                                        })
+
+                                    "Purchase Invoice" -> salesmanPermission(
+                                        "D26",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
+                                            nav?.push(SaleScreen(item.first, vchType = 2))
+                                        })
+
+                                    "Purchase Return" -> salesmanPermission(
+                                        "D27",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
+                                            nav?.push(SaleScreen(item.first, vchType = 10))
+                                        })
+
+                                    "Contra" -> salesmanPermission(
+                                        "D28",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
+                                            nav?.push(
+                                                SingleEntryReceipt(
+                                                    item.first, vchType = 15
+                                                )
+                                            )
+                                        })
+
+                                    "Account" -> {
+                                        nav?.push(AccountAddScreen)
+                                    }
+
+                                    "Debit Note" -> {
+                                        nav?.push(
+                                            SingleEntryReceipt(
+                                                item.first, vchType = 17
+                                            )
+                                        )
+                                    }
+
+                                    "Credit Note" -> {
+                                        nav?.push(
+                                            SingleEntryReceipt(
+                                                item.first, vchType = 18
+                                            )
+                                        )
                                     }
                                 }
-                        )
+                            })
                     }
                 }
 
@@ -765,8 +741,7 @@ fun ExpandableGrid() {
                     Button(onClick = { showLocationPopup = false }) {
                         Text("OK")
                     }
-                }
-            )
+                })
         }
 
         if (showLoading) {
@@ -795,13 +770,10 @@ private fun HeadingTitle(title: String) {
 
 @Composable
 fun CreateCard(
-    name: String,
-    icon: ImageVector,
-    modifier: Modifier = Modifier
+    name: String, icon: ImageVector, modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier
-            .width(140.dp).height(100.dp)
+        modifier = modifier.width(140.dp).height(100.dp)
             .padding(horizontal = 4.dp, vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
@@ -809,14 +781,11 @@ fun CreateCard(
             contentColor = MaterialTheme.colorScheme.onSurface
         ),
         border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
+            width = 1.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
         )
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
+            modifier = Modifier.fillMaxSize().padding(12.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -829,12 +798,11 @@ fun CreateCard(
 
 
             Text(
-                text = name,
-                style = MaterialTheme.typography.bodyMedium.copy(
+                text = name, style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Medium,
-                    letterSpacing = (-0.25).sp, textAlign = TextAlign.Center
-                ),
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    letterSpacing = (-0.25).sp,
+                    textAlign = TextAlign.Center
+                ), color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
         }
     }
@@ -995,14 +963,11 @@ fun LastSyncedCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            width = 1.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
         )
     ) {
         Row(
-            modifier = Modifier
-                .padding(20.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(20.dp).fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -1012,13 +977,9 @@ fun LastSyncedCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier.size(40.dp).background(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape
+                    ), contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Sync,
@@ -1048,12 +1009,9 @@ fun LastSyncedCard(
 
             // Optional: Add a sync status indicator
             Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .background(
-                        MaterialTheme.colorScheme.primary,
-                        CircleShape
-                    )
+                modifier = Modifier.size(8.dp).background(
+                    MaterialTheme.colorScheme.primary, CircleShape
+                )
             )
         }
     }
@@ -1071,24 +1029,16 @@ fun InfoStatCard(
     val colors = MaterialTheme.colorScheme
 
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .border(
-                1.dp,
-                colors.primary.copy(alpha = 0.2f),
-                RoundedCornerShape(12.dp)
-            )
-            .background(colors.surface)
-            .padding(12.dp)
+        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).border(
+            1.dp, colors.primary.copy(alpha = 0.2f), RoundedCornerShape(12.dp)
+        ).background(colors.surface).padding(12.dp)
     ) {
 
 
         // Compact content
         Column(
             verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier
-                .align(Alignment.CenterStart)
+            modifier = Modifier.align(Alignment.CenterStart)
             //.padding(end = 40.dp)
         ) {
             Text(
@@ -1131,6 +1081,116 @@ fun InfoStatCard(
                         tint = colors.primary,
                         modifier = Modifier.size(12.dp)
                     )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ModernSearchBar(
+    items: List<String>,
+    modifier: Modifier = Modifier,
+    onClick: (String) -> Unit
+) {
+
+    var query by remember { mutableStateOf("") }
+    var active by remember { mutableStateOf(false) }
+
+    val filtered = remember(query, items) {
+        items.filter { it.contains(query, true) }
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+
+        DockedSearchBar(
+            modifier = Modifier.fillMaxWidth(),
+            query = query,
+            onQueryChange = { query = it },
+            onSearch = { active = false },
+            active = active,
+            onActiveChange = { active = it },
+            placeholder = { Text("Search your ledger") },
+            leadingIcon = {
+                Icon(Icons.Default.Search, contentDescription = null)
+            },colors = SearchBarDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                dividerColor = MaterialTheme.colorScheme.outlineVariant
+            ),
+            trailingIcon = {
+                IconButton(onClick = {if(query.isNotEmpty()) query = "" else active = false }) {
+                    Icon(Icons.Default.Close, contentDescription = "Clear")
+                }
+            },
+            shape = RoundedCornerShape(28.dp),
+            tonalElevation = 6.dp
+        ) {
+
+            AnimatedContent(targetState = query.isNotBlank(), label = "") { hasQuery ->
+
+                if (hasQuery) {
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateContentSize()
+                    ) {
+                        items(filtered.take(5)) { item ->
+
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    .clickable {
+                                        query = item
+                                        active = false
+                                        onClick(item)
+                                    },
+                                shape = RoundedCornerShape(16.dp),
+                                elevation = CardDefaults.cardElevation(4.dp)
+                            ) {
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+
+                                    Icon(
+                                        Icons.Default.Search,
+                                        contentDescription = null,
+                                        modifier = Modifier.padding(end = 12.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+
+                                    Text(
+                                        text = item,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                } else {
+
+                    // 👇 Empty / idle state
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Start typing to search",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
