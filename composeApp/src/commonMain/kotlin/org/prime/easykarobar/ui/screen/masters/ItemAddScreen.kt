@@ -531,7 +531,7 @@ object ItemAddScreen : Screen {
             }
 
             val cf = conFactor.toDoubleOrNull()
-            if (cf == null || cf == 0.0) {
+            if ((cf == null || cf == 0.0) || !altSameAsMain ) {
                 dialogMessage = "Conversion Factor cannot be zero or empty."
                 showDialog = true
                 return null
@@ -793,22 +793,24 @@ object ItemAddScreen : Screen {
                                 isNumber = true
                             )
                         }
-                        Box(Modifier.weight(1f)) {
-                            FormField(
-                                label = "Op Qty (Alt)",
-                                value = opQtyAlt,
-                                onChange = {
-                                    if (conType == CON_TYPE_OPTIONS[0]) {
-                                        opQtyAlt = it; opQty = ((opQtyAlt.toDoubleOrNull()
-                                            ?: 0.0) * (conFactor.toDoubleOrNull() ?: 0.0)).toString()
-                                    }else{
-                                        opQtyAlt = it; opQty = ((opQtyAlt.toDoubleOrNull()
-                                            ?: 0.0) / (conFactor.toDoubleOrNull() ?: 0.0)).toString()
-                                    }
-                                },
-                                placeholder = "0",
-                                isNumber = true
-                            )
+                        if(!altSameAsMain){
+                            Box(Modifier.weight(1f)) {
+                                FormField(
+                                    label = "Op Qty (Alt)",
+                                    value = opQtyAlt,
+                                    onChange = {
+                                        if (conType == CON_TYPE_OPTIONS[0]) {
+                                            opQtyAlt = it; opQty = ((opQtyAlt.toDoubleOrNull()
+                                                ?: 0.0) * (conFactor.toDoubleOrNull() ?: 0.0)).toString()
+                                        }else{
+                                            opQtyAlt = it; opQty = ((opQtyAlt.toDoubleOrNull()
+                                                ?: 0.0) / (conFactor.toDoubleOrNull() ?: 0.0)).toString()
+                                        }
+                                    },
+                                    placeholder = "0",
+                                    isNumber = true
+                                )
+                            }
                         }
                     }
                     FormField(

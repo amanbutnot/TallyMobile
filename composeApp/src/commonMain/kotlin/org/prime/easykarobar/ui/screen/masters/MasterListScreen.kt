@@ -127,14 +127,14 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
                     salesmanPermission(
                         "D50",
                         accessDeniedBlock = { showDeniedDialog = true },
-                        successBlock = {   nav.push(AccountAddScreen) }
+                        successBlock = { nav.push(AccountAddScreen) }
                     )
 
-                } else {
+                } else if (masterEnum == MasterEnums.ITEMS) {
                     salesmanPermission(
                         "D51",
                         accessDeniedBlock = { showDeniedDialog = true },
-                        successBlock = {   nav.push(ItemAddScreen) }
+                        successBlock = { nav.push(ItemAddScreen) }
                     )
 
                 }
