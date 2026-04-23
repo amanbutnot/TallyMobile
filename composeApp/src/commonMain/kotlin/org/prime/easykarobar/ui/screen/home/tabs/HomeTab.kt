@@ -138,6 +138,7 @@ object HomeTab : Tab {
         val queries = db.companyInformationQueries
         val compInfo = queries.getCompanyInformation().executeAsOne()
         var showDeniedDialog by remember { mutableStateOf(false) }
+        var showLedgerSearch by remember { mutableStateOf(false) }
         val nav = LocalNavigator.currentOrThrow.parent
 
 
@@ -194,14 +195,22 @@ object HomeTab : Tab {
                     println(getPCGroupCodes("117.0"))
                 })
             if (userRole() == ROLE.ADMIN || userRole() == ROLE.SALESMAN) {
-                ModernSearchBar(
-                    ledgerList.map { it.Name.toString() },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    nav?.push(
-                        LedgerReportScreen(it, StartDate(), CurrentDate())
-                    )
+                salesmanPermission(
+                    "D7",
+                    accessDeniedBlock = {  },
+                    successBlock = { showLedgerSearch = true }
+                )
+                if(showLedgerSearch){
+                    ModernSearchBar(
+                        ledgerList.map { it.Name.toString() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        nav?.push(
+                            LedgerReportScreen(it, StartDate(), CurrentDate())
+                        )
+                    }
                 }
+
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                 ) {

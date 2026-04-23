@@ -110,6 +110,7 @@ import org.prime.easykarobar.data.model.transactions.InventoryVoucherRequest
 import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.model.transactions.TransportDetails
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.salesHtml
 import org.prime.easykarobar.ui.screen.transactions.BillByBillModel
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
@@ -1331,21 +1332,59 @@ data class SaleScreen2(
                         val total = selectedList.sumOf { it.Value3 ?: 0.0 }
                         val prod = itemsList.find { it.Name == pendingSelectedProductName }
                         val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
+                        val gstPct = try {
+                            db.taxCategoryMastQueries.selectTaxRate(
+                                taxCategoryCode.toInt().toString(), selectedDate
+                            ).executeAsOneOrNull() ?: 0.0
+                        } catch (e: Exception) {
+                            0.0
+                        }
+                        val pricePerUnit =
+                            if (total > 0) total / selectedList.size else (editingItem?.price
+                                ?: 0.0)
+
+                        val qty = selectedList.size.coerceAtLeast(1)
+
+// ── SAME TAX LOGIC AS MULTI-SELECT ─────────────────────────────
+                        val taxableAmt: Double
+                        val gstAmt: Double
+                        val netAmt: Double
+
+                        if (taxType == TaxType.EXTRA) {
+                            taxableAmt = pricePerUnit * qty
+                            gstAmt = taxableAmt * gstPct / 100.0
+                            netAmt = taxableAmt + gstAmt
+                        } else if (taxType == TaxType.VOUCHER) {
+                            taxableAmt = pricePerUnit * qty
+                            gstAmt = 0.0
+                            netAmt = pricePerUnit * qty
+                        } else {
+                            if (gstPct == 0.0) {
+                                taxableAmt = pricePerUnit * qty
+                                gstAmt = 0.0
+                                netAmt = pricePerUnit * qty
+                            } else {
+                                val amount = pricePerUnit * qty
+                                taxableAmt = amount * 100.0 / (100.0 + gstPct)
+                                gstAmt = amount - taxableAmt
+                                netAmt = amount
+                            }
+                        }
 
                         val updatedItem = InvoiceItem(
                             name = pendingSelectedProductName ?: "",
-                            price = if (total > 0) total else (editingItem?.price ?: 0.0),
-                            qty = selectedList.size.coerceAtLeast(1), // Set qty to serial count
+                            price = pricePerUnit,
+                            qty = qty,
                             discountPercentage = editingItem?.discountPercentage ?: 0.0,
-                            listPrice = if (total > 0) total else (editingItem?.listPrice ?: 0.0),
-                            taxable = editingItem?.taxable ?: 0.0,
-                            gstAmt = editingItem?.gstAmt ?: 0.0,
-                            net = editingItem?.net ?: 0.0,
+                            listPrice = pricePerUnit,
+                            taxable = taxableAmt,
+                            gstAmt = gstAmt,
+                            net = netAmt,
                             guid = pendingSelectedProductGUID ?: editingItem?.guid ?: "",
-                            gstPercentage = editingItem?.gstPercentage ?: 0.0,
+                            gstPercentage = gstPct,
                             taxCategoryCode = taxCategoryCode.toInt(),
                             CD = editingItem?.CD ?: "",
-                            item_serial = selectedList // Store serial list
+                            item_serial = selectedList
                         )
 
                         val list = selectedItems.toMutableList()
@@ -1898,11 +1937,13 @@ fun MultiSelectItemRow(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Text(
-                    text = "Stock: $stock",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (showQtyToSalesman()) {
+                    Text(
+                        text = "Stock: $stock",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             // Qty stepper — only visible when selected

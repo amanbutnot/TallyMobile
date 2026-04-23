@@ -65,6 +65,7 @@ fun SerialNumberBottomSheet(
             }
         )
     }
+    println("List of serial number is : $serialNumbers")
     val selectedSerialNumbers = remember(show) { mutableStateListOf<String>().apply { addAll(initialSelectedSerialNumbers) } }
     var searchQuery by remember { mutableStateOf("") }
 
