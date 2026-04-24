@@ -132,14 +132,12 @@ import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
-import org.prime.easykarobar.ui.shared.globalShared.filterItemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.isBusy
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
-import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
@@ -151,6 +149,22 @@ import kotlin.math.absoluteValue
 import kotlin.math.round
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+
+
+data class ProductPricing(
+    val Guid: String,
+    val ProductName: String,
+    val SerialNo: String,
+    val SalePrice: Double,
+    val PurchasePrice: Double,
+    val Discount: Double,
+    val CompoundDiscount: String
+)
+
+val dummyProductPricing = listOf(
+    ProductPricing("1291", "Washing Machine", "A", 100.0, 200.0, 10.0, "15"),
+    ProductPricing("1291", "Washing Machine", "B", 200.0, 300.0, 10.0, "15")
+)
 
 fun formatTwo(value: Double): String {
     val cents = round(value * 100).toLong()
@@ -257,6 +271,10 @@ data class SaleScreen(
         var showResultDialog by remember { mutableStateOf(false) }
         var showGroupFilterSheet by remember { mutableStateOf(false) }
 
+        var showProductPricingSheet by remember { mutableStateOf(false) }
+        var selectedProductForPricing by remember { mutableStateOf<Products?>(null) }
+        var selectedPricing by remember { mutableStateOf<ProductPricing?>(null) }
+
         var editingItem by remember { mutableStateOf<InvoiceItem?>(null) }
 
         var pendingSelectedProductName by remember { mutableStateOf<String?>(null) }
@@ -266,8 +284,6 @@ data class SaleScreen(
         val busyLedgerList = db.bSMasterQueries.selectAll().executeAsList()
         val itemsList = getItemMasters(db)
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
-        var selectedSerialNo by remember { mutableStateOf<List<String>>(emptyList()) }
-        var serialNoTotal by remember { mutableStateOf(0.0) }
         val groupFilteredList = if (selectedGroups.isEmpty()) {
             itemsList
         } else {
@@ -701,34 +717,6 @@ data class SaleScreen(
         if (state.isLoading) {
             TallyLoadingDialog(if (isEdit) "Editing transaction" else "Creating transaction")
         }
-//
-//        LaunchedEffect(pendingSelectedProductName,serialNoTotal) {
-//            pendingSelectedProductName?.let { name ->
-//                val prod = itemsList.find { it.Name == name }
-////                val price = if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
-//                val price = if (serialNoTotal != 0.0) {
-//                    serialNoTotal
-//                } else {
-//                    if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
-//                }
-//                val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
-//                editingItem = InvoiceItem(
-//                    name = name,
-//                    price = price,
-//                    qty = 1,
-//                    discountPercentage = 0.0,
-//                    listPrice = 0.0,
-//                    taxable = 0.0,
-//                    gstAmt = 0.0,
-//                    net = 0.0,
-//                    guid = pendingSelectedProductGUID ?: "",
-//                    gstPercentage = 0.0,
-//                    taxCategoryCode = taxCategoryCode.toInt(), CD = ""
-//                )
-//                showItemSheet = false
-//                pendingSelectedProductName = null
-//            }
-//        }
 
         if (showEmptyBarcode) {
             TallyResultDialog(
@@ -1486,68 +1474,68 @@ data class SaleScreen(
                     title = "Select Item",
                     options = groupFilteredList,
                     onSelect = { itemName ->
-
-                        val perms = SharedPrefs.Permissions.get()
-                        val filterGroup = if (perms?.FilterIGRP == "Y") 1L else 0L
-                        val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
-                        val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L
-
-                        val excludeGuids =
-                            if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
-
-                        val godownCodes =
-                            if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
-
-                        val list = db.productSerialNoQueries.serialNoEnterReport(
-                            filterGroup = filterGroup,
-                            groupCodes = filterItemGroupCodes(),
-                            filterExclude = filterExclude,
-                            excludeGuids = excludeGuids,
-                            filterGodown = filterGodown,
-                            godownCodes = godownCodes,
-                            filterSingle = 1L,
-                            includeSingle = itemName.GUID?.toDoubleOrNull() ?: 0.0,
-                            filterSingleG = 0L,
-                            includeSingleG = ""
-                        ).executeAsList()
-
-                        val prod = itemsList.find { it.Name == itemName.Name }
-
-                        // ✅ CASE 1: NO SERIAL NUMBERS → create immediately
-                        if (list.isEmpty()) {
-                            val price = if (isSale) {
-                                prod?.SalesPrice ?: 0.0
-                            } else {
-                                prod?.PurcPrice ?: 0.0
-                            }
-
-                            val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
-
+                        selectedProductForPricing = itemName
+                        val pricingForProduct = dummyProductPricing.filter { it.Guid == itemName.GUID }
+                        if (pricingForProduct.isNotEmpty()) {
+                            showProductPricingSheet = true
+                        } else {
+                            val prod = itemsList.find { it.Name == itemName.Name }
+                            val price = if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
                                 price = price,
                                 qty = 1,
                                 discountPercentage = 0.0,
-                                listPrice = 0.0,
+                                listPrice = price,
+                                taxable = 0.0,
+                                gstAmt = 0.0,
+                                net = 0.0,
+                                guid = itemName.GUID ?: "",
+                                gstPercentage = 0.0,
+                                taxCategoryCode = (prod?.TaxCategoryCode ?: 0.0).toInt(),
+                                CD = ""
+                            )
+                            showItemSheet = false
+                        }
+                    },
+                    onDismiss = { showItemSheet = false }
+                )
+
+                ProductPricingBottomSheet(
+                    show = showProductPricingSheet,
+                    productName = selectedProductForPricing?.Name ?: "",
+                    pricingList = dummyProductPricing.filter { it.Guid == selectedProductForPricing?.GUID },
+                    onSelect = { pricing: ProductPricing ->
+                        showProductPricingSheet = false
+                        selectedPricing = pricing
+                        val itemName = selectedProductForPricing
+                        if (itemName != null) {
+                            val prod = itemsList.find { it.Name == itemName.Name }
+                            val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
+
+                            editingItem = InvoiceItem(
+                                name = itemName.Name.toString(),
+                                price = pricing.SalePrice,
+                                qty = 1,
+                                discountPercentage = pricing.Discount,
+                                listPrice = pricing.SalePrice,
                                 taxable = 0.0,
                                 gstAmt = 0.0,
                                 net = 0.0,
                                 guid = itemName.GUID ?: "",
                                 gstPercentage = 0.0,
                                 taxCategoryCode = taxCategoryCode.toInt(),
-                                CD = ""
+                                CD = pricing.CompoundDiscount
                             )
 
                             showItemSheet = false
                         }
-                        // ✅ CASE 2: HAS SERIAL NUMBERS → wait for user
-                        else {
-                            pendingSelectedProductName = itemName.Name
-                            pendingSelectedProductGUID = itemName.GUID
-                            showSerialNumberBottomSheet = true
-                        }
                     },
-                    onDismiss = { showItemSheet = false }
+                    onDismiss = {
+                        showProductPricingSheet = false
+                        selectedProductForPricing = null
+                    },
+                    bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
                 )
                 SerialNumberBottomSheet(
                     productGuid = pendingSelectedProductGUID.toString(),
@@ -1567,6 +1555,7 @@ data class SaleScreen(
                         editingItem = null
                         pendingSelectedProductName = null
                         pendingSelectedProductGUID = null
+                        selectedPricing = null
                     },
                     onSerialNumbersSelected = { selectedList ->
                         val total = selectedList.sumOf { it.Value3 ?: 0.0 }
@@ -1580,8 +1569,9 @@ data class SaleScreen(
                             0.0
                         }
                         val pricePerUnit =
-                            if (total > 0) total / selectedList.size else (editingItem?.price
-                                ?: 0.0)
+                            if (total > 0) total / selectedList.size
+                            else if (selectedPricing != null) selectedPricing!!.SalePrice
+                            else (editingItem?.price ?: 0.0)
 
                         val qty = selectedList.size.coerceAtLeast(1)
 
@@ -1615,7 +1605,7 @@ data class SaleScreen(
                             name = pendingSelectedProductName ?: "",
                             price = pricePerUnit,
                             qty = qty,
-                            discountPercentage = editingItem?.discountPercentage ?: 0.0,
+                            discountPercentage = selectedPricing?.Discount ?: editingItem?.discountPercentage ?: 0.0,
                             listPrice = pricePerUnit,
                             taxable = taxableAmt,
                             gstAmt = gstAmt,
@@ -1623,7 +1613,7 @@ data class SaleScreen(
                             guid = pendingSelectedProductGUID ?: editingItem?.guid ?: "",
                             gstPercentage = gstPct,
                             taxCategoryCode = taxCategoryCode.toInt(),
-                            CD = editingItem?.CD ?: "",
+                            CD = selectedPricing?.CompoundDiscount ?: editingItem?.CD ?: "",
                             item_serial = selectedList
                         )
 
@@ -2806,18 +2796,6 @@ fun ExpandedItemEditor1(
         discountN.contains("+")
     }
 
-    fun applyCompoundDiscount(base: Double, discountStr: String): Double {
-        val parts = discountStr.split("+")
-            .mapNotNull { it.toDoubleOrNull() }
-            .take(5)
-
-        var result = base
-        for (d in parts) {
-            result -= result * d / 100.0
-        }
-        return result
-    }
-
     var showDescriptions by remember(existingItem) {
         val hasAnyDesc = existingItem != null && listOf(
             existingItem.itemdesc1, existingItem.itemdesc2, existingItem.itemdesc3,
@@ -3134,4 +3112,95 @@ fun applyCompoundDiscount(basePrice: Double, compoundDiscountStr: String): Doubl
         result -= result * discount / 100.0
     }
     return result
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProductPricingBottomSheet(
+    show: Boolean,
+    productName: String,
+    pricingList: List<ProductPricing>,
+    onSelect: (ProductPricing) -> Unit,
+    onDismiss: () -> Unit,
+    bottomSheetState: SheetState
+) {
+    if (show) {
+        ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            sheetState = bottomSheetState,
+            containerColor = MaterialTheme.colorScheme.surface,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp)
+            ) {
+                Text(
+                    text = "Select Pricing for $productName",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(16.dp)
+                )
+
+                HorizontalDivider()
+
+                LazyColumn {
+                    items(pricingList) { pricing ->
+                        ProductPricingItem(
+                            pricing = pricing,
+                            onSelect = { onSelect(pricing) }
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            thickness = 0.5.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ProductPricingItem(
+    pricing: ProductPricing,
+    onSelect: () -> Unit
+) {
+    ListItem(
+        modifier = Modifier.clickable(onClick = onSelect),
+        headlineContent = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Serial: ${pricing.SerialNo}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "₹${formatTwo(pricing.SalePrice)}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        supportingContent = {
+            Column {
+                if (pricing.Discount > 0 || pricing.CompoundDiscount.isNotBlank()) {
+                    Text(
+                        text = "Discount: ${if (pricing.CompoundDiscount.isNotBlank()) pricing.CompoundDiscount else "${pricing.Discount}%"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                Text(
+                    text = "Purchase Price: ₹${formatTwo(pricing.PurchasePrice)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    )
 }

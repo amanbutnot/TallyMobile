@@ -1302,7 +1302,7 @@ data class SaleScreen2(
                                 // Has serial numbers — fall back to single-item serial flow
                                 pendingSelectedProductName = pending.product.Name
                                 pendingSelectedProductGUID = pending.product.GUID
-                                showSerialNumberBottomSheet = true
+                               // showSerialNumberBottomSheet = true
                             }
                         }
                     },
