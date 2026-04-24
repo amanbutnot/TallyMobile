@@ -9,6 +9,9 @@ CREATE TABLE SalesManTarget (
   Tr5 REAL
 );
 
+getSalesmanName:
+SELECT SalesmanName FROM SalesManTarget GROUP BY SalesmanName;
+
 
 
 getSalesmanTargets:

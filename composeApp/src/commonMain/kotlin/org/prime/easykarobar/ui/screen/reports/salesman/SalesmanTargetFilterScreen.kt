@@ -1,24 +1,39 @@
 package org.prime.easykarobar.ui.screen.reports.salesman
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.ui.screen.transactions.TransactionOneBottomSheet
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
+import org.tally.GetSalesmanName
+import org.tally.GetSalesmanTargets
+import kotlin.text.ifEmpty
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -26,8 +41,18 @@ data class SalesmanTargetFilterScreen(val isGroup: Boolean) : Screen {
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
     @Composable
     override fun Content() {
+        val db = DatabaseHolder.instance
+        var salesmanList by remember { mutableStateOf<List<GetSalesmanName>>(emptyList()) }
+        var selectedSalesman by remember { mutableStateOf("") }
+        var showSalesmanNameList by remember { mutableStateOf(false) }
+        var reportType by rememberSaveable { mutableStateOf("ALL") }
+        LaunchedEffect(Unit) {
+            withContext(Dispatchers.IO) {
+                salesmanList = db.salesManTargetQueries.getSalesmanName().executeAsList()
+            }
+        }
         TallyScaffold(
-            title = if(isGroup)"Salesman Group Wise Target" else "Salesman Wise Target",
+            title = if (isGroup) "Salesman Group Wise Target" else "Salesman Wise Target",
             showBottomBar = false,
             bottomBarContent = { },
             content = { paddingValues ->
@@ -64,6 +89,145 @@ data class SalesmanTargetFilterScreen(val isGroup: Boolean) : Screen {
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    )
+                    {
+                        // All Accounts Option
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    reportType = "ALL"
+                                    selectedSalesman = ""
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (reportType == "ALL")
+                                MaterialTheme.colorScheme.primaryContainer
+                            else
+                                MaterialTheme.colorScheme.surfaceContainer,
+                            border = BorderStroke(
+                                1.5.dp,
+                                if (reportType == "ALL")
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.outlineVariant
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                RadioButton(
+                                    selected = reportType == "ALL",
+                                    onClick = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    "All Accounts",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (reportType == "ALL")
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        // Single Account Option
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { reportType = "SINGLE" },
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (reportType == "SINGLE")
+                                MaterialTheme.colorScheme.primaryContainer
+                            else
+                                MaterialTheme.colorScheme.surfaceContainer,
+                            border = BorderStroke(
+                                1.5.dp,
+                                if (reportType == "SINGLE")
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.outlineVariant
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                RadioButton(
+                                    selected = reportType == "SINGLE",
+                                    onClick = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    "Single Account",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (reportType == "SINGLE")
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+
+                    if (!isGroup && reportType == "SINGLE") {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(vertical = 12.dp)
+                        ) {
+                            Text(
+                                text = "Select Account",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { showSalesmanNameList = true },
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                border = BorderStroke(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                                )
+                            )
+                            {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = selectedSalesman.ifEmpty { "Choose an account" },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = if (selectedSalesman.isEmpty())
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        else
+                                            MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Outlined.KeyboardArrowDown,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
 
                     // Filter Card
                     Card(
@@ -130,6 +294,16 @@ data class SalesmanTargetFilterScreen(val isGroup: Boolean) : Screen {
                         }
                     }
 
+
+                    TransactionOneBottomSheet(
+                        showBottomSheet = showSalesmanNameList,
+                        list = salesmanList.map { it.SalesmanName.toString() },
+                        onSelected = { selectedSalesman = it },
+                        onDismiss = { showSalesmanNameList = false },
+                        bottomSheetState = rememberModalBottomSheetState(true),
+                        title = "Select Saleman",
+                    )
+
                     Spacer(modifier = Modifier.weight(1f))
 
                     // Generate Button
@@ -146,13 +320,14 @@ data class SalesmanTargetFilterScreen(val isGroup: Boolean) : Screen {
                                 nav.push(
                                     SalesmanTargetReportScreen(
                                         month = selectedMonth.name,
-                                        year = selectedYear
+                                        year = selectedYear,
+                                        name = if (selectedSalesman == "") null else selectedSalesman
                                     )
                                 )
                             }
                         },
                         enabled = (selectedMonth.name.isNotEmpty() && selectedYear.toString()
-                            .isNotEmpty()),
+                            .isNotEmpty() && (reportType == "ALL" || selectedSalesman.isNotEmpty())),
                         backgroundColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier

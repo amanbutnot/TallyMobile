@@ -53,7 +53,8 @@ import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetSalesmanTargets
 
-data class SalesmanTargetReportScreen(val month: String, val year: Int) : Screen {
+data class SalesmanTargetReportScreen(val month: String, val year: Int, val name: String? = null) :
+    Screen {
     @Composable
     override fun Content() {
         val scope = rememberCoroutineScope()
@@ -72,7 +73,7 @@ data class SalesmanTargetReportScreen(val month: String, val year: Int) : Screen
                 trYear = year.toString(),
                 fromDate = range.first,
                 toDate = range.second,
-                salesmanName = if (userRole() == ROLE.SALESMAN) SharedPrefs.User.get()?.FirstName else null,
+                salesmanName = if (userRole() == ROLE.SALESMAN) SharedPrefs.User.get()?.FirstName else name,
             ).executeAsList()
             println(list.value)
             isLoading.value = false
@@ -178,7 +179,7 @@ data class SalesmanTargetReportScreen(val month: String, val year: Int) : Screen
 
 data class SalesmanData(
     val name: String,
-    val groupName:String?=null,
+    val groupName: String? = null,
     val targetQty: Double,
     val achievedQty: Double,
     val balanceQty: Double,

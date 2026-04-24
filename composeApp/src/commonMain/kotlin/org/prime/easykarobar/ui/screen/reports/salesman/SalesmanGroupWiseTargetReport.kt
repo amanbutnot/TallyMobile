@@ -46,7 +46,11 @@ import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetSalesmanGroupTargets
 
-data class SalesmanGroupWiseTargetReport(val month: String, val year: Int) : Screen {
+data class SalesmanGroupWiseTargetReport(
+    val month: String,
+    val year: Int,
+
+) : Screen {
     @Composable
     override fun Content() {
         val scope = rememberCoroutineScope()
