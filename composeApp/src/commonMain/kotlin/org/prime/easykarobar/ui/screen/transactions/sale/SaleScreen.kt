@@ -142,6 +142,7 @@ import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.Products
+import org.tally.Products_Pricing
 import org.tally.SerialNoEnterReport
 import yymmdd
 import kotlin.math.abs
@@ -155,16 +156,13 @@ data class ProductPricing(
     val Guid: String,
     val ProductName: String,
     val SerialNo: String,
+    val VchType: Int,
     val SalePrice: Double,
     val PurchasePrice: Double,
     val Discount: Double,
     val CompoundDiscount: String
 )
 
-val dummyProductPricing = listOf(
-    ProductPricing("1291", "Washing Machine", "A", 100.0, 200.0, 10.0, "15"),
-    ProductPricing("1291", "Washing Machine", "B", 200.0, 300.0, 10.0, "15")
-)
 
 fun formatTwo(value: Double): String {
     val cents = round(value * 100).toLong()
@@ -325,6 +323,7 @@ data class SaleScreen(
         var SbillingShipping by remember { mutableStateOf(false) }
         var SselectedBilling by remember { mutableStateOf("") }
         var editingItemIndex by remember { mutableStateOf<Int?>(null) }
+        var productPricingList by remember { mutableStateOf<List<Products_Pricing>>(emptyList()) }
 
         val optionalFields = remember {
             mutableStateListOf(*Array(20) { "" })
@@ -356,6 +355,8 @@ data class SaleScreen(
             onCancel = { showExitPopup = false },
             onDismiss = { showExitPopup = false },
         )
+
+        productPricingList = db.productsPricingQueries.selectAll().executeAsList()
 
         selectedLedgerGUID = ledgerList.find { l -> l.Name == selectedLedger }?.GUID ?: ""
 
@@ -1468,19 +1469,21 @@ data class SaleScreen(
                     },
                     onDismiss = { showLedgerSheet = false }
                 )
-
                 SelectionSheetItem(
                     show = showItemSheet,
                     title = "Select Item",
                     options = groupFilteredList,
                     onSelect = { itemName ->
+                        println("asdlkfj " + productPricingList.filter { it.GUID.toDouble() == itemName.GUID?.toDouble() })
                         selectedProductForPricing = itemName
-                        val pricingForProduct = dummyProductPricing.filter { it.Guid == itemName.GUID }
+                        val pricingForProduct =
+                            productPricingList.filter { it.GUID.toDouble() == itemName.GUID?.toDouble() }
                         if (pricingForProduct.isNotEmpty()) {
                             showProductPricingSheet = true
                         } else {
                             val prod = itemsList.find { it.Name == itemName.Name }
-                            val price = if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
+                            val price =
+                                if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
                                 price = price,
@@ -1500,11 +1503,22 @@ data class SaleScreen(
                     },
                     onDismiss = { showItemSheet = false }
                 )
-
                 ProductPricingBottomSheet(
                     show = showProductPricingSheet,
                     productName = selectedProductForPricing?.Name ?: "",
-                    pricingList = dummyProductPricing.filter { it.Guid == selectedProductForPricing?.GUID },
+                    pricingList = productPricingList.filter { it.GUID.toDouble() == selectedProductForPricing?.GUID?.toDouble() }
+                        .map {
+                            ProductPricing(
+                                Guid = it.GUID,
+                                ProductName = ('A'.code + (it.Srno - 101)).toInt().toChar()
+                                    .toString(),
+                                SerialNo = it.Srno.toString(),
+                                SalePrice = it.SalesPrice ?: 0.0,
+                                PurchasePrice = it.SalesPrice ?: 0.0,
+                                Discount = it.Disc ?: 0.0,
+                                CompoundDiscount = it.Disc.toString(), VchType = it.VchType.toInt()
+                            )
+                        },
                     onSelect = { pricing: ProductPricing ->
                         showProductPricingSheet = false
                         selectedPricing = pricing
@@ -1605,7 +1619,8 @@ data class SaleScreen(
                             name = pendingSelectedProductName ?: "",
                             price = pricePerUnit,
                             qty = qty,
-                            discountPercentage = selectedPricing?.Discount ?: editingItem?.discountPercentage ?: 0.0,
+                            discountPercentage = selectedPricing?.Discount
+                                ?: editingItem?.discountPercentage ?: 0.0,
                             listPrice = pricePerUnit,
                             taxable = taxableAmt,
                             gstAmt = gstAmt,
@@ -3174,12 +3189,12 @@ fun ProductPricingItem(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Serial: ${pricing.SerialNo}",
+                    text = pricing.ProductName,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "₹${formatTwo(pricing.SalePrice)}",
+                    text = formatTwo(pricing.SalePrice),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
@@ -3195,11 +3210,6 @@ fun ProductPricingItem(
                         color = MaterialTheme.colorScheme.error
                     )
                 }
-                Text(
-                    text = "Purchase Price: ₹${formatTwo(pricing.PurchasePrice)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     )

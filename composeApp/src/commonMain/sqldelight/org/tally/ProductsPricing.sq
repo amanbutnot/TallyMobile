@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS Products_Pricing (
+    GUID TEXT NOT NULL,
+    Srno INTEGER NOT NULL,
+    VchType INTEGER NOT NULL,
+    SalesPrice REAL,
+    Mrp REAL,
+    Disc REAL,
+    PRIMARY KEY (GUID, Srno)
+);
+
+selectAll:
+SELECT * FROM Products_Pricing;
