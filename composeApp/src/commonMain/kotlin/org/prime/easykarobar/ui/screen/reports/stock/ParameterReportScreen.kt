@@ -51,6 +51,8 @@ import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getProductParamStockItems
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
+import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
+import org.prime.easykarobar.ui.shared.globalShared.perms
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TableCell
@@ -80,13 +82,21 @@ object ParameterReportScreen : Screen {
         val scope = rememberCoroutineScope()
         var showGroupFilterSheet by remember { mutableStateOf(false) }
         var productGroups by remember { mutableStateOf(emptyList<ProductGroupMaster>()) }
+        val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
+
+        val excludeGuids =
+            if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
 
         LaunchedEffect(Unit) {
             productGroups = withContext(Dispatchers.IO) {
                 db.productGroupMasterQueries
-                    .selectAll(
+                    .selectAllForReport(
                         filterGroup = filterItemGroups(),
-                        groupCodes = itemGroupCodes()
+                        groupCodes = itemGroupCodes(),
+                        filterExclude = filterExclude,
+                        excludeGuids = excludeGuids,
+//                        filterGodown = filterGodown,
+//                        godownCodes = godownCodes
                     )
                     .executeAsList()
             }

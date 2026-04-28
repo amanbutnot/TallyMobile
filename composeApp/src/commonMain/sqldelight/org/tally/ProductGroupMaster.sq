@@ -13,6 +13,10 @@ CREATE TABLE ProductGroupMaster (
 selectAll:
 SELECT * FROM ProductGroupMaster  WHERE (:filterGroup = 0 OR ProductGroupMaster.GroupCode IN :groupCodes OR CAST(ProductGroupMaster.GUID AS INTEGER) IN :groupCodes) ORDER BY Name;
 
+
+selectAllForReport:
+SELECT * FROM ProductGroupMaster  WHERE (:filterGroup = 0 OR ProductGroupMaster.GroupCode IN :groupCodes OR CAST(ProductGroupMaster.GUID AS INTEGER) IN :groupCodes) AND    (:filterExclude = 0 OR ProductGroupMaster.GUID NOT IN :excludeGuids)  ORDER BY Name;
+
 getChildrenProductByGroupName:
 SELECT * FROM ProductGroupMaster WHERE GroupName IN ? AND GUID NOT IN ?;
 
