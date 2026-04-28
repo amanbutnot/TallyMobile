@@ -7,6 +7,7 @@ import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.transactions.sale.InvoiceItem
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import kotlin.math.absoluteValue
 
 
 fun salesHtml(
@@ -172,7 +173,13 @@ th {
             ${if (transportDetails.gstRrNo != "") "<tr><td><b>GST/RR No.</b></td><td>: ${transportDetails.gstRrNo}</td></tr>" else ""}
             ${if (transportDetails.vehicleNo != "") "<tr><td><b>Vehicle No.</b></td><td>: ${transportDetails.vehicleNo}</td></tr>" else ""}
             ${if (transportDetails.pincode != "") "<tr><td><b>Pincode</b></td><td>: ${transportDetails.pincode}</td></tr>" else ""}
-            ${if (transportDetails.gstRrDate != "") "<tr><td><b>GR/RR Date</b></td><td>: ${Tdate(transportDetails.gstRrDate)}</td></tr>" else ""}
+            ${
+            if (transportDetails.gstRrDate != "") "<tr><td><b>GR/RR Date</b></td><td>: ${
+                Tdate(
+                    transportDetails.gstRrDate
+                )
+            }</td></tr>" else ""
+        }
         </table>
     </div>
 </div>
@@ -190,13 +197,17 @@ th {
     )
 
     items.forEachIndexed { index, item ->
+        val serials = if (item.item_serial.isNotEmpty()) {
+            "<br/><small>${item.item_serial.joinToString { it.SerialNo.toString() }}</small>"
+        } else ""
+
         html.append(
             """
     <tr>
         <td class="center">${index + 1}</td>
-        <td>${item.name}</td>
+        <td>${item.name}$serials</td>
         <td class="center"></td>
-        <td class="center">${item.qty}</td>
+        <td class="center">${item.qty.absoluteValue}</td>
         <td class="right">${item.price.formatToAmtDec()}</td>
         <td class="right">${item.total.formatToAmtDec()}</td>
     </tr>
@@ -262,8 +273,12 @@ th {
         """
     <tr>
         <td class="center">Total</td>
-        <td class="right">${taxItems.values.sumOf { it.sumOf { item -> item.taxable } }.formatToAmtDec()}</td>
-        <td class="right">${taxItems.values.sumOf { it.sumOf { item -> item.gstAmt } }.formatToAmtDec()}</td>
+        <td class="right">${
+            taxItems.values.sumOf { it.sumOf { item -> item.taxable } }.formatToAmtDec()
+        }</td>
+        <td class="right">${
+            taxItems.values.sumOf { it.sumOf { item -> item.gstAmt } }.formatToAmtDec()
+        }</td>
         <td class="right">${(taxItems.values.sumOf { it.sumOf { item -> item.taxable } } + taxItems.values.sumOf { it.sumOf { item -> item.gstAmt } }).formatToAmtDec()}</td>
     </tr>
 </table>

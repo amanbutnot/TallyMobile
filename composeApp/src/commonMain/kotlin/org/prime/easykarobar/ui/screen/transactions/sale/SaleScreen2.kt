@@ -140,11 +140,13 @@ import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.Products
+import org.tally.Products_Pricing
 import org.tally.SerialNoEnterReport
 import yymmdd
 import kotlin.math.absoluteValue
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NEW: Data class for a pending multi-select item (holds qty before confirm)
@@ -200,6 +202,17 @@ data class SaleScreen2(
         var showGroupFilterSheet by remember { mutableStateOf(false) }
 
         var editingItem by remember { mutableStateOf<InvoiceItem?>(null) }
+
+        var showProductPricingSheet by remember { mutableStateOf(false) }
+        var selectedPricing by remember { mutableStateOf<ProductPricing?>(null) }
+        var productPricingList by remember { mutableStateOf<List<Products_Pricing>>(emptyList()) }
+        var selectedProductForPricing by remember { mutableStateOf("") }
+        var pendingItemsAfterMultiSelect by remember {
+            mutableStateOf<List<PendingMultiItem>>(
+                emptyList()
+            )
+        }
+        productPricingList = db.productsPricingQueries.selectAll().executeAsList()
 
         var pendingSelectedProductName by remember { mutableStateOf<String?>(null) }
         var pendingSelectedProductGUID by remember { mutableStateOf<String?>(null) }
@@ -471,12 +484,13 @@ data class SaleScreen2(
                             SerialNoEnterReport(
                                 SerialNo = sn,
                                 MasterCode1 = it.product_id.toDoubleOrNull(),
+                                MasterCode2 = "",
                                 ProductName = it.product_name,
                                 UnitName = null,
                                 GroupName = null,
                                 Value1 = 1.0,
                                 Value2 = 0.0,
-                                Value3 = 0.0, MasterCode2 = ""
+                                Value3 = 0.0
                             )
                         }
                     )
@@ -542,6 +556,10 @@ data class SaleScreen2(
         }
 
         val grandTotal = itemsTotal + sundriesTotal
+
+        LaunchedEffect(Unit) {
+            productPricingList = db.productsPricingQueries.selectAll().executeAsList()
+        }
 
         if (state.isLoading) TallyLoadingDialog(
             if (isEdit) "Editing transaction" else "Creating transaction"
@@ -729,12 +747,13 @@ data class SaleScreen2(
                                                             SerialNoEnterReport(
                                                                 SerialNo = sn,
                                                                 MasterCode1 = product?.GUID?.toDoubleOrNull(),
+                                                                MasterCode2 = "",
                                                                 ProductName = pending.name,
                                                                 UnitName = null,
                                                                 GroupName = null,
                                                                 Value1 = 1.0,
                                                                 Value2 = 0.0,
-                                                                MasterCode2 = "", Value3 = 0.0
+                                                                Value3 = 0.0
                                                             )
                                                         }
                                                     )
@@ -811,12 +830,13 @@ data class SaleScreen2(
                                                             SerialNoEnterReport(
                                                                 SerialNo = sn,
                                                                 MasterCode1 = product?.GUID?.toDoubleOrNull(),
+                                                                MasterCode2 = "",
                                                                 ProductName = pending.name,
                                                                 UnitName = null,
                                                                 GroupName = null,
                                                                 Value1 = 1.0,
                                                                 Value2 = 0.0,
-                                                                Value3 = 0.0, MasterCode2 = ""
+                                                                Value3 = 0.0
                                                             )
                                                         }
                                                     )
@@ -1234,79 +1254,235 @@ data class SaleScreen2(
                     isSale = isSale,
                     onConfirm = { pendingItems ->
                         showItemSheet = false
-                        // Convert each pending item → InvoiceItem via the normal pricing logic
-                        pendingItems.forEach { pending ->
-                            val prod = itemsList.find { it.Name == pending.product.Name }
-                            val perms = SharedPrefs.Permissions.get()
-                            val filterGroup = if (perms?.FilterIGRP == "Y") 1L else 0L
-                            val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
-                            val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L
-                            val excludeGuids =
-                                if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
-                            val godownCodes =
-                                if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
-
-                            val serialList = db.productSerialNoQueries.serialNoEnterReport(
-                                filterGroup = filterGroup, groupCodes = filterItemGroupCodes(),
-                                filterExclude = filterExclude, excludeGuids = excludeGuids,
-                                filterGodown = filterGodown, godownCodes = godownCodes,
-                                filterSingle = 1L,
-                                includeSingle = pending.product.GUID?.toDoubleOrNull() ?: 0.0,
-                                filterSingleG = 0L, includeSingleG = ""
-                            ).executeAsList()
-
-                            val qty = pending.qty.toIntOrNull()?.coerceAtLeast(1) ?: 1
-
-                            if (serialList.isEmpty()) {
-                                // No serial numbers — add directly as CompactItemCard
-                                val price =
-                                    if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
-                                val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
-                                val gstPct = try {
-                                    db.taxCategoryMastQueries.selectTaxRate(
-                                        taxCategoryCode.toInt().toString(), selectedDate
-                                    ).executeAsOneOrNull() ?: 0.0
-                                } catch (e: Exception) {
-                                    0.0
-                                }
-
-                                val taxableAmt: Double;
-                                val gstAmt: Double;
-                                val netAmt: Double
-                                if (taxType == TaxType.EXTRA) {
-                                    taxableAmt = price * qty
-                                    gstAmt = taxableAmt * gstPct / 100.0
-                                    netAmt = taxableAmt + gstAmt
-                                } else if (taxType == TaxType.VOUCHER) {
-                                    taxableAmt = price * qty; gstAmt = 0.0; netAmt = price * qty
-                                } else {
-                                    if (gstPct == 0.0) {
-                                        taxableAmt = price * qty; gstAmt = 0.0; netAmt = price * qty
-                                    } else {
-                                        val amount = price * qty
-                                        taxableAmt = amount * 100.0 / (100.0 + gstPct)
-                                        gstAmt = amount - taxableAmt; netAmt = amount
-                                    }
-                                }
-
-                                selectedItems = selectedItems + InvoiceItem(
-                                    name = pending.product.Name.orEmpty(),
-                                    price = price, qty = qty,
-                                    discountPercentage = 0.0, listPrice = price,
-                                    taxable = taxableAmt, gstAmt = gstAmt, net = netAmt,
-                                    guid = pending.product.GUID.orEmpty(),
-                                    gstPercentage = gstPct,
-                                    taxCategoryCode = taxCategoryCode.toInt(), CD = ""
-                                )
-                            } else {
-                                // Has serial numbers — fall back to single-item serial flow
-                                pendingSelectedProductName = pending.product.Name
-                                pendingSelectedProductGUID = pending.product.GUID
-                               // showSerialNumberBottomSheet = true
-                            }
-                        }
+                        pendingItemsAfterMultiSelect = pendingItems
                     },
                     onDismiss = { showItemSheet = false }
+                )
+
+                LaunchedEffect(pendingItemsAfterMultiSelect) {
+                    if (pendingItemsAfterMultiSelect.isNotEmpty()) {
+                        val pending = pendingItemsAfterMultiSelect.first()
+                        val prod = itemsList.find { it.Name == pending.product.Name }
+                        val perms = SharedPrefs.Permissions.get()
+                        val filterGroup = if (perms?.FilterIGRP == "Y") 1L else 0L
+                        val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
+                        val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L
+                        val excludeGuids =
+                            if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
+                        val godownCodes =
+                            if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
+
+                        val serialList = db.productSerialNoQueries.serialNoEnterReport(
+                            filterGroup = filterGroup, groupCodes = filterItemGroupCodes(),
+                            filterExclude = filterExclude, excludeGuids = excludeGuids,
+                            filterGodown = filterGodown, godownCodes = godownCodes,
+                            filterSingle = 1L,
+                            includeSingle = pending.product.GUID?.toDoubleOrNull() ?: 0.0,
+                            filterSingleG = 0L, includeSingleG = ""
+                        ).executeAsList()
+
+                        val pricing =
+                            productPricingList.filter { it.GUID.toDouble() == pending.product.GUID?.toDoubleOrNull() }
+
+                        val currentLedger = ledgerList.find { it.GUID == selectedLedgerGUID }
+                        val pricingLevel = if (isSale) currentLedger?.L6 ?: 100.0 else currentLedger?.L7 ?: 100.0
+                        val autoPricing = if (pricingLevel != 100.0) {
+                            pricing.find { it.Srno == pricingLevel.toLong() }
+                        } else null
+
+                        if (autoPricing != null) {
+                            val price = if (isSale) autoPricing.SalesPrice ?: 0.0 else autoPricing.SalesPrice ?: 0.0
+                            val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
+                            val gstPct = try {
+                                db.taxCategoryMastQueries.selectTaxRate(
+                                    taxCategoryCode.toInt().toString(), selectedDate
+                                ).executeAsOneOrNull() ?: 0.0
+                            } catch (e: Exception) {
+                                0.0
+                            }
+                            val qty = pending.qty.toIntOrNull()?.coerceAtLeast(1) ?: 1
+
+                            val taxableAmt: Double
+                            val gstAmt: Double
+                            val netAmt: Double
+                            if (taxType == TaxType.EXTRA) {
+                                taxableAmt = price * qty
+                                gstAmt = taxableAmt * gstPct / 100.0
+                                netAmt = taxableAmt + gstAmt
+                            } else if (taxType == TaxType.VOUCHER) {
+                                taxableAmt = price * qty; gstAmt = 0.0; netAmt = price * qty
+                            } else {
+                                if (gstPct == 0.0) {
+                                    taxableAmt = price * qty; gstAmt = 0.0; netAmt = price * qty
+                                } else {
+                                    val amount = price * qty
+                                    taxableAmt = amount * 100.0 / (100.0 + gstPct)
+                                    gstAmt = amount - taxableAmt; netAmt = amount
+                                }
+                            }
+
+                            selectedItems = selectedItems + InvoiceItem(
+                                name = pending.product.Name.orEmpty(),
+                                price = price, qty = qty,
+                                discountPercentage = autoPricing.Disc ?: 0.0, listPrice = price,
+                                taxable = taxableAmt, gstAmt = gstAmt, net = netAmt,
+                                guid = pending.product.GUID.orEmpty(),
+                                gstPercentage = gstPct,
+                                taxCategoryCode = taxCategoryCode.toInt(), CD = autoPricing.Disc.toString()
+                            )
+                            pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
+                        } else if (pricing.isNotEmpty()) {
+                            selectedProductForPricing = pending.product.Name.orEmpty()
+                            pendingSelectedProductGUID = pending.product.GUID
+                            showProductPricingSheet = true
+                        } else if (serialList.isNotEmpty()) {
+                            pendingSelectedProductName = pending.product.Name
+                            pendingSelectedProductGUID = pending.product.GUID
+                            showSerialNumberBottomSheet = true
+                        } else {
+                            // No special handling needed, add directly
+                            val price =
+                                if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
+                            val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
+                            val gstPct = try {
+                                db.taxCategoryMastQueries.selectTaxRate(
+                                    taxCategoryCode.toInt().toString(), selectedDate
+                                ).executeAsOneOrNull() ?: 0.0
+                            } catch (e: Exception) {
+                                0.0
+                            }
+                            val qty = pending.qty.toIntOrNull()?.coerceAtLeast(1) ?: 1
+
+                            val taxableAmt: Double
+                            val gstAmt: Double
+                            val netAmt: Double
+                            if (taxType == TaxType.EXTRA) {
+                                taxableAmt = price * qty
+                                gstAmt = taxableAmt * gstPct / 100.0
+                                netAmt = taxableAmt + gstAmt
+                            } else if (taxType == TaxType.VOUCHER) {
+                                taxableAmt = price * qty; gstAmt = 0.0; netAmt = price * qty
+                            } else {
+                                if (gstPct == 0.0) {
+                                    taxableAmt = price * qty; gstAmt = 0.0; netAmt = price * qty
+                                } else {
+                                    val amount = price * qty
+                                    taxableAmt = amount * 100.0 / (100.0 + gstPct)
+                                    gstAmt = amount - taxableAmt; netAmt = amount
+                                }
+                            }
+
+                            selectedItems = selectedItems + InvoiceItem(
+                                name = pending.product.Name.orEmpty(),
+                                price = price, qty = qty,
+                                discountPercentage = 0.0, listPrice = price,
+                                taxable = taxableAmt, gstAmt = gstAmt, net = netAmt,
+                                guid = pending.product.GUID.orEmpty(),
+                                gstPercentage = gstPct,
+                                taxCategoryCode = taxCategoryCode.toInt(), CD = ""
+                            )
+                            pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
+                        }
+                    }
+                }
+
+                ProductPricingBottomSheet(
+                    show = showProductPricingSheet,
+                    productName = selectedProductForPricing,
+                    pricingList = productPricingList.filter { it.GUID.toDouble() == pendingSelectedProductGUID?.toDoubleOrNull() }
+                        .map {
+                            ProductPricing(
+                                Guid = it.GUID,
+                                ProductName = if (it.Srno >= 101) ('A'.code + (it.Srno - 101).toInt()).toChar()
+                                    .toString() else it.GUID,
+                                SerialNo = it.Srno.toString(),
+                                VchType = it.VchType.toInt(),
+                                SalePrice = it.SalesPrice ?: 0.0,
+                                PurchasePrice = it.SalesPrice ?: 0.0,
+                                Discount = it.Disc ?: 0.0,
+                                CompoundDiscount = it.Disc.toString()
+                            )
+                        },
+                    onSelect = { pricing ->
+                        selectedPricing = pricing
+                        showProductPricingSheet = false
+
+                        val pending = pendingItemsAfterMultiSelect.first()
+                        val prod = itemsList.find { it.Name == pending.product.Name }
+                        val perms = SharedPrefs.Permissions.get()
+                        val filterGroup = if (perms?.FilterIGRP == "Y") 1L else 0L
+                        val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
+                        val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L
+                        val excludeGuids =
+                            if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
+                        val godownCodes =
+                            if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
+
+                        val serialList = db.productSerialNoQueries.serialNoEnterReport(
+                            filterGroup = filterGroup, groupCodes = filterItemGroupCodes(),
+                            filterExclude = filterExclude, excludeGuids = excludeGuids,
+                            filterGodown = filterGodown, godownCodes = godownCodes,
+                            filterSingle = 1L,
+                            includeSingle = pending.product.GUID?.toDoubleOrNull() ?: 0.0,
+                            filterSingleG = 0L, includeSingleG = ""
+                        ).executeAsList()
+
+                        if (serialList.isNotEmpty()) {
+                            pendingSelectedProductName = pending.product.Name
+                            pendingSelectedProductGUID = pending.product.GUID
+                            showSerialNumberBottomSheet = true
+                        } else {
+                            val price = if (isSale) pricing.SalePrice else pricing.PurchasePrice
+                            val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
+                            val gstPct = try {
+                                db.taxCategoryMastQueries.selectTaxRate(
+                                    taxCategoryCode.toInt().toString(), selectedDate
+                                ).executeAsOneOrNull() ?: 0.0
+                            } catch (e: Exception) {
+                                0.0
+                            }
+                            val qty = pending.qty.toIntOrNull()?.coerceAtLeast(1) ?: 1
+
+                            val taxableAmt: Double
+                            val gstAmt: Double
+                            val netAmt: Double
+                            if (taxType == TaxType.EXTRA) {
+                                taxableAmt = price * qty
+                                gstAmt = taxableAmt * gstPct / 100.0
+                                netAmt = taxableAmt + gstAmt
+                            } else if (taxType == TaxType.VOUCHER) {
+                                taxableAmt = price * qty; gstAmt = 0.0; netAmt = price * qty
+                            } else {
+                                if (gstPct == 0.0) {
+                                    taxableAmt = price * qty; gstAmt = 0.0; netAmt = price * qty
+                                } else {
+                                    val amount = price * qty
+                                    taxableAmt = amount * 100.0 / (100.0 + gstPct)
+                                    gstAmt = amount - taxableAmt; netAmt = amount
+                                }
+                            }
+
+                            selectedItems = selectedItems + InvoiceItem(
+                                name = pending.product.Name.orEmpty(),
+                                price = price, qty = qty,
+                                discountPercentage = pricing.Discount,
+                                listPrice = price,
+                                taxable = taxableAmt, gstAmt = gstAmt, net = netAmt,
+                                guid = pending.product.GUID.orEmpty(),
+                                gstPercentage = gstPct,
+                                taxCategoryCode = taxCategoryCode.toInt(),
+                                CD = pricing.CompoundDiscount
+                            )
+                            selectedPricing = null
+                            pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
+                        }
+                    },
+                    onDismiss = {
+                        showProductPricingSheet = false
+                        selectedPricing = null
+                        pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
+                    },
+                    bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
                 )
 
                 SerialNumberBottomSheet(
@@ -1327,6 +1503,10 @@ data class SaleScreen2(
                         editingItem = null
                         pendingSelectedProductName = null
                         pendingSelectedProductGUID = null
+                        selectedPricing = null
+                        if (pendingItemsAfterMultiSelect.isNotEmpty()) {
+                            pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
+                        }
                     },
                     onSerialNumbersSelected = { selectedList ->
                         val total = selectedList.sumOf { it.Value3 ?: 0.0 }
@@ -1339,13 +1519,22 @@ data class SaleScreen2(
                         } catch (e: Exception) {
                             0.0
                         }
-                        val pricePerUnit =
-                            if (total > 0) total / selectedList.size else (editingItem?.price
-                                ?: 0.0)
+
+                        val pricePerUnit = if (selectedPricing != null) {
+                            if (isSale) selectedPricing!!.SalePrice else selectedPricing!!.PurchasePrice
+                        } else if (total > 0) {
+                            total / selectedList.size
+                        } else {
+                            editingItem?.price ?: (if (isSale) prod?.SalesPrice
+                                ?: 0.0 else prod?.PurcPrice ?: 0.0)
+                        }
+
+                        val discPct =
+                            selectedPricing?.Discount ?: editingItem?.discountPercentage ?: 0.0
+                        val compDisc = selectedPricing?.CompoundDiscount ?: editingItem?.CD ?: ""
 
                         val qty = selectedList.size.coerceAtLeast(1)
 
-// ── SAME TAX LOGIC AS MULTI-SELECT ─────────────────────────────
                         val taxableAmt: Double
                         val gstAmt: Double
                         val netAmt: Double
@@ -1375,7 +1564,7 @@ data class SaleScreen2(
                             name = pendingSelectedProductName ?: "",
                             price = pricePerUnit,
                             qty = qty,
-                            discountPercentage = editingItem?.discountPercentage ?: 0.0,
+                            discountPercentage = discPct,
                             listPrice = pricePerUnit,
                             taxable = taxableAmt,
                             gstAmt = gstAmt,
@@ -1383,7 +1572,7 @@ data class SaleScreen2(
                             guid = pendingSelectedProductGUID ?: editingItem?.guid ?: "",
                             gstPercentage = gstPct,
                             taxCategoryCode = taxCategoryCode.toInt(),
-                            CD = editingItem?.CD ?: "",
+                            CD = compDisc,
                             item_serial = selectedList
                         )
 
@@ -1396,11 +1585,15 @@ data class SaleScreen2(
                         selectedItems = list
 
                         showSerialNumberBottomSheet = false
-                        selectedInitialSerialNo = emptyList() // Reset after selection
+                        selectedInitialSerialNo = emptyList()
                         editingItem = null
                         editingItemIndex = null
                         pendingSelectedProductName = null
                         pendingSelectedProductGUID = null
+                        selectedPricing = null
+                        if (pendingItemsAfterMultiSelect.isNotEmpty()) {
+                            pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
+                        }
                     }
                 )
 
@@ -1617,10 +1810,11 @@ data class SaleScreen2(
                                                 db.productSerialNoQueries.insertProductSerialNo(
                                                     serialNo = serial.SerialNo,
                                                     masterCode1 = serial.MasterCode1,
-                                                    masterCode2 = serial.MasterCode2, // Godown/MasterCode2
+                                                    masterCode2 = serial.MasterCode2
+                                                        ?: "", // Godown/MasterCode2
                                                     value1 = -1.0,
-                                                    value2 = serial.Value2,
-                                                    value3 = serial.Value3,
+                                                    value2 = serial.Value2 ?: 0.0,
+                                                    value3 = serial.Value3 ?: 0.0,
                                                     guid = "${state.data?.uniqueID}-$serial-${Uuid.random()}"
                                                 )
                                             }
@@ -1699,12 +1893,19 @@ fun MultiSelectItemSheet(
     val filteredList = remember(options, query) {
         if (query.isBlank()) options
         else {
-            val sw = options.filter { it.Name?.startsWith(query, ignoreCase = true) == true }
-            val co = options.filter {
-                it.Name?.startsWith(query, ignoreCase = true) != true &&
-                        it.Name?.contains(query, ignoreCase = true) == true
+            val q = query.trim()
+
+            val (startsWith, rest) = options.partition {
+                it.Name.orEmpty().startsWith(q, true) ||
+                        it.Alias.orEmpty().startsWith(q, true)
             }
-            sw + co
+
+            val contains = rest.filter {
+                it.Name.orEmpty().contains(q, true) ||
+                        it.Alias.orEmpty().contains(q, true)
+            }
+
+            startsWith + contains
         }
     }
 

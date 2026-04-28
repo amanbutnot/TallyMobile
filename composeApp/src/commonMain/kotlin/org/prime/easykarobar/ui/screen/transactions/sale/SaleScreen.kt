@@ -1474,11 +1474,37 @@ data class SaleScreen(
                     title = "Select Item",
                     options = groupFilteredList,
                     onSelect = { itemName ->
+                        val currentLedger = ledgerList.find { it.GUID == selectedLedgerGUID }
+                        val pricingLevel = if (isSale) currentLedger?.L6 ?: 100.0 else currentLedger?.L7 ?: 100.0
+
                         println("asdlkfj " + productPricingList.filter { it.GUID.toDouble() == itemName.GUID?.toDouble() })
                         selectedProductForPricing = itemName
                         val pricingForProduct =
                             productPricingList.filter { it.GUID.toDouble() == itemName.GUID?.toDouble() }
-                        if (pricingForProduct.isNotEmpty()) {
+
+                        val autoPricing = if (pricingLevel != 100.0) {
+                            pricingForProduct.find { it.Srno == pricingLevel.toLong() }
+                        } else null
+
+                        if (autoPricing != null) {
+                            val prod = itemsList.find { it.Name == itemName.Name }
+                            val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
+                            editingItem = InvoiceItem(
+                                name = itemName.Name.toString(),
+                                price = autoPricing.SalesPrice ?: 0.0,
+                                qty = 1,
+                                discountPercentage = autoPricing.Disc ?: 0.0,
+                                listPrice = autoPricing.SalesPrice ?: 0.0,
+                                taxable = 0.0,
+                                gstAmt = 0.0,
+                                net = 0.0,
+                                guid = itemName.GUID ?: "",
+                                gstPercentage = 0.0,
+                                taxCategoryCode = taxCategoryCode.toInt(),
+                                CD = autoPricing.Disc.toString()
+                            )
+                            showItemSheet = false
+                        } else if (pricingForProduct.isNotEmpty()) {
                             showProductPricingSheet = true
                         } else {
                             val prod = itemsList.find { it.Name == itemName.Name }

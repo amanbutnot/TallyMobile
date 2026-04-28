@@ -23,7 +23,9 @@ CREATE TABLE LedgerMaster (
     L2 REAL,
     L3 REAL,
     L4 REAL,
-    L5 REAL
+    L5 REAL,
+    L6 REAL,
+    L7 REAL
 );
 
 existingAccounts:
@@ -56,7 +58,9 @@ INSERT OR IGNORE INTO LedgerMaster(
     L2,
     L3,
     L4,
-    L5
+    L5,
+    L6,
+    L7
 )
 VALUES(
     :code,
@@ -79,6 +83,8 @@ VALUES(
     :alterId,
     :guid,
     :panNo,
+    1,
+    1,
     1,
     1,
     1,
