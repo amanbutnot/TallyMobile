@@ -128,8 +128,10 @@ object ShoppingScreen : Screen {
             filterGroup = filterItemGroups(),
             groupCodes = itemGroupCodes(), productCode = null
         ).executeAsList()
-        val categoryList = db.productsQueries.productCategoriesForDis(       filterGroup = filterItemGroups(),
-            groupCodes = itemGroupCodes()).executeAsList()
+        val categoryList = db.productsQueries.productCategoriesForDis(
+            filterGroup = filterItemGroups(),
+            groupCodes = itemGroupCodes()
+        ).executeAsList()
 
 
         val filteredProducts =
@@ -160,7 +162,7 @@ object ShoppingScreen : Screen {
                 onQueryChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
             )
-            Button(onClick = {nav.push(AllProductScreen())}){Text("All")}
+            Button(onClick = { nav.push(AllProductScreen()) }) { Text("All") }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -303,6 +305,7 @@ object ShoppingScreen : Screen {
                     storeId = SharedPrefs.User.get()?.ID.toString(),
                     guid = product.product_id.toString()
                 )
+                println("Full image url $fullUrl")
 
                 // --- Image collapses fully when OFF
                 AnimatedVisibility(
