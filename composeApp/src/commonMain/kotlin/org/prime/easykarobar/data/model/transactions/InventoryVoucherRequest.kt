@@ -167,6 +167,7 @@ data class InventoryItemResponse(
     val status: String,
     val status_billed: String,
     val billing_guid: String,
+    val billed_vchno: String,
     val billing_name: String,
     val billing_mobile: String,
     val billing_address: String,

@@ -572,7 +572,9 @@ data class SaleScreen2(
 
         val htmlContent = salesHtml(
             name = name, partyName = selectedLedger, partyGuid = selectedLedgerGUID,
-            invoiceNo = oneState.data?.AutoVchNo.toString(), date = selectedDate,
+            invoiceNo = oneState.data?.billed_vchno
+                ?.takeIf { it.isNotEmpty() }
+                ?: oneState.data?.AutoVchNo.toString(), date = selectedDate,
             items = selectedItems, sundries = selectedSundries, grandTotal = grandTotal,
             transportDetails = org.prime.easykarobar.ui.printing.TransportDetails(
                 transportName = transportName, gstRrNo = gstRrNo, vehicleNo = vehicleNo,
@@ -583,7 +585,9 @@ data class SaleScreen2(
             add(MenuItemData(Icons.Default.Download, "Download", {
                 scope.launch {
                     handlePdfAction(
-                        fileName = CompanyName(),
+                        fileName = oneState.data?.billed_vchno
+                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
+                            ?: CompanyName(),
                         htmlContent = htmlContent,
                         action = PdfAction.Download,
                         onLoadingChange = { shareLoading = it })
@@ -592,7 +596,9 @@ data class SaleScreen2(
             add(MenuItemData(Icons.Default.Share, "Share", {
                 scope.launch {
                     handlePdfAction(
-                        fileName = CompanyName(),
+                        fileName = oneState.data?.billed_vchno
+                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
+                            ?: CompanyName(),
                         htmlContent = htmlContent,
                         action = PdfAction.Share,
                         onLoadingChange = { shareLoading = it })
@@ -1285,13 +1291,15 @@ data class SaleScreen2(
                             productPricingList.filter { it.GUID.toDouble() == pending.product.GUID?.toDoubleOrNull() }
 
                         val currentLedger = ledgerList.find { it.GUID == selectedLedgerGUID }
-                        val pricingLevel = if (isSale) currentLedger?.L6 ?: 100.0 else currentLedger?.L7 ?: 100.0
+                        val pricingLevel =
+                            if (isSale) currentLedger?.L6 ?: 100.0 else currentLedger?.L7 ?: 100.0
                         val autoPricing = if (pricingLevel != 100.0) {
                             pricing.find { it.Srno == pricingLevel.toLong() }
                         } else null
 
                         if (autoPricing != null) {
-                            val price = if (isSale) autoPricing.SalesPrice ?: 0.0 else autoPricing.SalesPrice ?: 0.0
+                            val price = if (isSale) autoPricing.SalesPrice
+                                ?: 0.0 else autoPricing.SalesPrice ?: 0.0
                             val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
                             val gstPct = try {
                                 db.taxCategoryMastQueries.selectTaxRate(
@@ -1323,12 +1331,17 @@ data class SaleScreen2(
 
                             selectedItems = selectedItems + InvoiceItem(
                                 name = pending.product.Name.orEmpty(),
-                                price = price, qty = qty,
-                                discountPercentage = autoPricing.Disc ?: 0.0, listPrice = price,
-                                taxable = taxableAmt, gstAmt = gstAmt, net = netAmt,
+                                price = price,
+                                qty = qty,
+                                discountPercentage = autoPricing.Disc ?: 0.0,
+                                listPrice = price,
+                                taxable = taxableAmt,
+                                gstAmt = gstAmt,
+                                net = netAmt,
                                 guid = pending.product.GUID.orEmpty(),
                                 gstPercentage = gstPct,
-                                taxCategoryCode = taxCategoryCode.toInt(), CD = autoPricing.Disc.toString()
+                                taxCategoryCode = taxCategoryCode.toInt(),
+                                CD = autoPricing.Disc.toString()
                             )
                             pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
                         } else if (pricing.isNotEmpty()) {

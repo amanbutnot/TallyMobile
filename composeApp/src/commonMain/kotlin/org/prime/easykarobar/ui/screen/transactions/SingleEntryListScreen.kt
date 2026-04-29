@@ -118,9 +118,14 @@ data class SingleEntryListScreen(
                                             onDownload = { data ->
                                                 scope.launch {
                                                     handlePdfAction(
-                                                        fileName = "${CompanyName()}_${item.VchNo}",
+                                                        fileName = item?.billed_vchno
+                                                            ?.takeIf { it.isNotEmpty() }
+                                                            ?.replace("/", "_")
+                                                            ?: CompanyName(),
                                                         htmlContent = entryTypesHtml(
-                                                            voucherNo = item.VchNo,
+                                                            voucherNo = item?.billed_vchno
+                                                                ?.takeIf { it.isNotEmpty() }
+                                                                ?: item.VchNo,
                                                             date = item.TranDate,
                                                             data = EntryTypesHtml(
                                                                 ledger = item.C1,
@@ -137,9 +142,14 @@ data class SingleEntryListScreen(
                                             onShare = { data ->
                                                 scope.launch {
                                                     handlePdfAction(
-                                                        fileName = "${CompanyName()}_${item.VchNo}",
+                                                        fileName = item?.billed_vchno
+                                                            ?.takeIf { it.isNotEmpty() }
+                                                            ?.replace("/", "_")
+                                                            ?: CompanyName(),
                                                         htmlContent = entryTypesHtml(
-                                                            voucherNo = item.VchNo,
+                                                            voucherNo = item.billed_vchno
+                                                                .takeIf { it.isNotEmpty() }
+                                                                ?: item.VchNo,
                                                             date = item.TranDate,
                                                             data = EntryTypesHtml(
                                                                 ledger = item.C1,
@@ -157,7 +167,8 @@ data class SingleEntryListScreen(
                                                 SingleEntryReceipt(
                                                     name = name,
                                                     vchType = vchType,
-                                                    existingTransaction = item , showPdc = vchType == 19 || vchType == 14
+                                                    existingTransaction = item,
+                                                    showPdc = vchType == 19 || vchType == 14
                                                 )
                                             )
                                         }

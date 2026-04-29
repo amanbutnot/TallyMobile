@@ -52,6 +52,7 @@ data class TranListResponse(
     val CM2: String,
     val CM3: String,
     val CM4: String,
+    val billed_vchno: String,
     val pdcDate: String?=null,
     val pdcType: String?=null,
     val C1: String,

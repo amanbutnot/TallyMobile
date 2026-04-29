@@ -731,7 +731,15 @@ data class SaleScreen(
             name = name,
             partyName = selectedLedger,
             partyGuid = selectedLedgerGUID,
-            invoiceNo = oneState.data?.AutoVchNo.toString(),
+            invoiceNo = oneState.data?.billed_vchno
+                ?.takeIf { it.isNotBlank() }
+                ?: oneState.data?.AutoVchNo
+                    ?.takeIf { it != 0 }
+                    ?.toString()
+                ?: state.data?.VoucherNumber
+                    ?.toString()
+                    ?.takeIf { it.isNotBlank() }
+                ?: "default_name",
             date = selectedDate,
             items = selectedItems,
             sundries = selectedSundries,
@@ -750,7 +758,9 @@ data class SaleScreen(
             add(MenuItemData(Icons.Default.Download, "Download", {
                 scope.launch {
                     handlePdfAction(
-                        fileName = CompanyName(),
+                        fileName = oneState.data?.billed_vchno
+                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
+                            ?: CompanyName(),
                         htmlContent = htmlContent,
                         action = PdfAction.Download,
                         onLoadingChange = { shareLoading = it })
@@ -759,7 +769,9 @@ data class SaleScreen(
             add(MenuItemData(Icons.Default.Share, "Share", {
                 scope.launch {
                     handlePdfAction(
-                        fileName = CompanyName(),
+                        fileName = oneState.data?.billed_vchno
+                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
+                            ?: CompanyName(),
                         htmlContent = htmlContent,
                         action = PdfAction.Share,
                         onLoadingChange = { shareLoading = it })
@@ -1475,7 +1487,8 @@ data class SaleScreen(
                     options = groupFilteredList,
                     onSelect = { itemName ->
                         val currentLedger = ledgerList.find { it.GUID == selectedLedgerGUID }
-                        val pricingLevel = if (isSale) currentLedger?.L6 ?: 100.0 else currentLedger?.L7 ?: 100.0
+                        val pricingLevel =
+                            if (isSale) currentLedger?.L6 ?: 100.0 else currentLedger?.L7 ?: 100.0
 
                         println("asdlkfj " + productPricingList.filter { it.GUID.toDouble() == itemName.GUID?.toDouble() })
                         selectedProductForPricing = itemName
@@ -2661,16 +2674,22 @@ fun TransactionItemBottomList(
     val filteredList = remember(list, query) {
         if (query.isBlank()) list
         else {
-            val startsWith = list.filter { item ->
-                item.Name?.startsWith(query, ignoreCase = true) ?: false
+            val q = query.trim()
+
+            val (startsWith, rest) = list.partition {
+                it.Name.orEmpty().startsWith(q, true) ||
+                        it.Alias.orEmpty().startsWith(q, true)
             }
-            val contains = list.filter { item ->
-                !(item.Name?.startsWith(query, ignoreCase = true) ?: false) &&
-                        item.Name?.contains(query, ignoreCase = true) ?: false
+
+            val contains = rest.filter {
+                it.Name.orEmpty().contains(q, true) ||
+                        it.Alias.orEmpty().contains(q, true)
             }
+
             startsWith + contains
         }
     }
+
 
     if (showBottomSheet) {
         ModalBottomSheet(

@@ -571,7 +571,7 @@ data class SingleEntryReceipt(
                         },
                         isSuccess = state.success,
                         confirmText = if (state.success) "Done" else "Try Again",
-                        fileName = "${name}_${existingTransaction?.VchNo}",
+                        fileName = "${name}_${existingTransaction?.VchNo ?: state.data?.VoucherNumber}",
                         htmlContent = entryTypesHtml(
                             voucherNo = state.data?.VoucherNumber.toString(),
                             date = selectedDate,
