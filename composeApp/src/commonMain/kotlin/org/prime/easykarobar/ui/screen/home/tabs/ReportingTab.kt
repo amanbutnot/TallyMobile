@@ -1,5 +1,6 @@
 package org.prime.easykarobar.ui.screen.home.tabs
 
+import CurrentDate
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -71,6 +72,7 @@ import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.screen.reports.godown.GodownClosingStockListScreen
 import org.prime.easykarobar.ui.screen.reports.godown.MCBatchNoReport
 import org.prime.easykarobar.ui.screen.reports.godown.MCSerialNoReport
+import org.prime.easykarobar.ui.screen.reports.ledger.ItemLedgerScreen
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportFilterScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingSelectScreen
 import org.prime.easykarobar.ui.screen.reports.pendingOrder.OrderReportSelectScreen
@@ -85,6 +87,7 @@ import org.prime.easykarobar.ui.screen.reports.stock.SerialNumberStockReport
 import org.prime.easykarobar.ui.screen.reports.stock.StockReportScreen
 import org.prime.easykarobar.ui.screen.reports.trialBalance.TrialBalanceScreen
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
+import org.prime.easykarobar.ui.shared.globalShared.StartDate
 
 object ReportingTab : Tab {
     override val options: TabOptions
@@ -366,6 +369,22 @@ object ReportingTab : Tab {
                                         )
                                     }
 
+                                    Report.ItemLedger -> {
+                                        salesmanPermission(
+                                            "D40",
+                                            accessDeniedBlock = { showDeniedDialog = true },
+                                            successBlock = {
+                                                nav?.push(
+                                                    ItemLedgerScreen(
+                                                        accountName = "Demo Distributor",
+                                                        startDate = StartDate(),
+                                                        endDate = CurrentDate()
+                                                    )
+                                                )
+                                            }
+                                        )
+                                    }
+
 
                                     Report.SalesmanGroupWise -> {
                                         salesmanPermission(
@@ -470,6 +489,7 @@ fun ReportButton(
 sealed class Report(val title: String, val icon: ImageVector) {
 
     object Ledger : Report("Ledger", Icons.Default.AccountBalance)
+    object ItemLedger : Report("Item Ledger", Icons.Default.AccountBalance)
     object Outstanding : Report("Outstanding", Icons.Default.WarningAmber)
     object TrialBalance : Report("Trial Balance", Icons.Default.Balance)
     object Registers : Report("Registers", Icons.AutoMirrored.Default.ListAlt)
