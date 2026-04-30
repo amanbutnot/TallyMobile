@@ -573,8 +573,14 @@ data class SaleScreen2(
         val htmlContent = salesHtml(
             name = name, partyName = selectedLedger, partyGuid = selectedLedgerGUID,
             invoiceNo = oneState.data?.billed_vchno
-                ?.takeIf { it.isNotEmpty() }
-                ?: oneState.data?.AutoVchNo.toString(), date = selectedDate,
+                ?.takeIf { it.isNotBlank() }
+                ?: oneState.data?.AutoVchNo
+                    ?.takeIf { it != 0 }
+                    ?.toString()
+                ?: state.data?.VoucherNumber
+                    ?.toString()
+                    ?.takeIf { it.isNotBlank() }
+                ?: "default_name", date = selectedDate,
             items = selectedItems, sundries = selectedSundries, grandTotal = grandTotal,
             transportDetails = org.prime.easykarobar.ui.printing.TransportDetails(
                 transportName = transportName, gstRrNo = gstRrNo, vehicleNo = vehicleNo,

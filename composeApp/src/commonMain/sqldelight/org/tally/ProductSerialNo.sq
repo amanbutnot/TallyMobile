@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS ProductSerialNo (
     Value1 REAL,
     Value2 REAL,
     Value3 REAL,
+    SP REAL,
     GUID TEXT NOT NULL UNIQUE
 );
 
@@ -62,11 +63,31 @@ WHERE
 GROUP BY pps.MasterCode1,p.Name,  p.UnitName,p.GroupName HAVING ROUND(Sum(pps.Value1),3) <>0
 ORDER BY p.Name;
 
+
+deleteSerialNo:
+DELETE FROM ProductSerialNo
+WHERE GUID = :guid;
+
 serialNoEnterReport:
 SELECT SerialNo,
 pps.MasterCode1,pps.MasterCode2,
     p.Name AS ProductName,
     p.UnitName,p.GroupName AS GroupName,ROUND(Sum(pps.Value1),3) AS Value1,ROUND(Sum(pps.Value2),3) AS Value2,ROUND(Sum(pps.Value3),3) AS Value3
+FROM ProductSerialNo pps
+JOIN Products p ON p.GUID = pps.MasterCode1
+WHERE
+    (:filterGroup = 0 OR p.GroupCode IN :groupCodes)
+    AND (:filterExclude = 0 OR p.GUID NOT IN :excludeGuids)
+     AND (:filterSingle = 0 OR pps.MasterCode1 = :includeSingle)
+     AND (:filterSingleG = 0 OR pps.MasterCode2 = :includeSingleG)
+    AND (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes)
+GROUP BY pps.MasterCode1,p.Name,  p.UnitName,p.GroupName , SerialNo HAVING ROUND(Sum(pps.Value1),3) >0
+ORDER BY p.Name,SerialNo;
+serialNoEnterReportSale:
+SELECT SerialNo,
+pps.MasterCode1,pps.MasterCode2,
+    p.Name AS ProductName,
+    p.UnitName,p.GroupName AS GroupName,ROUND(Sum(pps.Value1),3) AS Value1,ROUND(Sum(pps.Value2),3) AS Value2,ROUND(Sum(pps.SP),3) AS Value3
 FROM ProductSerialNo pps
 JOIN Products p ON p.GUID = pps.MasterCode1
 WHERE

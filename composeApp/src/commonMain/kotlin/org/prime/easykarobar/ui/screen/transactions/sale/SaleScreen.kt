@@ -503,6 +503,11 @@ data class SaleScreen(
                                 )
                             }
                         }
+                        db.transaction {
+                            selectedInitialSerialNo.forEach {
+                                db.productSerialNoQueries.deleteSerialNo(oneState.data?.uniqueID.toString())
+                            }
+                        }
                         tranId?.let {
                             viewmodel.deleteInventoryVch(
                                 tranId = it, vchType = vchType
