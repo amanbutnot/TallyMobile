@@ -53,7 +53,7 @@ import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
-import org.tally.SerialNoEnterReportSale
+import org.tally.SerialNoEnterReport
 import smartSearch
 import kotlin.math.absoluteValue
 
@@ -68,7 +68,7 @@ data class SerialNumberReport(
     override fun Content() {
         val db = DatabaseHolder.instance
 
-        var list by remember { mutableStateOf<List<SerialNoEnterReportSale>>(emptyList()) }
+        var list by remember { mutableStateOf<List<SerialNoEnterReport>>(emptyList()) }
         var isLoading by remember { mutableStateOf(true) }
         var showSearchBar by remember { mutableStateOf(false) }
         var searchQuery by remember { mutableStateOf("") }
@@ -93,7 +93,7 @@ data class SerialNumberReport(
                     if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
                 println("IS MAIN $isMain and $productGuid")
                 println("IS MAING $isDirect and $godownCode")
-                list = db.productSerialNoQueries.serialNoEnterReportSale(
+                list = db.productSerialNoQueries.serialNoEnterReport(
                     filterGroup = filterGroup,
                     groupCodes = filterItemGroupCodes(),
                     filterExclude = filterExclude,

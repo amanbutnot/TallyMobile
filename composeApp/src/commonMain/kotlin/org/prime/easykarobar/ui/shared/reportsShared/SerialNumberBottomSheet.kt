@@ -32,7 +32,7 @@ import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
-import org.tally.SerialNoEnterReport
+import org.tally.SerialNoEnterReportSale
 import smartSearch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,7 +41,7 @@ fun SerialNumberBottomSheet(
     productGuid: String,
     show: Boolean,
     onDismiss: () -> Unit,
-    onSerialNumbersSelected: (List<SerialNoEnterReport>) -> Unit,
+    onSerialNumbersSelected: (List<SerialNoEnterReportSale>) -> Unit,
     initialSelectedSerialNumbers: List<String> = emptyList(),
     title: String = "Select Serial Numbers",
 ) {
@@ -50,9 +50,9 @@ fun SerialNumberBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val db = DatabaseHolder.instance
     var serialNumbers by remember {
-        mutableStateOf<List<SerialNoEnterReport>>(
+        mutableStateOf<List<SerialNoEnterReportSale>>(
             initialSelectedSerialNumbers.map { serialNo ->
-                SerialNoEnterReport(
+                SerialNoEnterReportSale(
                     SerialNo = serialNo,
                     MasterCode1 = productGuid.toDoubleOrNull(),
                     ProductName = "",
@@ -85,7 +85,7 @@ fun SerialNumberBottomSheet(
             val excludeGuids = if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
             val godownCodes = if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
 
-            val fetchedSerials = db.productSerialNoQueries.serialNoEnterReport(
+            val fetchedSerials = db.productSerialNoQueries.serialNoEnterReportSale(
                 filterGroup = filterGroup,
                 groupCodes = filterItemGroupCodes(),
                 filterExclude = filterExclude,
@@ -104,7 +104,7 @@ fun SerialNumberBottomSheet(
             val missingSerials = initialSelectedSerialNumbers.filter { initial ->
                 fetchedSerials.none { it.SerialNo == initial }
             }.map { serialNo ->
-                SerialNoEnterReport(
+                SerialNoEnterReportSale(
                     SerialNo = serialNo,
                     MasterCode1 = productGuid.toDoubleOrNull(),
                     ProductName = "",

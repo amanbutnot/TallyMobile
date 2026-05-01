@@ -143,7 +143,7 @@ import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.Products
 import org.tally.Products_Pricing
-import org.tally.SerialNoEnterReport
+import org.tally.SerialNoEnterReportSale
 import yymmdd
 import kotlin.math.abs
 import kotlin.math.absoluteValue
@@ -207,7 +207,7 @@ data class InvoiceItem(
     val itemdesc18: String? = null,
     val itemdesc19: String? = null,
     val itemdesc20: String? = null,
-    val item_serial: List<@Contextual SerialNoEnterReport> = emptyList(),
+    val item_serial: List<@Contextual SerialNoEnterReportSale> = emptyList(),
     // Additional info
     val additionalinfo: String? = null,
 ) {
@@ -255,7 +255,7 @@ data class SaleScreen(
 
         var selectedItems by remember { mutableStateOf<List<InvoiceItem>>(emptyList()) }
         var selectedInitialSerialNo by remember {
-            mutableStateOf<List<SerialNoEnterReport>>(
+            mutableStateOf<List<SerialNoEnterReportSale>>(
                 emptyList()
             )
         }
@@ -494,6 +494,7 @@ data class SaleScreen(
                 title = "Delete",
                 message = "Are you sure you want to delete this voucher",
                 onConfirm = {
+                    println("delete serial number "+oneState.data?.uniqueID.toString())
                     scope.launch {
                         db.transaction {
                             selectedReferences.forEach {
@@ -504,9 +505,7 @@ data class SaleScreen(
                             }
                         }
                         db.transaction {
-                            selectedInitialSerialNo.forEach {
                                 db.productSerialNoQueries.deleteSerialNo(oneState.data?.uniqueID.toString())
-                            }
                         }
                         tranId?.let {
                             viewmodel.deleteInventoryVch(
@@ -628,7 +627,7 @@ data class SaleScreen(
                         itemdesc20 = it.itemdesc20,
                         additionalinfo = it.additionalinfo,
                         item_serial = it.item_serial.map { sn ->
-                            SerialNoEnterReport(
+                            SerialNoEnterReportSale(
                                 SerialNo = sn,
                                 MasterCode1 = it.product_id.toDoubleOrNull(),
                                 ProductName = it.product_name,
@@ -916,7 +915,7 @@ data class SaleScreen(
                                                         discountPercentage = discount,
                                                         listPrice = listPriceText,
                                                         taxable = taxable,
-                                                        CD = compoundDiscount.toString(),
+                                                        CD = compoundDiscount ?: "",
                                                         gstAmt = gstAmount,
                                                         net = net,
                                                         guid = product.GUID
@@ -946,7 +945,7 @@ data class SaleScreen(
                                                         itemdesc20 = itemDescs.getOrNull(19),
                                                         additionalinfo = additionalInfos.getOrNull(0),
                                                         item_serial = serialNumbers.map { sn ->
-                                                            SerialNoEnterReport(
+                                                            SerialNoEnterReportSale(
                                                                 SerialNo = sn,
                                                                 MasterCode1 = product?.GUID?.toDoubleOrNull(),
                                                                 ProductName = pending.name,
@@ -1034,7 +1033,7 @@ data class SaleScreen(
                                                         itemdesc20 = itemDescs.getOrNull(19),
                                                         additionalinfo = additionalInfos.getOrNull(0),
                                                         item_serial = serialNumbers.map { sn ->
-                                                            SerialNoEnterReport(
+                                                            SerialNoEnterReportSale(
                                                                 SerialNo = sn,
                                                                 MasterCode1 = product?.GUID?.toDoubleOrNull(),
                                                                 ProductName = pending.name,
@@ -1983,6 +1982,7 @@ data class SaleScreen(
 
                                     db.transaction {
                                         selectedItems.forEach { item ->
+                                            println("in adding serial to db ${state.data?.uniqueID}")
                                             item.item_serial.forEach { serialObj ->
                                                 db.productSerialNoQueries.insertProductSerialNo(
                                                     serialNo = serialObj.SerialNo,
@@ -1992,7 +1992,7 @@ data class SaleScreen(
                                                     value1 = -1.0,
                                                     value2 = serialObj.Value2 ?: 0.0,
                                                     value3 = serialObj.Value3 ?: 0.0,
-                                                    guid = "${state.data?.uniqueID}-${Uuid.random()}"
+                                                    guid = "${state.data?.uniqueID}_${serialObj.SerialNo}"
                                                 )
                                             }
                                         }

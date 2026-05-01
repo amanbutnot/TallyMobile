@@ -141,7 +141,7 @@ import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.Products
 import org.tally.Products_Pricing
-import org.tally.SerialNoEnterReport
+import org.tally.SerialNoEnterReportSale
 import yymmdd
 import kotlin.math.absoluteValue
 import kotlin.uuid.ExperimentalUuidApi
@@ -217,7 +217,7 @@ data class SaleScreen2(
         var pendingSelectedProductName by remember { mutableStateOf<String?>(null) }
         var pendingSelectedProductGUID by remember { mutableStateOf<String?>(null) }
         var selectedInitialSerialNo by remember {
-            mutableStateOf<List<SerialNoEnterReport>>(
+            mutableStateOf<List<SerialNoEnterReportSale>>(
                 emptyList()
             )
         }
@@ -481,7 +481,7 @@ data class SaleScreen2(
                         itemdesc20 = it.itemdesc20,
                         additionalinfo = it.additionalinfo,
                         item_serial = it.item_serial.map { sn ->
-                            SerialNoEnterReport(
+                            SerialNoEnterReportSale(
                                 SerialNo = sn,
                                 MasterCode1 = it.product_id.toDoubleOrNull(),
                                 MasterCode2 = "",
@@ -726,7 +726,7 @@ data class SaleScreen2(
                                                         discountPercentage = discount,
                                                         listPrice = listPriceText,
                                                         taxable = taxable,
-                                                        CD = compoundDiscount.toString(),
+                                                        CD = compoundDiscount ?: "",
                                                         gstAmt = gstAmount,
                                                         net = net,
                                                         guid = product.GUID
@@ -756,7 +756,7 @@ data class SaleScreen2(
                                                         itemdesc20 = itemDescs.getOrNull(19),
                                                         additionalinfo = additionalInfos.getOrNull(0),
                                                         item_serial = serialNumbers.map { sn ->
-                                                            SerialNoEnterReport(
+                                                            SerialNoEnterReportSale(
                                                                 SerialNo = sn,
                                                                 MasterCode1 = product?.GUID?.toDoubleOrNull(),
                                                                 MasterCode2 = "",
@@ -810,7 +810,7 @@ data class SaleScreen2(
                                                         discountPercentage = discount,
                                                         listPrice = listPriceText,
                                                         taxable = taxable,
-                                                        CD = compoundDiscount.toString(),
+                                                        CD = compoundDiscount ?: "",
                                                         gstAmt = gstAmount,
                                                         net = net,
                                                         guid = pendingSelectedProductGUID ?: "",
@@ -839,7 +839,7 @@ data class SaleScreen2(
                                                         itemdesc20 = itemDescs.getOrNull(19),
                                                         additionalinfo = additionalInfos.getOrNull(0),
                                                         item_serial = serialNumbers.map { sn ->
-                                                            SerialNoEnterReport(
+                                                            SerialNoEnterReportSale(
                                                                 SerialNo = sn,
                                                                 MasterCode1 = product?.GUID?.toDoubleOrNull(),
                                                                 MasterCode2 = "",
@@ -1834,7 +1834,7 @@ data class SaleScreen2(
                                                     value1 = -1.0,
                                                     value2 = serial.Value2 ?: 0.0,
                                                     value3 = serial.Value3 ?: 0.0,
-                                                    guid = "${state.data?.uniqueID}-$serial-${Uuid.random()}"
+                                                    guid = "${state.data?.uniqueID}_${serial.SerialNo}"
                                                 )
                                             }
                                         }
