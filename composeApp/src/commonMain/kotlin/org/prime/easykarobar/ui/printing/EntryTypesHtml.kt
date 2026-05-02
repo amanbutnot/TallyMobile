@@ -3,6 +3,7 @@ package org.prime.easykarobar.ui.printing
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.screen.transactions.BillByBillModel
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 
@@ -39,6 +40,31 @@ fun entryTypesHtml(
         "Payment" -> data.amount.formatToAmtDec()
         else -> ""
     }
+
+    val billsHtml = if (data.bills.isNotEmpty()) {
+        val rows = data.bills.joinToString("") { bill ->
+            """
+            <tr>
+                <td>${bill.cm2 ?: ""}</td>
+                <td>${bill.billNumber ?: ""}</td>
+                <td class="number">${bill.d1?.formatToAmtDec() ?: ""}</td>
+            </tr>
+            """
+        }
+        """
+        <div style="margin-top: 20px;">
+            <strong>Bill wise Details:</strong>
+            <table style="margin-top: 5px;">
+                <tr>
+                    <th>Ref Type</th>
+                    <th>Ref Number</th>
+                    <th>Amount</th>
+                </tr>
+                $rows
+            </table>
+        </div>
+        """
+    } else ""
 
     html.append(
         """
@@ -179,6 +205,8 @@ fun entryTypesHtml(
                 </tr>
             </table>
 
+            $billsHtml
+
         </div>
         </body>
         </html>
@@ -191,5 +219,6 @@ fun entryTypesHtml(
 data class EntryTypesHtml(
     val ledger: String,
     val settlement: String,
-    val amount: Double
+    val amount: Double,
+    val bills: List<BillByBillModel> = emptyList()
 )

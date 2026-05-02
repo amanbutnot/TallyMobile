@@ -88,6 +88,7 @@ import org.prime.easykarobar.ui.screen.reports.stock.StockReportScreen
 import org.prime.easykarobar.ui.screen.reports.trialBalance.TrialBalanceScreen
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
+import org.prime.easykarobar.ui.shared.globalShared.isBusy
 
 object ReportingTab : Tab {
     override val options: TabOptions
@@ -113,40 +114,56 @@ object ReportingTab : Tab {
         val colors = MaterialTheme.colorScheme
         val nav = LocalNavigator.currentOrThrow.parent
 
-        val reportGroups = listOf(
-            ReportGroup(
-                "Accounting",
-                listOf(Report.Ledger, Report.Outstanding, Report.TrialBalance, Report.Registers)
-            ),
-            ReportGroup(
-                "Inventory",
-                listOf(
-                    Report.StockReport,
-                    Report.GoDownWiseClosingStock,
-                )
-            ),
-            ReportGroup("Parameter", listOf(Report.ParameterReport, Report.ProductStock)),
-            ReportGroup(
-                "Batch",
-                listOf(Report.BatchNumberWise, Report.BatchNumberReport, Report.MCBatchNumberReport)
-            ),
-            ReportGroup(
-                "Serial Number",
-                listOf(
-                    Report.SerialNumberWise,
-                    Report.SerialNumberReport,
-                    Report.MCSerialNumberReport
-                )
-            ),
-            ReportGroup("Order", listOf(Report.Order)),
-            ReportGroup(
-                "Salesman",
-                listOf(
-                    Report.SalesmanWise,
-                    Report.SalesmanGroupWise,
+        val reportGroups = buildList {
+            add(
+                ReportGroup(
+                    "Accounting",
+                    listOf(Report.Ledger, Report.Outstanding, Report.TrialBalance, Report.Registers)
                 )
             )
-        )
+            add(
+                ReportGroup(
+                    "Inventory",
+                    listOf(
+                        Report.StockReport,
+                        Report.GoDownWiseClosingStock,
+                    )
+                )
+            )
+            if (isBusy()) {
+                add(ReportGroup("Parameter", listOf(Report.ParameterReport, Report.ProductStock)))
+                add(
+                    ReportGroup(
+                        "Batch",
+                        listOf(
+                            Report.BatchNumberWise,
+                            Report.BatchNumberReport,
+                            Report.MCBatchNumberReport
+                        )
+                    )
+                )
+                add(
+                    ReportGroup(
+                        "Serial Number",
+                        listOf(
+                            Report.SerialNumberWise,
+                            Report.SerialNumberReport,
+                            Report.MCSerialNumberReport
+                        )
+                    )
+                )
+            }
+            add(ReportGroup("Order", listOf(Report.Order)))
+            add(
+                ReportGroup(
+                    "Salesman",
+                    listOf(
+                        Report.SalesmanWise,
+                        Report.SalesmanGroupWise,
+                    )
+                )
+            )
+        }
 
         Column(
             modifier = Modifier
