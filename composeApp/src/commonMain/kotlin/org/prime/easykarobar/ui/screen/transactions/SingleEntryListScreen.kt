@@ -130,7 +130,8 @@ data class SingleEntryListScreen(
                                                             data = EntryTypesHtml(
                                                                 ledger = item.C1,
                                                                 settlement = item.C2,
-                                                                amount = item.D2
+                                                                amount = item.D2,
+                                                                bills = item.bills_collection
                                                             ),
                                                             title = name
                                                         ),
@@ -154,7 +155,8 @@ data class SingleEntryListScreen(
                                                             data = EntryTypesHtml(
                                                                 ledger = item.C1,
                                                                 settlement = item.C2,
-                                                                amount = item.D2
+                                                                amount = item.D2,
+                                                                bills = item.bills_collection
                                                             ),
                                                             title = name
                                                         ),

@@ -119,6 +119,7 @@ data class SingleEntryReceipt(
                 existingTransaction?.pdcDate ?: CurrentDate()
             )
         }
+        println(existingTransaction)
 
 
         var showPopup by remember { mutableStateOf(false) }
@@ -517,7 +518,7 @@ data class SingleEntryReceipt(
                             amount,
                             selectedDate
                         ).all(String::isNotEmpty) && (!isEdit || hasSalesmanPermission("ED$vchType")),
-                        label = if (isEdit) "Modify" else "Create",
+                        label = if (isEdit ) "Modify" else "Create",
                         backgroundColor = MaterialTheme.colorScheme.primary
                     )
 
@@ -578,7 +579,8 @@ data class SingleEntryReceipt(
                             data = EntryTypesHtml(
                                 ledger = selectedAccount,
                                 settlement = selectedSettlement,
-                                amount = amount.toDoubleOrNull() ?: 0.0
+                                amount = amount.toDoubleOrNull() ?: 0.0,
+                                bills = selectedReferences
                             ),
                             title = name
                         ),
