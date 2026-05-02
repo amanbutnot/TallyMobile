@@ -1,7 +1,9 @@
 package org.prime.easykarobar.ui.printing
 
 import org.prime.easykarobar.data.expect.formatToAmtDec
+import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
+import kotlin.math.absoluteValue
 
 data class InvoiceItem(
     val sn: Int,
@@ -43,6 +45,12 @@ fun salesInvoiceHtml(
                 font-family: Arial, sans-serif;
                 font-size: 10pt;
                 color: #000;
+            }
+
+            .main-container {
+                border: 2px solid #000;
+                border-radius: 8px;
+                padding: 12px;
             }
 
             h2, h3 {
@@ -108,14 +116,23 @@ fun salesInvoiceHtml(
                 margin-top: 10px;
             }
 
-            .footer-note {
-                font-size: 9pt;
-                text-align: center;
+            .footer {
                 margin-top: 20px;
+                font-size: 9pt;
+                display: flex;
+                justify-content: space-between;
             }
+
+            .flex {
+                display: flex;
+                justify-content: space-between;
+            }
+
+            .bold { font-weight: bold; }
         </style>
         </head>
         <body>
+            <div class="main-container">
             <div class="company-info">
                 <h2>${CompanyName()}</h2>
                 <div>$companyAddress</div>
@@ -147,7 +164,7 @@ fun salesInvoiceHtml(
             <tr>
                 <td class="center">${item.sn}</td>
                 <td>${item.itemName}</td>
-                <td class="number">${item.qty.formatToAmtDec()}</td>
+                <td class="number">${item.qty.absoluteValue.formatToAmtDec()}</td>
                 <td class="number">${item.rate.formatToAmtDec()}</td>
                 <td class="number">${item.amount.formatToAmtDec()}</td>
             </tr>
@@ -159,7 +176,7 @@ fun salesInvoiceHtml(
         """
             <tr>
                 <th colspan="2" class="text">TOTAL</th>
-                <th class="number">${totalQty.formatToAmtDec()}</th>
+                <th class="number">${totalQty.absoluteValue.formatToAmtDec()}</th>
                 <th></th>
                 <th class="number">${totalAmount.formatToAmtDec()}</th>
             </tr>
@@ -167,27 +184,27 @@ fun salesInvoiceHtml(
         """.trimIndent()
     )
 
-    // Particulars table (Discount, GST, etc.)
-    html.append(
-        """
-            <table class="particulars">
-                <tr>
-                    <th>Particulars</th>
-                    <th>Amount (Rs.)</th>
-                </tr>
-        """.trimIndent()
-    )
-
-    particulars.forEach { p ->
-        html.append(
-            """
-            <tr>
-                <td>${p.name}</td>
-                <td class="number">${p.amount.formatToAmtDec()}</td>
-            </tr>
-            """.trimIndent()
-        )
-    }
+//    // Particulars table (Discount, GST, etc.)
+//    html.append(
+//        """
+//            <table class="particulars">
+//                <tr>
+//                    <th>Particulars</th>
+//                    <th>Amount (Rs.)</th>
+//                </tr>
+//        """.trimIndent()
+//    )
+//
+//    particulars.forEach { p ->
+//        html.append(
+//            """
+//            <tr>
+//                <td>${p.name}</td>
+//                <td class="number">${p.amount.formatToAmtDec()}</td>
+//            </tr>
+//            """.trimIndent()
+//        )
+//    }
 
     html.append(
         """
@@ -196,8 +213,20 @@ fun salesInvoiceHtml(
                 Grand Total = Rs. ${grandTotal.formatToAmtDec()}
             </div>
 
-            <div class="footer-note">
-                Thank you for your business!
+            <div class="footer">
+                <div style="width:60%">
+                    <b>Terms & Conditions</b><br>
+                    E.& O.E.<br>
+                    1. Goods once sold will not be taken back.<br>
+                    2. Interest @ 18% p.a. will be charged if payment is delayed.<br>
+                    3. Subject to '${SharedPrefs.User.get()?.State}' Jurisdiction only.
+                </div>
+
+                <div style="width:35%; text-align:center;">
+                    For <b>${CompanyName()}</b><br><br><br>
+                    Authorised Signatory
+                </div>
+            </div>
             </div>
         </body>
         </html>

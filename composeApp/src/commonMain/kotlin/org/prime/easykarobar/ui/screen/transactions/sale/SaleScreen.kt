@@ -494,7 +494,7 @@ data class SaleScreen(
                 title = "Delete",
                 message = "Are you sure you want to delete this voucher",
                 onConfirm = {
-                    println("delete serial number "+oneState.data?.uniqueID.toString())
+                    println("delete serial number " + oneState.data?.uniqueID.toString())
                     scope.launch {
                         db.transaction {
                             selectedReferences.forEach {
@@ -505,7 +505,11 @@ data class SaleScreen(
                             }
                         }
                         db.transaction {
-                                db.productSerialNoQueries.deleteSerialNo(oneState.data?.uniqueID.toString())
+                            selectedItems.forEach {
+                                it.item_serial.forEach {
+                                    db.productSerialNoQueries.deleteSerialNo("${oneState.data?.uniqueID}_${it.SerialNo}")
+                                }
+                            }
                         }
                         tranId?.let {
                             viewmodel.deleteInventoryVch(
@@ -1219,7 +1223,10 @@ data class SaleScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         SmallAddButton(
-                                            label = if (isBusy()) "Add More Sundry" else "Add More Ledger"
+                                            label = if (isBusy()) "Add More Sundry" else "Add More Ledger",
+                                            enabled =
+                                                selectedItems.isNotEmpty()
+
                                         ) {
                                             showSundrySheet = true
                                         }
@@ -2012,10 +2019,14 @@ data class SaleScreen(
                                     createO()
                                 }
                             },
-                            enabled = if (isEdit) {
-                                enableUpdateButton && hasSalesmanPermission("ED$vchType")
+                            enabled = if (editingItem != null) {
+                                false
                             } else {
-                                selectedLedger.isNotEmpty() && selectedItems.isNotEmpty()
+                                if (isEdit) {
+                                    enableUpdateButton && hasSalesmanPermission("ED$vchType")
+                                } else {
+                                    selectedLedger.isNotEmpty() && selectedItems.isNotEmpty()
+                                }
                             },
                             label = if (isEdit) "Update" else "Create",
                             backgroundColor = MaterialTheme.colorScheme.primary

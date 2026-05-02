@@ -394,6 +394,13 @@ data class SaleScreen2(
                             )
                         }
                     }
+                    db.transaction {
+                        selectedItems.forEach {
+                            it.item_serial.forEach {
+                                db.productSerialNoQueries.deleteSerialNo("${oneState.data?.uniqueID}_${it.SerialNo}")
+                            }
+                        }
+                    }
                     tranId?.let { viewmodel.deleteInventoryVch(tranId = it, vchType = vchType) }
                 }
             },
@@ -1006,7 +1013,12 @@ data class SaleScreen2(
                                         horizontalArrangement = Arrangement.Center,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        SmallAddButton(label = if (isBusy()) "Add More Sundry" else "Add More Ledger") {
+                                        SmallAddButton(
+                                            label = if (isBusy()) "Add More Sundry" else "Add More Ledger",
+                                            enabled =
+                                                selectedItems.isNotEmpty()
+
+                                        ) {
                                             showSundrySheet = true
                                         }
                                     }
@@ -1849,8 +1861,12 @@ data class SaleScreen2(
                             onClick = {
                                 if (grandTotal < 0.0) showWarningMessage = true else createO()
                             },
-                            enabled = if (isEdit) enableUpdateButton && hasSalesmanPermission("ED$vchType")
-                            else selectedLedger.isNotEmpty() && selectedItems.isNotEmpty(),
+                            enabled = if (editingItem != null) {
+                                false
+                            } else {
+                                if (isEdit) enableUpdateButton && hasSalesmanPermission("ED$vchType")
+                                else selectedLedger.isNotEmpty() && selectedItems.isNotEmpty()
+                            },
                             label = if (isEdit) "Update" else "Create",
                             backgroundColor = MaterialTheme.colorScheme.primary
                         )
