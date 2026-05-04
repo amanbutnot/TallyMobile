@@ -40,6 +40,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -116,6 +117,7 @@ import org.prime.easykarobar.data.model.transactions.TransportDetails
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.salesHtml
+import org.prime.easykarobar.ui.screen.home.tabs.InfoRow
 import org.prime.easykarobar.ui.screen.transactions.BillByBillModel
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionBillBottomSheet
@@ -245,7 +247,7 @@ data class SaleScreen(
 
         val db = DatabaseHolder.instance
         val nav = LocalNavigator.currentOrThrow
-
+        val compInfo = db.companyInformationQueries.selectAll().executeAsOne()
         var selectedLedger by remember { mutableStateOf(selectedLedger ?: "") }
         var barcodeQty by remember { mutableStateOf("") }
         var selectedLedgerGUID by remember { mutableStateOf(selectedLedgerGUID ?: "") }
@@ -817,7 +819,11 @@ data class SaleScreen(
                                 .verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Spacer(modifier = Modifier.height(4.dp))
+                            InfoRow(
+                                icon = Icons.Default.Badge,
+                                label = "GST Number",
+                                value = compInfo.T4.toString()
+                            )
 
                             ElevatedCard(
                                 modifier = Modifier.fillMaxWidth(),
@@ -2022,10 +2028,14 @@ data class SaleScreen(
                             enabled = if (editingItem != null) {
                                 false
                             } else {
-                                if (isEdit) {
-                                    enableUpdateButton && hasSalesmanPermission("ED$vchType")
+                                if (viewmodel.dataState.value.isLoading) {
+                                    false
                                 } else {
-                                    selectedLedger.isNotEmpty() && selectedItems.isNotEmpty()
+                                    if (isEdit) {
+                                        enableUpdateButton && hasSalesmanPermission("ED$vchType")
+                                    } else {
+                                        selectedLedger.isNotEmpty() && selectedItems.isNotEmpty()
+                                    }
                                 }
                             },
                             label = if (isEdit) "Update" else "Create",
