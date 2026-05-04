@@ -50,6 +50,21 @@ Sum(D3) AS Item_Amt
  WHERE CM1 = ? GROUP BY CM2,CM3 ORDER BY CM2;
 
 
+ledgerReportList:
+SELECT
+  VL.*,
+ CM2 AS AccountName
+FROM Vouchers_StockItems AS VL
+WHERE VL.CM1 = ?
+  AND VL.DATE >= ?
+  AND VL.DATE <= ?
+ORDER BY VL.DATE, VL.VOUCHERNUMBER;
+
+
+ledgerOpeningBalance:
+SELECT Sum(D1) AS OpeningBal  FROM Vouchers_StockItems WHERE CM1=? AND DATE<?;
+
+
 godownWiseClosingStockList:
 SELECT
     SUM(pps.Value1) AS Item_Qty,

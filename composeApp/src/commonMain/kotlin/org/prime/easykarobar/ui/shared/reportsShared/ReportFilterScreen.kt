@@ -62,6 +62,7 @@ import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
+import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.parseDate
 import kotlin.time.Clock
@@ -79,7 +80,8 @@ fun ReportFilterScreen(
     buttonText: String = "Generate Report",
     showAddButton: Boolean = false,
     onAddButtonClick: () -> Unit = {},
-    onGenerateClick: (GenerateReportData) -> Unit
+    onGenerateClick: (GenerateReportData) -> Unit,
+    showItemSelect: Boolean = false
 ) {
     val nav = LocalNavigator.currentOrThrow
 
@@ -87,13 +89,16 @@ fun ReportFilterScreen(
         var startDate by rememberSaveable { mutableStateOf(StartDate()) }
         var endDate by rememberSaveable { mutableStateOf(CurrentDate()) }
         var selectedAccount by rememberSaveable { mutableStateOf("") }
+        var selectedItem by rememberSaveable { mutableStateOf("") }
         var showBottomSheet by remember { mutableStateOf(false) }
         var showError by remember { mutableStateOf(false) }
         var selectedRange by rememberSaveable { mutableStateOf("Custom") }
 
         val db = DatabaseHolder.instance
         val list = getLedgerMasters(db)
+        val items = getItemMasters(db)
         val nameList = list.map { it.Name }
+        val itemList = items.map { it.Name }
         val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         var showDateRangeMenu by remember { mutableStateOf(false) }
 
@@ -110,10 +115,7 @@ fun ReportFilterScreen(
         )
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .navigationBarsPadding()
+            modifier = Modifier.fillMaxSize().padding(paddingValues).navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
@@ -128,9 +130,7 @@ fun ReportFilterScreen(
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -139,9 +139,7 @@ fun ReportFilterScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             Box(
-                                modifier = Modifier
-                                    .size(64.dp)
-                                    .clip(RoundedCornerShape(16.dp))
+                                modifier = Modifier.size(64.dp).clip(RoundedCornerShape(16.dp))
                                     .background(MaterialTheme.colorScheme.primary),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -180,7 +178,9 @@ fun ReportFilterScreen(
                                 modifier = Modifier.height(48.dp)
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                                    modifier = Modifier.padding(
+                                        horizontal = 20.dp, vertical = 12.dp
+                                    ),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
@@ -201,12 +201,9 @@ fun ReportFilterScreen(
                             DropdownMenu(
                                 expanded = showDateRangeMenu,
                                 onDismissRequest = { showDateRangeMenu = false },
-                                modifier = Modifier
-                                    .background(
-                                        MaterialTheme.colorScheme.surface,
-                                        RoundedCornerShape(16.dp)
-                                    )
-                                    .padding(vertical = 8.dp)
+                                modifier = Modifier.background(
+                                    MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp)
+                                ).padding(vertical = 8.dp)
                             ) {
                                 dateRanges.forEach { range ->
                                     val isSelected = selectedRange == range
@@ -217,19 +214,15 @@ fun ReportFilterScreen(
                                             endDate = end
                                             selectedRange = range
                                             showDateRangeMenu = false
-                                        },
-                                        text = {
+                                        }, text = {
                                             Box(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .background(
-                                                        if (isSelected) MaterialTheme.colorScheme.primary.copy(
-                                                            alpha = 0.12f
-                                                        )
-                                                        else MaterialTheme.colorScheme.surface,
-                                                        RoundedCornerShape(10.dp)
+                                                modifier = Modifier.fillMaxWidth().background(
+                                                    if (isSelected) MaterialTheme.colorScheme.primary.copy(
+                                                        alpha = 0.12f
                                                     )
-                                                    .padding(vertical = 12.dp, horizontal = 16.dp)
+                                                    else MaterialTheme.colorScheme.surface,
+                                                    RoundedCornerShape(10.dp)
+                                                ).padding(vertical = 12.dp, horizontal = 16.dp)
                                             ) {
                                                 Text(
                                                     text = range,
@@ -238,8 +231,9 @@ fun ReportFilterScreen(
                                                     else MaterialTheme.colorScheme.onSurface
                                                 )
                                             }
-                                        },
-                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                        }, contentPadding = PaddingValues(
+                                            horizontal = 8.dp, vertical = 2.dp
+                                        )
                                     )
                                 }
                             }
@@ -258,9 +252,7 @@ fun ReportFilterScreen(
                 shape = RoundedCornerShape(20.dp)
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
                     // Account Selection
@@ -273,23 +265,20 @@ fun ReportFilterScreen(
                             )
 
                             Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(14.dp))
+                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
                                     .clickable { showBottomSheet = true },
                                 shape = RoundedCornerShape(14.dp),
                                 color = MaterialTheme.colorScheme.surface,
                                 border = BorderStroke(
                                     1.5.dp,
-                                    if (selectedAccount.isEmpty())
-                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                    else
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                    if (selectedAccount.isEmpty()) MaterialTheme.colorScheme.outline.copy(
+                                        alpha = 0.3f
+                                    )
+                                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                                 )
                             ) {
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth()
                                         .padding(horizontal = 18.dp, vertical = 18.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
@@ -297,10 +286,52 @@ fun ReportFilterScreen(
                                     Text(
                                         text = selectedAccount.ifEmpty { "Select an account" },
                                         style = MaterialTheme.typography.bodyLarge,
-                                        color = if (selectedAccount.isEmpty())
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        else
-                                            MaterialTheme.colorScheme.onSurface
+                                        color = if (selectedAccount.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant
+                                        else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Outlined.KeyboardArrowDown,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    // Item Selection
+                    if (showItemSelect) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(
+                                text = "Item",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            Surface(
+                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+                                    .clickable { showBottomSheet = true },
+                                shape = RoundedCornerShape(14.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                border = BorderStroke(
+                                    1.5.dp,
+                                    if (selectedItem.isEmpty()) MaterialTheme.colorScheme.outline.copy(
+                                        alpha = 0.3f
+                                    )
+                                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth()
+                                        .padding(horizontal = 18.dp, vertical = 18.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = selectedItem.ifEmpty { "Select an item" },
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = if (selectedItem.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant
+                                        else MaterialTheme.colorScheme.onSurface
                                     )
                                     Icon(
                                         imageVector = Icons.Outlined.KeyboardArrowDown,
@@ -317,13 +348,10 @@ fun ReportFilterScreen(
                     if (showAddButton) {
                         OutlinedButton(
                             onClick = onAddButtonClick,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp),
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
                             shape = RoundedCornerShape(14.dp),
                             border = BorderStroke(
-                                1.5.dp,
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                             ),
                             colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
@@ -346,13 +374,10 @@ fun ReportFilterScreen(
                     // Start Date
                     if (showStartDate) {
                         TallyDatePickerRow(
-                            label = "Start Date",
-                            selectedDate = startDate,
-                            onDateSelected = {
+                            label = "Start Date", selectedDate = startDate, onDateSelected = {
                                 startDate = it
                                 if (showDateRangeSelector) selectedRange = "Custom"
-                            },
-                            defaultDate = CurrentDate()
+                            }, defaultDate = CurrentDate()
                         )
                     }
 
@@ -365,14 +390,17 @@ fun ReportFilterScreen(
                             onDateSelected = {
                                 endDate = it
                                 if (showDateRangeSelector) selectedRange = "Custom"
-                            }
-                        )
+                            })
                     }
 
                     BottomSheetItem(
                         showBottomSheet = showBottomSheet,
-                        list = nameList,
-                        onSelected = { it?.let { selectedAccount = it } },
+                        list = if (showItemSelect) itemList else nameList,
+                        onSelected = {
+                            if (showItemSelect) it?.let {
+                                selectedItem = it
+                            } else it?.let { selectedAccount = it }
+                        },
                         onDismiss = { showBottomSheet = false },
                         bottomSheetState = state
                     )
@@ -386,16 +414,12 @@ fun ReportFilterScreen(
                 exit = fadeOut() + shrinkVertically()
             ) {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
+                    modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer
-                    ),
-                    shape = RoundedCornerShape(16.dp)
+                    ), shape = RoundedCornerShape(16.dp)
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(18.dp),
+                        modifier = Modifier.fillMaxWidth().padding(18.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
@@ -426,6 +450,7 @@ fun ReportFilterScreen(
                         showError = false
                         onGenerateClick(
                             GenerateReportData(
+                                itemName = selectedItem,
                                 accountName = selectedAccount,
                                 startDate = startDate,
                                 endDate = endDate
@@ -433,9 +458,7 @@ fun ReportFilterScreen(
                         )
                     }
                 },
-                enabled = (!showStartDate || startDate.isNotEmpty()) &&
-                        (!showEndDate || endDate.isNotEmpty()) &&
-                        (!showAccountSelect || selectedAccount.isNotEmpty()),
+                enabled = (!showStartDate || startDate.isNotEmpty()) && (!showEndDate || endDate.isNotEmpty()) && (!showAccountSelect || selectedAccount.isNotEmpty()) && (!showItemSelect || selectedItem.isNotEmpty()),
                 backgroundColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
@@ -453,19 +476,23 @@ fun getDateRange(range: String): Pair<String, String> {
             val y = today.minus(1, DateTimeUnit.DAY)
             y to y
         }
+
         "Tomorrow" -> {
             val t = today.plus(1, DateTimeUnit.DAY)
             t to t
         }
+
         "This Week" -> {
             val start = today.minus(today.dayOfWeek.isoDayNumber - 1, DateTimeUnit.DAY)
             start to today
         }
+
         "Last Week" -> {
             val start = today.minus(today.dayOfWeek.isoDayNumber + 6, DateTimeUnit.DAY)
             val end = start.plus(6, DateTimeUnit.DAY)
             start to end
         }
+
         "Last 7 Days" -> today.minus(6, DateTimeUnit.DAY) to today
         "Last 30 Days" -> today.minus(29, DateTimeUnit.DAY) to today
         "This Month" -> today.minus(today.dayOfMonth - 1, DateTimeUnit.DAY) to today
@@ -489,6 +516,7 @@ val DayOfWeek.isoDayNumber: Int
 
 data class GenerateReportData(
     val accountName: String? = null,
+    val itemName: String? = null,
     val startDate: String,
     val endDate: String
 )

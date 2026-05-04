@@ -162,7 +162,6 @@ object ShoppingScreen : Screen {
                 onQueryChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
             )
-            Button(onClick = { nav.push(AllProductScreen()) }) { Text("All") }
 
             Spacer(modifier = Modifier.height(8.dp))
 

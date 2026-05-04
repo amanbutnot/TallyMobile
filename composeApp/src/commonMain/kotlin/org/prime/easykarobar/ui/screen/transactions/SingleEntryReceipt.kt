@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -60,6 +61,7 @@ import org.prime.easykarobar.data.model.transactions.TranRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.printing.EntryTypesHtml
 import org.prime.easykarobar.ui.printing.entryTypesHtml
+import org.prime.easykarobar.ui.screen.home.tabs.InfoRow
 import org.prime.easykarobar.ui.screen.transactions.sale.makeNegativeConditional
 import org.prime.easykarobar.ui.shared.composables.DownloadResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyButton
@@ -142,6 +144,7 @@ data class SingleEntryReceipt(
             uniqueId = state.data?.uniqueID.toString()
             selectedReferences = existingTransaction.bills_collection
         }
+        val compInfo = db.companyInformationQueries.selectAll().executeAsOne()
 
         if (state.isLoading) {
             if (isEdit) {
@@ -168,6 +171,12 @@ data class SingleEntryReceipt(
                     if (isEdit) {
                         InfoRow("Voucher No", existingTransaction?.VchNo ?: "")
                     }
+
+                    InfoRow(
+                        icon = Icons.Default.Badge,
+                        label = "GST Number",
+                        value = compInfo.T4.toString()
+                    )
 
 
                     TallyDatePickerRow(
@@ -517,8 +526,8 @@ data class SingleEntryReceipt(
                             selectedSettlementGUID,
                             amount,
                             selectedDate
-                        ).all(String::isNotEmpty) && (!isEdit || hasSalesmanPermission("ED$vchType")),
-                        label = if (isEdit ) "Modify" else "Create",
+                        ).all(String::isNotEmpty) && (!isEdit || hasSalesmanPermission("ED$vchType")) && !state.isLoading,
+                        label = if (isEdit) "Modify" else "Create",
                         backgroundColor = MaterialTheme.colorScheme.primary
                     )
 

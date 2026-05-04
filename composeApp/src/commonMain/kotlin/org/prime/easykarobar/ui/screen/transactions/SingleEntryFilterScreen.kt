@@ -67,7 +67,7 @@ data class SingleEntryFilterScreen(val name: String, val vchType: Int) : Screen 
 
                 }
 
-            }
+            },
         )
     }
 }

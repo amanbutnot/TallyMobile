@@ -27,7 +27,7 @@ object OutstandingDisFilterScreen : Screen {
                         calculateDays = "Due Date",showOtherToggle = false,
                     )
                 )
-            }
+            },
         )
     }
 }

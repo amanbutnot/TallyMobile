@@ -12,6 +12,7 @@ data class RegisterFilterScreen(val name: String) : Screen {
         val nav = LocalNavigator.currentOrThrow
 
         ReportFilterScreen(
+            title = "$name Filter",
             showStartDate = true,
             showEndDate = true,
             showAccountSelect = false,
@@ -20,7 +21,6 @@ data class RegisterFilterScreen(val name: String) : Screen {
                     RegisterReportScreen(name, it.startDate, it.endDate)
                 )
             },
-            title = "$name Filter"
         )
     }
 }
