@@ -1,6 +1,5 @@
 package org.prime.easykarobar.ui.screen.home.tabs
 
-import CurrentDate
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -72,7 +71,6 @@ import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.screen.reports.godown.GodownClosingStockListScreen
 import org.prime.easykarobar.ui.screen.reports.godown.MCBatchNoReport
 import org.prime.easykarobar.ui.screen.reports.godown.MCSerialNoReport
-import org.prime.easykarobar.ui.screen.reports.ledger.ItemLedgerScreen
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportFilterScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingSelectScreen
 import org.prime.easykarobar.ui.screen.reports.pendingOrder.OrderReportSelectScreen
@@ -87,7 +85,6 @@ import org.prime.easykarobar.ui.screen.reports.stock.SerialNumberStockReport
 import org.prime.easykarobar.ui.screen.reports.stock.StockReportScreen
 import org.prime.easykarobar.ui.screen.reports.trialBalance.TrialBalanceScreen
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
-import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.isBusy
 
 object ReportingTab : Tab {
@@ -125,6 +122,7 @@ object ReportingTab : Tab {
                 ReportGroup(
                     "Inventory",
                     listOf(
+                        Report.ItemLedger,
                         Report.StockReport,
                         Report.GoDownWiseClosingStock,
                     )
@@ -392,10 +390,9 @@ object ReportingTab : Tab {
                                             accessDeniedBlock = { showDeniedDialog = true },
                                             successBlock = {
                                                 nav?.push(
-                                                    ItemLedgerScreen(
-                                                        accountName = "Demo Distributor",
-                                                        startDate = StartDate(),
-                                                        endDate = CurrentDate()
+                                                    LedgerReportFilterScreen(
+                                                        showAccount = false,
+                                                        isItemLedger = true
                                                     )
                                                 )
                                             }

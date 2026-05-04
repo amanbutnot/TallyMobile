@@ -59,8 +59,8 @@ import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TableCell
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
-import org.tally.LedgerOpeningBalance
-import org.tally.LedgerReportList
+import org.tally.vouchersLedgers.LedgerOpeningBalance
+import org.tally.vouchersLedgers.LedgerReportList
 import smartSearch
 import kotlin.math.absoluteValue
 

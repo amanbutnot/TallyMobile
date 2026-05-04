@@ -8,7 +8,10 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.reportsShared.ReportFilterScreen
 
-data class LedgerReportFilterScreen(val showAccount: Boolean = true) : Screen {
+data class LedgerReportFilterScreen(
+    val showAccount: Boolean = true,
+    val isItemLedger: Boolean = false
+) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
@@ -18,20 +21,27 @@ data class LedgerReportFilterScreen(val showAccount: Boolean = true) : Screen {
             showStartDate = true,
             showEndDate = true,
             showAccountSelect = showAccount,
+            showItemSelect = isItemLedger,
             showDateRangeSelector = true,
             onGenerateClick = {
-                if (showAccount) {
+                if (isItemLedger) {
                     nav.push(
-                        LedgerReportScreen(it.accountName.toString(), it.startDate, it.endDate)
+                        ItemLedgerScreen(it.itemName.toString(), it.startDate, it.endDate)
                     )
                 } else {
-                    nav.push(
-                        LedgerReportScreen(
-                            SharedPrefs.DistributorData.get()?.ledger_name.toString(),
-                            it.startDate,
-                            it.endDate
+                    if (showAccount) {
+                        nav.push(
+                            LedgerReportScreen(it.accountName.toString(), it.startDate, it.endDate)
                         )
-                    )
+                    } else {
+                        nav.push(
+                            LedgerReportScreen(
+                                SharedPrefs.DistributorData.get()?.ledger_name.toString(),
+                                it.startDate,
+                                it.endDate
+                            )
+                        )
+                    }
                 }
             },
             title = "Ledger Filter"
