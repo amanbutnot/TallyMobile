@@ -95,6 +95,7 @@ import org.prime.easykarobar.data.model.hasSalesmanPermission
 import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.attendance.AttendanceScreen
+import org.prime.easykarobar.ui.screen.distributor.order.AllProductScreen
 import org.prime.easykarobar.ui.screen.distributor.order.MyOrdersScreen
 import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen
 import org.prime.easykarobar.ui.screen.home.ROLE
@@ -137,6 +138,7 @@ object HomeTab : Tab {
         val db = DatabaseHolder.instance
         val queries = db.companyInformationQueries
         val compInfo = queries.getCompanyInformation().executeAsOne()
+        val configHideGroup = db.companyConfigurationQueries.hideGroup().executeAsOneOrNull()
         var showDeniedDialog by remember { mutableStateOf(false) }
         var showLedgerSearch by remember { mutableStateOf(false) }
         val nav = LocalNavigator.currentOrThrow.parent
@@ -197,10 +199,10 @@ object HomeTab : Tab {
             if (userRole() == ROLE.ADMIN || userRole() == ROLE.SALESMAN) {
                 salesmanPermission(
                     "D7",
-                    accessDeniedBlock = {  },
+                    accessDeniedBlock = { },
                     successBlock = { showLedgerSearch = true }
                 )
-                if(showLedgerSearch){
+                if (showLedgerSearch) {
                     ModernSearchBar(
                         ledgerList.map { it.Name.toString() },
                         modifier = Modifier.fillMaxWidth()
@@ -379,6 +381,7 @@ object HomeTab : Tab {
                 Spacer(Modifier.height(8.dp))
                 HeadingTitle("Quick Actions")
 
+                val hideGroup = configHideGroup?.T2.toString() == "Y"
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -406,7 +409,7 @@ object HomeTab : Tab {
                         description = "Create and place a new order",
                         icon = Icons.Default.ShoppingCart,
                         onClick = {
-                            nav?.push(ShoppingScreen)
+                            nav?.push(if (hideGroup) AllProductScreen() else ShoppingScreen)
                         })  // Second Card - Ledger
                     ReportActionCard(
                         title = "View Order",
@@ -913,7 +916,7 @@ private fun CompanyInfoCard(
 }
 
 @Composable
-private fun InfoRow(
+fun InfoRow(
     icon: ImageVector, label: String, value: String, modifier: Modifier = Modifier
 ) {
     Row(
@@ -1123,12 +1126,12 @@ fun ModernSearchBar(
             placeholder = { Text("Search your ledger") },
             leadingIcon = {
                 Icon(Icons.Default.Search, contentDescription = null)
-            },colors = SearchBarDefaults.colors(
+            }, colors = SearchBarDefaults.colors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 dividerColor = MaterialTheme.colorScheme.outlineVariant
             ),
             trailingIcon = {
-                IconButton(onClick = {if(query.isNotEmpty()) query = "" else active = false }) {
+                IconButton(onClick = { if (query.isNotEmpty()) query = "" else active = false }) {
                     Icon(Icons.Default.Close, contentDescription = "Clear")
                 }
             },

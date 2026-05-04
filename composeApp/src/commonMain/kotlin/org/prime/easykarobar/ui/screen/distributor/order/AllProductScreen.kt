@@ -44,8 +44,8 @@ import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
 import org.tally.GetProductsForDis
 
 data class AllProductScreen(
-    val categoryName: String?=null,
-    val productCode: Double?=null,
+    val categoryName: String? = null,
+    val productCode: Double? = null,
 ) : Screen {
     @Composable
     override fun Content() {
@@ -68,7 +68,7 @@ data class AllProductScreen(
             val viewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
 
             TallyScaffold(
-                title = categoryName?:"All Products",
+                title = categoryName ?: "All Products",
                 onBack = { nav.pop() },
                 showEditIcon = false,
                 onEditClick = {}
