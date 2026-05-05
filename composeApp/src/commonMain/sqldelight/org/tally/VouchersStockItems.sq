@@ -57,7 +57,7 @@ SELECT
 FROM Vouchers_StockItems AS VL
 WHERE VL.CM1 = ?
   AND VL.DATE >= ?
-  AND VL.DATE <= ?
+  AND VL.DATE <= ? AND VchType NOT IN ('Sales Order','Purchase Order')
 ORDER BY VL.DATE, VL.VOUCHERNUMBER;
 
 

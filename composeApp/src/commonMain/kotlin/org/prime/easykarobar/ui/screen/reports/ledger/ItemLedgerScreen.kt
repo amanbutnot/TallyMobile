@@ -474,10 +474,10 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                                                 )
                                                 val qtyValue = if ((item.D2 ?: 0.0) != 0.0) (item.D2 ?: 0.0) else -(item.D3 ?: 0.0)
                                                 TableCell(
-                                                    text = qtyValue.formatToAmtDec(),
+                                                    text = item.D1?.formatToAmtDec().toString(),
                                                     weight = columnSmallWeight,
                                                     textAlign = TextAlign.End,
-                                                    textColor = if ((item.D2 ?: 0.0) > 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                                    textColor = if ((item.D1 ?: 0.0) > 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                                     isHeader = false
                                                 )
                                                 TableCell(
@@ -517,4 +517,4 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
     }
 }
 
-//in out
+//in out vchtype not in sales order purchase order
