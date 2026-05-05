@@ -101,6 +101,7 @@ import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen
 import org.prime.easykarobar.ui.screen.home.ROLE
 import org.prime.easykarobar.ui.screen.home.userRole
 import org.prime.easykarobar.ui.screen.masters.AccountAddScreen
+import org.prime.easykarobar.ui.screen.reports.ledger.ItemLedgerScreen
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportFilterScreen
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingDisFilterScreen
@@ -120,6 +121,7 @@ import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
 import org.prime.easykarobar.ui.shared.globalShared.filterAccountGroups
 import org.prime.easykarobar.ui.shared.globalShared.filterBroker
 import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
+import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodes
 import kotlin.math.absoluteValue
@@ -141,6 +143,7 @@ object HomeTab : Tab {
         val configHideGroup = db.companyConfigurationQueries.hideGroup().executeAsOneOrNull()
         var showDeniedDialog by remember { mutableStateOf(false) }
         var showLedgerSearch by remember { mutableStateOf(false) }
+        var showItemSearch by remember { mutableStateOf(false) }
         val nav = LocalNavigator.currentOrThrow.parent
 
 
@@ -165,6 +168,7 @@ object HomeTab : Tab {
             GUID_____ = accountGroupCodes()
         ).executeAsList()
         val ledgerList = getLedgerMasters(db)
+        val itemLedgerList = getItemMasters(db)
         val filteredReportList =
             reportList.filter { report -> report.RecType !in listOf(4L, 6L) }.map { report ->
                 val newRepType = when (report.RecType) {
@@ -202,15 +206,39 @@ object HomeTab : Tab {
                     accessDeniedBlock = { },
                     successBlock = { showLedgerSearch = true }
                 )
-                if (showLedgerSearch) {
-                    ModernSearchBar(
-                        ledgerList.map { it.Name.toString() },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        nav?.push(
-                            LedgerReportScreen(it, StartDate(), CurrentDate())
-                        )
+                salesmanPermission(
+                    "D7",
+                    accessDeniedBlock = { },
+                    successBlock = { showItemSearch = true }
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (showLedgerSearch) {
+                        ModernSearchBar(
+                            ledgerList.map { it.Name.toString() },
+                            modifier = Modifier.weight(1f),
+                            placeholder = "Ledger"
+                        ) {
+                            nav?.push(
+                                LedgerReportScreen(it, StartDate(), CurrentDate())
+                            )
+                        }
                     }
+
+                    if (showItemSearch) {
+                        ModernSearchBar(
+                            itemLedgerList.map { it.Name.toString() },
+                            modifier = Modifier.weight(1f), placeholder = "Item Ledger"
+                        ) {
+                            nav?.push(
+                                ItemLedgerScreen(it, StartDate(), CurrentDate())
+                            )
+                        }
+                    }
+
                 }
 
                 Column(
@@ -1104,6 +1132,7 @@ fun InfoStatCard(
 fun ModernSearchBar(
     items: List<String>,
     modifier: Modifier = Modifier,
+    placeholder: String,
     onClick: (String) -> Unit
 ) {
 
@@ -1123,7 +1152,7 @@ fun ModernSearchBar(
             onSearch = { active = false },
             active = active,
             onActiveChange = { active = it },
-            placeholder = { Text("Search your ledger") },
+            placeholder = { Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis) },
             leadingIcon = {
                 Icon(Icons.Default.Search, contentDescription = null)
             }, colors = SearchBarDefaults.colors(
