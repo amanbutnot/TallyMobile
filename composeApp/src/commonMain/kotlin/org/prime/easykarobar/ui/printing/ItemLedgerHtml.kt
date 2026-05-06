@@ -94,8 +94,8 @@ fun itemLedgerHtml(
                         <th>Type</th>
                         <th>Vch No.</th>
                         <th>Particulars</th>
-                        <th>Inward</th>
-                        <th>Outward</th>
+                        <th>Qty</th>
+                        <th>Amount</th>
                         <th>Balance</th>
                     </tr>
                 </thead>
@@ -104,8 +104,8 @@ fun itemLedgerHtml(
     )
 
     rows.forEach { row ->
-        val inwardStr = if (row.debit > 0) row.debit.formatToAmtDec() else ""
-        val outwardStr = if (row.credit > 0) row.credit.formatToAmtDec() else ""
+        val qtyStr = if (row.debit != 0.0) row.debit.formatToAmtDec() else ""
+        val amountStr = if (row.credit != 0.0) row.credit.formatToAmtDec() else ""
         val balanceStr = row.balance.formatToAmtDec()
 
         html.append(
@@ -115,8 +115,8 @@ fun itemLedgerHtml(
                 <td class="center">${row.type}</td>
                 <td class="text">${row.vchBillNo}</td>
                 <td class="text">${row.account}</td>
-                <td class="number">$inwardStr</td>
-                <td class="number">$outwardStr</td>
+                <td class="number">$qtyStr</td>
+                <td class="number">$amountStr</td>
                 <td class="number">$balanceStr</td>
             </tr>
             """.trimIndent()

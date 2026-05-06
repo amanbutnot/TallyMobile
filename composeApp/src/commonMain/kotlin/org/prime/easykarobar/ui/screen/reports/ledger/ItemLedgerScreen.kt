@@ -87,8 +87,8 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
         }
         val nav = LocalNavigator.currentOrThrow
 
-        val columnSmallWeight = 2.5f
-        val columnBigWeight = 7.5f
+        val columnSmallWeight = 2.0f
+        val columnBigWeight = 8.0f
 
         LaunchedEffect(Unit) {
             isLoading = true
@@ -136,11 +136,11 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
         val (totalInward, totalOutward, closingBalance) = remember(list, openingBalance) {
             var tIn = 0.0
             var tOut = 0.0
-            var bal = openingBalance?.OpeningBal ?: 0.0
+            var bal = openingBalance?.OpeningAmt ?: 0.0
             list.forEach { item ->
-                tIn += item.D2 ?: 0.0
+                tIn += item.D1 ?: 0.0
                 tOut += item.D3 ?: 0.0
-                bal += (item.D2 ?: 0.0) - (item.D3 ?: 0.0)
+                bal += (item.D3 ?: 0.0)
             }
             Triple(tIn, tOut, bal)
         }
@@ -148,12 +148,12 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
         // Generate ledger rows for PDF
         fun generateLedgerRows(): List<LedgerRow> {
             val rows = mutableListOf<LedgerRow>()
-            var bal = openingBalance?.OpeningBal ?: 0.0
+            var bal = openingBalance?.OpeningAmt ?: 0.0
 
             list.forEach { item ->
-                val debit = item.D2 ?: 0.0
-                val credit = item.D3 ?: 0.0
-                bal += debit - credit
+                val qty = item.D1 ?: 0.0
+                val amount = item.D3 ?: 0.0
+                bal += amount
 
                 rows.add(
                     LedgerRow(
@@ -161,8 +161,8 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                         type = item.VchType ?: "",
                         vchBillNo = item.VOUCHERNUMBER ?: "",
                         account = item.AccountName ?: "",
-                        debit = debit,
-                        credit = credit,
+                        debit = qty,
+                        credit = amount,
                         balance = bal,
                         balanceType = ""
                     )
@@ -183,7 +183,7 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                                 itemName = accountName,
                                 startDate = startDate,
                                 endDate = endDate,
-                                openingBalance = openingBalance?.OpeningBal ?: 0.0,
+                                openingBalance = openingBalance?.OpeningAmt ?: 0.0,
                                 rows = generateLedgerRows(),
                                 totalInward = totalInward,
                                 totalOutward = totalOutward,
@@ -206,7 +206,7 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                                 itemName = accountName,
                                 startDate = startDate,
                                 endDate = endDate,
-                                openingBalance = openingBalance?.OpeningBal ?: 0.0,
+                                openingBalance = openingBalance?.OpeningAmt ?: 0.0,
                                 rows = generateLedgerRows(),
                                 totalInward = totalInward,
                                 totalOutward = totalOutward,
@@ -353,7 +353,13 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                                         isHeader = true
                                     )
                                     TableCell(
-                                        "In/Out",
+                                        "Qty",
+                                        columnSmallWeight,
+                                        textAlign = TextAlign.End,
+                                        isHeader = true
+                                    )
+                                    TableCell(
+                                        "Amount",
                                         columnSmallWeight,
                                         textAlign = TextAlign.End,
                                         isHeader = true
@@ -395,17 +401,16 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                             horizontalArrangement = Arrangement.End
                         ) {
                             Text(
-                                "Opening: ${openingBalance?.OpeningBal?.formatToAmtDec() ?: "0.0"}",
+                                "Opening: ${openingBalance?.OpeningAmt?.formatToAmtDec() ?: "0.0"}",
                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                         }
-                        val runningBalances = remember(filteredList, openingBalance) {
-                            var bal = openingBalance?.OpeningBal ?: 0.0
-
-                            filteredList.map { item ->
-                                bal += (item.D2 ?: 0.0) - (item.D3 ?: 0.0)
-                                bal
+                        val runningBalancesMap = remember(list, openingBalance) {
+                            var bal = openingBalance?.OpeningAmt ?: 0.0
+                            list.associate { item ->
+                                bal += (item.D3 ?: 0.0)
+                                (item.GUID ?: "") to bal
                             }
                         }
 
@@ -427,8 +432,8 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                                 }
                             } else {
 
-                                itemsIndexed(filteredList) { index, item ->
-                                    val bal = runningBalances[index]
+                                itemsIndexed(filteredList) { _, item ->
+                                    val bal = runningBalancesMap[item.GUID ?: ""] ?: 0.0
 
                                     Card(
                                         modifier = Modifier
@@ -472,12 +477,18 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                                                     textAlign = TextAlign.Start,
                                                     isHeader = false
                                                 )
-                                                val qtyValue = if ((item.D2 ?: 0.0) != 0.0) (item.D2 ?: 0.0) else -(item.D3 ?: 0.0)
                                                 TableCell(
                                                     text = item.D1?.formatToAmtDec().toString(),
                                                     weight = columnSmallWeight,
                                                     textAlign = TextAlign.End,
                                                     textColor = if ((item.D1 ?: 0.0) > 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                                    isHeader = false
+                                                )
+                                                TableCell(
+                                                    text = item.D3?.formatToAmtDec().toString(),
+                                                    weight = columnSmallWeight,
+                                                    textAlign = TextAlign.End,
+                                                    textColor = if ((item.D3 ?: 0.0) > 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                                     isHeader = false
                                                 )
                                                 TableCell(
