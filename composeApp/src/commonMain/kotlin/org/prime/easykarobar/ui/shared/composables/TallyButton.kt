@@ -28,11 +28,11 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun TallyButton(
     label: String,
-    onClick: () -> Unit,
     modifier: Modifier = Modifier,
     backgroundColor: Color= MaterialTheme.colorScheme.primary,
     contentColor: Color = MaterialTheme.colorScheme.onPrimary,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    onClick: () -> Unit
 ) {
     Button(
         onClick = onClick,

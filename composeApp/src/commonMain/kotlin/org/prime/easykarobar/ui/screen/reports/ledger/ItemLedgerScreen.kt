@@ -60,6 +60,7 @@ import org.prime.easykarobar.ui.shared.reportsShared.TableCell
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import smartSearch
+import kotlin.math.absoluteValue
 
 data class ItemLedgerScreen(val accountName: String, val startDate: String, val endDate: String) :
     Screen {
@@ -136,11 +137,11 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
         val (totalInward, totalOutward, closingBalance) = remember(list, openingBalance) {
             var tIn = 0.0
             var tOut = 0.0
-            var bal = openingBalance?.OpeningAmt ?: 0.0
+            var bal = openingBalance?.OpeningBal ?: 0.0
             list.forEach { item ->
                 tIn += item.D1 ?: 0.0
                 tOut += item.D3 ?: 0.0
-                bal += (item.D3 ?: 0.0)
+                bal += (item.D1 ?: 0.0)
             }
             Triple(tIn, tOut, bal)
         }
@@ -148,12 +149,12 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
         // Generate ledger rows for PDF
         fun generateLedgerRows(): List<LedgerRow> {
             val rows = mutableListOf<LedgerRow>()
-            var bal = openingBalance?.OpeningAmt ?: 0.0
+            var bal = openingBalance?.OpeningBal ?: 0.0
 
             list.forEach { item ->
                 val qty = item.D1 ?: 0.0
                 val amount = item.D3 ?: 0.0
-                bal += amount
+                bal += qty
 
                 rows.add(
                     LedgerRow(
@@ -183,7 +184,7 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                                 itemName = accountName,
                                 startDate = startDate,
                                 endDate = endDate,
-                                openingBalance = openingBalance?.OpeningAmt ?: 0.0,
+                                openingBalance = openingBalance?.OpeningBal ?: 0.0,
                                 rows = generateLedgerRows(),
                                 totalInward = totalInward,
                                 totalOutward = totalOutward,
@@ -206,7 +207,7 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                                 itemName = accountName,
                                 startDate = startDate,
                                 endDate = endDate,
-                                openingBalance = openingBalance?.OpeningAmt ?: 0.0,
+                                openingBalance = openingBalance?.OpeningBal ?: 0.0,
                                 rows = generateLedgerRows(),
                                 totalInward = totalInward,
                                 totalOutward = totalOutward,
@@ -236,12 +237,22 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                     columns = listOf(
                         ReportColumn(
                             "Rows: ${filteredList.count()}",
-                            columnSmallWeight,
+                            columnSmallWeight * 2,
                             TextAlign.Start
                         ),
                         ReportColumn(
-                            "Closing: ${closingBalance.formatToAmtDec()}",
-                            columnBigWeight,
+                            "Closing:",
+                            columnSmallWeight,
+                            TextAlign.End
+                        ),
+                        ReportColumn(
+                            totalOutward.formatToAmtDec(),
+                            columnSmallWeight,
+                            TextAlign.End
+                        ),
+                        ReportColumn(
+                            closingBalance.formatToAmtDec(),
+                            columnSmallWeight,
                             TextAlign.End
                         ),
                     ),
@@ -401,15 +412,15 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                             horizontalArrangement = Arrangement.End
                         ) {
                             Text(
-                                "Opening: ${openingBalance?.OpeningAmt?.formatToAmtDec() ?: "0.0"}",
+                                "Opening: ${openingBalance?.OpeningBal?.formatToAmtDec() ?: "0.0"}",
                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                         }
                         val runningBalancesMap = remember(list, openingBalance) {
-                            var bal = openingBalance?.OpeningAmt ?: 0.0
+                            var bal = openingBalance?.OpeningBal ?: 0.0
                             list.associate { item ->
-                                bal += (item.D3 ?: 0.0)
+                                bal += (item.D1 ?: 0.0)
                                 (item.GUID ?: "") to bal
                             }
                         }
@@ -478,7 +489,7 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                                                     isHeader = false
                                                 )
                                                 TableCell(
-                                                    text = item.D1?.formatToAmtDec().toString(),
+                                                    text = item.D1?.absoluteValue?.formatToAmtDec().toString(),
                                                     weight = columnSmallWeight,
                                                     textAlign = TextAlign.End,
                                                     textColor = if ((item.D1 ?: 0.0) > 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
