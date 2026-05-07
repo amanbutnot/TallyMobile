@@ -87,6 +87,8 @@ import org.prime.easykarobar.data.model.attendance.AttendanceListResponse
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.printing.AttendanceRow
 import org.prime.easykarobar.ui.printing.attendanceHtml
+import org.prime.easykarobar.ui.screen.home.ROLE
+import org.prime.easykarobar.ui.screen.home.userRole
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyButton
@@ -164,106 +166,108 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
 
+                        if (userRole() != ROLE.STAFF_MANAGER){
+                            OutlinedButton(
+                                onClick = {
+                                    if (!isCheckIn) {
+                                        scope.launch {
+                                            showLoading = true
+                                            try {
+                                                val geolocator =
+                                                    Geolocator(Locator.mobile())
 
-                        OutlinedButton(
-                            onClick = {
-                                if (!isCheckIn) {
-                                    scope.launch {
-                                        showLoading = true
-                                        try {
-                                            val geolocator =
-                                                Geolocator(Locator.mobile())
+                                                runCatching { geolocator.lastLocation() }
 
-                                            runCatching { geolocator.lastLocation() }
-
-                                            val result = withTimeoutOrNull(20000) {
-                                                geolocator.current(Priority.HighAccuracy)
-                                            }
-
-                                            when (result) {
-                                                is GeolocatorResult.Success -> {
-                                                    val c = result.data.coordinates
-
-                                                    nav?.push(
-                                                        AttendanceScreen(
-                                                            c.latitude,
-                                                            c.longitude,
-
-                                                            isAttendance = true
-                                                        )
-                                                    )
+                                                val result = withTimeoutOrNull(20000) {
+                                                    geolocator.current(Priority.HighAccuracy)
                                                 }
 
-                                                else -> showLocationPopup = true
-                                            }
+                                                when (result) {
+                                                    is GeolocatorResult.Success -> {
+                                                        val c = result.data.coordinates
 
-                                        } catch (e: Exception) {
-                                            showLocationPopup = true
-                                        } finally {
-                                            showLoading = false
-                                        }
-                                    }
-                                } else {
-                                    scope.launch {
-                                        showLoading = true
-                                        try {
-                                            val geolocator =
-                                                Geolocator(Locator.mobile())
+                                                        nav?.push(
+                                                            AttendanceScreen(
+                                                                c.latitude,
+                                                                c.longitude,
 
-                                            runCatching { geolocator.lastLocation() }
-
-                                            val result = withTimeoutOrNull(20000) {
-                                                geolocator.current(Priority.HighAccuracy)
-                                            }
-
-                                            when (result) {
-                                                is GeolocatorResult.Success -> {
-                                                    val c = result.data.coordinates
-
-                                                    nav?.push(
-                                                        AttendanceScreen(
-                                                            c.latitude,
-                                                            c.longitude,
-
-                                                            isAttendance = false
+                                                                isAttendance = true
+                                                            )
                                                         )
-                                                    )
+                                                    }
+
+                                                    else -> showLocationPopup = true
                                                 }
 
-                                                else -> showLocationPopup = true
+                                            } catch (e: Exception) {
+                                                showLocationPopup = true
+                                            } finally {
+                                                showLoading = false
                                             }
+                                        }
+                                    } else {
+                                        scope.launch {
+                                            showLoading = true
+                                            try {
+                                                val geolocator =
+                                                    Geolocator(Locator.mobile())
 
-                                        } catch (e: Exception) {
-                                            showLocationPopup = true
-                                        } finally {
-                                            showLoading = false
+                                                runCatching { geolocator.lastLocation() }
+
+                                                val result = withTimeoutOrNull(20000) {
+                                                    geolocator.current(Priority.HighAccuracy)
+                                                }
+
+                                                when (result) {
+                                                    is GeolocatorResult.Success -> {
+                                                        val c = result.data.coordinates
+
+                                                        nav?.push(
+                                                            AttendanceScreen(
+                                                                c.latitude,
+                                                                c.longitude,
+
+                                                                isAttendance = false
+                                                            )
+                                                        )
+                                                    }
+
+                                                    else -> showLocationPopup = true
+                                                }
+
+                                            } catch (e: Exception) {
+                                                showLocationPopup = true
+                                            } finally {
+                                                showLoading = false
+                                            }
                                         }
                                     }
-                                }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth().padding(12.dp)
-                                .height(52.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            border = BorderStroke(
-                                1.5.dp,
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                            ),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                                contentColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = "Add New",
-                                style = MaterialTheme.typography.labelLarge
-                            )
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth().padding(12.dp)
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                border = BorderStroke(
+                                    1.5.dp,
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                ),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Add,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Add New",
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
+
                         }
 
                         // Report Type Section (Only for Admin and Check-in)
@@ -602,7 +606,7 @@ data class AttendanceScreenUi(
                                 rows = rows as List<AttendanceRow>,
                                 startDate = startDate, endDate = endDate, isCheckIn = isCheckIn
                             ),
-                            action = PdfAction.Share ,
+                            action = PdfAction.Share,
                             onLoadingChange = { shareLoading = it }
                         )
                     }

@@ -86,7 +86,7 @@ object SettingScreen : Screen {
         var showAlertBox by remember { mutableStateOf(false) }
         var zeroStock by remember { mutableStateOf(true) }
 
-        zeroStock = SharedPrefs.ShowZeroStock.get()?:true
+        zeroStock = SharedPrefs.ShowZeroStock.get() ?: true
 
         val colors = MaterialTheme.colorScheme
         TallyScaffold("Profile", content = { innerPadding ->
@@ -318,10 +318,22 @@ object SettingScreen : Screen {
                             "Lasy Synced from Software",
                             compInfo.C8.toString()
                         )
-                        TallyToggleRow(checked = zeroStock, onCheckedChange = {
-                            SharedPrefs.ShowZeroStock.save(it)
-                            zeroStock = it
-                        },title="Show Zero Stock in billing",desc="Include items with zero stock in billing")
+                        if (listOf(
+                                ROLE.STAFF_MANAGER,
+                                ROLE.OFFICE_STAFF
+                            ).none { userRole() != it }
+                        ) {
+                            TallyToggleRow(
+                                checked = zeroStock,
+                                onCheckedChange = {
+                                    SharedPrefs.ShowZeroStock.save(it)
+                                    zeroStock = it
+                                },
+                                title = "Show Zero Stock in billing",
+                                desc = "Include items with zero stock in billing"
+                            )
+
+                        }
                     }
                 }
 
@@ -484,7 +496,7 @@ private fun ProfileItem(
 
 @Composable
 fun TallyToggleRow(
-    title:String,desc:String,
+    title: String, desc: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
@@ -505,7 +517,7 @@ fun TallyToggleRow(
             )
 
             Text(
-                text =desc,
+                text = desc,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

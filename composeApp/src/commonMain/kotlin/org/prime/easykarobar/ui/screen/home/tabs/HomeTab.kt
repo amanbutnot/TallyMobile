@@ -4,11 +4,18 @@ import CurrentDate
 import OutstandingDate
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +29,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -30,6 +38,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Note
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Business
@@ -62,6 +71,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,6 +81,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.text.font.FontWeight
@@ -94,6 +105,7 @@ import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.hasSalesmanPermission
 import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.screen.attendance.AttendanceListScreen
 import org.prime.easykarobar.ui.screen.attendance.AttendanceScreen
 import org.prime.easykarobar.ui.screen.distributor.order.AllProductScreen
 import org.prime.easykarobar.ui.screen.distributor.order.MyOrdersScreen
@@ -136,7 +148,10 @@ object HomeTab : Tab {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
+        val scope = rememberCoroutineScope()
 
+        var showLocationPopup by remember { mutableStateOf(false) }
+        var showLoading by remember { mutableStateOf(false) }
         val db = DatabaseHolder.instance
         val queries = db.companyInformationQueries
         val compInfo = queries.getCompanyInformation().executeAsOne()
@@ -180,100 +195,161 @@ object HomeTab : Tab {
                 }
                 report.copy(RepType = newRepType)
             }
-
-        Column(
-            modifier = Modifier.fillMaxSize().padding(8.dp).verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            if (userRole() == ROLE.DISTRIBUTOR) {
-                HeadingTitle("Hi, ${SharedPrefs.DistributorData.get()?.UserName ?: "User"}")
-            }
-            CompanyInfoCard(
-                companyName = CompanyName(),
-                address = compInfo.T3.toString(),
-                financialYear = Tdate(StartDate()),
-                gstNo = compInfo.T4.toString()
+        if (userRole() == ROLE.STAFF_MANAGER) {
+            StaffManagerMenu(
+                // onMastersClick = { nav?.push(MasterListScreen(MasterEnums.ACCOUNTS)) },
+                onAttendanceClick = { nav?.push(AttendanceListScreen(true, "Check In Filter")) }
             )
-            //    Spacer(Modifier.height(8.dp))
-            LastSyncedCard(
-                lastSyncDateTime = SharedPrefs.LastSync.get().toString(),
-                modifier = Modifier.clickable {
-                    println(getPCGroupCodes("117.0"))
-                })
-            if (userRole() == ROLE.ADMIN || userRole() == ROLE.SALESMAN) {
-                salesmanPermission(
-                    "D7",
-                    accessDeniedBlock = { },
-                    successBlock = { showLedgerSearch = true }
-                )
-                salesmanPermission(
-                    "D7",
-                    accessDeniedBlock = { },
-                    successBlock = { showItemSearch = true }
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (showLedgerSearch) {
-                        ModernSearchBar(
-                            ledgerList.map { it.Name.toString() },
-                            modifier = Modifier.weight(1f),
-                            placeholder = "Ledger"
-                        ) {
-                            nav?.push(
-                                LedgerReportScreen(it, StartDate(), CurrentDate())
-                            )
-                        }
-                    }
+        } else if (userRole() == ROLE.OFFICE_STAFF) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(8.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
 
-                    if (showItemSearch) {
-                        ModernSearchBar(
-                            itemLedgerList.map { it.Name.toString() },
-                            modifier = Modifier.weight(1f), placeholder = "Item Ledger"
-                        ) {
-                            nav?.push(
-                                ItemLedgerScreen(it, StartDate(), CurrentDate())
-                            )
-                        }
-                    }
+                if (showLoading) {
+                    TallyLoadingDialog("Getting Location")
+                } else {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        ManagerActionCard(
+                            title = "Check In/Check Out",
+                            description = "Check in/out your location",
+                            Icons.Default.LocationCity,
+                            onClick = {
+                                scope.launch {
+                                    showLoading = true
+                                    try {
+                                        val geolocator =
+                                            Geolocator(Locator.mobile())
 
+                                        runCatching { geolocator.lastLocation() }
+
+                                        val result = withTimeoutOrNull(20000) {
+                                            geolocator.current(Priority.HighAccuracy)
+                                        }
+
+                                        when (result) {
+                                            is GeolocatorResult.Success -> {
+                                                val c = result.data.coordinates
+
+                                                nav?.push(
+                                                    AttendanceScreen(
+                                                        c.latitude, c.longitude,
+
+                                                        isAttendance = false
+                                                    )
+                                                )
+                                            }
+
+                                            else -> showLocationPopup = true
+                                        }
+
+                                    } catch (e: Exception) {
+                                        showLocationPopup = true
+                                    } finally {
+                                        showLoading = false
+                                    }
+                                }
+                            })
+                    }
                 }
 
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    filteredReportList.take(6).chunked(2).forEach { rowItems ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            rowItems.forEach { item ->
-                                InfoStatCard(
-                                    title = item.RepType,
-                                    amount = when (item.RecType) {
-                                        1L -> {
-                                            if (hasSalesmanPermission("D8")) {
-                                                if (hasSalesmanPermission("D32")) item.PenAmt?.absoluteValue?.formatToAmtDec()
-                                                    ?: "-" else "____"
-                                            } else "X"
-                                        }
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(8.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (userRole() == ROLE.DISTRIBUTOR) {
+                    HeadingTitle("Hi, ${SharedPrefs.DistributorData.get()?.UserName ?: "User"}")
+                }
+                CompanyInfoCard(
+                    companyName = CompanyName(),
+                    address = compInfo.T3.toString(),
+                    financialYear = Tdate(StartDate()),
+                    gstNo = compInfo.T4.toString()
+                )
+                //    Spacer(Modifier.height(8.dp))
+                LastSyncedCard(
+                    lastSyncDateTime = SharedPrefs.LastSync.get().toString(),
+                    modifier = Modifier.clickable {
+                        println(getPCGroupCodes("117.0"))
+                    })
+                if (userRole() == ROLE.ADMIN || userRole() == ROLE.SALESMAN) {
+                    salesmanPermission(
+                        "D7",
+                        accessDeniedBlock = { },
+                        successBlock = { showLedgerSearch = true }
+                    )
+                    salesmanPermission(
+                        "D7",
+                        accessDeniedBlock = { },
+                        successBlock = { showItemSearch = true }
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (showLedgerSearch) {
+                            ModernSearchBar(
+                                ledgerList.map { it.Name.toString() },
+                                modifier = Modifier.weight(1f),
+                                placeholder = "Ledger"
+                            ) {
+                                nav?.push(
+                                    LedgerReportScreen(it, StartDate(), CurrentDate())
+                                )
+                            }
+                        }
 
-                                        2L -> {
-                                            if (hasSalesmanPermission("D9")) {
-                                                if (hasSalesmanPermission("D33")) item.PenAmt?.absoluteValue?.formatToAmtDec()
-                                                    ?: "-" else "____"
-                                            } else "X"
-                                        }
+                        if (showItemSearch) {
+                            ModernSearchBar(
+                                itemLedgerList.map { it.Name.toString() },
+                                modifier = Modifier.weight(1f), placeholder = "Item Ledger"
+                            ) {
+                                nav?.push(
+                                    ItemLedgerScreen(it, StartDate(), CurrentDate())
+                                )
+                            }
+                        }
 
-                                        3L -> {
-                                            if (hasSalesmanPermission("D13")) {
-                                                if (hasSalesmanPermission("D34")) item.PenAmt?.absoluteValue?.formatToAmtDec()
-                                                    ?: "-" else "____"
-                                            } else "X"
-                                        }
+                    }
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        filteredReportList.take(6).chunked(2).forEach { rowItems ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                rowItems.forEach { item ->
+                                    InfoStatCard(
+                                        title = item.RepType,
+                                        amount = when (item.RecType) {
+                                            1L -> {
+                                                if (hasSalesmanPermission("D8")) {
+                                                    if (hasSalesmanPermission("D32")) item.PenAmt?.absoluteValue?.formatToAmtDec()
+                                                        ?: "-" else "____"
+                                                } else "X"
+                                            }
+
+                                            2L -> {
+                                                if (hasSalesmanPermission("D9")) {
+                                                    if (hasSalesmanPermission("D33")) item.PenAmt?.absoluteValue?.formatToAmtDec()
+                                                        ?: "-" else "____"
+                                                } else "X"
+                                            }
+
+                                            3L -> {
+                                                if (hasSalesmanPermission("D13")) {
+                                                    if (hasSalesmanPermission("D34")) item.PenAmt?.absoluteValue?.formatToAmtDec()
+                                                        ?: "-" else "____"
+                                                } else "X"
+                                            }
 
 //                                        4L -> {
 //                                            if (hasSalesmanPermission("D14")) {
@@ -281,12 +357,12 @@ object HomeTab : Tab {
 //                                            } else "X"
 //                                        }
 
-                                        5L -> {
-                                            if (hasSalesmanPermission("D15")) {
-                                                if (hasSalesmanPermission("D35")) item.PenAmt?.absoluteValue?.formatToAmtDec()
-                                                    ?: "-" else "____"
-                                            } else "X"
-                                        }
+                                            5L -> {
+                                                if (hasSalesmanPermission("D15")) {
+                                                    if (hasSalesmanPermission("D35")) item.PenAmt?.absoluteValue?.formatToAmtDec()
+                                                        ?: "-" else "____"
+                                                } else "X"
+                                            }
 
 //                                        6L -> {
 //                                            if (hasSalesmanPermission("D16")) {
@@ -294,54 +370,55 @@ object HomeTab : Tab {
 //                                            } else "X"
 //                                        }
 
-                                        else -> item.PenAmt?.absoluteValue?.formatToAmtDec() ?: "-"
-                                    },
-                                    onClick = {
-                                        when (item.RecType) {
-                                            1L -> salesmanPermission(
-                                                flag = "D8",
-                                                accessDeniedBlock = { showDeniedDialog = true },
-                                                successBlock = {
-                                                    nav?.push(
-                                                        OutstandingReportScreen(
-                                                            name = "Bill Receivable",
-                                                            startDate = OutstandingDate(),
-                                                            endDate = CurrentDate(),
-                                                            cm1 = "",
-                                                            calculateDays = "Due Date",
-                                                            showOtherToggle = false,
+                                            else -> item.PenAmt?.absoluteValue?.formatToAmtDec()
+                                                ?: "-"
+                                        },
+                                        onClick = {
+                                            when (item.RecType) {
+                                                1L -> salesmanPermission(
+                                                    flag = "D8",
+                                                    accessDeniedBlock = { showDeniedDialog = true },
+                                                    successBlock = {
+                                                        nav?.push(
+                                                            OutstandingReportScreen(
+                                                                name = "Bill Receivable",
+                                                                startDate = OutstandingDate(),
+                                                                endDate = CurrentDate(),
+                                                                cm1 = "",
+                                                                calculateDays = "Due Date",
+                                                                showOtherToggle = false,
+                                                            )
                                                         )
-                                                    )
-                                                })
+                                                    })
 
-                                            2L -> salesmanPermission(
-                                                flag = "D9",
-                                                accessDeniedBlock = { showDeniedDialog = true },
-                                                successBlock = {
-                                                    nav?.push(
-                                                        OutstandingReportScreen(
-                                                            name = "Bill Payable",
-                                                            startDate = OutstandingDate(),
-                                                            endDate = CurrentDate(),
-                                                            cm1 = "",
-                                                            calculateDays = "Due Date",
-                                                            showOtherToggle = false,
+                                                2L -> salesmanPermission(
+                                                    flag = "D9",
+                                                    accessDeniedBlock = { showDeniedDialog = true },
+                                                    successBlock = {
+                                                        nav?.push(
+                                                            OutstandingReportScreen(
+                                                                name = "Bill Payable",
+                                                                startDate = OutstandingDate(),
+                                                                endDate = CurrentDate(),
+                                                                cm1 = "",
+                                                                calculateDays = "Due Date",
+                                                                showOtherToggle = false,
+                                                            )
                                                         )
-                                                    )
-                                                })
+                                                    })
 
-                                            3L -> salesmanPermission(
-                                                flag = "D13",
-                                                accessDeniedBlock = { showDeniedDialog = true },
-                                                successBlock = {
-                                                    nav?.push(
-                                                        RegisterReportScreen(
-                                                            name = "Sales",
-                                                            startDate = StartDate(),
-                                                            endDate = CurrentDate()
+                                                3L -> salesmanPermission(
+                                                    flag = "D13",
+                                                    accessDeniedBlock = { showDeniedDialog = true },
+                                                    successBlock = {
+                                                        nav?.push(
+                                                            RegisterReportScreen(
+                                                                name = "Sales",
+                                                                startDate = StartDate(),
+                                                                endDate = CurrentDate()
+                                                            )
                                                         )
-                                                    )
-                                                })
+                                                    })
 
 //                                            4L -> salesmanPermission(
 //                                                flag = "D14",
@@ -357,18 +434,18 @@ object HomeTab : Tab {
 //                                                }
 //                                            )
 
-                                            5L -> salesmanPermission(
-                                                flag = "D15",
-                                                accessDeniedBlock = { showDeniedDialog = true },
-                                                successBlock = {
-                                                    nav?.push(
-                                                        RegisterReportScreen(
-                                                            name = "Receipt",
-                                                            startDate = StartDate(),
-                                                            endDate = CurrentDate()
+                                                5L -> salesmanPermission(
+                                                    flag = "D15",
+                                                    accessDeniedBlock = { showDeniedDialog = true },
+                                                    successBlock = {
+                                                        nav?.push(
+                                                            RegisterReportScreen(
+                                                                name = "Receipt",
+                                                                startDate = StartDate(),
+                                                                endDate = CurrentDate()
+                                                            )
                                                         )
-                                                    )
-                                                })
+                                                    })
 
 //                                            6L -> salesmanPermission(
 //                                                flag = "D16",
@@ -383,77 +460,78 @@ object HomeTab : Tab {
 //                                                    )
 //                                                }
 //                                            )
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    buttonText = "View",
-                                    iconContent = {
-                                        Icon(
-                                            Icons.Default.Receipt,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    })
-                            }
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        buttonText = "View",
+                                        iconContent = {
+                                            Icon(
+                                                Icons.Default.Receipt,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        })
+                                }
 
-                            // Add spacer if odd number of items in last row
-                            if (rowItems.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
+                                // Add spacer if odd number of items in last row
+                                if (rowItems.size == 1) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
                             }
                         }
                     }
+                    HeadingTitle("Create")
+                    ExpandableGrid()
+                } else if (userRole() == ROLE.DISTRIBUTOR) {
+                    Spacer(Modifier.height(8.dp))
+                    HeadingTitle("Quick Actions")
+
+                    val hideGroup = configHideGroup?.T2.toString() == "Y"
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // First Card - Bill Receivable
+                        ReportActionCard(
+                            title = "Bill Receivable",
+                            description = "View outstanding receivables and pending bills",
+                            icon = Icons.Default.Receipt,
+                            onClick = {
+                                nav?.push(OutstandingDisFilterScreen)
+                            })
+
+                        // Second Card - Ledger
+                        ReportActionCard(
+                            title = "Ledger Report",
+                            description = "Access detailed ledger statements and transactions",
+                            icon = Icons.Default.Cases,
+                            onClick = {
+                                nav?.push(LedgerReportFilterScreen(showAccount = false))
+                            })
+                        // Second Card - Ledger
+                        ReportActionCard(
+                            title = "Raise Order",
+                            description = "Create and place a new order",
+                            icon = Icons.Default.ShoppingCart,
+                            onClick = {
+                                nav?.push(if (hideGroup) AllProductScreen() else ShoppingScreen)
+                            })  // Second Card - Ledger
+                        ReportActionCard(
+                            title = "View Order",
+                            description = "View your orders",
+                            icon = Icons.Default.ShoppingBasket,
+                            onClick = {
+                                nav?.push(MyOrdersScreen)
+                            })
+                    }
+                } else {
+                    HeadingTitle("Create")
+                    ExpandableGrid()
                 }
-                HeadingTitle("Create")
-                ExpandableGrid()
-            } else if (userRole() == ROLE.DISTRIBUTOR) {
-                Spacer(Modifier.height(8.dp))
-                HeadingTitle("Quick Actions")
 
-                val hideGroup = configHideGroup?.T2.toString() == "Y"
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // First Card - Bill Receivable
-                    ReportActionCard(
-                        title = "Bill Receivable",
-                        description = "View outstanding receivables and pending bills",
-                        icon = Icons.Default.Receipt,
-                        onClick = {
-                            nav?.push(OutstandingDisFilterScreen)
-                        })
-
-                    // Second Card - Ledger
-                    ReportActionCard(
-                        title = "Ledger Report",
-                        description = "Access detailed ledger statements and transactions",
-                        icon = Icons.Default.Cases,
-                        onClick = {
-                            nav?.push(LedgerReportFilterScreen(showAccount = false))
-                        })
-                    // Second Card - Ledger
-                    ReportActionCard(
-                        title = "Raise Order",
-                        description = "Create and place a new order",
-                        icon = Icons.Default.ShoppingCart,
-                        onClick = {
-                            nav?.push(if (hideGroup) AllProductScreen() else ShoppingScreen)
-                        })  // Second Card - Ledger
-                    ReportActionCard(
-                        title = "View Order",
-                        description = "View your orders",
-                        icon = Icons.Default.ShoppingBasket,
-                        onClick = {
-                            nav?.push(MyOrdersScreen)
-                        })
+                if (showDeniedDialog) {
+                    PermissionDeniedDialog { showDeniedDialog = false }
                 }
-            } else {
-                HeadingTitle("Create")
-                ExpandableGrid()
-            }
-
-            if (showDeniedDialog) {
-                PermissionDeniedDialog { showDeniedDialog = false }
             }
         }
     }
@@ -1232,6 +1310,183 @@ fun ModernSearchBar(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+fun StaffManagerMenu(
+    onMastersClick: (() -> Unit)? = null,
+    onAttendanceClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+
+        if (onMastersClick != null) {
+            ManagerActionCard(
+                title = "Masters",
+                description = "Manage account masters and groups",
+                icon = Icons.Default.Business,
+                onClick = onMastersClick,
+                modifier = Modifier.weight(1f)
+            )
+
+            ManagerActionCard(
+                title = "Check in/out List",
+                description = "View and manage staff attendance records",
+                icon = Icons.Default.LocationCity,
+                onClick = onAttendanceClick,
+                modifier = Modifier.weight(1f)
+            )
+        } else {
+            ManagerActionCard(
+                title = "Check in/out List",
+                description = "View and manage staff attendance records",
+                icon = Icons.Default.LocationCity,
+                onClick = onAttendanceClick,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+@Composable
+fun ManagerActionCard(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "card_scale"
+    )
+
+    val elevation by animateDpAsState(
+        targetValue = if (isPressed) 1.dp else 6.dp,
+        animationSpec = tween(durationMillis = 150),
+        label = "card_elevation"
+    )
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(),
+                onClick = onClick
+            ),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = elevation,
+            pressedElevation = 1.dp,
+            hoveredElevation = 8.dp
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 28.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Icon container with tonal surface + subtle inner ring
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = RoundedCornerShape(22.dp)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(22.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(34.dp)
+                )
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = (-0.3).sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(Modifier.height(6.dp))
+
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    lineHeight = 21.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(Modifier.height(20.dp))
+
+            // Subtle CTA pill
+            Surface(
+                shape = RoundedCornerShape(50.dp),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                modifier = Modifier.wrapContentSize()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Open",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp)
+                    )
                 }
             }
         }

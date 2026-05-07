@@ -47,6 +47,7 @@ object AttendanceRepository {
                 setBody(attendanceRequest)
             }
             println(attendanceRequest)
+            println("l;kasjdfl;kasjdfk;lajsdl;fj;alsdkfjlk;j")
             println(response.bodyAsText())
             response.body()
         } catch (e: Exception) {

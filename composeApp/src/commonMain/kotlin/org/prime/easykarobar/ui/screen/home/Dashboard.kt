@@ -117,24 +117,26 @@ object Dashboard : Screen {
                             IconButton(onClick = {
                                 viewModel.userLogin(
                                     LoginRequest(
-                                        Username = loginData?.username?:"",
-                                        Password = loginData?.password?:""
+                                        Username = loginData?.username ?: "",
+                                        Password = loginData?.password ?: ""
                                     ),
                                     onSuccess = {
                                         nav.push(GoogleDriveDownloadScreen)
                                     }, onListSuccess = { companyList ->
-                                        SharedPrefs.LoginInfo.save(loginData?.username?.trim()?:"")
+                                        SharedPrefs.LoginInfo.save(
+                                            loginData?.username?.trim() ?: ""
+                                        )
                                         SharedPrefs.LoginData.save(
                                             SharedPrefs.LoginDataModel(
-                                                username =loginData?.username?.trim()?:"",
-                                                password = loginData?.password?.trim()?:"",
+                                                username = loginData?.username?.trim() ?: "",
+                                                password = loginData?.password?.trim() ?: "",
                                                 list = companyList,
                                             )
                                         )
                                         nav.push(
                                             SelectCompanyScreen(
-                                                loginData?.username?.trim()?:"",
-                                                loginData?.password?.trim()?:"",
+                                                loginData?.username?.trim() ?: "",
+                                                loginData?.password?.trim() ?: "",
                                                 companyList
                                             )
                                         )
@@ -242,11 +244,13 @@ fun userRole(): ROLE {
         "admin" -> ROLE.ADMIN
         "salesman" -> ROLE.SALESMAN
         "distributor" -> ROLE.DISTRIBUTOR
+        "staff-manager" -> ROLE.STAFF_MANAGER
+        "office-staff" -> ROLE.OFFICE_STAFF
         else -> {
             ROLE.ADMIN
         }
     }
 }
 
-enum class ROLE { ADMIN, SALESMAN, DISTRIBUTOR }
+enum class ROLE { ADMIN, SALESMAN, DISTRIBUTOR, STAFF_MANAGER, OFFICE_STAFF }
 

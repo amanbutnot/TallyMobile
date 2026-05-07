@@ -86,6 +86,8 @@ import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.model.attendance.AttendanceRequest
 import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.screen.home.ROLE
+import org.prime.easykarobar.ui.screen.home.userRole
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingReportScreen
 import org.prime.easykarobar.ui.screen.reports.registers.RegisterReportScreen
@@ -196,13 +198,21 @@ data class AttendanceScreen(
                                 selectedAccount = selectedAccount,
                                 onShowBottomSheet = { showBottomSheet = true },
                                 title = "Ledger",
-                                enabled = isCheckIn(lastCheckInOutDate)
+                                enabled = if (userRole() == ROLE.OFFICE_STAFF) true else isCheckIn(
+                                    lastCheckInOutDate
+                                )
                             )
                         }
-
+                        val bottomSheetList = if (userRole() == ROLE.OFFICE_STAFF) {
+                            list.filter { it.L5 == 1.0 }
+                                .map { Pair(it.Name ?: "", it.GUID ?: "") }
+                        } else {
+                            list
+                                .map { Pair(it.Name ?: "", it.GUID ?: "") }
+                        }
                         TransactionBottomSheet(
                             showBottomSheet = showBottomSheet,
-                            list = list.map { Pair(it.Name ?: "", it.GUID ?: "") },
+                            list = bottomSheetList,
                             onSelected = {
                                 it.let {
                                     selectedAccount = it.first
@@ -211,7 +221,9 @@ data class AttendanceScreen(
                                 }
                             },
                             onDismiss = { showBottomSheet = false },
-                            bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                            bottomSheetState = rememberModalBottomSheetState(
+                                skipPartiallyExpanded = true
+                            ),
                             title = "Ledger Name",
                         )
 
@@ -230,150 +242,164 @@ data class AttendanceScreen(
                                 )
                             }
                         }
-                        if (!isAttendance && !isCheckIn(lastCheckInOutDate)) {
-                            ElegantCard(
-                                icon = Icons.Default.Report,
-                                title = "Reports",
-                                iconTint = colors.secondary,
-                                content = {
-                                    Column(
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        ReportButton(
-                                            label = "Account Ledger",
-                                            icon = Icons.Default.AccountBalance,
-                                            onClick = {
-                                                salesmanPermission(
-                                                    "D7",
-                                                    accessDeniedBlock = { showDeniedDialog = true },
-                                                    successBlock = {
-                                                        nav.push(
-                                                            LedgerReportScreen(
-                                                                accountName = selectedAccount,
-                                                                startDate = StartDate(),
-                                                                endDate = CurrentDate()
+                        if (userRole() != ROLE.OFFICE_STAFF) {
+                            if (!isAttendance && !isCheckIn(lastCheckInOutDate)) {
+                                ElegantCard(
+                                    icon = Icons.Default.Report,
+                                    title = "Reports",
+                                    iconTint = colors.secondary,
+                                    content = {
+                                        Column(
+                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            ReportButton(
+                                                label = "Account Ledger",
+                                                icon = Icons.Default.AccountBalance,
+                                                onClick = {
+                                                    salesmanPermission(
+                                                        "D7",
+                                                        accessDeniedBlock = {
+                                                            showDeniedDialog = true
+                                                        },
+                                                        successBlock = {
+                                                            nav.push(
+                                                                LedgerReportScreen(
+                                                                    accountName = selectedAccount,
+                                                                    startDate = StartDate(),
+                                                                    endDate = CurrentDate()
+                                                                )
                                                             )
-                                                        )
 
-                                                    }
-                                                )
-
-                                            }
-                                        )
-
-                                        ReportButton(
-                                            label = "Bill Receivable",
-                                            icon = Icons.Default.Receipt,
-                                            onClick = {
-                                                salesmanPermission(
-                                                    "D8",
-                                                    accessDeniedBlock = { showDeniedDialog = true },
-                                                    successBlock = {
-                                                        nav.push(
-                                                            OutstandingReportScreen(
-                                                                name = "Bill Receivable",
-                                                                startDate = StartDate(),
-                                                                endDate = CurrentDate(),
-                                                                cm1 = selectedAccount,
-                                                                calculateDays = "Due Date",showOtherToggle = false,
-                                                            )
-                                                        )
-                                                    }
-                                                )
-
-                                            }
-                                        )
-
-                                        ReportButton(
-                                            label = "Receipt",
-                                            icon = Icons.Default.Payments,
-                                            onClick = {
-                                                salesmanPermission(
-                                                    "D15",
-                                                    accessDeniedBlock = { showDeniedDialog = true },
-                                                    successBlock = {
-                                                        nav.push(
-                                                            RegisterReportScreen(
-                                                                name = "Receipt",
-                                                                startDate = StartDate(),
-                                                                endDate = CurrentDate()
-                                                            )
-                                                        )
-                                                    }
-                                                )
-                                            }
-                                        )
-
-                                        ReportButton(
-                                            label = "Pending Sale Order",
-                                            icon = Icons.Default.PendingActions,
-                                            onClick = {
-                                                nav.push(
-                                                    OutstandingReportScreen(
-                                                        name = "Pending Sale Order",
-                                                        startDate = StartDate(),
-                                                        endDate = CurrentDate(),
-                                                        cm1 = selectedAccount,
-                                                        calculateDays = "Due Date",showOtherToggle = false,
+                                                        }
                                                     )
-                                                )
-                                            }
-                                        )
 
-                                        ReportButton(
-                                            label = "Bill Payable",
-                                            icon = Icons.Default.CreditCard,
-                                            onClick = {
-                                                salesmanPermission(
-                                                    "D9",
-                                                    accessDeniedBlock = { showDeniedDialog = true },
-                                                    successBlock = {
-                                                        nav.push(
-                                                            OutstandingReportScreen(
-                                                                name = "Bill Payable",
-                                                                startDate = StartDate(),
-                                                                endDate = CurrentDate(),
-                                                                cm1 = selectedAccount,
-                                                                calculateDays = "Due Date",showOtherToggle = false,
+                                                }
+                                            )
+
+                                            ReportButton(
+                                                label = "Bill Receivable",
+                                                icon = Icons.Default.Receipt,
+                                                onClick = {
+                                                    salesmanPermission(
+                                                        "D8",
+                                                        accessDeniedBlock = {
+                                                            showDeniedDialog = true
+                                                        },
+                                                        successBlock = {
+                                                            nav.push(
+                                                                OutstandingReportScreen(
+                                                                    name = "Bill Receivable",
+                                                                    startDate = StartDate(),
+                                                                    endDate = CurrentDate(),
+                                                                    cm1 = selectedAccount,
+                                                                    calculateDays = "Due Date",
+                                                                    showOtherToggle = false,
+                                                                )
                                                             )
-                                                        )
-                                                    }
-                                                )
-                                            }
-                                        )
-                                    }
-                                }
-                            )
+                                                        }
+                                                    )
 
-                            ElegantCard(
-                                icon = Icons.Default.Create,
-                                title = "Create",
-                                iconTint = colors.secondary,
-                                content = {
-                                    ReportButton(
-                                        label = "Create Sale Order",
-                                        icon = Icons.Default.Create,
-                                        onClick = {
-                                            salesmanPermission(
-                                                "D20",
-                                                accessDeniedBlock = { showDeniedDialog = true },
-                                                successBlock = {
+                                                }
+                                            )
+
+                                            ReportButton(
+                                                label = "Receipt",
+                                                icon = Icons.Default.Payments,
+                                                onClick = {
+                                                    salesmanPermission(
+                                                        "D15",
+                                                        accessDeniedBlock = {
+                                                            showDeniedDialog = true
+                                                        },
+                                                        successBlock = {
+                                                            nav.push(
+                                                                RegisterReportScreen(
+                                                                    name = "Receipt",
+                                                                    startDate = StartDate(),
+                                                                    endDate = CurrentDate()
+                                                                )
+                                                            )
+                                                        }
+                                                    )
+                                                }
+                                            )
+
+                                            ReportButton(
+                                                label = "Pending Sale Order",
+                                                icon = Icons.Default.PendingActions,
+                                                onClick = {
                                                     nav.push(
-                                                        SaleScreen(
-                                                            name = "Sale Order",
-                                                            vchType = 12,
-                                                            selectedLedger = selectedAccount,
-                                                            //  selectedLedgerGUID = selectedGUID
+                                                        OutstandingReportScreen(
+                                                            name = "Pending Sale Order",
+                                                            startDate = StartDate(),
+                                                            endDate = CurrentDate(),
+                                                            cm1 = selectedAccount,
+                                                            calculateDays = "Due Date",
+                                                            showOtherToggle = false,
                                                         )
                                                     )
-                                                })
+                                                }
+                                            )
 
-
+                                            ReportButton(
+                                                label = "Bill Payable",
+                                                icon = Icons.Default.CreditCard,
+                                                onClick = {
+                                                    salesmanPermission(
+                                                        "D9",
+                                                        accessDeniedBlock = {
+                                                            showDeniedDialog = true
+                                                        },
+                                                        successBlock = {
+                                                            nav.push(
+                                                                OutstandingReportScreen(
+                                                                    name = "Bill Payable",
+                                                                    startDate = StartDate(),
+                                                                    endDate = CurrentDate(),
+                                                                    cm1 = selectedAccount,
+                                                                    calculateDays = "Due Date",
+                                                                    showOtherToggle = false,
+                                                                )
+                                                            )
+                                                        }
+                                                    )
+                                                }
+                                            )
                                         }
-                                    )
+                                    }
+                                )
 
-                                }
-                            )
+                                ElegantCard(
+                                    icon = Icons.Default.Create,
+                                    title = "Create",
+                                    iconTint = colors.secondary,
+                                    content = {
+                                        ReportButton(
+                                            label = "Create Sale Order",
+                                            icon = Icons.Default.Create,
+                                            onClick = {
+                                                salesmanPermission(
+                                                    "D20",
+                                                    accessDeniedBlock = { showDeniedDialog = true },
+                                                    successBlock = {
+                                                        nav.push(
+                                                            SaleScreen(
+                                                                name = "Sale Order",
+                                                                vchType = 12,
+                                                                selectedLedger = selectedAccount,
+                                                                //  selectedLedgerGUID = selectedGUID
+                                                            )
+                                                        )
+                                                    })
+
+
+                                            }
+                                        )
+
+                                    }
+                                )
+                            }
+
                         }
 
 
