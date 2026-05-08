@@ -10,10 +10,12 @@ fun itemLedgerHtml(
     startDate: String,
     endDate: String,
     openingBalance: Double,
+    openingAmount: Double,
     rows: List<LedgerRow>,
     totalInward: Double,
     totalOutward: Double,
     closingBalance: Double,
+    closingAmount: Double,
 ): String {
     val html = StringBuilder()
 
@@ -84,7 +86,7 @@ fun itemLedgerHtml(
             <h3>From ${Tdate(startDate)} to ${Tdate(endDate)}</h3>
 
             <div class="opening-balance">
-                Opening Balance: ${openingBalance.formatToAmtDec()}
+                Opening Qty: ${openingBalance.formatToAmtDec()} | Opening Amt: ${openingAmount.formatToAmtDec()}
             </div>
 
             <table>
@@ -137,7 +139,7 @@ fun itemLedgerHtml(
             </table>
 
             <div class="closing-balance">
-                Closing Balance: ${closingBalance.formatToAmtDec()}
+                Closing Qty: ${closingBalance.formatToAmtDec()} | Closing Amt: ${closingAmount.formatToAmtDec()}
             </div>
         </body>
         </html>

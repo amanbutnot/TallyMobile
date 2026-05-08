@@ -62,7 +62,7 @@ ORDER BY VL.DATE, VL.VOUCHERNUMBER;
 
 
 ledgerOpeningBalance:
-SELECT Sum(D1) AS OpeningBal FROM Vouchers_StockItems WHERE CM1=? AND DATE<?;
+SELECT Sum(D1) AS OpeningBal, Sum(D3) AS OpeningAmt FROM Vouchers_StockItems WHERE CM1=? AND DATE<?;
 
 
 godownWiseClosingStockList:

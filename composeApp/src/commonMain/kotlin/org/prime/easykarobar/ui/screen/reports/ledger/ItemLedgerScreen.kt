@@ -134,16 +134,18 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
 
 
         // Calculate totals and closing balance
-        val (totalInward, totalOutward, closingBalance) = remember(list, openingBalance) {
+        val (totalInward, totalOutward, closingBalance, closingAmount) = remember(list, openingBalance) {
             var tIn = 0.0
             var tOut = 0.0
             var bal = openingBalance?.OpeningBal ?: 0.0
+            var balAmt = openingBalance?.OpeningAmt ?: 0.0
             list.forEach { item ->
                 tIn += item.D1 ?: 0.0
                 tOut += item.D3 ?: 0.0
                 bal += (item.D1 ?: 0.0)
+                balAmt += (item.D3 ?: 0.0)
             }
-            Triple(tIn, tOut, bal)
+            listOf(tIn, tOut, bal, balAmt)
         }
 
         // Generate ledger rows for PDF
@@ -185,10 +187,12 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                                 startDate = startDate,
                                 endDate = endDate,
                                 openingBalance = openingBalance?.OpeningBal ?: 0.0,
+                                openingAmount = openingBalance?.OpeningAmt ?: 0.0,
                                 rows = generateLedgerRows(),
                                 totalInward = totalInward,
                                 totalOutward = totalOutward,
-                                closingBalance = closingBalance
+                                closingBalance = closingBalance,
+                                closingAmount = closingAmount
                             ),
                             action = PdfAction.Download,
                             onLoadingChange = { shareLoading = it }
@@ -208,10 +212,12 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                                 startDate = startDate,
                                 endDate = endDate,
                                 openingBalance = openingBalance?.OpeningBal ?: 0.0,
+                                openingAmount = openingBalance?.OpeningAmt ?: 0.0,
                                 rows = generateLedgerRows(),
                                 totalInward = totalInward,
                                 totalOutward = totalOutward,
-                                closingBalance = closingBalance
+                                closingBalance = closingBalance,
+                                closingAmount = closingAmount
                             ),
                             action = PdfAction.Share,
                             onLoadingChange = { shareLoading = it }
@@ -246,7 +252,7 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                             TextAlign.End
                         ),
                         ReportColumn(
-                            totalOutward.formatToAmtDec(),
+                            closingAmount.formatToAmtDec(),
                             columnSmallWeight,
                             TextAlign.End
                         ),
@@ -409,10 +415,15 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.End
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                "Opening: ${openingBalance?.OpeningBal?.formatToAmtDec() ?: "0.0"}",
+                                "Opening Amt: ${openingBalance?.OpeningAmt?.formatToAmtDec() ?: "0.0"}",
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                "Opening Qty: ${openingBalance?.OpeningBal?.formatToAmtDec() ?: "0.0"}",
                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.onBackground
                             )
