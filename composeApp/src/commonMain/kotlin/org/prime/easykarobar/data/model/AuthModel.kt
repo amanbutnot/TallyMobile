@@ -133,6 +133,7 @@ data class Permissions(
     val D49: Int? = null,
     val D50: Int? = null,
     val D51: Int? = null,
+    val D52: Int? = null,
     val ED1: Int? = null,
     val ED2: Int? = null,
     val ED3: Int? = null,
@@ -206,7 +207,8 @@ data class Permissions(
             "D48" -> D48 == 0
             "D49" -> D49 == 0
             "D50" -> D50 == 0
-            "D51" -> D50 == 0
+            "D51" -> D51 == 0
+            "D52" -> D52 == 0
             "ED1" -> ED1 == 0
             "ED2" -> ED1 == 0
             "ED3" -> ED1 == 0

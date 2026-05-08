@@ -489,17 +489,23 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                                                     isHeader = false
                                                 )
                                                 TableCell(
-                                                    text = item.D1?.absoluteValue?.formatToAmtDec().toString(),
+                                                    text = item.D1?.absoluteValue?.formatToAmtDec()
+                                                        .toString(),
                                                     weight = columnSmallWeight,
                                                     textAlign = TextAlign.End,
-                                                    textColor = if ((item.D1 ?: 0.0) > 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                                    textColor = if ((item.D1
+                                                            ?: 0.0) > 0.0
+                                                    ) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                                     isHeader = false
                                                 )
                                                 TableCell(
-                                                    text = item.D3?.formatToAmtDec().toString(),
+                                                    text = item.D3?.absoluteValue?.formatToAmtDec()
+                                                        .toString(),
                                                     weight = columnSmallWeight,
                                                     textAlign = TextAlign.End,
-                                                    textColor = if ((item.D3 ?: 0.0) > 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                                    textColor = if ((item.D3
+                                                            ?: 0.0) > 0.0
+                                                    ) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                                     isHeader = false
                                                 )
                                                 TableCell(

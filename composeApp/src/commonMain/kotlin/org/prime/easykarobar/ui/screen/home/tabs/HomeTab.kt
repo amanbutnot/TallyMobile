@@ -283,7 +283,7 @@ object HomeTab : Tab {
                         successBlock = { showLedgerSearch = true }
                     )
                     salesmanPermission(
-                        "D7",
+                        "D52",
                         accessDeniedBlock = { },
                         successBlock = { showItemSearch = true }
                     )
@@ -1224,7 +1224,7 @@ fun ModernSearchBar(
     Column(modifier = modifier.fillMaxWidth()) {
 
         DockedSearchBar(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxSize(),
             query = query,
             onQueryChange = { query = it },
             onSearch = { active = false },
@@ -1255,7 +1255,7 @@ fun ModernSearchBar(
                             .fillMaxWidth()
                             .animateContentSize()
                     ) {
-                        items(filtered.take(5)) { item ->
+                        items(filtered) { item ->
 
                             Card(
                                 modifier = Modifier

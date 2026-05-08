@@ -386,7 +386,7 @@ object ReportingTab : Tab {
 
                                     Report.ItemLedger -> {
                                         salesmanPermission(
-                                            "D40",
+                                            "D52",
                                             accessDeniedBlock = { showDeniedDialog = true },
                                             successBlock = {
                                                 nav?.push(
