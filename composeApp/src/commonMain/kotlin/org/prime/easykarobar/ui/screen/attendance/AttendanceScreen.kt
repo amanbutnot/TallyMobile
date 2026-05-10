@@ -160,7 +160,11 @@ data class AttendanceScreen(
         val buttonName = if (isAttendance) {
             if (isCheckIn(lastAttendanceDate)) "Attendance In" else "Attendance Out"
         } else {
-            if (isCheckIn(lastCheckInOutDate)) "Check In" else "Check Out"
+            if (userRole() == ROLE.OFFICE_STAFF) {
+                "Check"
+            } else {
+                if (isCheckIn(lastCheckInOutDate)) "Check In" else "Check Out"
+            }
 
         }
 
@@ -549,18 +553,21 @@ data class AttendanceScreen(
                                                         C4 = address,
                                                         C5 = capturedFileInBytes
                                                     ), onSuccess = {
-                                                        if (isCheckIn(lastCheckInOutDate)) {
-                                                            SharedPrefs.CheckInOutDate.save(
-                                                                CurrentDate()
-                                                            )
-                                                            lastCheckInOutDate = CurrentDate()
-                                                            SharedPrefs.CheckInOutLedger.save(
-                                                                selectedAccount
-                                                            )
-                                                        } else {
-                                                            SharedPrefs.CheckInOutDate.clear()
-                                                            lastCheckInOutDate = null
-                                                            SharedPrefs.CheckInOutLedger.clear()
+                                                        if (userRole() != ROLE.OFFICE_STAFF) {
+                                                            if (isCheckIn(lastCheckInOutDate)) {
+                                                                SharedPrefs.CheckInOutDate.save(
+                                                                    CurrentDate()
+                                                                )
+                                                                lastCheckInOutDate = CurrentDate()
+
+                                                                SharedPrefs.CheckInOutLedger.save(
+                                                                    selectedAccount
+                                                                )
+                                                            } else {
+                                                                SharedPrefs.CheckInOutDate.clear()
+                                                                lastCheckInOutDate = null
+                                                                SharedPrefs.CheckInOutLedger.clear()
+                                                            }
                                                         }
                                                         showAlert = true
                                                     })
@@ -601,6 +608,12 @@ data class AttendanceScreen(
                     capturedFile = null
                     capturedFileInBytes = ""
                     showAlert = false
+
+                    if (userRole() == ROLE.OFFICE_STAFF) {
+                        selectedAccount = ""
+                        selectedGUID = ""
+                        return@TallyResultDialog
+                    }
 
                     // ATTENDANCE: always pop
                     if (isAttendance) {
