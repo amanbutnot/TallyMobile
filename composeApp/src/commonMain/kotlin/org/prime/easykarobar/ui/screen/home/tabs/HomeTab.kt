@@ -124,6 +124,8 @@ import org.prime.easykarobar.ui.screen.transactions.sale.SaleScreen
 import org.prime.easykarobar.ui.screen.transactions.sale.SaleScreen2
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
+import org.prime.easykarobar.ui.shared.composables.TallySearchButton
+import org.prime.easykarobar.ui.shared.composables.UniversalSearchScreen
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
@@ -293,26 +295,43 @@ object HomeTab : Tab {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (showLedgerSearch) {
-                            ModernSearchBar(
-                                ledgerList.map { it.Name.toString() },
+                            TallySearchButton(
+                                placeholder = "Ledger",
                                 modifier = Modifier.weight(1f),
-                                placeholder = "Ledger"
-                            ) {
-                                nav?.push(
-                                    LedgerReportScreen(it, StartDate(), CurrentDate())
-                                )
-                            }
+                                onClick = {
+                                    nav?.push(
+                                        UniversalSearchScreen(
+                                            title = "Search Ledger",
+                                            itemsList = ledgerList.map { it.Name.toString() },
+                                            onSelect = {
+                                                nav?.push(
+                                                    LedgerReportScreen(it, StartDate(), CurrentDate())
+                                                )
+                                            }
+                                        )
+                                    )
+                                }
+                            )
                         }
 
                         if (showItemSearch) {
-                            ModernSearchBar(
-                                itemLedgerList.map { it.Name.toString() },
-                                modifier = Modifier.weight(1f), placeholder = "Item Ledger"
-                            ) {
-                                nav?.push(
-                                    ItemLedgerScreen(it, StartDate(), CurrentDate())
-                                )
-                            }
+                            TallySearchButton(
+                                placeholder = "Item Ledger",
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    nav?.push(
+                                        UniversalSearchScreen(
+                                            title = "Search Item Ledger",
+                                            itemsList = itemLedgerList.map { it.Name.toString() },
+                                            onSelect = {
+                                                nav?.push(
+                                                    ItemLedgerScreen(it, StartDate(), CurrentDate())
+                                                )
+                                            }
+                                        )
+                                    )
+                                }
+                            )
                         }
 
                     }
