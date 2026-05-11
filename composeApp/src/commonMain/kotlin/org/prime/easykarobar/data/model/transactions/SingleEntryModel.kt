@@ -23,7 +23,9 @@ data class TranRequest(
     val Narration: String,
     val bills_collection: List<BillByBillModel>,
     val pdcDate: String? = null,
-    val pdcType: String
+    val pdcType: String,
+    val instrumentName: String,
+    val instrumentNumber: String
 )
 
 @Serializable

@@ -25,9 +25,14 @@ import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.RemoveCircleOutline
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
@@ -67,6 +72,7 @@ import org.prime.easykarobar.ui.shared.composables.DownloadResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
+import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
@@ -111,6 +117,27 @@ data class SingleEntryReceipt(
         }
         var amount by rememberSaveable { mutableStateOf(existingTransaction?.D2?.toString() ?: "") }
         var narration by rememberSaveable { mutableStateOf(existingTransaction?.Narration ?: "") }
+        var showInstrumentSection by rememberSaveable { mutableStateOf(false) }
+        var selectedInstrument by rememberSaveable { mutableStateOf("Nil") }
+        var instrumentNo by rememberSaveable { mutableStateOf("") }
+        var instrumentDropdownExpanded by remember { mutableStateOf(false) }
+        val instrumentOptions = listOf(
+            "Nil",
+            "RTGS",
+            "NEFT",
+            "CHQ",
+            "P.O",
+            "D.D",
+            "ECS",
+            "A2A",
+            "IMPS",
+            "E-PYMT",
+            "TRANSFER",
+            "WALLET",
+            "UPI",
+            "TREDS",
+            "OTHER"
+        )
         var selectedDate by rememberSaveable {
             mutableStateOf(
                 existingTransaction?.TranDate ?: CurrentDate()
@@ -227,6 +254,97 @@ data class SingleEntryReceipt(
                         value = narration, onValueChange = { narration = it }, label = "Narration"
                     )
 
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Bank Instruments",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        TextButton(
+                            onClick = { showInstrumentSection = !showInstrumentSection }
+                        ) {
+                            Icon(
+                                imageVector = if (showInstrumentSection) Icons.Default.RemoveCircleOutline
+                                else Icons.Default.AddCircleOutline,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (showInstrumentSection) "Remove" else "Add",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
+                    }
+
+                    AnimatedVisibility(visible = showInstrumentSection) {
+                        ExposedDropdownMenuBox(
+                            expanded = instrumentDropdownExpanded,
+                            onExpandedChange = { instrumentDropdownExpanded = it },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = selectedInstrument,
+                                    onValueChange = { },
+                                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                    readOnly = true,
+                                    label = { Text("Instrument Type") },
+                                    trailingIcon = {
+                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = instrumentDropdownExpanded)
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary.copy(
+                                            alpha = 0.5f
+                                        ),
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(
+                                            alpha = 0.3f
+                                        ),
+                                    ),
+                                    textStyle = MaterialTheme.typography.bodyMedium
+                                )
+
+                                ExposedDropdownMenu(
+                                    expanded = instrumentDropdownExpanded,
+                                    onDismissRequest = { instrumentDropdownExpanded = false }
+                                ) {
+                                    instrumentOptions.forEach { option ->
+                                        DropdownMenuItem(
+                                            text = { Text(option) },
+                                            onClick = {
+                                                selectedInstrument = option
+                                                instrumentDropdownExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
+
+                                AnimatedVisibility(visible = selectedInstrument != "Nil") {
+                                    TallyTextField(
+                                        value = instrumentNo,
+                                        onValueChange = { instrumentNo = it },
+                                        label = "Instrument No",
+                                        placeholder = "Enter instrument number",
+                                        isPassword = false,
+                                        isNumber = false,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     if (vchType !in listOf(12, 13, 15)) {
                         Row(
                             modifier = Modifier.fillMaxWidth()
@@ -301,6 +419,8 @@ data class SingleEntryReceipt(
                                         D4 = 0.0,
                                         Narration = narration,
                                         bills_collection = selectedReferences,
+                                        instrumentName = selectedInstrument,
+                                        instrumentNumber = instrumentNo,
                                         pdcDate = if (showPdcDate) selectedPdcDate else null,
                                         pdcType = if (showPdcDate) PDCTYPE.PDC.name else PDCTYPE.REGULAR.name,
                                     ), onSuccess = {
@@ -406,10 +526,12 @@ data class SingleEntryReceipt(
                                         D2 = amount.toDouble(),
                                         D3 = 0.0,
                                         D4 = 0.0,
+                                        Narration = narration,
+                                        instrumentName = selectedInstrument,
+                                        instrumentNumber = instrumentNo,
+                                        bills_collection = selectedReferences,
                                         pdcDate = if (showPdcDate) selectedPdcDate else null,
                                         pdcType = if (showPdcDate) PDCTYPE.PDC.name else PDCTYPE.REGULAR.name,
-                                        Narration = narration,
-                                        bills_collection = selectedReferences
                                     )
                                 )
                                 viewmodel.addSingleTran(
@@ -428,10 +550,12 @@ data class SingleEntryReceipt(
                                         D2 = amount.toDouble(),
                                         D3 = 0.0,
                                         D4 = 0.0,
+                                        instrumentName = selectedInstrument,
+                                        instrumentNumber = instrumentNo,
+                                        Narration = narration,
+                                        bills_collection = selectedReferences,
                                         pdcDate = if (showPdcDate) selectedPdcDate else null,
                                         pdcType = if (showPdcDate) PDCTYPE.PDC.name else PDCTYPE.REGULAR.name,
-                                        Narration = narration,
-                                        bills_collection = selectedReferences
                                     ), onSuccess = {
                                         db.transaction {
                                             selectedReferences.forEach {
