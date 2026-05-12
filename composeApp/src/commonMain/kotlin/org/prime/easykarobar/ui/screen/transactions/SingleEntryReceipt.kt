@@ -122,7 +122,7 @@ data class SingleEntryReceipt(
         var instrumentNo by rememberSaveable { mutableStateOf("") }
         var instrumentDropdownExpanded by remember { mutableStateOf(false) }
         val instrumentOptions = listOf(
-            "Nil",
+            "--N.A.--",
             "RTGS",
             "NEFT",
             "CHQ",
@@ -678,7 +678,7 @@ data class SingleEntryReceipt(
                     )
                     TransactionBottomSheet(
                         showBottomSheet = showSettlementBottomSheet,
-                        list = filteredSettlementList.map { Pair(it.Name ?: "", it.GUID ?: "") },
+                        list =if(vchType!=16) filteredSettlementList.map { Pair(it.Name ?: "", it.GUID ?: "") } else  filteredLedgerList.map { Pair(it.Name ?: "", it.GUID ?: "") },
                         onSelected = {
                             it.let {
                                 selectedSettlement = it.first

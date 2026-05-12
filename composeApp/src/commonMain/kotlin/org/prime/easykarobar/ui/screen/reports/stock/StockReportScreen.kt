@@ -1,5 +1,6 @@
 package org.prime.easykarobar.ui.screen.reports.stock
 
+import CurrentDate
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,13 +41,14 @@ import org.prime.easykarobar.data.utils.showAmtToSalesman
 import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.Quadruple
 import org.prime.easykarobar.ui.printing.fourHeaderHtml
-import org.prime.easykarobar.ui.screen.reports.productReport.ProductReportScreen
+import org.prime.easykarobar.ui.screen.reports.ledger.ItemLedgerScreen
 import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheet
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getProductStockItems
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
@@ -78,8 +80,12 @@ object StockReportScreen : Screen {
         var shareLoading by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
         var showGroupFilterSheet by remember { mutableStateOf(false) }
-        val productGroups = remember { db.productGroupMasterQueries.selectAll(  filterGroup = filterItemGroups(),
-            groupCodes = itemGroupCodes()).executeAsList() }
+        val productGroups = remember {
+            db.productGroupMasterQueries.selectAll(
+                filterGroup = filterItemGroups(),
+                groupCodes = itemGroupCodes()
+            ).executeAsList()
+        }
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
         val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -288,9 +294,10 @@ object StockReportScreen : Screen {
                                 //   nav.push(StockItemReportScreen(item.Item_Name))
                                 //   println(item.MasterCode1?.toInt())
                                 nav.push(
-                                    ProductReportScreen(
-                                        item.MasterCode1,
-                                        isMain = false
+                                    ItemLedgerScreen(
+                                        accountName = item.ProductName.toString(),
+                                        startDate = StartDate(),
+                                        endDate = CurrentDate()
                                     )
                                 )
 
