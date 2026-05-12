@@ -41,7 +41,6 @@ fun accountLedgerHtml(
             @page { size: A4; margin: 10mm; } /* use small margins for more usable space */
             html, body {
                 width: 210mm;
-                height: 297mm;
                 margin: 0;
                 padding: 0;
                 font-family: Arial, sans-serif;
@@ -49,10 +48,29 @@ fun accountLedgerHtml(
                 line-height: 1.2;
             }
 
+            .main-container {
+                border: 2px solid #000;
+                border-radius: 8px;
+                padding: 12px;
+                min-height: 270mm;
+            }
+
             h2, h3, h4 {
                 text-align: center;
                 margin: 2px 0;
                 font-weight: normal;
+            }
+
+            .company-info {
+                text-align: center;
+                margin-bottom: 10px;
+            }
+
+            .ledger-info {
+                margin-top: 10px;
+                font-size: 10pt;
+                display: flex;
+                justify-content: space-between;
             }
 
             table {
@@ -72,6 +90,10 @@ fun accountLedgerHtml(
                 font-size: 9pt;
             }
 
+            thead {
+                display: table-header-group;
+            }
+
             td {
                 font-size: 9pt;
             }
@@ -80,37 +102,44 @@ fun accountLedgerHtml(
             td.text { text-align: left; }
             td.center { text-align: center; }
 
-            .opening-balance, .closing-balance {
+            .opening-balance {
                 font-weight: bold;
                 text-align: right;
                 font-size: 9pt;
                 margin: 4px 0;
             }
-
-            .closing-balance { margin-top: 8px; }
         </style>
         </head>
         <body>
-            <h2>${CompanyName()}</h2>
-            <h3>GSTIN : ${CompanyGst()}</h3>
-            <h2>Account Ledger</h2>
-            <h3>Account: $accountName</h3> 
-            <h3>From ${Tdate(startDate)} to ${Tdate(endDate)}</h3>
+            <div class="main-container">
+            <div class="company-info">
+                <h2>${CompanyName()}</h2>
+                <div>GSTIN : ${CompanyGst()}</div>
+                <h2 style="margin-top: 8px;">Account Ledger</h2>
+            </div>
+
+            <div class="ledger-info">
+                <div><strong>Account:</strong> $accountName</div>
+                <div style="text-align:right;"><strong>Period:</strong> ${Tdate(startDate)} to ${Tdate(endDate)}</div>
+            </div>
 
             <div class="opening-balance">
                 Opening Bal. = Rs. ${openingBalance.formatToAmtDec()} $openingBalanceType
             </div>
 
             <table>
-                <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Vch/Bill No</th>
-                    <th>Account</th>
-                    <th>Debit (Rs.)</th>
-                    <th>Credit (Rs.)</th>
-                    <th>Balance (Rs.)</th>
-                </tr>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Vch/Bill No</th>
+                        <th>Account</th>
+                        <th>Debit (Rs.)</th>
+                        <th>Credit (Rs.)</th>
+                        <th>Balance (Rs.)</th>
+                    </tr>
+                </thead>
+                <tbody>
         """.trimIndent()
     )
 
@@ -136,16 +165,19 @@ fun accountLedgerHtml(
 
     html.append(
         """
+            </tbody>
             <tr>
                 <th colspan="4" class="text">Grand Total</th>
                 <th class="number">${totalDebit.formatToAmtDec()}</th>
                 <th class="number">${totalCredit.formatToAmtDec()}</th>
                 <th></th>
             </tr>
+            <tr>
+                <td colspan="5"></td>
+                <td class="number">${closingBalance.formatToAmtDec()} $closingBalanceType</td>
+                <td></td>
+            </tr>
             </table>
-
-            <div class="closing-balance">
-                Closing Bal. = Rs. ${closingBalance.formatToAmtDec()} $closingBalanceType
             </div>
         </body>
         </html>
