@@ -134,7 +134,10 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
 
 
         // Calculate totals and closing balance
-        val (totalInward, totalOutward, closingBalance, closingAmount) = remember(list, openingBalance) {
+        val (totalInward, totalOutward, closingBalance, closingAmount) = remember(
+            list,
+            openingBalance
+        ) {
             var tIn = 0.0
             var tOut = 0.0
             var bal = openingBalance?.OpeningBal ?: 0.0
