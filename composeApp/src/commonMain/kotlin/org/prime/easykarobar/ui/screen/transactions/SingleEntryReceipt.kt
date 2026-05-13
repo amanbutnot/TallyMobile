@@ -118,8 +118,8 @@ data class SingleEntryReceipt(
         var amount by rememberSaveable { mutableStateOf(existingTransaction?.D2?.toString() ?: "") }
         var narration by rememberSaveable { mutableStateOf(existingTransaction?.Narration ?: "") }
         var showInstrumentSection by rememberSaveable { mutableStateOf(false) }
-        var selectedInstrument by rememberSaveable { mutableStateOf("Nil") }
-        var instrumentNo by rememberSaveable { mutableStateOf("") }
+        var selectedInstrument by rememberSaveable { mutableStateOf(existingTransaction?.instrumentName?:"--N.A.--") }
+        var instrumentNo by rememberSaveable { mutableStateOf(existingTransaction?.instrumentNumber?:"")}
         var instrumentDropdownExpanded by remember { mutableStateOf(false) }
         val instrumentOptions = listOf(
             "--N.A.--",
@@ -657,8 +657,10 @@ data class SingleEntryReceipt(
 
                     val filteredLedgerList = if (name == "Contra") {
                         list.filter { it.L2 == 1.0 || it.L3 == 1.0 }
-                    } else {
+                    } else if (vchType != 16) {
                         list.filter { it.L1 == 1.0 }
+                    } else {
+                        list
                     }
 
                     val filteredSettlementList = list.filter { it.L2 == 1.0 || it.L3 == 1.0 }
@@ -678,7 +680,12 @@ data class SingleEntryReceipt(
                     )
                     TransactionBottomSheet(
                         showBottomSheet = showSettlementBottomSheet,
-                        list =if(vchType!=16) filteredSettlementList.map { Pair(it.Name ?: "", it.GUID ?: "") } else  filteredLedgerList.map { Pair(it.Name ?: "", it.GUID ?: "") },
+                        list = if (vchType != 16) filteredSettlementList.map {
+                            Pair(
+                                it.Name ?: "",
+                                it.GUID ?: ""
+                            )
+                        } else filteredLedgerList.map { Pair(it.Name ?: "", it.GUID ?: "") },
                         onSelected = {
                             it.let {
                                 selectedSettlement = it.first

@@ -55,8 +55,8 @@ data class TranListResponse(
     val CM3: String,
     val CM4: String,
     val billed_vchno: String,
-    val pdcDate: String?=null,
-    val pdcType: String?=null,
+    val pdcDate: String? = null,
+    val pdcType: String? = null,
     val C1: String,
     val C2: String,
     val C3: String,
@@ -66,5 +66,7 @@ data class TranListResponse(
     val D3: Double,
     val D4: Double,
     val Narration: String,
+    val instrumentName: String?=null,
+    val instrumentNumber: String?=null,
     val CreatedAt: String, val bills_collection: List<BillByBillModel>
 )
