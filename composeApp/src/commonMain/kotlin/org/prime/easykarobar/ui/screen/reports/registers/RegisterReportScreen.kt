@@ -37,6 +37,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.SerialNumberRegister
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
@@ -49,7 +50,6 @@ import org.prime.easykarobar.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportLazyList
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.RegisterReportList
-import smartSearch
 import kotlin.math.absoluteValue
 
 data class RegisterReportScreen(val name: String, val startDate: String, val endDate: String) :
@@ -131,7 +131,7 @@ println("meow ${when (name) {
 
         val rows: List<Quadruple<String, String, String, String>> = filteredList.map { item ->
             Quadruple(
-                item.DATE ?: "",
+                Tdate(item.DATE?:""),
                 item.CM1 ?: "",
                 item.VOUCHERNUMBER?.trim() ?: "",
                 item.D1?.absoluteValue?.formatToAmtDec() ?: ""
@@ -151,7 +151,7 @@ println("meow ${when (name) {
                                 title = name,
                                 headers = Quadruple("Date", "Account", "Vch No", "Amount"),
                                 rows = rows,
-                                total1 = totalAmt.formatToAmtDec(),
+                                total1 = totalAmt.absoluteValue.formatToAmtDec(),
                                 startDate = startDate,
                                 endDate = endDate,
                             ),
@@ -172,7 +172,7 @@ println("meow ${when (name) {
                                 title = name,
                                 headers = Quadruple("Date", "Account", "Vch No", "Amount"),
                                 rows = rows,
-                                total1 = totalAmt.formatToAmtDec(),
+                                total1 = totalAmt.absoluteValue.formatToAmtDec(),
                                 startDate = startDate,
                                 endDate = endDate,
                             ),
