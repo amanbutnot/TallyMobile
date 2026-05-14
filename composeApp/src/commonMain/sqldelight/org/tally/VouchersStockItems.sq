@@ -53,11 +53,11 @@ Sum(D3) AS Item_Amt
 ledgerReportList:
 SELECT
   VL.*,
- CM2 AS AccountName
-FROM Vouchers_StockItems AS VL
+ Vouchers.PARTYLEDGERNAME AS AccountName
+FROM Vouchers_StockItems AS VL LEFT JOIN Vouchers ON VL.VCH_GUID = Vouchers.GUID
 WHERE VL.CM1 = ?
   AND VL.DATE >= ?
-  AND VL.DATE <= ? AND VchType NOT IN ('Sales Order','Purchase Order')
+  AND VL.DATE <= ? AND VL.VchType NOT IN ('Sales Order','Purchase Order')
 ORDER BY VL.DATE, VL.VOUCHERNUMBER;
 
 
