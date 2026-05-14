@@ -69,7 +69,7 @@ import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductStockList
-import smartSearch
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 
 data class ProductReportScreen(val productGuid: String? = null, val isMain: Boolean) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)

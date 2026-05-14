@@ -1,3 +1,5 @@
+package org.prime.easykarobar.ui.shared.composables
+
 fun <T> smartSearch(
     list: List<T>,
     query: String,

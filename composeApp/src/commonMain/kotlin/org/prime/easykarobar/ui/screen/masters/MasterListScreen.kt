@@ -69,7 +69,7 @@ import org.tally.LedgerMaster
 import org.tally.ProductGroupMaster
 import org.tally.ProductUnitMaster
 import org.tally.Products
-import smartSearch
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 
 data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)

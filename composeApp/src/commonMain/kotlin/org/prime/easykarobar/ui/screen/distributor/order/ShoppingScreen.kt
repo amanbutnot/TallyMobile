@@ -95,7 +95,7 @@ import org.prime.easykarobar.ui.shared.globalShared.getProductImage
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.tally.GetProductsForDis
 import org.tally.ProductCategoriesForDis
-import smartSearch
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.category_placeholder
 import tallymobile.composeapp.generated.resources.splashImage

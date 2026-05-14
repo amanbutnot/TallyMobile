@@ -104,7 +104,7 @@ import org.prime.easykarobar.ui.shared.globalShared.googleMapsLink
 import org.prime.easykarobar.ui.shared.globalShared.parseDate
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
-import smartSearch
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 
 data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)

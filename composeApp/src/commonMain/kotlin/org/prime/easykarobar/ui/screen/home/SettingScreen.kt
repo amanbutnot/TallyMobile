@@ -318,10 +318,10 @@ object SettingScreen : Screen {
                             "Lasy Synced from Software",
                             compInfo.C8.toString()
                         )
-                        if (listOf(
+                        if (userRole() !in listOf(
                                 ROLE.STAFF_MANAGER,
                                 ROLE.OFFICE_STAFF
-                            ).none { userRole() != it }
+                            )
                         ) {
                             TallyToggleRow(
                                 checked = zeroStock,

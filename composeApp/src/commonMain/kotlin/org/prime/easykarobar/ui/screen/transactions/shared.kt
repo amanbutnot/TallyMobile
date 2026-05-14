@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.dp
 import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.tally.LedgerMaster
-import smartSearch
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 
 
 @Composable

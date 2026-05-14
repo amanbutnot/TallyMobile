@@ -62,7 +62,7 @@ import org.prime.easykarobar.ui.shared.reportsShared.TallyReportLazyList
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductParamStockList
 import org.tally.ProductGroupMaster
-import smartSearch
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import kotlin.math.absoluteValue
 
 object ParameterReportScreen : Screen {

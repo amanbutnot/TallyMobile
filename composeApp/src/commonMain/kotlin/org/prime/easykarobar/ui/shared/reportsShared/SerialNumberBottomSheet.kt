@@ -33,7 +33,7 @@ import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.tally.SerialNoEnterReportSale
-import smartSearch
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

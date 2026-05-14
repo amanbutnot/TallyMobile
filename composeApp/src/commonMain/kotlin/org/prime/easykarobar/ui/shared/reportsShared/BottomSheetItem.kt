@@ -36,7 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
-import smartSearch
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

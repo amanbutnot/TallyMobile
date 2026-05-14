@@ -132,6 +132,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
@@ -2697,24 +2698,15 @@ fun TransactionItemBottomList(
     itemContent: @Composable ((String) -> Unit)? = null
 ) {
     var query by remember { mutableStateOf("") }
+
     val filteredList = remember(list, query) {
-        if (query.isBlank()) list
-        else {
-            val q = query.trim()
-
-            val (startsWith, rest) = list.partition {
-                it.Name.orEmpty().startsWith(q, true) ||
-                        it.Alias.orEmpty().startsWith(q, true)
-            }
-
-            val contains = rest.filter {
-                it.Name.orEmpty().contains(q, true) ||
-                        it.Alias.orEmpty().contains(q, true)
-            }
-
-            startsWith + contains
-        }
+        smartSearch(
+            list = list,
+            query = query,
+            selectors = listOf { it.toString() }
+        )
     }
+
 
 
     if (showBottomSheet) {

@@ -61,7 +61,7 @@ import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.vouchersLedgers.LedgerOpeningBalance
 import org.tally.vouchersLedgers.LedgerReportList
-import smartSearch
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import kotlin.math.absoluteValue
 
 data class LedgerReportScreen(val accountName: String, val startDate: String, val endDate: String) :
