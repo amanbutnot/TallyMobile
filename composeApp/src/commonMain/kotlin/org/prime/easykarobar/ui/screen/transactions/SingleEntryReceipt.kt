@@ -125,18 +125,18 @@ data class SingleEntryReceipt(
             "--N.A.--",
             "RTGS",
             "NEFT",
-            "CHQ",
-            "P.O",
-            "D.D",
+            "CHQ.",
+            "P.O.",
+            "D.D.",
             "ECS",
             "A2A",
             "IMPS",
             "E-PYMT",
-            "TRANSFER",
-            "WALLET",
+            "Transfer",
+            "Wallet",
             "UPI",
-            "TREDS",
-            "OTHER"
+            "TReDS",
+            "Other"
         )
         var selectedDate by rememberSaveable {
             mutableStateOf(
