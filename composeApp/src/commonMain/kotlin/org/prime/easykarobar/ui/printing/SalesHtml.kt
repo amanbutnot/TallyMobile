@@ -47,16 +47,7 @@ fun salesHtml(
         ).filter { it.isNotBlank() }.joinToString("<br>")
     }
 
-    val title = when (name) {
-        "Sale Invoice" -> "TAX INVOICE"
-        "Sale Order" -> "SALE ORDER"
-        "Sale Return" -> "CREDIT NOTE"
-        "Purchase Invoice" -> "PURCHASE INVOICE"
-        "Purchase Order" -> "PURCHASE ORDER"
-        "Purchase Return" -> "DEBIT NOTE"
-        "Stock Transfer" -> "STOCK TRANSFER"
-        else -> name.uppercase()
-    }
+    val title = if (name == "Sale Invoice") "TAX INVOICE" else name.uppercase()
 
     val html = StringBuilder()
 
@@ -80,13 +71,14 @@ fun salesHtml(
     .main-container {
         border: 1px solid #000;
         width: 100%;
+        display: flex;
+        flex-direction: column;
+        min-height: 275mm;
     }
     .border-b { border-bottom: 0.5pt solid #000; }
     .border-r { border-right: 0.5pt solid #000; }
     
     .header-top {
-        display: flex;
-        justify-content: space-between;
         padding: 2px 8px;
         font-size: 8.5pt;
     }
@@ -144,12 +136,21 @@ fun salesHtml(
         justify-content: space-between;
     }
     
+    .items-wrapper {
+        flex-grow: 1;
+        border-bottom: 0.5pt solid #000;
+    }
     table.items-table {
         width: 100%;
         border-collapse: collapse;
+        height: 100%;
+    }
+    table.items-table thead {
+        height: 25px;
     }
     table.items-table th, table.items-table td {
-        border: 0.5pt solid #000;
+        border-right: 0.5pt solid #000;
+        border-bottom: 0.5pt solid #000;
         padding: 3px 4px;
         font-size: 8.5pt;
         vertical-align: top;
@@ -159,6 +160,13 @@ fun salesHtml(
         text-align: center;
         background: #fff;
     }
+    table.items-table th:last-child, table.items-table td:last-child {
+        border-right: none;
+    }
+    .filler-row td {
+        border-bottom: none !important;
+    }
+    
     .right { text-align: right; }
     .center { text-align: center; }
     .bold { font-weight: bold; }
@@ -240,10 +248,14 @@ fun salesHtml(
 </head>
 <body>
 <div class="main-container">
-    <div class="header-top border-b">
-        <span>GSTIN : ${compInfo?.T4 ?: ""}</span>
-        <span>Original Copy</span>
-    </div>
+<div class="header-top border-b">
+    <table style="width: 100%; border-collapse: collapse; border: none; table-layout: fixed;">
+        <tr>
+            <td style="padding: 0; border: none; text-align: left;">GST : ${compInfo?.T4 ?: ""}</td>
+            <td style="padding: 0; border: none; text-align: right;">Original Copy</td>
+        </tr>
+    </table>
+</div>
     
     <div class="header-center border-b">
         <div class="title">$title</div>
@@ -296,13 +308,8 @@ fun salesHtml(
         </div>
     </div>
 
-    <div class="irn-section border-b">
-        <span><b>IRN :</b> </span>
-        <span><b>Ack.No. :</b> </span>
-        <span><b>Ack. Date :</b> </span>
-    </div>
-
-    <table class="items-table border-b">
+    <div class="items-wrapper">
+    <table class="items-table">
         <thead>
             <tr>
                 <th style="width:3%">S.N.</th>
@@ -322,7 +329,7 @@ fun salesHtml(
                 <th style="width:13%">Amount(₹)</th>
             </tr>
         </thead>
-        <tbody>""".trimIndent()
+        <tbody style="vertical-align: top;">""".trimIndent()
     )
 
     items.forEachIndexed { index, item ->
@@ -352,7 +359,7 @@ fun salesHtml(
 
         html.append(
             """
-            <tr>
+            <tr style="height: 1px;">
                 <td class="center">${index + 1}.</td>
                 <td><b>${item.name}</b>$serials</td>
                 <td class="center"></td>
@@ -364,10 +371,17 @@ fun salesHtml(
         )
     }
 
+    // Add filler row that takes up remaining space
     html.append(
         """
+            <tr class="filler-row">
+                <td></td><td></td><td></td><td></td><td></td>
+                ${if (isIgst) "<td></td><td></td>" else "<td></td><td></td><td></td><td></td>"}
+                <td></td>
+            </tr>
         </tbody>
     </table>
+    </div>
 
     <div class="summary-container border-b">
         <div class="summary-left"></div>
@@ -457,9 +471,6 @@ fun salesHtml(
         Rupees ${numberToWords(grandTotal.toInt())} Only
     </div>
 
-    <div class="bank-details border-b">
-        <b>Bank Details :</b> 
-    </div>
 
     <div class="footer-section">
         <div class="terms border-r">
@@ -468,7 +479,7 @@ fun salesHtml(
             Subject to '${user?.State ?: ""}' Jurisdiction only.
         </div>
         <div class="signature-section">
-            <div style="font-size: 8.5pt;">Receiver's Signature :</div><br><br>
+            <div style="font-size: 8.5pt;">Receiver's Signature :</div><br><br><br>
             <div style="text-align: center;">
                 For <b>${CompanyName()}</b><br><br><br>
                 <b>Authorised Signatory</b>
@@ -528,8 +539,13 @@ fun numberToWords(num: Int): String {
         n %= 1_00_00_000
     }
 
+    if (n >= 1_00_00_000) {
+        result.append("${twoDigits(n / 1_00_00_000)} Crore ")
+        n %= 1_00_00_000
+    }
+
     if (n >= 1_00_000) {
-        result.append("${twoDigits(n / 1_00_000)} Lakh ")
+        result.append("${twoDigits(n / 1_00_00_000)} Lakh ")
         n %= 1_00_000
     }
 
