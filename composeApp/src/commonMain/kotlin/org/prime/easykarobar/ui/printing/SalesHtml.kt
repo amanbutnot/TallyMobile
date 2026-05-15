@@ -21,295 +21,465 @@ fun salesHtml(
     grandTotal: Double,
     transportDetails: TransportDetails
 ): String {
-    println(items)
     val db = DatabaseHolder.instance
     val compInfo = db.companyInformationQueries.getCompanyInformation().executeAsOneOrNull()
-    val html = StringBuilder()
+    val partyDetails = db.ledgerMasterQueries.selectByGuid(partyGuid).executeAsOneOrNull()
+    val user = SharedPrefs.User.get()
+
+    val isIgst = user?.State != partyDetails?.State && partyDetails?.State?.isNotBlank() == true && user?.State?.isNotBlank() == true
+
+    val hasShipping = transportDetails.Saddress1?.isNotBlank() == true || transportDetails.SpartyName?.isNotBlank() == true
+    val shippedToName = if (hasShipping) transportDetails.SpartyName ?: partyName else partyName
+    val shippedToGstin = if (hasShipping) transportDetails.SgstIn ?: (partyDetails?.GSTIN ?: "") else (partyDetails?.GSTIN ?: "")
+    val shippedToAddress = if (hasShipping) {
+        listOfNotNull(
+            transportDetails.Saddress1,
+            transportDetails.Saddress2,
+            transportDetails.Saddress3,
+            transportDetails.Saddress4
+        ).filter { it.isNotBlank() }.joinToString("<br>")
+    } else {
+        listOfNotNull(
+            partyDetails?.Address1,
+            partyDetails?.Address2,
+            partyDetails?.Address3,
+            partyDetails?.Address4
+        ).filter { it.isNotBlank() }.joinToString("<br>")
+    }
 
     val title = when (name) {
-        "Sale Invoice" -> "Tax Invoice"
-        "Sale Order" -> "Sale Order"
-        "Sale Return" -> "Credit Note"
-        "Purchase Invoice" -> "Purchase Invoice"
-        "Purchase Order" -> "Purchase Order"
-        "Purchase Return" -> "Debit Note"
-        "Stock Transfer" -> "Stock Transfer"
-        else -> ""
+        "Sale Invoice" -> "TAX INVOICE"
+        "Sale Order" -> "SALE ORDER"
+        "Sale Return" -> "CREDIT NOTE"
+        "Purchase Invoice" -> "PURCHASE INVOICE"
+        "Purchase Order" -> "PURCHASE ORDER"
+        "Purchase Return" -> "DEBIT NOTE"
+        "Stock Transfer" -> "STOCK TRANSFER"
+        else -> name.uppercase()
     }
-    val taxItems = items.groupBy { item -> item.gstPercentage }
 
-    val partyDetails = db.ledgerMasterQueries.selectByGuid(partyGuid).executeAsOneOrNull()
+    val html = StringBuilder()
 
     html.append(
         """<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Tax Invoice</title>
-
 <style>
-@page {
-    size: A4;
-    margin: 12mm;
-}
+    @page {
+        size: A4;
+        margin: 10mm;
+    }
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 8.5pt;
+        color: #000;
+        margin: 0;
+        padding: 0;
+    }
+    .main-container {
+        border: 1px solid #000;
+        width: 100%;
+    }
+    .border-b { border-bottom: 0.5pt solid #000; }
+    .border-r { border-right: 0.5pt solid #000; }
+    
+    .header-top {
+        display: flex;
+        justify-content: space-between;
+        padding: 2px 8px;
+        font-size: 8.5pt;
+    }
+    .header-center {
+        text-align: center;
+        padding: 2px 5px 4px 5px;
+    }
+    .title {
+        font-weight: bold;
+        text-decoration: underline;
+        font-size: 9.5pt;
+    }
+    .company-name {
+        font-size: 16pt;
+        font-weight: bold;
+        margin: 0;
+    }
+    .company-info {
+        font-size: 8.5pt;
+        line-height: 1.2;
+    }
+    
+    .info-section {
+        display: flex;
+    }
+    .info-col {
+        width: 50%;
+    }
+    .info-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .info-table td {
+        padding: 1px 8px;
+        font-size: 8.5pt;
+        vertical-align: top;
+    }
+    .label-cell { width: 35%; }
+    
+    .billing-section {
+        display: flex;
+        min-height: 80px;
+    }
+    .billing-col {
+        width: 50%;
+        padding: 4px 8px;
+        font-size: 8.5pt;
+        line-height: 1.2;
+    }
+    
+    .irn-section {
+        padding: 2px 8px;
+        font-size: 8pt;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    table.items-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    table.items-table th, table.items-table td {
+        border: 0.5pt solid #000;
+        padding: 3px 4px;
+        font-size: 8.5pt;
+        vertical-align: top;
+    }
+    table.items-table th {
+        font-weight: bold;
+        text-align: center;
+        background: #fff;
+    }
+    .right { text-align: right; }
+    .center { text-align: center; }
+    .bold { font-weight: bold; }
+    
+    .summary-container {
+        display: flex;
+    }
+    .summary-left {
+        width: 78.5%;
+        position: relative;
+    }
+    .summary-right {
+        width: 21.5%;
+    }
+    .summary-right table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .summary-right td {
+        border-left: 0.5pt solid #000;
+        border-bottom: 0.5pt solid #000;
+        padding: 2px 5px;
+        font-size: 8.5pt;
+    }
+    .summary-right tr:last-child td { border-bottom: none; }
 
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 10pt;
-    color: #000;
-}
+    .grand-total-row {
+        display: flex;
+        align-items: center;
+        padding: 0;
+        font-weight: bold;
+        font-size: 9pt;
+    }
+    .gt-label { width: 45%; text-align: right; padding: 2px 8px; }
+    .gt-qty { width: 7%; text-align: center; border-bottom: 1px solid #888; padding: 2px 0; }
+    .gt-spacer { width: 35%; }
+    .gt-amt { width: 13%; text-align: right; padding: 2px 4px; }
 
-.main-container {
-    border: 2px solid #000;
-    border-radius: 8px;
-    padding: 12px;
-}
-
-h1, h2, h3 {
-    margin: 2px 0;
-    text-align: center;
-}
-
-.header {
-    text-align: center;
-    line-height: 1.4;
-}
-
-.header .title {
-    font-size: 14pt;
-    font-weight: bold;
-}
-
-.header .sub {
-    font-size: 10pt;
-}
-
-.box {
-    border: 1px solid #000;
-    padding: 6px;
-    margin-top: 6px;
-}
-
-.flex {
-    display: flex;
-    justify-content: space-between;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 8px;
-}
-
-th, td {
-    border: 1px solid #000;
-    padding: 5px;
-    font-size: 9.5pt;
-}
-
-th {
-    background: #f2f2f2;
-    text-align: center;
-}
-
-.right { text-align: right; }
-.center { text-align: center; }
-.bold { font-weight: bold; }
-
-.no-border td {
-    border: none;
-}
-
-.amount-summary td {
-    border-left: none;
-    border-right: none;
-}
-
-.footer {
-    margin-top: 12px;
-    font-size: 9pt;
-}
-
-.signature {
-    margin-top: 25px;
-    display: flex;
-    justify-content: space-between;
-}
-
+    .tax-summary-section {
+        padding: 5px 8px;
+    }
+    .tax-table {
+        border-collapse: collapse;
+        width: auto;
+    }
+    .tax-table th, .tax-table td {
+        border: 0.5pt solid #000;
+        padding: 1px 6px;
+        font-size: 8pt;
+    }
+    
+    .amount-in-words {
+        padding: 4px 8px;
+        font-weight: bold;
+        font-size: 9pt;
+    }
+    .bank-details {
+        padding: 4px 8px;
+        font-size: 8.5pt;
+    }
+    .footer-section {
+        display: flex;
+        min-height: 100px;
+    }
+    .terms {
+        width: 55%;
+        padding: 4px 8px;
+        font-size: 7.5pt;
+        line-height: 1.1;
+    }
+    .signature-section {
+        width: 45%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 4px 8px;
+    }
 </style>
 </head>
-
 <body>
-
 <div class="main-container">
-
-<!-- HEADER -->
-<div class="header">
-    <div class="bold">GSTIN : ${compInfo?.T4.toString()}</div>
-    <div class="title">$title</div>
-
-    <h2>${CompanyName()}</h2>
-    <div>${compInfo?.T3.toString()}</div>
-    <div>Tel : ${SharedPrefs.User.get()?.Mobile}</div>
-    <div>Email : ${SharedPrefs.User.get()?.Email}</div>
-</div>
-
-<!-- PARTY & INVOICE DETAILS -->
-<div class="box flex">
-    <div style="width:55%">
-        <b>Party Details :</b><br>
-        $partyName<br>
-        ${partyDetails?.Address1}<br>
-        <b>GSTIN / UIN :</b> ${partyDetails?.GSTIN}
+    <div class="header-top border-b">
+        <span>GSTIN : ${compInfo?.T4 ?: ""}</span>
+        <span>Original Copy</span>
+    </div>
+    
+    <div class="header-center border-b">
+        <div class="title">$title</div>
+        <div class="company-name">${CompanyName()}</div>
+        <div class="company-info">
+            ${compInfo?.T3 ?: ""}<br>
+            Tel. : ${user?.Mobile ?: ""} &nbsp; email : ${user?.Email ?: ""}
+        </div>
     </div>
 
-    <div style="width:40%">
-        <table class="no-border">
-            <tr><td><b>Invoice No.</b></td><td>: $invoiceNo</td></tr>
-            <tr><td><b>Dated</b></td><td>: ${Tdate(date)}</td></tr>
-            
-            ${if (transportDetails.transportName != "") "<tr><td><b>Transport Name</b></td><td>: ${transportDetails.transportName}</td></tr>" else ""}
-            ${if (transportDetails.station != "") "<tr><td><b>Station</b></td><td>: ${transportDetails.station}</td></tr>" else ""}
-            ${if (transportDetails.gstRrNo != "") "<tr><td><b>GST/RR No.</b></td><td>: ${transportDetails.gstRrNo}</td></tr>" else ""}
-            ${if (transportDetails.vehicleNo != "") "<tr><td><b>Vehicle No.</b></td><td>: ${transportDetails.vehicleNo}</td></tr>" else ""}
-            ${if (transportDetails.pincode != "") "<tr><td><b>Pincode</b></td><td>: ${transportDetails.pincode}</td></tr>" else ""}
+    <div class="info-section border-b">
+        <div class="info-col border-r">
+            <table class="info-table">
+                <tr><td class="label-cell">Invoice No.</td><td>: <b>$invoiceNo</b></td></tr>
+                <tr><td class="label-cell">Dated</td><td>: <b>${Tdate(date)}</b></td></tr>
+                <tr><td class="label-cell">Place of Supply</td><td>: ${partyDetails?.State ?: ""}</td></tr>
+                <tr><td class="label-cell">Reverse Charge</td><td>: </td></tr>
+                <tr><td class="label-cell">GR/RR No.</td><td>: ${transportDetails.gstRrNo}</td></tr>
+            </table>
+        </div>
+        <div class="info-col">
+            <table class="info-table">
+                <tr><td class="label-cell">Transport</td><td>: ${transportDetails.transportName}</td></tr>
+                <tr><td class="label-cell">Vehicle No.</td><td>: ${transportDetails.vehicleNo}</td></tr>
+                <tr><td class="label-cell">Station</td><td>: ${transportDetails.station}</td></tr>
+                <tr><td class="label-cell">E-Way Bill No.</td><td>: </td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="billing-section border-b">
+        <div class="billing-col border-r">
+            <b>Billed to :</b><br>
+            <b>$partyName</b><br>
             ${
-            if (transportDetails.gstRrDate != "") "<tr><td><b>GR/RR Date</b></td><td>: ${
-                Tdate(
-                    transportDetails.gstRrDate
-                )
-            }</td></tr>" else ""
-        }
-        </table>
+            listOfNotNull(
+                partyDetails?.Address1,
+                partyDetails?.Address2,
+                partyDetails?.Address3,
+                partyDetails?.Address4
+            ).filter { it.isNotBlank() }.joinToString("<br>")
+        }<br>
+            <b>GSTIN / UIN &nbsp;&nbsp;&nbsp; : ${partyDetails?.GSTIN ?: ""}</b>
+        </div>
+        <div class="billing-col">
+            <b>Shipped to :</b><br>
+            <b>$shippedToName</b><br>
+            $shippedToAddress<br>
+            <b>GSTIN / UIN &nbsp;&nbsp;&nbsp; : $shippedToGstin</b>
+        </div>
     </div>
-</div>
 
-<!-- ITEM TABLE -->
-<table>
-    <tr>
-        <th>S.N.</th>
-        <th>Description of Goods</th>
-        <th>HSN / SAC</th>
-        <th>Qty</th>
-        <th>Rate (₹)</th>
-        <th>Amount (₹)</th>
-    </tr>""".trimIndent()
+    <div class="irn-section border-b">
+        <span><b>IRN :</b> </span>
+        <span><b>Ack.No. :</b> </span>
+        <span><b>Ack. Date :</b> </span>
+    </div>
+
+    <table class="items-table border-b">
+        <thead>
+            <tr>
+                <th style="width:3%">S.N.</th>
+                <th style="width:33%">Description of Goods</th>
+                <th style="width:9%">HSN/SAC Code</th>
+                <th style="width:7%">Qty.</th>
+                <th style="width:9%">Price</th>
+                ${if (isIgst) """
+                <th style="width:10%">IGST Rate</th>
+                <th style="width:16%">IGST Amount</th>
+                """ else """
+                <th style="width:5%">CGST Rate</th>
+                <th style="width:8%">CGST Amount</th>
+                <th style="width:5%">SGST Rate</th>
+                <th style="width:8%">SGST Amount</th>
+                """}
+                <th style="width:13%">Amount(₹)</th>
+            </tr>
+        </thead>
+        <tbody>""".trimIndent()
     )
 
     items.forEachIndexed { index, item ->
+        val unitTaxable = if (item.qty != 0) item.taxable / item.qty.absoluteValue else 0.0
+        
+        val taxCells = if (isIgst) {
+            """
+                <td class="right">${item.gstPercentage.formatToAmtDec()}%</td>
+                <td class="right">${item.gstAmt.formatToAmtDec()}</td>
+            """.trimIndent()
+        } else {
+            val cgstRate = item.gstPercentage / 2
+            val sgstRate = item.gstPercentage / 2
+            val cgstAmt = item.gstAmt / 2
+            val sgstAmt = item.gstAmt / 2
+            """
+                <td class="right">${cgstRate.formatToAmtDec()}%</td>
+                <td class="right">${cgstAmt.formatToAmtDec()}</td>
+                <td class="right">${sgstRate.formatToAmtDec()}%</td>
+                <td class="right">${sgstAmt.formatToAmtDec()}</td>
+            """.trimIndent()
+        }
+
         val serials = if (item.item_serial.isNotEmpty()) {
-            "<br/><small>${item.item_serial.joinToString { it.SerialNo.toString() }}</small>"
+            "<br/><span style='font-size:7.5pt; color:#444;'>${item.item_serial.joinToString { it.SerialNo.toString() }}</span>"
         } else ""
 
         html.append(
             """
-    <tr>
-        <td class="center">${index + 1}</td>
-        <td>${item.name}$serials</td>
-        <td class="center"></td>
-        <td class="center">${item.qty.absoluteValue}</td>
-        <td class="right">${item.price.formatToAmtDec()}</td>
-        <td class="right">${item.total.formatToAmtDec()}</td>
-    </tr>
-            """.trimIndent()
+            <tr>
+                <td class="center">${index + 1}.</td>
+                <td><b>${item.name}</b>$serials</td>
+                <td class="center"></td>
+                <td class="center">${item.qty.absoluteValue}.00</td>
+                <td class="right">${unitTaxable.formatToAmtDec()}</td>
+                $taxCells
+                <td class="right"><b>${item.net.formatToAmtDec()}</b></td>
+            </tr>""".trimIndent()
         )
     }
 
     html.append(
         """
-</table>
+        </tbody>
+    </table>
 
-<!-- TOTALS -->
-<table class="amount-summary">
-    <tr>
-        <td style="width:70%"></td>
-        <td class="right bold">${items.sumOf { it.total }.formatToAmtDec()}</td>
-    </tr>""".trimIndent()
+    <div class="summary-container border-b">
+        <div class="summary-left"></div>
+        <div class="summary-right">
+            <table>""".trimIndent()
+    )
+
+    // Add subtotal before sundries
+    val subtotal = items.sumOf { it.net }
+    html.append(
+        """
+        <tr>
+            <td class="right bold" style="border-bottom: 0.5pt solid #000;">${subtotal.formatToAmtDec()}</td>
+        </tr>
+        """.trimIndent()
     )
 
     sundries.forEach { sun ->
+        val label = if ((sun.i1 == 0 && sun.i2 == 0) || (sun.i1 == 0 && sun.i2 == 1)) "Less : " else "Add : "
+        val amount = if (sun.i2 == 1) sun.percentValue else sun.amount
         html.append(
             """
-    <tr>
-        <td class="right bold">${if ((sun.i1 == 0 && sun.i2 == 0) || (sun.i1 == 0 && sun.i2 == 1)) "Less" else "Add"} : ${sun.name} ${if (sun.i2 == 1) sun.amount.formatToAmtDec() + "%" else ""}</td>
-        <td class="right">${if (sun.i2 == 1) sun.percentValue.formatToAmtDec() else sun.amount.formatToAmtDec()}</td>
-    </tr>
-            """.trimIndent()
+                <tr>
+                    <td class="right" style="font-size: 8pt;">$label ${sun.name} <span style="float:right;">${amount.formatToAmtDec()}</span></td>
+                </tr>""".trimIndent()
         )
     }
 
     html.append(
         """
-    <tr>
-        <td class="right bold">Grand Total ₹</td>
-        <td class="right bold">${grandTotal.formatToAmtDec()}</td>
-    </tr>
-</table>
+            </table>
+        </div>
+    </div>
 
-<!-- TAX SUMMARY -->
-<table>
-    <tr>
-        <th>Tax Rate</th>
-        <th>Taxable Amt.</th>
-        <th>GST Amt.</th>
-        <th>Net Amount</th>
-    </tr>""".trimIndent()
+    <div class="grand-total-row border-b">
+        <div class="gt-label">Grand Total</div>
+        <div class="gt-qty">${items.sumOf { it.qty }.absoluteValue}.00</div>
+        <div class="gt-spacer"></div>
+        <div class="gt-amt">${grandTotal.formatToAmtDec()}</div>
+    </div>
+
+    <div class="tax-summary-section border-b">
+        <table class="tax-table">
+            <thead>
+                <tr>
+                    <th>Tax Rate</th>
+                    <th>Taxable Amt.</th>
+                    ${if (isIgst) "<th>IGST Amt.</th>" else "<th>CGST Amt.</th><th>SGST Amt.</th>"}
+                    <th>Total Tax</th>
+                </tr>
+            </thead>
+            <tbody>""".trimIndent()
     )
 
-    taxItems.forEach {
+    val taxGroups = items.groupBy { it.gstPercentage }
+    taxGroups.forEach { (rate, groupItems) ->
+        val taxable = groupItems.sumOf { it.taxable }
+        val gstTotal = groupItems.sumOf { it.gstAmt }
+        
+        val taxSumCells = if (isIgst) {
+            """<td class="right">${gstTotal.formatToAmtDec()}</td>"""
+        } else {
+            """
+                <td class="right">${(gstTotal / 2).formatToAmtDec()}</td>
+                <td class="right">${(gstTotal / 2).formatToAmtDec()}</td>
+            """.trimIndent()
+        }
+
         html.append(
             """
-    <tr>
-        <td class="center">${it.key.formatToAmtDec()}</td>
-        <td class="right">${it.value.sumOf { it.taxable }.formatToAmtDec()}</td>
-        <td class="right">${it.value.sumOf { it.gstAmt }.formatToAmtDec()}</td>
-        <td class="right">${(it.value.sumOf { it.gstAmt } + it.value.sumOf { it.taxable }).formatToAmtDec()}</td>
-    </tr>
-            """.trimIndent()
+                <tr>
+                    <td class="center">${rate.formatToAmtDec()}%</td>
+                    <td class="right">${taxable.formatToAmtDec()}</td>
+                    $taxSumCells
+                    <td class="right">${gstTotal.formatToAmtDec()}</td>
+                </tr>""".trimIndent()
         )
     }
 
     html.append(
         """
-    <tr>
-        <td class="center">Total</td>
-        <td class="right">${
-            taxItems.values.sumOf { it.sumOf { item -> item.taxable } }.formatToAmtDec()
-        }</td>
-        <td class="right">${
-            taxItems.values.sumOf { it.sumOf { item -> item.gstAmt } }.formatToAmtDec()
-        }</td>
-        <td class="right">${(taxItems.values.sumOf { it.sumOf { item -> item.taxable } } + taxItems.values.sumOf { it.sumOf { item -> item.gstAmt } }).formatToAmtDec()}</td>
-    </tr>
-</table>
-
-<!-- AMOUNT IN WORDS -->
-<div class="box bold">
-    ${numberToWords(grandTotal.toInt())} Only
-</div>
-
-<!-- FOOTER -->
-<div class="footer flex">
-    <div style="width:60%">
-        <b>Terms & Conditions</b><br>
-        E.& O.E.<br>
-        1. Goods once sold will not be taken back.<br>
-        2. Interest @ 18% p.a. will be charged if payment is delayed.<br>
-        3. Subject to '${SharedPrefs.User.get()?.State}' Jurisdiction only.
+            </tbody>
+        </table>
     </div>
 
-    <div style="width:35%; text-align:center;">
-        For <b>${CompanyName()}</b><br><br><br>
-        Authorised Signatory
+    <div class="amount-in-words border-b">
+        Rupees ${numberToWords(grandTotal.toInt())} Only
+    </div>
+
+    <div class="bank-details border-b">
+        <b>Bank Details :</b> 
+    </div>
+
+    <div class="footer-section">
+        <div class="terms border-r">
+            <b>Terms & Conditions</b><br>
+            E.& O.E.<br>
+            Subject to '${user?.State ?: ""}' Jurisdiction only.
+        </div>
+        <div class="signature-section">
+            <div style="font-size: 8.5pt;">Receiver's Signature :</div><br><br>
+            <div style="text-align: center;">
+                For <b>${CompanyName()}</b><br><br><br>
+                <b>Authorised Signatory</b>
+            </div>
+        </div>
     </div>
 </div>
-
-</div>
-
 </body>
-</html>
-        """.trimIndent()
+</html>""".trimIndent()
     )
+
     return html.toString()
 }
 
@@ -320,6 +490,13 @@ data class TransportDetails(
     val station: String,
     val pincode: String,
     val gstRrDate: String,
+    val SpartyName: String? = null,
+    val Saddress1: String? = null,
+    val Saddress2: String? = null,
+    val Saddress3: String? = null,
+    val Saddress4: String? = null,
+    val SshipState: String? = null,
+    val SgstIn: String? = null
 )
 
 private val ones = arrayOf(

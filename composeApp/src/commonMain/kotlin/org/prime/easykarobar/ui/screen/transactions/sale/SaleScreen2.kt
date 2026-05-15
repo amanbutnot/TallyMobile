@@ -594,7 +594,14 @@ data class SaleScreen2(
             items = selectedItems, sundries = selectedSundries, grandTotal = grandTotal,
             transportDetails = org.prime.easykarobar.ui.printing.TransportDetails(
                 transportName = transportName, gstRrNo = gstRrNo, vehicleNo = vehicleNo,
-                station = station, pincode = pincode, gstRrDate = gstRrDate
+                station = station, pincode = pincode, gstRrDate = gstRrDate,
+                SpartyName = SpartyName,
+                Saddress1 = Saddress1,
+                Saddress2 = Saddress2,
+                Saddress3 = Saddress3,
+                Saddress4 = Saddress4,
+                SshipState = SshipState,
+                SgstIn = SgstIn
             )
         )
         val menuList = buildList {
