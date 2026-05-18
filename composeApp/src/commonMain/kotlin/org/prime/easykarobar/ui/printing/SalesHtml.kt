@@ -26,11 +26,17 @@ fun salesHtml(
     val partyDetails = db.ledgerMasterQueries.selectByGuid(partyGuid).executeAsOneOrNull()
     val user = SharedPrefs.User.get()
 
-    val isIgst = user?.State != partyDetails?.State && partyDetails?.State?.isNotBlank() == true && user?.State?.isNotBlank() == true
+    val isIgst = user?.State != partyDetails?.State &&
+            partyDetails?.State?.isNotBlank() == true &&
+            user?.State?.isNotBlank() == true
 
-    val hasShipping = transportDetails.Saddress1?.isNotBlank() == true || transportDetails.SpartyName?.isNotBlank() == true
+    val hasShipping = transportDetails.Saddress1?.isNotBlank() == true ||
+            transportDetails.SpartyName?.isNotBlank() == true
     val shippedToName = if (hasShipping) transportDetails.SpartyName ?: partyName else partyName
-    val shippedToGstin = if (hasShipping) transportDetails.SgstIn ?: (partyDetails?.GSTIN ?: "") else (partyDetails?.GSTIN ?: "")
+    val shippedToGstin = if (hasShipping)
+        transportDetails.SgstIn ?: (partyDetails?.GSTIN ?: "")
+    else
+        partyDetails?.GSTIN ?: ""
     val shippedToAddress = if (hasShipping) {
         listOfNotNull(
             transportDetails.Saddress1,
@@ -48,6 +54,7 @@ fun salesHtml(
     }
 
     val title = if (name == "Sale Invoice") "TAX INVOICE" else name.uppercase()
+    val colSpan = if (isIgst) 7 else 9
 
     val html = StringBuilder()
 
@@ -61,23 +68,37 @@ fun salesHtml(
         size: A4;
         margin: 10mm;
     }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+    }
+
     body {
         font-family: Arial, Helvetica, sans-serif;
         font-size: 8.5pt;
         color: #000;
-        margin: 0;
-        padding: 0;
     }
-    .main-container {
+
+    /*
+     * page-wrapper: just a border box, no fixed height.
+     * The items-grow-section handles the stretching internally.
+     */
+    .page-wrapper {
         border: 1px solid #000;
         width: 100%;
         display: flex;
         flex-direction: column;
-        min-height: 275mm;
     }
+
     .border-b { border-bottom: 0.5pt solid #000; }
     .border-r { border-right: 0.5pt solid #000; }
-    
+
+    /* ── Header ─────────────────────────────────────────────────────── */
     .header-top {
         padding: 2px 8px;
         font-size: 8.5pt;
@@ -100,91 +121,67 @@ fun salesHtml(
         font-size: 8.5pt;
         line-height: 1.2;
     }
-    
-    .info-section {
-        display: flex;
-    }
-    .info-col {
-        width: 50%;
-    }
-    .info-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    .info-table td {
-        padding: 1px 8px;
-        font-size: 8.5pt;
-        vertical-align: top;
-    }
+
+    /* ── Info / Billing ─────────────────────────────────────────────── */
+    .info-section { display: flex; }
+    .info-col { width: 50%; }
+    .info-table { width: 100%; border-collapse: collapse; }
+    .info-table td { padding: 1px 8px; font-size: 8.5pt; vertical-align: top; }
     .label-cell { width: 35%; }
-    
-    .billing-section {
-        display: flex;
-        min-height: 80px;
-    }
-    .billing-col {
-        width: 50%;
-        padding: 4px 8px;
-        font-size: 8.5pt;
-        line-height: 1.2;
-    }
-    
-    .irn-section {
-        padding: 2px 8px;
-        font-size: 8pt;
-        display: flex;
-        justify-content: space-between;
-    }
-    
-    .items-wrapper {
-        flex-grow: 1;
+
+    .billing-section { display: flex; min-height: 80px; }
+    .billing-col { width: 50%; padding: 4px 8px; font-size: 8.5pt; line-height: 1.2; }
+
+    /* ── Items grow section ─────────────────────────────────────────── */
+    /*
+     * No height/flex tricks on the table itself.
+     * The filler row at the bottom gets a large min-height so it pushes
+     * the footer down to fill the page — but only grows, never shrinks items.
+     */
+    .items-grow-section {
         border-bottom: 0.5pt solid #000;
     }
+
     table.items-table {
         width: 100%;
         border-collapse: collapse;
-        height: 100%;
+        /* NO height:100% — that was causing each row to expand */
     }
-    table.items-table thead {
-        height: 25px;
-    }
-    table.items-table th, table.items-table td {
+    table.items-table thead { height: 20px; }
+    table.items-table th,
+    table.items-table td {
         border-right: 0.5pt solid #000;
         border-bottom: 0.5pt solid #000;
-        padding: 3px 4px;
-        font-size: 8.5pt;
+        padding: 1px 4px;
+        font-size: 8pt;
         vertical-align: top;
+        line-height: 1.1;
     }
     table.items-table th {
         font-weight: bold;
         text-align: center;
         background: #fff;
     }
-    table.items-table th:last-child, table.items-table td:last-child {
-        border-right: none;
-    }
+    table.items-table th:last-child,
+    table.items-table td:last-child { border-right: none; }
+
+    /* Filler row: large min-height fills remaining page space after items.
+       If items already fill the page this row collapses to near-zero. */
     .filler-row td {
+        min-height: 120mm;
+        height: 120mm;
         border-bottom: none !important;
+        border-right: none !important;
     }
-    
-    .right { text-align: right; }
-    .center { text-align: center; }
-    .bold { font-weight: bold; }
-    
+
+    /* ── Summary (subtotal + sundries) ──────────────────────────────── */
     .summary-container {
         display: flex;
+        border-bottom: 0.5pt solid #000;
     }
-    .summary-left {
-        width: 78.5%;
-        position: relative;
-    }
-    .summary-right {
-        width: 21.5%;
-    }
-    .summary-right table {
-        width: 100%;
-        border-collapse: collapse;
-    }
+    .summary-left { width: 78.5%; }
+    .summary-right { width: 21.5%; }
+    .summary-right table { width: 100%; border-collapse: collapse; }
     .summary-right td {
         border-left: 0.5pt solid #000;
         border-bottom: 0.5pt solid #000;
@@ -193,40 +190,41 @@ fun salesHtml(
     }
     .summary-right tr:last-child td { border-bottom: none; }
 
+    /* ── Grand Total ────────────────────────────────────────────────── */
     .grand-total-row {
         display: flex;
         align-items: center;
         padding: 0;
         font-weight: bold;
         font-size: 9pt;
+        border-bottom: 0.5pt solid #000;
     }
-    .gt-label { width: 45%; text-align: right; padding: 2px 8px; }
-    .gt-qty { width: 7%; text-align: center; border-bottom: 1px solid #888; padding: 2px 0; }
+    .gt-label  { width: 45%; text-align: right; padding: 2px 8px; }
+    .gt-qty    { width: 7%;  text-align: center; border-bottom: 1px solid #888; padding: 2px 0; }
     .gt-spacer { width: 35%; }
-    .gt-amt { width: 13%; text-align: right; padding: 2px 4px; }
+    .gt-amt    { width: 13%; text-align: right; padding: 2px 4px; }
 
+    /* ── Tax Summary ────────────────────────────────────────────────── */
     .tax-summary-section {
         padding: 5px 8px;
+        border-bottom: 0.5pt solid #000;
     }
-    .tax-table {
-        border-collapse: collapse;
-        width: auto;
-    }
+    .tax-table { border-collapse: collapse; width: auto; }
     .tax-table th, .tax-table td {
         border: 0.5pt solid #000;
         padding: 1px 6px;
         font-size: 8pt;
     }
-    
+
+    /* ── Amount in Words ────────────────────────────────────────────── */
     .amount-in-words {
         padding: 4px 8px;
         font-weight: bold;
         font-size: 9pt;
+        border-bottom: 0.5pt solid #000;
     }
-    .bank-details {
-        padding: 4px 8px;
-        font-size: 8.5pt;
-    }
+
+    /* ── Footer ─────────────────────────────────────────────────────── */
     .footer-section {
         display: flex;
         min-height: 100px;
@@ -244,19 +242,27 @@ fun salesHtml(
         justify-content: space-between;
         padding: 4px 8px;
     }
+
+    /* ── Utilities ──────────────────────────────────────────────────── */
+    .right  { text-align: right; }
+    .center { text-align: center; }
+    .bold   { font-weight: bold; }
 </style>
 </head>
 <body>
-<div class="main-container">
-<div class="header-top border-b">
-    <table style="width: 100%; border-collapse: collapse; border: none; table-layout: fixed;">
-        <tr>
-            <td style="padding: 0; border: none; text-align: left;">GST : ${compInfo?.T4 ?: ""}</td>
-            <td style="padding: 0; border: none; text-align: right;">Original Copy</td>
-        </tr>
-    </table>
-</div>
-    
+<div class="page-wrapper">
+
+    <!-- GST / Copy line -->
+    <div class="header-top border-b">
+        <table style="width:100%; border-collapse:collapse; border:none; table-layout:fixed;">
+            <tr>
+                <td style="padding:0; border:none; text-align:left;">GST : ${compInfo?.T4 ?: ""}</td>
+                <td style="padding:0; border:none; text-align:right;">Original Copy</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Company header -->
     <div class="header-center border-b">
         <div class="title">$title</div>
         <div class="company-name">${CompanyName()}</div>
@@ -266,6 +272,7 @@ fun salesHtml(
         </div>
     </div>
 
+    <!-- Invoice / Transport info -->
     <div class="info-section border-b">
         <div class="info-col border-r">
             <table class="info-table">
@@ -286,6 +293,7 @@ fun salesHtml(
         </div>
     </div>
 
+    <!-- Billing / Shipping -->
     <div class="billing-section border-b">
         <div class="billing-col border-r">
             <b>Billed to :</b><br>
@@ -308,37 +316,39 @@ fun salesHtml(
         </div>
     </div>
 
-    <div class="items-wrapper">
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th style="width:3%">S.N.</th>
-                <th style="width:33%">Description of Goods</th>
-                <th style="width:9%">HSN/SAC Code</th>
-                <th style="width:7%">Qty.</th>
-                <th style="width:9%">Price</th>
-                ${if (isIgst) """
-                <th style="width:10%">IGST Rate</th>
-                <th style="width:16%">IGST Amount</th>
-                """ else """
-                <th style="width:5%">CGST Rate</th>
-                <th style="width:8%">CGST Amount</th>
-                <th style="width:5%">SGST Rate</th>
-                <th style="width:8%">SGST Amount</th>
-                """}
-                <th style="width:13%">Amount(₹)</th>
-            </tr>
-        </thead>
-        <tbody style="vertical-align: top;">""".trimIndent()
+    <!-- Items table — grows to fill remaining page space -->
+    <div class="items-grow-section">
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width:3%">S.N.</th>
+                    <th style="width:33%">Description of Goods</th>
+                    <th style="width:9%">HSN/SAC Code</th>
+                    <th style="width:7%">Qty.</th>
+                    <th style="width:9%">Price</th>
+                    ${if (isIgst) """
+                    <th style="width:10%">IGST Rate</th>
+                    <th style="width:16%">IGST Amount</th>
+                    """ else """
+                    <th style="width:5%">CGST Rate</th>
+                    <th style="width:8%">CGST Amount</th>
+                    <th style="width:5%">SGST Rate</th>
+                    <th style="width:8%">SGST Amount</th>
+                    """}
+                    <th style="width:13%">Amount(₹)</th>
+                </tr>
+            </thead>
+            <tbody>""".trimIndent()
     )
 
+    // ── Item rows ────────────────────────────────────────────────────────────
     items.forEachIndexed { index, item ->
         val unitTaxable = if (item.qty != 0) item.taxable / item.qty.absoluteValue else 0.0
-        
+
         val taxCells = if (isIgst) {
             """
-                <td class="right">${item.gstPercentage.formatToAmtDec()}%</td>
-                <td class="right">${item.gstAmt.formatToAmtDec()}</td>
+            <td class="right">${item.gstPercentage.formatToAmtDec()}%</td>
+            <td class="right">${item.gstAmt.formatToAmtDec()}</td>
             """.trimIndent()
         } else {
             val cgstRate = item.gstPercentage / 2
@@ -346,20 +356,22 @@ fun salesHtml(
             val cgstAmt = item.gstAmt / 2
             val sgstAmt = item.gstAmt / 2
             """
-                <td class="right">${cgstRate.formatToAmtDec()}%</td>
-                <td class="right">${cgstAmt.formatToAmtDec()}</td>
-                <td class="right">${sgstRate.formatToAmtDec()}%</td>
-                <td class="right">${sgstAmt.formatToAmtDec()}</td>
+            <td class="right">${cgstRate.formatToAmtDec()}%</td>
+            <td class="right">${cgstAmt.formatToAmtDec()}</td>
+            <td class="right">${sgstRate.formatToAmtDec()}%</td>
+            <td class="right">${sgstAmt.formatToAmtDec()}</td>
             """.trimIndent()
         }
 
         val serials = if (item.item_serial.isNotEmpty()) {
-            "<br/><span style='font-size:7.5pt; color:#444;'>${item.item_serial.joinToString { it.SerialNo.toString() }}</span>"
+            "<br/><span style='font-size:7.5pt; color:#444;'>" +
+                    item.item_serial.joinToString { it.SerialNo.toString() } +
+                    "</span>"
         } else ""
 
         html.append(
             """
-            <tr style="height: 1px;">
+            <tr>
                 <td class="center">${index + 1}.</td>
                 <td><b>${item.name}</b>$serials</td>
                 <td class="center"></td>
@@ -371,32 +383,34 @@ fun salesHtml(
         )
     }
 
-    // Add filler row that takes up remaining space
+    // ── Single filler row — absorbs ALL remaining vertical space after items ──
+    // height:100% works because the <table> itself has height:100% inside a
+    // flex-grow:1 container.  The bottom border is suppressed so there is no
+    // stray line at the bottom of the empty area.
     html.append(
         """
-            <tr class="filler-row">
-                <td></td><td></td><td></td><td></td><td></td>
-                ${if (isIgst) "<td></td><td></td>" else "<td></td><td></td><td></td><td></td>"}
-                <td></td>
+            <tr class="filler-row" style="height:100%;">
+                <td colspan="$colSpan"></td>
             </tr>
-        </tbody>
-    </table>
-    </div>
-
-    <div class="summary-container border-b">
-        <div class="summary-left"></div>
-        <div class="summary-right">
-            <table>""".trimIndent()
+            </tbody>
+        </table>
+    </div><!-- end items-grow-section -->""".trimIndent()
     )
 
-    // Add subtotal before sundries
+    // ── Subtotal + Sundries ───────────────────────────────────────────────────
     val subtotal = items.sumOf { it.net }
+
     html.append(
         """
-        <tr>
-            <td class="right bold" style="border-bottom: 0.5pt solid #000;">${subtotal.formatToAmtDec()}</td>
-        </tr>
-        """.trimIndent()
+    <div class="summary-container">
+        <div class="summary-left"></div>
+        <div class="summary-right">
+            <table>
+                <tr>
+                    <td class="right bold" style="border-bottom:0.5pt solid #000;">
+                        ${subtotal.formatToAmtDec()}
+                    </td>
+                </tr>""".trimIndent()
     )
 
     sundries.forEach { sun ->
@@ -405,7 +419,10 @@ fun salesHtml(
         html.append(
             """
                 <tr>
-                    <td class="right" style="font-size: 8pt;">$label ${sun.name} <span style="float:right;">${amount.formatToAmtDec()}</span></td>
+                    <td class="right" style="font-size:8pt;">
+                        $label ${sun.name}
+                        <span style="float:right;">${amount.formatToAmtDec()}</span>
+                    </td>
                 </tr>""".trimIndent()
         )
     }
@@ -414,16 +431,24 @@ fun salesHtml(
         """
             </table>
         </div>
-    </div>
+    </div><!-- end summary-container -->""".trimIndent()
+    )
 
-    <div class="grand-total-row border-b">
+    // ── Grand Total ───────────────────────────────────────────────────────────
+    html.append(
+        """
+    <div class="grand-total-row">
         <div class="gt-label">Grand Total</div>
         <div class="gt-qty">${items.sumOf { it.qty }.absoluteValue}.00</div>
         <div class="gt-spacer"></div>
         <div class="gt-amt">${grandTotal.formatToAmtDec()}</div>
-    </div>
+    </div>""".trimIndent()
+    )
 
-    <div class="tax-summary-section border-b">
+    // ── Tax Summary ───────────────────────────────────────────────────────────
+    html.append(
+        """
+    <div class="tax-summary-section">
         <table class="tax-table">
             <thead>
                 <tr>
@@ -438,15 +463,15 @@ fun salesHtml(
 
     val taxGroups = items.groupBy { it.gstPercentage }
     taxGroups.forEach { (rate, groupItems) ->
-        val taxable = groupItems.sumOf { it.taxable }
+        val taxable  = groupItems.sumOf { it.taxable }
         val gstTotal = groupItems.sumOf { it.gstAmt }
-        
+
         val taxSumCells = if (isIgst) {
             """<td class="right">${gstTotal.formatToAmtDec()}</td>"""
         } else {
             """
-                <td class="right">${(gstTotal / 2).formatToAmtDec()}</td>
-                <td class="right">${(gstTotal / 2).formatToAmtDec()}</td>
+            <td class="right">${(gstTotal / 2).formatToAmtDec()}</td>
+            <td class="right">${(gstTotal / 2).formatToAmtDec()}</td>
             """.trimIndent()
         }
 
@@ -465,34 +490,46 @@ fun salesHtml(
         """
             </tbody>
         </table>
-    </div>
+    </div><!-- end tax-summary-section -->""".trimIndent()
+    )
 
-    <div class="amount-in-words border-b">
+    // ── Amount in Words ───────────────────────────────────────────────────────
+    html.append(
+        """
+    <div class="amount-in-words">
         Rupees ${numberToWords(grandTotal.toInt())} Only
-    </div>
+    </div>""".trimIndent()
+    )
 
-
+    // ── Footer ────────────────────────────────────────────────────────────────
+    html.append(
+        """
     <div class="footer-section">
         <div class="terms border-r">
-            <b>Terms & Conditions</b><br>
-            E.& O.E.<br>
+            <b>Terms &amp; Conditions</b><br>
+            E.&amp; O.E.<br>
             Subject to '${user?.State ?: ""}' Jurisdiction only.
         </div>
         <div class="signature-section">
-            <div style="font-size: 8.5pt;">Receiver's Signature :</div><br><br><br>
-            <div style="text-align: center;">
+            <div style="font-size:8.5pt;">Receiver's Signature :</div>
+            <br><br><br>
+            <div style="text-align:center;">
                 For <b>${CompanyName()}</b><br><br><br>
                 <b>Authorised Signatory</b>
             </div>
         </div>
     </div>
-</div>
+
+</div><!-- end page-wrapper -->
 </body>
 </html>""".trimIndent()
     )
 
     return html.toString()
 }
+
+
+// ─── Data class ──────────────────────────────────────────────────────────────
 
 data class TransportDetails(
     val transportName: String,
@@ -510,6 +547,9 @@ data class TransportDetails(
     val SgstIn: String? = null
 )
 
+
+// ─── Number-to-words ─────────────────────────────────────────────────────────
+
 private val ones = arrayOf(
     "", "One", "Two", "Three", "Four", "Five",
     "Six", "Seven", "Eight", "Nine", "Ten",
@@ -525,7 +565,7 @@ private val tens = arrayOf(
 private fun twoDigits(n: Int): String =
     when {
         n < 20 -> ones[n]
-        else -> tens[n / 10] + if (n % 10 != 0) " ${ones[n % 10]}" else ""
+        else   -> tens[n / 10] + if (n % 10 != 0) " ${ones[n % 10]}" else ""
     }
 
 fun numberToWords(num: Int): String {
@@ -539,13 +579,8 @@ fun numberToWords(num: Int): String {
         n %= 1_00_00_000
     }
 
-    if (n >= 1_00_00_000) {
-        result.append("${twoDigits(n / 1_00_00_000)} Crore ")
-        n %= 1_00_00_000
-    }
-
     if (n >= 1_00_000) {
-        result.append("${twoDigits(n / 1_00_00_000)} Lakh ")
+        result.append("${twoDigits(n / 1_00_000)} Lakh ")
         n %= 1_00_000
     }
 

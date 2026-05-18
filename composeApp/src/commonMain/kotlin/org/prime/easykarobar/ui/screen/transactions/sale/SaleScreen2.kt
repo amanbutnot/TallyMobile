@@ -128,6 +128,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroupCodes
@@ -1944,24 +1945,15 @@ fun MultiSelectItemSheet(
 
     var query by remember(show) { mutableStateOf("") }
 
+
     val filteredList = remember(options, query) {
-        if (query.isBlank()) options
-        else {
-            val q = query.trim()
-
-            val (startsWith, rest) = options.partition {
-                it.Name.orEmpty().startsWith(q, true) ||
-                        it.Alias.orEmpty().startsWith(q, true)
-            }
-
-            val contains = rest.filter {
-                it.Name.orEmpty().contains(q, true) ||
-                        it.Alias.orEmpty().contains(q, true)
-            }
-
-            startsWith + contains
-        }
+        smartSearch(
+            list = options,
+            query = query,
+            selectors = listOf { it.toString() }
+        )
     }
+
 
     if (!show) return
 
