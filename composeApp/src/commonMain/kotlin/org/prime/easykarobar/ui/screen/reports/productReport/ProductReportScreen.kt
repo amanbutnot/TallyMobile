@@ -58,6 +58,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
@@ -69,7 +70,6 @@ import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductStockList
-import org.prime.easykarobar.ui.shared.composables.smartSearch
 
 data class ProductReportScreen(val productGuid: String? = null, val isMain: Boolean) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -115,7 +115,7 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
                     filterGodown = filterGodown,
                     godownCodes = godownCodes
                 ).executeAsList()
-                println(list)
+                println("this list is "+list)
             }
             isLoading = false
         }

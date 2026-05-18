@@ -28,7 +28,7 @@ WHERE
       (:filterParam1 = 0 OR C1 IN :configParam1) AND
      (:filterGroup = 0 OR p.GroupCode IN :groupCodes) AND
      (:filterExclude = 0 OR p.GUID NOT IN :excludeGuids) AND
-    (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes) AND (:filterGodown=0 OR g.GUID IN :excludeGuids) ORDER BY ProductName,C1,C2,C3,C4,C5;
+    (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes)  ORDER BY ProductName,C1,C2,C3,C4,C5;
      -- (:filterGodown = 0 OR pps.MasterCode2 IN :godownCodes) ORDER BY ProductName,C1,C2,C3,C4,C5;
 
 getProductParamStockList:
