@@ -140,6 +140,7 @@ object StockReportScreen : Screen {
         }
 
         val totalQty = filteredList.sumOf { it.Value1?.toDouble() ?: 0.0 }
+        val totalAltQty = filteredList.sumOf { it.Value2?.toDouble() ?: 0.0 }
         val totalAmt = filteredList.sumOf { it.Value3?.toDouble() ?: 0.0 }
         val rows: List<Quadruple<String, String, String, String>> = filteredList.map { item ->
             Quadruple(
@@ -229,6 +230,12 @@ object StockReportScreen : Screen {
                             TextAlign.Start
                         ),
                         ReportColumn(
+                            if (showQtyToSalesman())
+                                totalAltQty.absoluteValue.formatToQtyDec() else "",
+                            column2Weight,
+                            TextAlign.Start
+                        ),
+                        ReportColumn(
                             if (showAmtToSalesman())
                                 totalAmt.absoluteValue.formatToAmtDec() else "",
                             column3Weight,
@@ -275,7 +282,12 @@ object StockReportScreen : Screen {
 //                                    TextAlign.End
 //                                ),
                                 ReportColumn(
-                                    "Qty",
+                                    "M. Qty",
+                                    column3Weight,
+                                    TextAlign.End
+                                ),
+                                ReportColumn(
+                                    "Alt. Qty",
                                     column3Weight,
                                     TextAlign.End
                                 ),
@@ -330,6 +342,15 @@ object StockReportScreen : Screen {
 
                                 TableCell(
                                     text = if (SharedPrefs.Permissions.get()?.FilterQty == "False" || SharedPrefs.Permissions.get()?.FilterQty == null) item.Value1
+                                        ?.formatToQtyDec() ?: "-" else "",
+                                    weight = column3Weight,
+                                    textAlign = TextAlign.End,
+                                    isHeader = false
+                                )
+
+
+                                TableCell(
+                                    text = if (SharedPrefs.Permissions.get()?.FilterQty == "False" || SharedPrefs.Permissions.get()?.FilterQty == null) item.Value2
                                         ?.formatToQtyDec() ?: "-" else "",
                                     weight = column3Weight,
                                     textAlign = TextAlign.End,

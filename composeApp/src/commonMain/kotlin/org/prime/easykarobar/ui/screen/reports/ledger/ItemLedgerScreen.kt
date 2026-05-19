@@ -373,7 +373,13 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                                         isHeader = true
                                     )
                                     TableCell(
-                                        "Qty",
+                                        "M. Qty",
+                                        columnSmallWeight,
+                                        textAlign = TextAlign.End,
+                                        isHeader = true
+                                    )
+                                    TableCell(
+                                        "A. Qty",
                                         columnSmallWeight,
                                         textAlign = TextAlign.End,
                                         isHeader = true
@@ -504,6 +510,16 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                                                 )
                                                 TableCell(
                                                     text = item.D1?.absoluteValue?.formatToAmtDec()
+                                                        .toString(),
+                                                    weight = columnSmallWeight,
+                                                    textAlign = TextAlign.End,
+                                                    textColor = if ((item.D1
+                                                            ?: 0.0) > 0.0
+                                                    ) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                                    isHeader = false
+                                                )
+                                                TableCell(
+                                                    text = item.D2?.absoluteValue?.formatToAmtDec()
                                                         .toString(),
                                                     weight = columnSmallWeight,
                                                     textAlign = TextAlign.End,
