@@ -168,27 +168,40 @@ fun salesHtml(
     /* Filler row: large min-height fills remaining page space after items.
        If items already fill the page this row collapses to near-zero. */
     .filler-row td {
-        min-height: 120mm;
-        height: 120mm;
+        min-height: 80mm;
+        height: 80mm;
         border-bottom: none !important;
         border-right: none !important;
     }
 
     /* ── Summary (subtotal + sundries) ──────────────────────────────── */
     .summary-container {
-        display: flex;
         border-bottom: 0.5pt solid #000;
     }
-    .summary-left { width: 78.5%; }
-    .summary-right { width: 21.5%; }
-    .summary-right table { width: 100%; border-collapse: collapse; }
-    .summary-right td {
-        border-left: 0.5pt solid #000;
-        border-bottom: 0.5pt solid #000;
-        padding: 2px 5px;
-        font-size: 8.5pt;
+    .summary-table {
+        width: 100%;
+        border-collapse: collapse;
     }
-    .summary-right tr:last-child td { border-bottom: none; }
+.summary-table .sum-spacer {
+    border-right: 0.5pt solid #000;
+    border-bottom: 0.5pt solid #000;
+    padding: 2px 5px;
+}
+.summary-table .sum-label {
+    white-space: nowrap;
+    border-right: 0.5pt solid #000;
+    border-bottom: 0.5pt solid #000;
+    padding: 2px 6px;
+    font-size: 8.5pt;
+}
+.summary-table .sum-amt {
+    white-space: nowrap;
+    text-align: right;
+    border-bottom: 0.5pt solid #000;
+    padding: 2px 6px;
+    font-size: 8.5pt;
+}
+    .summary-table tr:last-child td { border-bottom: none; }
 
     /* ── Grand Total ────────────────────────────────────────────────── */
     .grand-total-row {
@@ -227,7 +240,7 @@ fun salesHtml(
     /* ── Footer ─────────────────────────────────────────────────────── */
     .footer-section {
         display: flex;
-        min-height: 100px;
+        height: 80px;
     }
     .terms {
         width: 55%;
@@ -241,6 +254,7 @@ fun salesHtml(
         flex-direction: column;
         justify-content: space-between;
         padding: 4px 8px;
+        overflow: hidden;
     }
 
     /* ── Utilities ──────────────────────────────────────────────────── */
@@ -403,34 +417,30 @@ fun salesHtml(
     html.append(
         """
     <div class="summary-container">
-        <div class="summary-left"></div>
-        <div class="summary-right">
-            <table>
-                <tr>
-                    <td class="right bold" style="border-bottom:0.5pt solid #000;">
-                        ${subtotal.formatToAmtDec()}
-                    </td>
-                </tr>""".trimIndent()
+        <table class="summary-table">
+            <tr>
+                <td class="sum-spacer"></td>
+                <td class="sum-label bold">Sub Total</td>
+                <td class="sum-amt bold">${subtotal.formatToAmtDec()}</td>
+            </tr>""".trimIndent()
     )
 
     sundries.forEach { sun ->
-        val label = if ((sun.i1 == 0 && sun.i2 == 0) || (sun.i1 == 0 && sun.i2 == 1)) "Less : " else "Add : "
+        val label = if ((sun.i1 == 0 && sun.i2 == 0) || (sun.i1 == 0 && sun.i2 == 1)) "Less : ${sun.name}" else "Add : ${sun.name}"
         val amount = if (sun.i2 == 1) sun.percentValue else sun.amount
         html.append(
             """
-                <tr>
-                    <td class="right" style="font-size:8pt;">
-                        $label ${sun.name}
-                        <span style="float:right;">${amount.formatToAmtDec()}</span>
-                    </td>
-                </tr>""".trimIndent()
+            <tr>
+                <td class="sum-spacer"></td>
+                <td class="sum-label">$label</td>
+                <td class="sum-amt">${amount.formatToAmtDec()}</td>
+            </tr>""".trimIndent()
         )
     }
 
     html.append(
         """
-            </table>
-        </div>
+        </table>
     </div><!-- end summary-container -->""".trimIndent()
     )
 
@@ -512,9 +522,8 @@ fun salesHtml(
         </div>
         <div class="signature-section">
             <div style="font-size:8.5pt;">Receiver's Signature :</div>
-            <br><br><br>
             <div style="text-align:center;">
-                For <b>${CompanyName()}</b><br><br><br>
+                For <b>${CompanyName()}</b><br><br>
                 <b>Authorised Signatory</b>
             </div>
         </div>
