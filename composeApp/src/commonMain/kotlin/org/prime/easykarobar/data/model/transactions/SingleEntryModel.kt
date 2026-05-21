@@ -68,5 +68,7 @@ data class TranListResponse(
     val Narration: String,
     val instrumentName: String?=null,
     val instrumentNumber: String?=null,
-    val CreatedAt: String, val bills_collection: List<BillByBillModel>
+    val CreatedAt: String,
+    val status: String? = null,
+    val bills_collection: List<BillByBillModel>
 )

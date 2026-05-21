@@ -182,7 +182,50 @@ data class SingleEntryReceipt(
                 TallyLoadingDialog("Creating your transaction")
             }
         }
+        val enabled = run {
 
+            val checks = mapOf(
+                "selectedAccount" to selectedAccount.isNotEmpty(),
+                "selectedAccountGUID" to selectedAccountGUID.isNotEmpty(),
+                "selectedSettlement" to selectedSettlement.isNotEmpty(),
+                "selectedSettlementGUID" to selectedSettlementGUID.isNotEmpty(),
+                "amount" to amount.isNotEmpty(),
+                "selectedDate" to selectedDate.isNotEmpty(),
+                "isEdit" to isEdit,
+                "vch type" to "ED$vchType",
+                "hasEditPermission" to hasSalesmanPermission("ED$vchType"),
+                "isLoading" to state.isLoading
+            )
+
+            checks.forEach { (key, value) ->
+                println("$key = $value")
+            }
+
+            val allRequiredFilled = listOf(
+                selectedAccount,
+                selectedAccountGUID,
+                selectedSettlement,
+                selectedSettlementGUID,
+                amount,
+                selectedDate
+            ).all(String::isNotEmpty)
+
+            println("allRequiredFilled = $allRequiredFilled")
+
+            val editAllowed =
+                !isEdit || hasSalesmanPermission("ED$vchType")
+
+            println("editAllowed = $editAllowed")
+
+            val finalEnabled =
+                allRequiredFilled &&
+                        editAllowed &&
+                        !state.isLoading
+
+            println("finalEnabled = $finalEnabled")
+
+            finalEnabled
+        }
 
         TallyScaffold(
             title = if (isEdit) "Edit $name Entry" else "Create $name Entry",
@@ -643,14 +686,7 @@ data class SingleEntryReceipt(
 
 
                         },
-                        enabled = listOf(
-                            selectedAccount,
-                            selectedAccountGUID,
-                            selectedSettlement,
-                            selectedSettlementGUID,
-                            amount,
-                            selectedDate
-                        ).all(String::isNotEmpty) && (!isEdit || hasSalesmanPermission("ED$vchType")) && !state.isLoading,
+                        enabled = enabled,
                         label = if (isEdit) "Modify" else "Create",
                         backgroundColor = MaterialTheme.colorScheme.primary
                     )
