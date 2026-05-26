@@ -178,3 +178,19 @@ WHERE VchType = 'Payment' AND CM1 IN (
 
 getCompanyInformation:
 SELECT * FROM CompanyInformation;
+
+
+followUpOutstanding:
+SELECT
+    1 AS RecType,
+    SUM(D1) * -1 AS PenAmt,
+    'Receivable' AS RepType
+FROM Vouchers_BILLALLOCATIONS
+WHERE BILLID IN (
+    SELECT BILLID
+    FROM Vouchers_BILLALLOCATIONS
+    WHERE CM2 IN ('New Ref', 'Advance')
+      AND D1 < 0
+      AND DATE <= :date
+      AND CM1 = ?
+);

@@ -45,6 +45,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
@@ -57,7 +58,6 @@ import org.prime.easykarobar.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportLazyList
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.GodownWiseOnEnterList
-import org.prime.easykarobar.ui.shared.composables.smartSearch
 import kotlin.math.absoluteValue
 
 data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
@@ -81,6 +81,7 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
         val column4Weight = 0.3f
 
         val totalQty = list.sumOf { it.Item_Qty ?: 0.0 }
+        val totalAltQty = list.sumOf { it.Item_Alt_Qty ?: 0.0 }
         val totalAmt = list.sumOf { it.Item_Amt ?: 0.0 }
         val perms = SharedPrefs.Permissions.get()
         val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L
@@ -225,6 +226,12 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
                             TextAlign.End
                         ),
                         ReportColumn(
+                            if (showQtyToSalesman())
+                                totalAltQty.absoluteValue.formatToQtyDec() else "",
+                            column3Weight,
+                            TextAlign.End
+                        ),
+                        ReportColumn(
                             if (showAmtToSalesman())
                                 totalAmt.absoluteValue.formatToAmtDec() else "",
                             column4Weight,
@@ -272,7 +279,13 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
 //                                ),
                                 ReportColumn(
                                     if (showQtyToSalesman())
-                                        "Qty" else "",
+                                        "M Qty" else "",
+                                    column3Weight,
+                                    TextAlign.End
+                                ),
+                                ReportColumn(
+                                    if (showQtyToSalesman())
+                                        "A Qty" else "",
                                     column3Weight,
                                     TextAlign.End
                                 ),
@@ -315,6 +328,14 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
                                 TableCell(
                                     text = if (showQtyToSalesman()) {
                                         item.Item_Qty?.formatToQtyDec() ?: "-"
+                                    } else "",
+                                    weight = column3Weight,
+                                    textAlign = TextAlign.Companion.End,
+                                    isHeader = false
+                                )
+                                TableCell(
+                                    text = if (showQtyToSalesman()) {
+                                        item.Item_Alt_Qty?.formatToQtyDec() ?: "-"
                                     } else "",
                                     weight = column3Weight,
                                     textAlign = TextAlign.Companion.End,

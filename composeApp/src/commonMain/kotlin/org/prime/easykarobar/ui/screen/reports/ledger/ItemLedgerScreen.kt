@@ -60,6 +60,8 @@ import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TableCell
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
+import org.tally.vouchersStockItems.LedgerOpeningBalance
+import org.tally.vouchersStockItems.LedgerReportList
 import kotlin.math.absoluteValue
 
 data class ItemLedgerScreen(val accountName: String, val startDate: String, val endDate: String) :
@@ -69,7 +71,7 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
         val db = DatabaseHolder.instance
 
         var list by remember {
-            mutableStateOf<List<org.tally.vouchersStockItems.LedgerReportList>>(
+            mutableStateOf<List<LedgerReportList>>(
                 emptyList()
             )
         }
@@ -82,7 +84,7 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
         var expanded by remember { mutableStateOf(false) }
         var selectedOption by remember { mutableStateOf("Name") }
         var openingBalance by remember {
-            mutableStateOf<org.tally.vouchersStockItems.LedgerOpeningBalance?>(
+            mutableStateOf<LedgerOpeningBalance?>(
                 null
             )
         }

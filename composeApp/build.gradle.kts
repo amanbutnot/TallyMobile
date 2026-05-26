@@ -154,8 +154,8 @@ android {
         applicationId = "org.prime.easykarobar"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 18
-        versionName = "1.9.7"
+        versionCode = 19
+        versionName = "1.9.8"
         val sdf = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US)
         sdf.timeZone = TimeZone.getTimeZone("Asia/Kolkata")
         val buildDateTime = sdf.format(Date())

@@ -38,6 +38,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
@@ -50,7 +51,6 @@ import org.prime.easykarobar.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportLazyList
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.GodownWiseClosingStockList
-import org.prime.easykarobar.ui.shared.composables.smartSearch
 import kotlin.math.absoluteValue
 
 object GodownClosingStockListScreen : Screen {
@@ -75,6 +75,9 @@ object GodownClosingStockListScreen : Screen {
 //        }
         val totalQty = list.sumOf {
             it.Item_Qty ?: 0.0
+        }
+        val totalAltQty = list.sumOf {
+            it.Item_Alt_Qty ?: 0.0
         }
         println(list.toString())
         val totalAmt = list.sumOf {
@@ -194,6 +197,12 @@ object GodownClosingStockListScreen : Screen {
                             TextAlign.End
                         ),
                         ReportColumn(
+                            if (showQtyToSalesman())
+                                totalAltQty.absoluteValue.formatToQtyDec() else "",
+                            column2Weight,
+                            TextAlign.End
+                        ),
+                        ReportColumn(
                             if (showAmtToSalesman())
                                 totalAmt.absoluteValue.formatToAmtDec() else "",
                             column3Weight,
@@ -228,7 +237,13 @@ object GodownClosingStockListScreen : Screen {
                                 ),
                                 ReportColumn(
                                     if (showQtyToSalesman())
-                                        "Qty" else "",
+                                        "M. Qty" else "",
+                                    column2Weight,
+                                    TextAlign.End
+                                ),
+                                ReportColumn(
+                                    if (showQtyToSalesman())
+                                        "A. Qty" else "",
                                     column2Weight,
                                     TextAlign.End
                                 ),
@@ -263,6 +278,14 @@ object GodownClosingStockListScreen : Screen {
                                 TableCell(
                                     text = if (showQtyToSalesman()) {
                                         item.Item_Qty?.formatToQtyDec() ?: "-"
+                                    } else "",
+                                    weight = column2Weight,
+                                    textAlign = TextAlign.Companion.End,
+                                    isHeader = false
+                                )
+                                TableCell(
+                                    text = if (showQtyToSalesman()) {
+                                        item.Item_Alt_Qty?.formatToQtyDec() ?: "-"
                                     } else "",
                                     weight = column2Weight,
                                     textAlign = TextAlign.Companion.End,
