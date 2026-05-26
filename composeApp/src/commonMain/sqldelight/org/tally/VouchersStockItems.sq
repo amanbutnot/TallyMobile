@@ -68,6 +68,7 @@ SELECT Sum(D1) AS OpeningBal, Sum(D3) AS OpeningAmt FROM Vouchers_StockItems WHE
 godownWiseClosingStockList:
 SELECT
     SUM(pps.Value1) AS Item_Qty,
+    SUM(pps.Value2) AS Item_Alt_Qty,
     SUM(pps.Value3) AS Item_Amt,
     g.Name          AS Item_Godown,
     ''              AS UnitName,
@@ -88,6 +89,7 @@ ORDER BY g.Name;
  godownWiseOnEnterList:
 SELECT
     SUM(pps.Value1) AS Item_Qty,
+    SUM(pps.Value2) AS Item_Alt_Qty,
     SUM(pps.Value3) AS Item_Amt,
     g.Name          AS Item_Godown,
     ''              AS UnitName,

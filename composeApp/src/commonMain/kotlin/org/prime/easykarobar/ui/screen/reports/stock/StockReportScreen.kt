@@ -36,6 +36,7 @@ import kotlinx.coroutines.withContext
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
+import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.data.utils.showAmtToSalesman
 import org.prime.easykarobar.data.utils.showQtyToSalesman
@@ -44,6 +45,7 @@ import org.prime.easykarobar.ui.printing.fourHeaderHtml
 import org.prime.easykarobar.ui.screen.reports.ledger.ItemLedgerScreen
 import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheet
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
+import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
@@ -86,6 +88,12 @@ object StockReportScreen : Screen {
                 groupCodes = itemGroupCodes()
             ).executeAsList()
         }
+        var showDeniedDialog by remember { mutableStateOf(false) }
+
+        if (showDeniedDialog) {
+            PermissionDeniedDialog { showDeniedDialog = false }
+        }
+
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
         val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -305,13 +313,20 @@ object StockReportScreen : Screen {
                                 //TODO: this is the StockItemReportListScreen
                                 //   nav.push(StockItemReportScreen(item.Item_Name))
                                 //   println(item.MasterCode1?.toInt())
-                                nav.push(
-                                    ItemLedgerScreen(
-                                        accountName = item.ProductName.toString(),
-                                        startDate = StartDate(),
-                                        endDate = CurrentDate()
-                                    )
+                                salesmanPermission(
+                                    "D52",
+                                    accessDeniedBlock = { showDeniedDialog = true },
+                                    successBlock = {
+                                        nav.push(
+                                            ItemLedgerScreen(
+                                                accountName = item.ProductName.toString(),
+                                                startDate = StartDate(),
+                                                endDate = CurrentDate()
+                                            )
+                                        )
+                                    }
                                 )
+
 
                             },
                             key = { item ->

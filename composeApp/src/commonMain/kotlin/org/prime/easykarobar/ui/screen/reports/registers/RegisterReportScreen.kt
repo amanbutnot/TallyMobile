@@ -30,7 +30,9 @@ import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.printing.Quadruple
-import org.prime.easykarobar.ui.printing.fourHeaderHtml
+import org.prime.easykarobar.ui.printing.purchaseRegisterHtml
+import org.prime.easykarobar.ui.printing.registerHtml
+import org.prime.easykarobar.ui.printing.salesRegisterHtml
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportItemScreen
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
@@ -147,14 +149,29 @@ println("meow ${when (name) {
                     scope.launch {
                         handlePdfAction(
                             fileName = name,
-                            htmlContent = fourHeaderHtml(
-                                title = name,
-                                headers = Quadruple("Date", "Account", "Vch No", "Amount"),
-                                rows = rows,
-                                total1 = totalAmt.absoluteValue.formatToAmtDec(),
-                                startDate = startDate,
-                                endDate = endDate,
-                            ),
+                            htmlContent = when (name) {
+                                "Sales" -> salesRegisterHtml(
+                                    startDate = startDate,
+                                    endDate = endDate,
+                                    rows = rows,
+                                    totalAmount = totalAmt.absoluteValue.formatToAmtDec()
+                                )
+
+                                "Purchase" -> purchaseRegisterHtml(
+                                    startDate = startDate,
+                                    endDate = endDate,
+                                    rows = rows,
+                                    totalAmount = totalAmt.absoluteValue.formatToAmtDec()
+                                )
+
+                                else -> registerHtml(
+                                    title = "$name Register",
+                                    startDate = startDate,
+                                    endDate = endDate,
+                                    rows = rows,
+                                    totalAmount = totalAmt.absoluteValue.formatToAmtDec()
+                                )
+                            },
                             action = PdfAction.Download,
                             onLoadingChange = { shareLoading = it }
                         )
@@ -168,14 +185,29 @@ println("meow ${when (name) {
                     scope.launch {
                         handlePdfAction(
                             fileName = name,
-                            htmlContent = fourHeaderHtml(
-                                title = name,
-                                headers = Quadruple("Date", "Account", "Vch No", "Amount"),
-                                rows = rows,
-                                total1 = totalAmt.absoluteValue.formatToAmtDec(),
-                                startDate = startDate,
-                                endDate = endDate,
-                            ),
+                            htmlContent = when (name) {
+                                "Sales" -> salesRegisterHtml(
+                                    startDate = startDate,
+                                    endDate = endDate,
+                                    rows = rows,
+                                    totalAmount = totalAmt.absoluteValue.formatToAmtDec()
+                                )
+
+                                "Purchase" -> purchaseRegisterHtml(
+                                    startDate = startDate,
+                                    endDate = endDate,
+                                    rows = rows,
+                                    totalAmount = totalAmt.absoluteValue.formatToAmtDec()
+                                )
+
+                                else -> registerHtml(
+                                    title = "$name Register",
+                                    startDate = startDate,
+                                    endDate = endDate,
+                                    rows = rows,
+                                    totalAmount = totalAmt.absoluteValue.formatToAmtDec()
+                                )
+                            },
                             action = PdfAction.Share,
                             onLoadingChange = { shareLoading = it }
                         )
