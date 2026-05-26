@@ -124,15 +124,15 @@ object SharedPrefs {
     object CheckInOutDate {
         private const val KEY = "checkInOutKey"
         fun save(date: String) {
-            settings.putString(KEY, date)
+            settings2.putString(KEY, date)
         }
 
         fun get(): String? {
-            return settings.getStringOrNull(KEY)
+            return settings2.getStringOrNull(KEY)
         }
 
         fun clear() {
-            settings.remove(KEY)
+            settings2.remove(KEY)
         }
 
     }
@@ -274,6 +274,44 @@ object SharedPrefs {
 
         fun clear() {
             settings.remove(KEY)
+        }
+    }
+
+    object LastVchType {
+        private const val KEY = "last_vch_type_"
+
+        fun save(vchType: Int) {
+            val userId = User.get()?.ID ?: return
+            settings2.putInt(KEY + userId, vchType)
+        }
+
+        fun get(): Int? {
+            val userId = User.get()?.ID ?: return null
+            return settings2.getIntOrNull(KEY + userId)
+        }
+
+        fun getVchName(vchType: Int): String {
+            return when (vchType) {
+                12 -> "Sale Order"
+                3 -> "Sale Return"
+                9 -> "Sale Invoice"
+                13 -> "Purchase Order"
+                10 -> "Purchase Return"
+                2 -> "Purchase Invoice"
+                7 -> "Stock Transfer"
+                14 -> "Receipt"
+                19 -> "Payment"
+                16 -> "Journal"
+                15 -> "Contra"
+                17 -> "Debit Note"
+                18 -> "Credit Note"
+                else -> "Voucher Type: $vchType"
+            }
+        }
+
+        fun clear() {
+            val userId = User.get()?.ID ?: return
+            settings2.remove(KEY + userId)
         }
     }
 

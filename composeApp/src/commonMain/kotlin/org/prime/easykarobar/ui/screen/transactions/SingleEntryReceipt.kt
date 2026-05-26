@@ -93,6 +93,10 @@ data class SingleEntryReceipt(
 
         val db = DatabaseHolder.instance
         val nav = LocalNavigator.currentOrThrow
+
+        LaunchedEffect(Unit) {
+            SharedPrefs.LastVchType.save(vchType)
+        }
         var selectedReferences by remember {
             mutableStateOf(listOf<BillByBillModel>())
         }

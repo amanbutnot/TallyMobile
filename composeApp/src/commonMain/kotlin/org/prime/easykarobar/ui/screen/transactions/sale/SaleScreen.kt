@@ -246,8 +246,12 @@ data class SaleScreen(
 
         val isSale = name in listOf("Sale Order", "Sale Invoice", "Sale Return")
 
-        val db = DatabaseHolder.instance
         val nav = LocalNavigator.currentOrThrow
+        val db = DatabaseHolder.instance
+
+        LaunchedEffect(Unit) {
+            SharedPrefs.LastVchType.save(vchType)
+        }
         val compInfo = db.companyInformationQueries.selectAll().executeAsOne()
         var selectedLedger by remember { mutableStateOf(selectedLedger ?: "") }
         var barcodeQty by remember { mutableStateOf("") }
@@ -401,7 +405,9 @@ data class SaleScreen(
 
                     showQtyPopup = false
 
-                    val price = if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
+                    val listPrice = if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
+                    val discount = if (isSale) product.SaleDisc ?: 0.0 else product.PurcDisc ?: 0.0
+                    val price = listPrice - (listPrice * discount / 100.0)
                     val qty = barcodeQty.toIntOrNull() ?: 1
 
                     val gstPercentage = try {
@@ -442,15 +448,15 @@ data class SaleScreen(
                         name = product.Name.orEmpty(),
                         price = price,
                         qty = qty,
-                        discountPercentage = 0.0,
-                        listPrice = if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice
-                            ?: 0.0,
+                        discountPercentage = discount,
+                        listPrice = listPrice,
                         taxable = taxableAmount,
                         gstAmt = gstAmount,
                         net = netAmount,
                         guid = product.GUID ?: pendingSelectedProductGUID.orEmpty(),
                         gstPercentage = gstPercentage,
-                        taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0, CD = ""
+                        taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0,
+                        CD = if (discount != 0.0) discount.toString() else ""
                     )
 
                     displayItemName = product.Name.orEmpty()
@@ -1527,40 +1533,43 @@ data class SaleScreen(
                         if (autoPricing != null) {
                             val prod = itemsList.find { it.Name == itemName.Name }
                             val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
+                            val listPrice = autoPricing.SalesPrice ?: 0.0
+                            val discount = autoPricing.Disc ?: 0.0
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
-                                price = autoPricing.SalesPrice ?: 0.0,
+                                price = listPrice - (listPrice * discount / 100.0),
                                 qty = 1,
-                                discountPercentage = autoPricing.Disc ?: 0.0,
-                                listPrice = autoPricing.SalesPrice ?: 0.0,
+                                discountPercentage = discount,
+                                listPrice = listPrice,
                                 taxable = 0.0,
                                 gstAmt = 0.0,
                                 net = 0.0,
                                 guid = itemName.GUID ?: "",
                                 gstPercentage = 0.0,
                                 taxCategoryCode = taxCategoryCode.toInt(),
-                                CD = autoPricing.Disc.toString()
+                                CD = if (discount != 0.0) discount.toString() else ""
                             )
                             showItemSheet = false
                         } else if (pricingForProduct.isNotEmpty()) {
                             showProductPricingSheet = true
                         } else {
                             val prod = itemsList.find { it.Name == itemName.Name }
-                            val price =
+                            val listPrice =
                                 if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
+                            val discount = if (isSale) prod?.SaleDisc ?: 0.0 else prod?.PurcDisc ?: 0.0
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
-                                price = price,
+                                price = listPrice - (listPrice * discount / 100.0),
                                 qty = 1,
-                                discountPercentage = 0.0,
-                                listPrice = price,
+                                discountPercentage = discount,
+                                listPrice = listPrice,
                                 taxable = 0.0,
                                 gstAmt = 0.0,
                                 net = 0.0,
                                 guid = itemName.GUID ?: "",
                                 gstPercentage = 0.0,
                                 taxCategoryCode = (prod?.TaxCategoryCode ?: 0.0).toInt(),
-                                CD = ""
+                                CD = if (discount != 0.0) discount.toString() else ""
                             )
                             showItemSheet = false
                         }
@@ -1591,12 +1600,18 @@ data class SaleScreen(
                             val prod = itemsList.find { it.Name == itemName.Name }
                             val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
 
+                            val listPrice = pricing.SalePrice
+                            val discount = pricing.Discount
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
-                                price = pricing.SalePrice,
+                                price = if (pricing.CompoundDiscount.contains("+")) {
+                                    applyCompoundDiscount(listPrice, pricing.CompoundDiscount)
+                                } else {
+                                    listPrice - (listPrice * discount / 100.0)
+                                },
                                 qty = 1,
-                                discountPercentage = pricing.Discount,
-                                listPrice = pricing.SalePrice,
+                                discountPercentage = discount,
+                                listPrice = listPrice,
                                 taxable = 0.0,
                                 gstAmt = 0.0,
                                 net = 0.0,

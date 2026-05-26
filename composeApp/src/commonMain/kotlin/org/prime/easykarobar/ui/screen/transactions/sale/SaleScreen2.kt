@@ -187,6 +187,10 @@ data class SaleScreen2(
         val nav = LocalNavigator.currentOrThrow
         val compInfo = db.companyInformationQueries.selectAll().executeAsOne()
 
+        LaunchedEffect(Unit) {
+            SharedPrefs.LastVchType.save(vchType)
+        }
+
         var selectedLedger by remember { mutableStateOf(selectedLedger ?: "") }
         var barcodeQty by remember { mutableStateOf("") }
         var selectedLedgerGUID by remember { mutableStateOf(selectedLedgerGUID ?: "") }
@@ -323,7 +327,9 @@ data class SaleScreen2(
                         showEmptyBarcode = true; return@rememberBarcodeScanner
                     }
                     showQtyPopup = false
-                    val price = if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
+                    val listPrice = if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
+                    val discount = if (isSale) product.SaleDisc ?: 0.0 else product.PurcDisc ?: 0.0
+                    val price = listPrice - (listPrice * discount / 100.0)
                     val qty = barcodeQty.toIntOrNull() ?: 1
                     val gstPercentage = try {
                         db.taxCategoryMastQueries.selectTaxRate(
@@ -352,13 +358,13 @@ data class SaleScreen2(
                     }
                     selectedItems = selectedItems + InvoiceItem(
                         name = product.Name.orEmpty(), price = price, qty = qty,
-                        discountPercentage = 0.0,
-                        listPrice = if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice
-                            ?: 0.0,
+                        discountPercentage = discount,
+                        listPrice = listPrice,
                         taxable = taxableAmount, gstAmt = gstAmount, net = netAmount,
                         guid = product.GUID ?: pendingSelectedProductGUID.orEmpty(),
                         gstPercentage = gstPercentage,
-                        taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0, CD = ""
+                        taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0,
+                        CD = if (discount != 0.0) discount.toString() else ""
                     )
                     displayItemName = product.Name.orEmpty()
                     showAddMorePopup = true
@@ -1329,8 +1335,9 @@ data class SaleScreen2(
                         } else null
 
                         if (autoPricing != null) {
-                            val price = if (isSale) autoPricing.SalesPrice
-                                ?: 0.0 else autoPricing.SalesPrice ?: 0.0
+                            val listPrice = autoPricing.SalesPrice ?: 0.0
+                            val discount = autoPricing.Disc ?: 0.0
+                            val price = listPrice - (listPrice * discount / 100.0)
                             val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
                             val gstPct = try {
                                 db.taxCategoryMastQueries.selectTaxRate(
@@ -1364,15 +1371,15 @@ data class SaleScreen2(
                                 name = pending.product.Name.orEmpty(),
                                 price = price,
                                 qty = qty,
-                                discountPercentage = autoPricing.Disc ?: 0.0,
-                                listPrice = price,
+                                discountPercentage = discount,
+                                listPrice = listPrice,
                                 taxable = taxableAmt,
                                 gstAmt = gstAmt,
                                 net = netAmt,
                                 guid = pending.product.GUID.orEmpty(),
                                 gstPercentage = gstPct,
                                 taxCategoryCode = taxCategoryCode.toInt(),
-                                CD = autoPricing.Disc.toString()
+                                CD = if (discount != 0.0) discount.toString() else ""
                             )
                             pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
                         } else if (pricing.isNotEmpty()) {
@@ -1385,8 +1392,11 @@ data class SaleScreen2(
                             showSerialNumberBottomSheet = true
                         } else {
                             // No special handling needed, add directly
-                            val price =
+                            val listPrice =
                                 if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
+                            val discount = if (isSale) prod?.SaleDisc ?: 0.0 else prod?.PurcDisc ?: 0.0
+                            val price = listPrice - (listPrice * discount / 100.0)
+
                             val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
                             val gstPct = try {
                                 db.taxCategoryMastQueries.selectTaxRate(
@@ -1419,11 +1429,12 @@ data class SaleScreen2(
                             selectedItems = selectedItems + InvoiceItem(
                                 name = pending.product.Name.orEmpty(),
                                 price = price, qty = qty,
-                                discountPercentage = 0.0, listPrice = price,
+                                discountPercentage = discount, listPrice = listPrice,
                                 taxable = taxableAmt, gstAmt = gstAmt, net = netAmt,
                                 guid = pending.product.GUID.orEmpty(),
                                 gstPercentage = gstPct,
-                                taxCategoryCode = taxCategoryCode.toInt(), CD = ""
+                                taxCategoryCode = taxCategoryCode.toInt(),
+                                CD = if (discount != 0.0) discount.toString() else ""
                             )
                             pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
                         }
@@ -1476,7 +1487,14 @@ data class SaleScreen2(
                             pendingSelectedProductGUID = pending.product.GUID
                             showSerialNumberBottomSheet = true
                         } else {
-                            val price = if (isSale) pricing.SalePrice else pricing.PurchasePrice
+                            val listPrice = if (isSale) pricing.SalePrice else pricing.PurchasePrice
+                            val discount = pricing.Discount
+                            val price = if (pricing.CompoundDiscount.contains("+")) {
+                                applyCompoundDiscount(listPrice, pricing.CompoundDiscount)
+                            } else {
+                                listPrice - (listPrice * discount / 100.0)
+                            }
+
                             val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
                             val gstPct = try {
                                 db.taxCategoryMastQueries.selectTaxRate(
@@ -1509,8 +1527,8 @@ data class SaleScreen2(
                             selectedItems = selectedItems + InvoiceItem(
                                 name = pending.product.Name.orEmpty(),
                                 price = price, qty = qty,
-                                discountPercentage = pricing.Discount,
-                                listPrice = price,
+                                discountPercentage = discount,
+                                listPrice = listPrice,
                                 taxable = taxableAmt, gstAmt = gstAmt, net = netAmt,
                                 guid = pending.product.GUID.orEmpty(),
                                 gstPercentage = gstPct,
