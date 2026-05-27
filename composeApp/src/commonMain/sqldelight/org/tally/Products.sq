@@ -158,3 +158,80 @@ COALESCE(
 FROM Products
 WHERE (:filterGroup = 0 OR Products.GroupCode IN :groupCodes) AND (:productCode IS NULL OR Products.GroupCode = :productCode)
 ORDER BY Name;
+
+
+
+-- FOR SALE PURCHASE CONFIGURATIONS
+
+
+selectAllFilterAGRPConfig:
+SELECT
+    Products.*,
+    IFNULL(VS.TotalD2, 0) AS McOpening
+FROM Products
+LEFT JOIN (
+    SELECT
+        CM1,
+        SUM(D2) AS TotalD2
+    FROM Vouchers_StockItems
+    WHERE CM2 = :compConfigFilter
+    GROUP BY CM1
+) AS VS
+ON VS.CM1 = Products.Name
+WHERE GroupCode IN ?
+  AND GUID NOT IN ?
+  AND (:applyN1Filter = 0 OR N1 > 0)
+ORDER BY Name;
+
+selectByGroupCodeConfig:
+SELECT
+    Products.*,
+    IFNULL(VS.TotalD2, 0) AS McOpening
+FROM Products
+LEFT JOIN (
+    SELECT
+        CM1,
+        SUM(D2) AS TotalD2
+    FROM Vouchers_StockItems
+    WHERE CM2 = :compConfigFilter
+    GROUP BY CM1
+) AS VS
+ON VS.CM1 = Products.Name
+WHERE GroupCode IN ?
+  AND (:applyN1Filter = 0 OR N1 > 0)
+ORDER BY Name;
+
+selectExcludingGuidConfig:
+SELECT
+    Products.*,
+    IFNULL(VS.TotalD2, 0) AS McOpening
+FROM Products
+LEFT JOIN (
+    SELECT
+        CM1,
+        SUM(D2) AS TotalD2
+    FROM Vouchers_StockItems
+    WHERE CM2 = :compConfigFilter
+    GROUP BY CM1
+) AS VS
+ON VS.CM1 = Products.Name
+WHERE GUID NOT IN ?
+  AND (:applyN1Filter = 0 OR N1 > 0)
+ORDER BY Name;
+
+selectAllConfig:
+SELECT
+    Products.*,
+    IFNULL(VS.TotalD2, 0) AS McOpening
+FROM Products
+LEFT JOIN (
+    SELECT
+        CM1,
+        SUM(D2) AS TotalD2
+    FROM Vouchers_StockItems
+    WHERE CM2 = :compConfigFilter
+    GROUP BY CM1
+) AS VS
+ON VS.CM1 = Products.Name
+WHERE (:applyN1Filter = 0 OR N1 > 0)
+ORDER BY Name;

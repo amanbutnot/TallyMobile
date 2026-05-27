@@ -62,6 +62,80 @@ fun getLedgerMasters(db: TallyDatabase): List<LedgerMaster> {
     }
 }
 
+
+fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<Products> {
+    val perms = SharedPrefs.Permissions.get()
+    val filterIGRP = perms?.FilterIGRP == "Y"
+    val filterItems = perms?.FilterItems == "Y"
+    val showZeroGroup = if (SharedPrefs.ShowZeroStock.get() == false) 1L else 0L
+
+    println(filterItems)
+    println(filterIGRP)
+    val itemConfig = when (vchType) {
+        9, 3, 12 -> {
+            SaleItemConfig()
+        }
+
+        13, 10, 2 -> {
+            PurItemConfig()
+        }
+
+        else -> {
+            ""
+        }
+    }
+
+    return when {
+        perms == null -> {
+            db.productsQueries.selectAllConfig(
+                applyN1Filter = showZeroGroup,
+                compConfigFilter = itemConfig
+            )
+                .executeAsList() as List<Products>
+        }
+        // Both filters active
+        filterIGRP && filterItems -> {
+            val excludeGuids = perms.ConfigItems.parseToStringList()
+            db.productsQueries.selectAllFilterAGRPConfig(
+                compConfigFilter = itemConfig,
+                filterItemGroupCodes(),
+                excludeGuids,
+                applyN1Filter = showZeroGroup
+            )
+                .executeAsList() as List<Products>
+        }
+
+        // Only GroupCode filter
+        filterIGRP -> {
+            db.productsQueries.selectByGroupCodeConfig(
+                compConfigFilter = itemConfig,
+                filterItemGroupCodes(),
+                applyN1Filter = showZeroGroup
+            )
+                .executeAsList() as List<Products>
+        }
+
+        // Only GUID exclusion
+        filterItems -> {
+            val excludeGuids = perms.ConfigItems.parseToStringList()
+            db.productsQueries.selectExcludingGuidConfig(
+                compConfigFilter = itemConfig, excludeGuids, applyN1Filter = showZeroGroup
+            )
+                .executeAsList() as List<Products>
+        }
+
+        // No filters
+        else -> {
+            db.productsQueries.selectAllConfig(
+                applyN1Filter = showZeroGroup,
+                compConfigFilter = itemConfig
+            )
+                .executeAsList() as List<Products>
+        }
+    }
+}
+
+
 fun getItemMasters(db: TallyDatabase): List<Products> {
     val perms = SharedPrefs.Permissions.get()
     val filterIGRP = perms?.FilterIGRP == "Y"

@@ -7,6 +7,18 @@ fun CompanyName(): String {
     val row = db.companyInformationQueries.companyNameQuery().executeAsOneOrNull()
     return row?.T1 ?: ""
 }
+
+fun SaleItemConfig(): String {
+    val db = DatabaseHolder.instance
+    val row = db.companyConfigurationQueries.saleConfig().executeAsOneOrNull()
+    return row?.T8 ?: ""
+}
+fun PurItemConfig(): String {
+    val db = DatabaseHolder.instance
+    val row = db.companyConfigurationQueries.purchaseConfig().executeAsOneOrNull()
+    return row?.T8 ?: ""
+}
+
 fun CompanyGst(): String {
     val db = DatabaseHolder.instance
     val row = db.companyInformationQueries.selectAll().executeAsOneOrNull()

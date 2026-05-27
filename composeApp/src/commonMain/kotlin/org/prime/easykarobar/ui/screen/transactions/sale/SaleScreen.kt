@@ -136,7 +136,7 @@ import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
-import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
+import org.prime.easykarobar.ui.shared.globalShared.getConfigItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.isBusy
@@ -291,7 +291,7 @@ data class SaleScreen(
 
         val ledgerList = getLedgerMasters(db)
         val busyLedgerList = db.bSMasterQueries.selectAll().executeAsList()
-        val itemsList = getItemMasters(db)
+        val itemsList = getConfigItemMasters(db,vchType)
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
         val groupFilteredList = if (selectedGroups.isEmpty()) {
             itemsList
