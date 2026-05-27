@@ -258,7 +258,11 @@ data class SaleScreen(
         var selectedLedgerGUID by remember { mutableStateOf(selectedLedgerGUID ?: "") }
         var narration by remember { mutableStateOf("") }
         var selectedDate by remember { mutableStateOf(CurrentDate()) }
-        var taxType by remember { mutableStateOf(TaxType.INCLUSIVE) }
+        var taxType by remember {
+            mutableStateOf(
+                TaxType.entries[SharedPrefs.LastTaxType.get(vchType)]
+            )
+        }
 
         var selectedItems by remember { mutableStateOf<List<InvoiceItem>>(emptyList()) }
         var selectedInitialSerialNo by remember {
@@ -1935,6 +1939,7 @@ data class SaleScreen(
                                     bills_collection = selectedReferences,
                                 ),
                                 onSuccess = {
+                                    SharedPrefs.LastTaxType.save(vchType, taxType.ordinal)
                                     db.transaction {
                                         selectedReferences.forEach {
                                             db.voucherBillAllocationsQueries.deleteOldBillAllocation(

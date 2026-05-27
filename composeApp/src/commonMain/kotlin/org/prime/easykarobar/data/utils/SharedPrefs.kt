@@ -315,4 +315,18 @@ object SharedPrefs {
         }
     }
 
+    object LastTaxType {
+        private const val KEY = "last_tax_type_"
+
+        fun save(vchType: Int, taxTypeOrdinal: Int) {
+            val userId = User.get()?.ID ?: return
+            settings2.putInt("${KEY}${userId}_${vchType}", taxTypeOrdinal)
+        }
+
+        fun get(vchType: Int): Int {
+            val userId = User.get()?.ID ?: return 0
+            return settings2.getInt("${KEY}${userId}_${vchType}", 0)
+        }
+    }
+
 }
