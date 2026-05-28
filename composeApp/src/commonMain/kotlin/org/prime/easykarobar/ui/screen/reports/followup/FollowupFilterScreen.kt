@@ -1,0 +1,29 @@
+package org.prime.easykarobar.ui.screen.reports.followup
+
+import androidx.compose.runtime.Composable
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.easykarobar.ui.shared.reportsShared.AllOneFilterScreen
+
+class FollowupFilterScreen : Screen {
+    @Composable
+    override fun Content() {
+        val nav = LocalNavigator.currentOrThrow
+        AllOneFilterScreen(
+            title = "Followup Filter",
+            showStartDate = false,
+            showEndDate = false,
+            showDueDate = false,
+            showOtherToggle = false,
+            onGenerateClick = {
+                nav.push(
+                    FollowupListScreen(
+                        accountName = it.accountName,
+                        actCode = it.accountGUID
+                    )
+                )
+            }
+        )
+    }
+}

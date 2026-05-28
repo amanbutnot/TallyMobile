@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,6 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Note
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AddComment
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Money
 import androidx.compose.material.icons.filled.NoteAlt
 import androidx.compose.material.icons.filled.Payment
@@ -56,13 +57,12 @@ import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.prime.easykarobar.data.model.salesmanPermission
-import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.attendance.AttendanceListScreen
+import org.prime.easykarobar.ui.screen.reports.followup.FollowupFilterScreen
 import org.prime.easykarobar.ui.screen.transactions.FollowUpScreen
 import org.prime.easykarobar.ui.screen.transactions.SingleEntryFilterScreen
 import org.prime.easykarobar.ui.screen.transactions.barcode.BarcodeScreen
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
-import androidx.compose.material.icons.filled.AddComment
 
 object TransactionTab : Tab {
     override val options: TabOptions
@@ -104,7 +104,8 @@ object TransactionTab : Tab {
             TransactionType("Attendance", Icons.Default.Work),
             TransactionType("Debit Note", Icons.AutoMirrored.Filled.Note),
             TransactionType("Credit Note", Icons.Default.NoteAlt),
-            TransactionType("Follow Up", Icons.Default.AddComment)
+            TransactionType("Follow Up", Icons.Default.AddComment),
+            TransactionType("Followup List", Icons.Default.List)
         )
 
         val inventoryList = listOf(
@@ -148,36 +149,6 @@ object TransactionTab : Tab {
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onBackground.copy(alpha = 0.7f)
                 )
-            }
-
-            val lastVchType = remember { SharedPrefs.LastVchType.get() }
-            if (lastVchType != null) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = colors.secondaryContainer.copy(alpha = 0.3f)
-                    ),
-                    border = BorderStroke(1.dp, colors.secondary.copy(alpha = 0.2f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Receipt,
-                            contentDescription = null,
-                            tint = colors.secondary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "Last used: ${SharedPrefs.LastVchType.getVchName(lastVchType)}",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = colors.onSecondaryContainer
-                        )
-                    }
-                }
             }
 
             // Transaction Types Card
@@ -433,6 +404,7 @@ object TransactionTab : Tab {
 
                         }
                         8 -> nav?.push(FollowUpScreen())
+                        9 -> nav?.push(FollowupFilterScreen())
                     }
                 }
             )
