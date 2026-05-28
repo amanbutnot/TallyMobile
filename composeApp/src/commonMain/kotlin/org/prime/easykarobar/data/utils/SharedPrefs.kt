@@ -106,49 +106,58 @@ object SharedPrefs {
     }
 
     object AttendanceDate {
-        private const val KEY = "attendance_key"
+        private const val KEY = "attendance_key_"
         fun save(date: String) {
-            settings.putString(KEY, date)
+            val userId = User.get()?.ID ?: return
+            settings.putString(KEY + userId, date)
         }
 
         fun get(): String? {
-            return settings.getStringOrNull(KEY)
+            val userId = User.get()?.ID ?: return null
+            return settings.getStringOrNull(KEY + userId)
         }
 
         fun clear() {
-            settings.remove(KEY)
+            val userId = User.get()?.ID ?: return
+            settings.remove(KEY + userId)
         }
 
     }
 
     object CheckInOutDate {
-        private const val KEY = "checkInOutKey"
+        private const val KEY = "checkInOutKey_"
         fun save(date: String) {
-            settings2.putString(KEY, date)
+            val userId = User.get()?.ID ?: return
+            settings2.putString(KEY + userId, date)
         }
 
         fun get(): String? {
-            return settings2.getStringOrNull(KEY)
+            val userId = User.get()?.ID ?: return null
+            return settings2.getStringOrNull(KEY + userId)
         }
 
         fun clear() {
-            settings2.remove(KEY)
+            val userId = User.get()?.ID ?: return
+            settings2.remove(KEY + userId)
         }
 
     }
 
     object CheckInOutLedger {
-        private const val KEY = "attendance_ledger"
+        private const val KEY = "attendance_ledger_"
         fun save(date: String) {
-            settings2.putString(KEY, date)
+            val userId = User.get()?.ID ?: return
+            settings2.putString(KEY + userId, date)
         }
 
         fun get(): String? {
-            return settings2.getStringOrNull(KEY)
+            val userId = User.get()?.ID ?: return null
+            return settings2.getStringOrNull(KEY + userId)
         }
 
         fun clear() {
-            settings2.remove(KEY)
+            val userId = User.get()?.ID ?: return
+            settings2.remove(KEY + userId)
         }
 
     }

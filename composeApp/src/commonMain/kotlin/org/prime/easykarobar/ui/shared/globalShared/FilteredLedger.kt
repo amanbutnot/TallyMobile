@@ -24,6 +24,40 @@ fun String?.parseToStringList(): List<String> {
         .filter { it.isNotEmpty() }
 }
 
+private fun mapToProducts(
+    ID: Long,
+    Name: String?,
+    Alias: String?,
+    PrintName: String?,
+    GroupName: String?,
+    GroupCode: Double?,
+    UnitName: String?,
+    UnitCode: Double?,
+    OpStk: Double?,
+    OpStkValue: Double?,
+    TaxCategory: String?,
+    TaxCategoryCode: Double?,
+    HSN: String?,
+    SalesPrice: Double?,
+    PurcPrice: Double?,
+    MRP: Double?,
+    MinSalesPrice: Double?,
+    SelfValPrice: Double?,
+    SaleDisc: Double?,
+    PurcDisc: Double?,
+    Vendor: String?,
+    VendorCode: Double?,
+    MaintainStock: Double?,
+    ALTERID: String?,
+    GUID: String?,
+    N1: Double?,
+    McOpening: Double
+): Products = Products(
+    ID, Name, Alias, PrintName, GroupName, GroupCode, UnitName, UnitCode, OpStk, OpStkValue,
+    TaxCategory, TaxCategoryCode, HSN, SalesPrice, PurcPrice, MRP, MinSalesPrice, SelfValPrice,
+    SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1
+)
+
 fun getLedgerMasters(db: TallyDatabase): List<LedgerMaster> {
     val perms = SharedPrefs.Permissions.get()
     val filterAGRP = perms?.FilterAGRP == "Y"
@@ -89,48 +123,50 @@ fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<Products> {
         perms == null -> {
             db.productsQueries.selectAllConfig(
                 applyN1Filter = showZeroGroup,
-                compConfigFilter = itemConfig
-            )
-                .executeAsList() as List<Products>
+                compConfigFilter = itemConfig,
+                mapper = ::mapToProducts
+            ).executeAsList()
         }
         // Both filters active
         filterIGRP && filterItems -> {
             val excludeGuids = perms.ConfigItems.parseToStringList()
             db.productsQueries.selectAllFilterAGRPConfig(
                 compConfigFilter = itemConfig,
-                filterItemGroupCodes(),
-                excludeGuids,
-                applyN1Filter = showZeroGroup
-            )
-                .executeAsList() as List<Products>
+                GroupCode = filterItemGroupCodes(),
+                GUID = excludeGuids,
+                applyN1Filter = showZeroGroup,
+                mapper = ::mapToProducts
+            ).executeAsList()
         }
 
         // Only GroupCode filter
         filterIGRP -> {
             db.productsQueries.selectByGroupCodeConfig(
                 compConfigFilter = itemConfig,
-                filterItemGroupCodes(),
-                applyN1Filter = showZeroGroup
-            )
-                .executeAsList() as List<Products>
+                GroupCode = filterItemGroupCodes(),
+                applyN1Filter = showZeroGroup,
+                mapper = ::mapToProducts
+            ).executeAsList()
         }
 
         // Only GUID exclusion
         filterItems -> {
             val excludeGuids = perms.ConfigItems.parseToStringList()
             db.productsQueries.selectExcludingGuidConfig(
-                compConfigFilter = itemConfig, excludeGuids, applyN1Filter = showZeroGroup
-            )
-                .executeAsList() as List<Products>
+                compConfigFilter = itemConfig,
+                GUID = excludeGuids,
+                applyN1Filter = showZeroGroup,
+                mapper = ::mapToProducts
+            ).executeAsList()
         }
 
         // No filters
         else -> {
             db.productsQueries.selectAllConfig(
                 applyN1Filter = showZeroGroup,
-                compConfigFilter = itemConfig
-            )
-                .executeAsList() as List<Products>
+                compConfigFilter = itemConfig,
+                mapper = ::mapToProducts
+            ).executeAsList()
         }
     }
 }

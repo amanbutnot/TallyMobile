@@ -84,14 +84,18 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
         val filterBroker = if (perms?.FilterBroker == "Y") 1L else 0L
         val configBroker =
             if (filterBroker == 1L) perms?.ConfigBroker.parseToStringList() else emptyList()
-println("meow ${when (name) {
-    "Sales", "Purchase" -> 1L
-    "Receipt", "Payment" -> {
-        if (SerialNumberRegister() == 0.0) 2L else 1L
-    }
+        println(
+            "meow ${
+                when (name) {
+                    "Sales", "Purchase" -> 1L
+                    "Receipt", "Payment" -> {
+                        if (SerialNumberRegister() == 0.0) 2L else 1L
+                    }
 
-    else -> 1L
-}}")
+                    else -> 1L
+                }
+            }"
+        )
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
@@ -113,6 +117,7 @@ println("meow ${when (name) {
                         else -> 1L
                     }
                 ).executeAsList()
+                println("register list is $list")
                 withContext(Dispatchers.Main) {
                     isLoading = false
                 }
@@ -133,7 +138,7 @@ println("meow ${when (name) {
 
         val rows: List<Quadruple<String, String, String, String>> = filteredList.map { item ->
             Quadruple(
-                Tdate(item.DATE?:""),
+                Tdate(item.DATE ?: ""),
                 item.CM1 ?: "",
                 item.VOUCHERNUMBER?.trim() ?: "",
                 item.D1?.absoluteValue?.formatToAmtDec() ?: ""
