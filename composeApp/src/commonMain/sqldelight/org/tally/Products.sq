@@ -166,13 +166,15 @@ ORDER BY Name;
 
 selectAllFilterAGRPConfig:
 SELECT
-    Products.*,
-    IFNULL(VS.TotalD2, 0) AS McOpening
+    ID, Name, Alias, PrintName, GroupName, GroupCode, UnitName, UnitCode, OpStk, OpStkValue,
+    TaxCategory, TaxCategoryCode, HSN, SalesPrice, PurcPrice, MRP, MinSalesPrice, SelfValPrice,
+    SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1,
+    IFNULL(VS.TotalD2, 0.0) AS McOpening
 FROM Products
 LEFT JOIN (
     SELECT
         CM1,
-        SUM(D2) AS TotalD2
+        SUM(D1) AS TotalD2
     FROM Vouchers_StockItems
     WHERE CM2 = :compConfigFilter
     GROUP BY CM1
@@ -185,13 +187,15 @@ ORDER BY Name;
 
 selectByGroupCodeConfig:
 SELECT
-    Products.*,
-    IFNULL(VS.TotalD2, 0) AS McOpening
+    ID, Name, Alias, PrintName, GroupName, GroupCode, UnitName, UnitCode, OpStk, OpStkValue,
+    TaxCategory, TaxCategoryCode, HSN, SalesPrice, PurcPrice, MRP, MinSalesPrice, SelfValPrice,
+    SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1,
+    IFNULL(VS.TotalD2, 0.0) AS McOpening
 FROM Products
 LEFT JOIN (
     SELECT
         CM1,
-        SUM(D2) AS TotalD2
+        SUM(D1) AS TotalD2
     FROM Vouchers_StockItems
     WHERE CM2 = :compConfigFilter
     GROUP BY CM1
@@ -203,13 +207,15 @@ ORDER BY Name;
 
 selectExcludingGuidConfig:
 SELECT
-    Products.*,
-    IFNULL(VS.TotalD2, 0) AS McOpening
+    ID, Name, Alias, PrintName, GroupName, GroupCode, UnitName, UnitCode, OpStk, OpStkValue,
+    TaxCategory, TaxCategoryCode, HSN, SalesPrice, PurcPrice, MRP, MinSalesPrice, SelfValPrice,
+    SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1,
+    IFNULL(VS.TotalD2, 0.0) AS McOpening
 FROM Products
 LEFT JOIN (
     SELECT
         CM1,
-        SUM(D2) AS TotalD2
+        SUM(D1) AS TotalD2
     FROM Vouchers_StockItems
     WHERE CM2 = :compConfigFilter
     GROUP BY CM1
@@ -221,13 +227,15 @@ ORDER BY Name;
 
 selectAllConfig:
 SELECT
-    Products.*,
-    IFNULL(VS.TotalD2, 0) AS McOpening
+    ID, Name, Alias, PrintName, GroupName, GroupCode, UnitName, UnitCode, OpStk, OpStkValue,
+    TaxCategory, TaxCategoryCode, HSN, SalesPrice, PurcPrice, MRP, MinSalesPrice, SelfValPrice,
+    SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1,
+    IFNULL(VS.TotalD2, 0.0) AS McOpening
 FROM Products
 LEFT JOIN (
     SELECT
         CM1,
-        SUM(D2) AS TotalD2
+        SUM(D1) AS TotalD2
     FROM Vouchers_StockItems
     WHERE CM2 = :compConfigFilter
     GROUP BY CM1

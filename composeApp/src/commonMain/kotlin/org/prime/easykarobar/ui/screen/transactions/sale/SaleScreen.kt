@@ -134,6 +134,7 @@ import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
+import org.prime.easykarobar.ui.shared.globalShared.ProductsWithConfig
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getConfigItemMasters
@@ -144,7 +145,6 @@ import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
-import org.tally.Products
 import org.tally.Products_Pricing
 import org.tally.SerialNoEnterReportSale
 import yymmdd
@@ -281,7 +281,7 @@ data class SaleScreen(
         var showGroupFilterSheet by remember { mutableStateOf(false) }
 
         var showProductPricingSheet by remember { mutableStateOf(false) }
-        var selectedProductForPricing by remember { mutableStateOf<Products?>(null) }
+        var selectedProductForPricing by remember { mutableStateOf<ProductsWithConfig?>(null) }
         var selectedPricing by remember { mutableStateOf<ProductPricing?>(null) }
 
         var editingItem by remember { mutableStateOf<InvoiceItem?>(null) }
@@ -292,6 +292,7 @@ data class SaleScreen(
         val ledgerList = getLedgerMasters(db)
         val busyLedgerList = db.bSMasterQueries.selectAll().executeAsList()
         val itemsList = getConfigItemMasters(db,vchType)
+        println("item list is in sale order $itemsList" )
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
         val groupFilteredList = if (selectedGroups.isEmpty()) {
             itemsList
@@ -2717,8 +2718,8 @@ fun BorderedInput(
 @Composable
 fun TransactionItemBottomList(
     showBottomSheet: Boolean,
-    list: List<Products>,
-    onSelected: (Products) -> Unit,
+    list: List<ProductsWithConfig>,
+    onSelected: (ProductsWithConfig) -> Unit,
     onDismiss: () -> Unit,
     bottomSheetState: SheetState,
     title: String = "Select Account",
@@ -2838,7 +2839,7 @@ fun TransactionItemBottomList(
                                     }, trailingContent = {
                                         if (showQtyToSalesman()) {
                                             Text(
-                                                text = item.N1?.formatToQtyDec() ?: "-",
+                                                text = item.McOpening.formatToQtyDec(),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurface,
                                                 maxLines = 2,

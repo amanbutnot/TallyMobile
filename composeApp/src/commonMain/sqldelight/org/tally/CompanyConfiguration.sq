@@ -72,6 +72,6 @@ hideGroup:
 SELECT T2 FROM CompanyConfiguration WHERE GUID='1011';
 
 saleConfig:
-SELECT T8 FROM CompanyConfiguration WHERE GUID = '1011_9';
+SELECT T8 FROM CompanyConfiguration WHERE GUID = '1010_9';
 purchaseConfig:
-SELECT T8 FROM CompanyConfiguration WHERE GUID = '1011_2';
+SELECT T8 FROM CompanyConfiguration WHERE GUID = '1010_2';

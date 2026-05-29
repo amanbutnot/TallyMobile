@@ -24,7 +24,37 @@ fun String?.parseToStringList(): List<String> {
         .filter { it.isNotEmpty() }
 }
 
-private fun mapToProducts(
+data class ProductsWithConfig(
+    val ID: Long,
+    val Name: String?,
+    val Alias: String?,
+    val PrintName: String?,
+    val GroupName: String?,
+    val GroupCode: Double?,
+    val UnitName: String?,
+    val UnitCode: Double?,
+    val OpStk: Double?,
+    val OpStkValue: Double?,
+    val TaxCategory: String?,
+    val TaxCategoryCode: Double?,
+    val HSN: String?,
+    val SalesPrice: Double?,
+    val PurcPrice: Double?,
+    val MRP: Double?,
+    val MinSalesPrice: Double?,
+    val SelfValPrice: Double?,
+    val SaleDisc: Double?,
+    val PurcDisc: Double?,
+    val Vendor: String?,
+    val VendorCode: Double?,
+    val MaintainStock: Double?,
+    val ALTERID: String?,
+    val GUID: String?,
+    val N1: Double?,
+    val McOpening: Double
+)
+
+private fun mapToProductsWithConfig(
     ID: Long,
     Name: String?,
     Alias: String?,
@@ -52,10 +82,10 @@ private fun mapToProducts(
     GUID: String?,
     N1: Double?,
     McOpening: Double
-): Products = Products(
+): ProductsWithConfig = ProductsWithConfig(
     ID, Name, Alias, PrintName, GroupName, GroupCode, UnitName, UnitCode, OpStk, OpStkValue,
     TaxCategory, TaxCategoryCode, HSN, SalesPrice, PurcPrice, MRP, MinSalesPrice, SelfValPrice,
-    SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1
+    SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1, McOpening
 )
 
 fun getLedgerMasters(db: TallyDatabase): List<LedgerMaster> {
@@ -97,14 +127,13 @@ fun getLedgerMasters(db: TallyDatabase): List<LedgerMaster> {
 }
 
 
-fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<Products> {
+fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<ProductsWithConfig> {
     val perms = SharedPrefs.Permissions.get()
     val filterIGRP = perms?.FilterIGRP == "Y"
     val filterItems = perms?.FilterItems == "Y"
     val showZeroGroup = if (SharedPrefs.ShowZeroStock.get() == false) 1L else 0L
 
     println(filterItems)
-    println(filterIGRP)
     val itemConfig = when (vchType) {
         9, 3, 12 -> {
             SaleItemConfig()
@@ -118,13 +147,14 @@ fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<Products> {
             ""
         }
     }
-
+    println("VCH TYPE: $vchType")
+    println("ITEM CONFIG: $itemConfig")
     return when {
         perms == null -> {
             db.productsQueries.selectAllConfig(
                 applyN1Filter = showZeroGroup,
                 compConfigFilter = itemConfig,
-                mapper = ::mapToProducts
+                mapper = ::mapToProductsWithConfig
             ).executeAsList()
         }
         // Both filters active
@@ -135,7 +165,7 @@ fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<Products> {
                 GroupCode = filterItemGroupCodes(),
                 GUID = excludeGuids,
                 applyN1Filter = showZeroGroup,
-                mapper = ::mapToProducts
+                mapper = ::mapToProductsWithConfig
             ).executeAsList()
         }
 
@@ -145,7 +175,7 @@ fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<Products> {
                 compConfigFilter = itemConfig,
                 GroupCode = filterItemGroupCodes(),
                 applyN1Filter = showZeroGroup,
-                mapper = ::mapToProducts
+                mapper = ::mapToProductsWithConfig
             ).executeAsList()
         }
 
@@ -156,7 +186,7 @@ fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<Products> {
                 compConfigFilter = itemConfig,
                 GUID = excludeGuids,
                 applyN1Filter = showZeroGroup,
-                mapper = ::mapToProducts
+                mapper = ::mapToProductsWithConfig
             ).executeAsList()
         }
 
@@ -165,7 +195,7 @@ fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<Products> {
             db.productsQueries.selectAllConfig(
                 applyN1Filter = showZeroGroup,
                 compConfigFilter = itemConfig,
-                mapper = ::mapToProducts
+                mapper = ::mapToProductsWithConfig
             ).executeAsList()
         }
     }

@@ -130,6 +130,7 @@ import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
+import org.prime.easykarobar.ui.shared.globalShared.ProductsWithConfig
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
@@ -155,7 +156,7 @@ import kotlin.uuid.Uuid
 // NEW: Data class for a pending multi-select item (holds qty before confirm)
 // ─────────────────────────────────────────────────────────────────────────────
 data class PendingMultiItem(
-    val product: Products,
+    val product: ProductsWithConfig,
     var qty: String = "1"
 )
 
@@ -1953,7 +1954,7 @@ data class SaleScreen2(
 fun MultiSelectItemSheet(
     show: Boolean,
     title: String,
-    options: List<Products>,
+    options: List<ProductsWithConfig>,
     isSale: Boolean,
     onConfirm: (List<PendingMultiItem>) -> Unit,
     onDismiss: () -> Unit,
@@ -2073,7 +2074,7 @@ fun MultiSelectItemSheet(
                     MultiSelectItemRow(
                         product = product,
                         listPrice = listPrice,
-                        stock = product.N1?.formatToAmtDec() ?: "-",
+                        stock = product.McOpening.formatToAmtDec(),
                         isSelected = isSelected,
                         pendingQty = pendingItem?.qty ?: "1",
                         onToggle = {
@@ -2137,7 +2138,7 @@ fun MultiSelectItemSheet(
 
 @Composable
 fun MultiSelectItemRow(
-    product: Products,
+    product: ProductsWithConfig,
     listPrice: Double,
     isSelected: Boolean,
     pendingQty: String,

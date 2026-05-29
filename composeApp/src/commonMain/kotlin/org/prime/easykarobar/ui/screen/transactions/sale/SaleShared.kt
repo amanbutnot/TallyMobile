@@ -7,7 +7,7 @@ import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
 import org.prime.easykarobar.ui.screen.transactions.TransactionOneBottomSheet
 import org.prime.easykarobar.ui.screen.transactions.TransactionSundryBottomSheet
-import org.tally.Products
+import org.prime.easykarobar.ui.shared.globalShared.ProductsWithConfig
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,8 +88,8 @@ fun SelectionSheetThree(
 fun SelectionSheetItem(
     show: Boolean,
     title: String,
-    options: List<Products>,
-    onSelect: (Products) -> Unit,
+    options: List<ProductsWithConfig>,
+    onSelect: (ProductsWithConfig) -> Unit,
     onDismiss: () -> Unit
 ) {
     TransactionItemBottomList(
