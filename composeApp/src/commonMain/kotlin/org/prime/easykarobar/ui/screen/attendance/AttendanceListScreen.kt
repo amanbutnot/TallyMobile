@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Filter1
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Add
@@ -81,6 +82,7 @@ import dev.jordond.compass.geolocation.mobile.mobile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.prime.easykarobar.business.viewmodel.attendance.AttendanceViewModel
+import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.shareText
 import org.prime.easykarobar.data.model.attendance.AttendanceListRequest
 import org.prime.easykarobar.data.model.attendance.AttendanceListResponse
@@ -97,14 +99,15 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.extractNumericValue
+import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.googleMapsLink
 import org.prime.easykarobar.ui.shared.globalShared.parseDate
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
-import org.prime.easykarobar.ui.shared.composables.smartSearch
 
 data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -130,7 +133,6 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
 
             val vState by viewModel.salesmanList
             val nameList = vState.data ?: emptyList()
-
             LaunchedEffect(Unit) {
                 viewModel.getSalesmanList()
                 println(vState.data)
@@ -166,7 +168,7 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
 
-                        if (userRole() != ROLE.STAFF_MANAGER){
+                        if (userRole() != ROLE.STAFF_MANAGER) {
                             OutlinedButton(
                                 onClick = {
                                     if (!isCheckIn) {
@@ -550,12 +552,20 @@ data class AttendanceScreenUi(
     val accountName: String,
     val isCheckIn: Boolean
 ) : Screen {
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
 
         val viewModel: AttendanceViewModel = viewModel { AttendanceViewModel() }
         val state by viewModel.listState
+        val bottomState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         var shareLoading by remember { mutableStateOf(false) }
+        var showFilterBottomSheet by remember { mutableStateOf(false) }
+        val db = DatabaseHolder.instance
+        val list = getLedgerMasters(db)
+        var selectedAccount by remember { mutableStateOf("") }
+        var selectedGUID by remember { mutableStateOf("") }
+        val nameListFilter = list.map { (it.Name ?: "") to (it.GUID ?: "") }
         val scope = rememberCoroutineScope()
         var showSearchBar by remember { mutableStateOf(false) }
 
@@ -611,6 +621,14 @@ data class AttendanceScreenUi(
                         )
                     }
                 }
+            ),
+            MenuItemData(
+                title = "Filter",
+                icon = Icons.Default.Filter1,
+                onClick = {
+
+                    showFilterBottomSheet = true
+                }
             )
         )
         if (shareLoading) {
@@ -642,6 +660,15 @@ data class AttendanceScreenUi(
                     query = searchQuery,
                     selectors = listOf { it.C1 }
                 )
+                val finalList = if (selectedAccount.isNotEmpty()) {
+                    println(selectedAccount)
+                    filteredList.filter { "\\[(.*?)\\]".toRegex()
+                        .find(it.C1?:"")
+                        ?.groupValues
+                        ?.get(1) == selectedAccount }
+                } else {
+                    filteredList
+                }
                 when {
                     state.isLoading -> {
                         Box(
@@ -669,13 +696,23 @@ data class AttendanceScreenUi(
                             }
                             AttendanceListContent(
                                 modifier = Modifier,
-                                list = filteredList, isCheckIn = isCheckIn
+                                list = finalList, isCheckIn = isCheckIn
                             )
 
                         }
                     }
                 }
             }
+        )
+        TransactionBottomSheet(
+            showBottomSheet = showFilterBottomSheet,
+            list = nameListFilter,
+            onSelected = {
+                selectedAccount = it.first
+                selectedGUID = it.second
+            },
+            onDismiss = { showFilterBottomSheet = false },
+            bottomSheetState = bottomState
         )
     }
 }
@@ -688,7 +725,7 @@ private fun AttendanceListContent(
     list: List<AttendanceListResponse>, isCheckIn: Boolean
 ) {
     if (list.isEmpty()) {
-        Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp)

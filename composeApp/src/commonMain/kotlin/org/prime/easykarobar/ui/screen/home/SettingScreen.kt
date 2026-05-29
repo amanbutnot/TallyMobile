@@ -315,7 +315,7 @@ object SettingScreen : Screen {
                         )
                         ProfileItem(
                             Icons.Default.SyncLock,
-                            "Lasy Synced from Software",
+                            "Last Synced from Software",
                             compInfo.C8.toString()
                         )
                         if (userRole() !in listOf(
