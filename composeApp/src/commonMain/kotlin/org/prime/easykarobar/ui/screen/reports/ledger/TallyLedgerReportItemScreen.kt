@@ -39,16 +39,16 @@ import kotlinx.coroutines.withContext
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
-import org.prime.easykarobar.ui.printing.InvoiceItem
-import org.prime.easykarobar.ui.printing.InvoiceParticular
+import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.ui.printing.ReceiptPaymentRow
+import org.prime.easykarobar.ui.printing.TransportDetails
 import org.prime.easykarobar.ui.printing.receiptPaymentHtml
 import org.prime.easykarobar.ui.printing.salesInvoiceHtml
+import org.prime.easykarobar.ui.screen.transactions.sale.InvoiceItem
 import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
-import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
@@ -78,7 +78,6 @@ data class TallyLedgerReportItemScreen(
         LaunchedEffect(Unit) {
             isLoading = true
             withContext(Dispatchers.IO) {
-                // simulate data fetch if needed
                 withContext(Dispatchers.Main) {
                     isLoading = false
                 }
@@ -91,74 +90,89 @@ data class TallyLedgerReportItemScreen(
         val stockColumn4Weight = 0.5f
         val stockColumn5Weight = 0.5f
 
-        // Menu items for PDF generation
+        // ── Shared HTML builder ───────────────────────────────────────────────
+        fun buildHtmlContent(): String {
+            return if (ledgerStockItemList.isNotEmpty()) {
+                val invoiceItems = ledgerStockItemList.map { it ->
+                    InvoiceItem(
+                        name = it.Item_Name ?: "",
+                        price = it.Rate ?: 0.0,
+                        listPrice = it.Rate ?: 0.0,
+                        qty = (it.Qty ?: 0.0).toInt(),
+                        discountPercentage = 0.0,
+                        taxCategoryCode = 0,
+                        gstPercentage = 0.0,
+                        taxable = it.Amt ?: 0.0,
+                        gstAmt = 0.0,
+                        net = it.Amt ?: 0.0,
+                        CD = ""
+                    )
+                }
+
+                // Tally has no busy ledger table — use ledgerReportItemList (drop first = party row) as sundries
+                val sundries = ledgerReportItemList.drop(1).mapIndexed { index, it ->
+                    SundryItem(
+                        name = it.LedgerName ?: "",
+                        amount = it.CreditAmt ?: it.DebitAmt ?: 0.0,
+                        rate = 0.0,
+                        percentValue = it.CreditAmt ?: it.DebitAmt ?: 0.0,
+                        srno = index + 1,
+                        guid = "",
+                        i1 = 1,
+                        i2 = 0,
+                        d2 = 0
+                    )
+                }
+
+                salesInvoiceHtml(
+                    name = vchType,
+                    partyName = ledgerReportItemList.firstOrNull()?.LedgerName ?: "",
+                    partyGuid = guid,
+                    invoiceNo = vchNo,
+                    date = date,
+                    items = invoiceItems,
+                    sundries = sundries,
+                    grandTotal = vouchers?.D1?.absoluteValue
+                        ?: ledgerStockItemList.sumOf { it.Amt ?: 0.0 },
+                    transportDetails = TransportDetails(
+                        transportName = "",
+                        gstRrNo = "",
+                        vehicleNo = "",
+                        station = "",
+                        pincode = "",
+                        gstRrDate = ""
+                    )
+                )
+            } else {
+                val rows = ledgerReportItemList.mapIndexed { index, it ->
+                    ReceiptPaymentRow(
+                        sn = index + 1,
+                        account = it.LedgerName ?: "",
+                        debit = it.DebitAmt,
+                        credit = it.CreditAmt
+                    )
+                }
+                receiptPaymentHtml(
+                    voucherNo = vchNo,
+                    date = date,
+                    rows = rows,
+                    totalDebit = rows.sumOf { it.debit ?: 0.0 },
+                    totalCredit = rows.sumOf { it.credit ?: 0.0 },
+                    companyAddress = "",
+                    companyContact = "",
+                    documentType = vchType
+                )
+            }
+        }
+
+        // ── Menu items ────────────────────────────────────────────────────────
         val menuItems = listOf(
             MenuItemData(
                 title = "Download",
                 icon = Icons.Default.Download,
                 onClick = {
                     scope.launch {
-                        val htmlContent = withContext(Dispatchers.Default) {
-                            if (ledgerStockItemList.isNotEmpty()) {
-                                // 🔹 Sales Invoice HTML
-                                val totalQty = ledgerStockItemList.sumOf { it.Qty ?: 0.0 }
-                                val totalAmount = ledgerStockItemList.sumOf { it.Amt ?: 0.0 }
-                                val grandTotal = totalAmount
-
-                                salesInvoiceHtml(
-                                    voucherNo = vchNo,
-                                    date = date,
-                                    partyName = ledgerReportItemList.firstOrNull()?.LedgerName
-                                        ?: "",
-                                    items = ledgerStockItemList.mapIndexed { index, it ->
-                                        InvoiceItem(
-                                            sn = index + 1,
-                                            itemName = it.Item_Name ?: "",
-                                            qty = it.Qty ?: 0.0,
-                                            rate = it.Rate ?: 0.0,
-                                            amount = it.Amt ?: 0.0
-                                        )
-                                    },
-                                    particulars = ledgerReportItemList.map {
-                                        InvoiceParticular(
-                                            name = it.LedgerName ?: "",
-                                            amount = it.CreditAmt ?: 0.0
-                                        )
-                                    },
-                                    totalQty = totalQty,
-                                    totalAmount = totalAmount,
-                                    grandTotal = grandTotal,
-                                    companyAddress = CompanyName(),
-                                    companyContact = "",
-                                    documentType = vchType
-                                )
-                            } else {
-                                // 🔹 Receipt / Payment HTML
-                                val rows = ledgerReportItemList.mapIndexed { index, it ->
-                                    ReceiptPaymentRow(
-                                        sn = index + 1,
-                                        account = it.LedgerName ?: "",
-                                        debit = it.DebitAmt,
-                                        credit = it.CreditAmt
-                                    )
-                                }
-
-                                val totalDebit = rows.sumOf { it.debit ?: 0.0 }
-                                val totalCredit = rows.sumOf { it.credit ?: 0.0 }
-
-                                receiptPaymentHtml(
-                                    voucherNo = vchNo,
-                                    date = date,
-                                    rows = rows,
-                                    totalDebit = totalDebit,
-                                    totalCredit = totalCredit,
-                                    companyAddress = CompanyName(),
-                                    companyContact = "",
-                                    documentType = vchType
-                                )
-                            }
-                        }
-
+                        val htmlContent = withContext(Dispatchers.Default) { buildHtmlContent() }
                         handlePdfAction(
                             fileName = "$vchType Report",
                             htmlContent = htmlContent,
@@ -173,65 +187,7 @@ data class TallyLedgerReportItemScreen(
                 icon = Icons.Default.Share,
                 onClick = {
                     scope.launch {
-                        val htmlContent = withContext(Dispatchers.Default) {
-                            if (ledgerStockItemList.isNotEmpty()) {
-                                val totalQty = ledgerStockItemList.sumOf { it.Qty ?: 0.0 }
-                                val totalAmount = ledgerStockItemList.sumOf { it.Amt ?: 0.0 }
-                                val grandTotal = totalAmount
-
-                                salesInvoiceHtml(
-                                    voucherNo = vchNo,
-                                    date = date,
-                                    partyName = ledgerReportItemList.firstOrNull()?.LedgerName
-                                        ?: "",
-                                    items = ledgerStockItemList.mapIndexed { index, it ->
-                                        InvoiceItem(
-                                            sn = index + 1,
-                                            itemName = it.Item_Name ?: "",
-                                            qty = it.Qty ?: 0.0,
-                                            rate = it.Rate ?: 0.0,
-                                            amount = it.Amt ?: 0.0
-                                        )
-                                    },
-                                    particulars = ledgerReportItemList.map {
-                                        InvoiceParticular(
-                                            name = it.LedgerName ?: "",
-                                            amount = it.CreditAmt ?: 0.0
-                                        )
-                                    },
-                                    totalQty = totalQty,
-                                    totalAmount = totalAmount,
-                                    grandTotal = grandTotal,
-                                    companyAddress = CompanyName(),
-                                    companyContact = "",
-                                    documentType = vchType
-                                )
-                            } else {
-                                val rows = ledgerReportItemList.mapIndexed { index, it ->
-                                    ReceiptPaymentRow(
-                                        sn = index + 1,
-                                        account = it.LedgerName ?: "",
-                                        debit = it.DebitAmt,
-                                        credit = it.CreditAmt
-                                    )
-                                }
-
-                                val totalDebit = rows.sumOf { it.debit ?: 0.0 }
-                                val totalCredit = rows.sumOf { it.credit ?: 0.0 }
-
-                                receiptPaymentHtml(
-                                    voucherNo = vchNo,
-                                    date = date,
-                                    rows = rows,
-                                    totalDebit = totalDebit,
-                                    totalCredit = totalCredit,
-                                    companyAddress = CompanyName(),
-                                    companyContact = "",
-                                    documentType = vchType
-                                )
-                            }
-                        }
-
+                        val htmlContent = withContext(Dispatchers.Default) { buildHtmlContent() }
                         handlePdfAction(
                             fileName = "$vchType Report",
                             htmlContent = htmlContent,
@@ -245,7 +201,7 @@ data class TallyLedgerReportItemScreen(
 
         if (shareLoading) TallyLoadingDialog("Generating Report")
 
-        // UI Layout
+        // ── UI Layout ─────────────────────────────────────────────────────────
         TallyReportScaffold(
             title = "$vchType Entry Details",
             showBurgerMenu = true,
@@ -308,24 +264,9 @@ data class TallyLedgerReportItemScreen(
                                 ) {
                                     TableCell("S No.", stockColumn1Weight, isHeader = true)
                                     TableCell("Item Name", stockColumn2Weight, isHeader = true)
-                                    TableCell(
-                                        "Qty",
-                                        stockColumn3Weight,
-                                        textAlign = TextAlign.End,
-                                        isHeader = true
-                                    )
-                                    TableCell(
-                                        "Rate",
-                                        stockColumn4Weight,
-                                        textAlign = TextAlign.End,
-                                        isHeader = true
-                                    )
-                                    TableCell(
-                                        "Amount",
-                                        stockColumn5Weight,
-                                        textAlign = TextAlign.End,
-                                        isHeader = true
-                                    )
+                                    TableCell("Qty", stockColumn3Weight, textAlign = TextAlign.End, isHeader = true)
+                                    TableCell("Rate", stockColumn4Weight, textAlign = TextAlign.End, isHeader = true)
+                                    TableCell("Amount", stockColumn5Weight, textAlign = TextAlign.End, isHeader = true)
                                 }
                             }
 
@@ -348,20 +289,17 @@ data class TallyLedgerReportItemScreen(
                                             TableCell((index + 1).toString(), stockColumn1Weight)
                                             TableCell(item.Item_Name ?: "", stockColumn2Weight)
                                             TableCell(
-                                                item.Qty?.absoluteValue?.formatToQtyDec()
-                                                    .toString(),
+                                                item.Qty?.absoluteValue?.formatToQtyDec().toString(),
                                                 stockColumn3Weight,
                                                 textAlign = TextAlign.End
                                             )
                                             TableCell(
-                                                item.Rate?.absoluteValue?.formatToAmtDec()
-                                                    .toString(),
+                                                item.Rate?.absoluteValue?.formatToAmtDec().toString(),
                                                 stockColumn4Weight,
                                                 textAlign = TextAlign.End
                                             )
                                             TableCell(
-                                                item.Amt?.absoluteValue?.formatToAmtDec()
-                                                    .toString(),
+                                                item.Amt?.absoluteValue?.formatToAmtDec().toString(),
                                                 stockColumn5Weight,
                                                 textAlign = TextAlign.End
                                             )
@@ -392,11 +330,9 @@ data class TallyLedgerReportItemScreen(
                             else -> ledgerReportItemList
                         }
 
-
                         if (ledgerReportItemList.isNotEmpty()) {
                             val totalCredit = ledgerReportItemList.sumOf { it.CreditAmt ?: 0.0 }
                             val totalDebit = ledgerReportItemList.sumOf { it.DebitAmt ?: 0.0 }
-
 
                             Text(
                                 "Ledger Details:",
@@ -409,41 +345,20 @@ data class TallyLedgerReportItemScreen(
                                 colors = CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                                 )
-                            )
-                            {
+                            ) {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 8.dp, vertical = 8.dp)
                                 ) {
                                     TableCell("S No.", stockColumn1Weight, isHeader = true)
-                                    TableCell(
-                                        "Account",
-                                        stockColumn2Weight + stockColumn3Weight,
-                                        isHeader = true
-                                    )
+                                    TableCell("Account", stockColumn2Weight + stockColumn3Weight, isHeader = true)
                                     if (ledgerStockItemList.isEmpty()) {
-                                        TableCell(
-                                            "Credit",
-                                            stockColumn5Weight,
-                                            textAlign = TextAlign.End,
-                                            isHeader = true
-                                        )
-                                        TableCell(
-                                            "Debit",
-                                            stockColumn5Weight,
-                                            textAlign = TextAlign.End,
-                                            isHeader = true
-                                        )
+                                        TableCell("Credit", stockColumn5Weight, textAlign = TextAlign.End, isHeader = true)
+                                        TableCell("Debit", stockColumn5Weight, textAlign = TextAlign.End, isHeader = true)
                                     } else {
-                                        TableCell(
-                                            "Amount",
-                                            stockColumn5Weight,
-                                            textAlign = TextAlign.End,
-                                            isHeader = true
-                                        )
+                                        TableCell("Amount", stockColumn5Weight, textAlign = TextAlign.End, isHeader = true)
                                     }
-
                                 }
                             }
 
@@ -463,37 +378,26 @@ data class TallyLedgerReportItemScreen(
                                                 .padding(horizontal = 16.dp, vertical = 12.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            TableCell(
-                                                (index + 1).toString(),
-                                                stockColumn1Weight
-                                            )
-                                            TableCell(
-                                                item.LedgerName ?: "",
-                                                stockColumn2Weight + stockColumn3Weight
-                                            )
+                                            TableCell((index + 1).toString(), stockColumn1Weight)
+                                            TableCell(item.LedgerName ?: "", stockColumn2Weight + stockColumn3Weight)
                                             if (ledgerStockItemList.isEmpty()) {
                                                 TableCell(
-                                                    item.CreditAmt?.absoluteValue?.formatToAmtDec()
-                                                        .toString(),
+                                                    item.CreditAmt?.absoluteValue?.formatToAmtDec().toString(),
                                                     stockColumn5Weight,
                                                     textAlign = TextAlign.End
                                                 )
                                                 TableCell(
-                                                    item.DebitAmt?.absoluteValue?.formatToAmtDec()
-                                                        .toString(),
+                                                    item.DebitAmt?.absoluteValue?.formatToAmtDec().toString(),
                                                     stockColumn5Weight,
                                                     textAlign = TextAlign.End
                                                 )
                                             } else {
                                                 TableCell(
-                                                    item.CreditAmt?.absoluteValue?.formatToAmtDec()
-                                                        .toString(),
+                                                    item.CreditAmt?.absoluteValue?.formatToAmtDec().toString(),
                                                     stockColumn5Weight,
                                                     textAlign = TextAlign.End
                                                 )
-
                                             }
-
                                         }
                                     }
                                 }

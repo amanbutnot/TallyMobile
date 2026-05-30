@@ -1,236 +1,520 @@
 package org.prime.easykarobar.ui.printing
 
+import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
+import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.screen.transactions.sale.InvoiceItem
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
+import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import kotlin.math.absoluteValue
 
-data class InvoiceItem(
-    val sn: Int,
-    val itemName: String,
-    val qty: Double,
-    val rate: Double,
-    val amount: Double
-)
-
-data class InvoiceParticular(
-    val name: String,
-    val amount: Double
-)
-
 fun salesInvoiceHtml(
-    voucherNo: String,
-    date: String,
+    name: String,
     partyName: String,
+    partyGuid: String,
+    invoiceNo: String,
+    date: String,
     items: List<InvoiceItem>,
-    particulars: List<InvoiceParticular>,
-    totalQty: Double,
-    totalAmount: Double,
+    sundries: List<SundryItem>,
     grandTotal: Double,
-    companyAddress: String,
-    companyContact: String,
-    documentType: String = "SALES DOCUMENT"
+    transportDetails: TransportDetails
 ): String {
+    val db = DatabaseHolder.instance
+    val compInfo = db.companyInformationQueries.getCompanyInformation().executeAsOneOrNull()
+    val partyDetails = db.ledgerMasterQueries.selectByGuid(partyGuid).executeAsOneOrNull()
+    val user = SharedPrefs.User.get()
+
+    val isIgst = user?.State != partyDetails?.State &&
+            partyDetails?.State?.isNotBlank() == true &&
+            user?.State?.isNotBlank() == true
+
+    val hasShipping = transportDetails.Saddress1?.isNotBlank() == true ||
+            transportDetails.SpartyName?.isNotBlank() == true
+    val shippedToName = if (hasShipping) transportDetails.SpartyName ?: partyName else partyName
+    val shippedToGstin = if (hasShipping)
+        transportDetails.SgstIn ?: (partyDetails?.GSTIN ?: "")
+    else
+        partyDetails?.GSTIN ?: ""
+    val shippedToAddress = if (hasShipping) {
+        listOfNotNull(
+            transportDetails.Saddress1,
+            transportDetails.Saddress2,
+            transportDetails.Saddress3,
+            transportDetails.Saddress4
+        ).filter { it.isNotBlank() }.joinToString("<br>")
+    } else {
+        listOfNotNull(
+            partyDetails?.Address1,
+            partyDetails?.Address2,
+            partyDetails?.Address3,
+            partyDetails?.Address4
+        ).filter { it.isNotBlank() }.joinToString("<br>")
+    }
+
+    val title = if (name == "Sale Invoice") "TAX INVOICE" else name.uppercase()
+    val colSpan = if (isIgst) 7 else 9
+
     val html = StringBuilder()
 
     html.append(
-        """
-        <!DOCTYPE html>
-        <html>
-        <head>
-        <meta charset="UTF-8">
-        <style>
-            @page { size: A4; margin: 12mm; }
-            body {
-                font-family: Arial, sans-serif;
-                font-size: 10pt;
-                color: #000;
-            }
+        """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+    @page {
+        size: A4;
+        margin: 10mm;
+    }
 
-            .main-container {
-                border: 2px solid #000;
-                border-radius: 8px;
-                padding: 12px;
-            }
+    * {
+        box-sizing: border-box;
+    }
 
-            h2, h3 {
-                text-align: center;
-                margin: 4px 0;
-                font-weight: normal;
-            }
+    html, body {
+        margin: 0;
+        padding: 0;
+    }
 
-            .company-info {
-                text-align: center;
-                margin-bottom: 10px;
-            }
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 8.5pt;
+        color: #000;
+    }
 
-            .invoice-info {
-                margin-top: 10px;
-                font-size: 10pt;
-                display: flex;
-                justify-content: space-between;
-            }
+    .page-wrapper {
+        border: 1px solid #000;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
 
-            .invoice-info div {
-                width: 48%;
-            }
+    .border-b { border-bottom: 0.5pt solid #000; }
+    .border-r { border-right: 0.5pt solid #000; }
 
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-top: 10px;
-            }
+    /* ── Header ─────────────────────────────────────────────────────── */
+    .header-top {
+        padding: 2px 8px;
+        font-size: 8.5pt;
+    }
+    .header-center {
+        text-align: center;
+        padding: 2px 5px 4px 5px;
+    }
+    .title {
+        font-weight: bold;
+        text-decoration: underline;
+        font-size: 9.5pt;
+    }
+    .company-name {
+        font-size: 16pt;
+        font-weight: bold;
+        margin: 0;
+    }
+    .company-info {
+        font-size: 8.5pt;
+        line-height: 1.2;
+    }
 
-            th, td {
-                border: 1px solid #000;
-                padding: 5px;
-                font-size: 9pt;
-            }
+    /* ── Info / Billing ─────────────────────────────────────────────── */
+    .info-section { display: flex; }
+    .info-col { width: 50%; }
+    .info-table { width: 100%; border-collapse: collapse; }
+    .info-table td { padding: 1px 8px; font-size: 8.5pt; vertical-align: top; }
+    .label-cell { width: 35%; }
 
-            th {
-                background-color: #f5f5f5;
-                text-align: center;
-            }
+    .billing-section { display: flex; min-height: 80px; }
+    .billing-col { width: 50%; padding: 4px 8px; font-size: 8.5pt; line-height: 1.2; }
 
-            td.center { text-align: center; }
-            td.number { text-align: right; }
+    /* ── Items grow section ─────────────────────────────────────────── */
+    .items-grow-section {
+        border-bottom: 0.5pt solid #000;
+    }
 
-            .summary {
-                margin-top: 10px;
-                font-weight: bold;
-                text-align: right;
-            }
+    table.items-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    table.items-table thead { height: 20px; }
+    table.items-table th,
+    table.items-table td {
+        border-right: 0.5pt solid #000;
+        border-bottom: 0.5pt solid #000;
+        padding: 1px 4px;
+        font-size: 8pt;
+        vertical-align: top;
+        line-height: 1.1;
+    }
+    table.items-table th {
+        font-weight: bold;
+        text-align: center;
+        background: #fff;
+    }
+    table.items-table th:last-child,
+    table.items-table td:last-child { border-right: none; }
 
-            .particulars {
-                margin-top: 12px;
-                width: 100%;
-            }
+    .filler-row td {
+        min-height: 80mm;
+        height: 80mm;
+        border-bottom: none !important;
+        border-right: none !important;
+    }
 
-            .particulars td:first-child { text-align: left; }
-            .particulars td:last-child { text-align: right; }
+    /* ── Summary (subtotal + sundries) ──────────────────────────────── */
+    .summary-container {
+        border-bottom: 0.5pt solid #000;
+    }
+    .summary-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .summary-table .sum-spacer {
+        border-right: 0.5pt solid #000;
+        border-bottom: 0.5pt solid #000;
+        padding: 2px 5px;
+    }
+    .summary-table .sum-label {
+        white-space: nowrap;
+        border-right: 0.5pt solid #000;
+        border-bottom: 0.5pt solid #000;
+        padding: 2px 6px;
+        font-size: 8.5pt;
+    }
+    .summary-table .sum-amt {
+        white-space: nowrap;
+        text-align: right;
+        border-bottom: 0.5pt solid #000;
+        padding: 2px 6px;
+        font-size: 8.5pt;
+    }
+    .summary-table tr:last-child td { border-bottom: none; }
 
-            .grand-total {
-                font-weight: bold;
-                font-size: 11pt;
-                text-align: right;
-                margin-top: 10px;
-            }
+    /* ── Grand Total ────────────────────────────────────────────────── */
+    .grand-total-row {
+        display: flex;
+        align-items: center;
+        padding: 0;
+        font-weight: bold;
+        font-size: 9pt;
+        border-bottom: 0.5pt solid #000;
+    }
+    .gt-label  { width: 45%; text-align: right; padding: 2px 8px; }
+    .gt-qty    { width: 7%;  text-align: center; border-bottom: 1px solid #888; padding: 2px 0; }
+    .gt-spacer { width: 35%; }
+    .gt-amt    { width: 13%; text-align: right; padding: 2px 4px; }
 
-            .footer {
-                margin-top: 20px;
-                font-size: 9pt;
-                display: flex;
-                justify-content: space-between;
-            }
+    /* ── Tax Summary ────────────────────────────────────────────────── */
+    .tax-summary-section {
+        padding: 5px 8px;
+        border-bottom: 0.5pt solid #000;
+    }
+    .tax-table { border-collapse: collapse; width: auto; }
+    .tax-table th, .tax-table td {
+        border: 0.5pt solid #000;
+        padding: 1px 6px;
+        font-size: 8pt;
+    }
 
-            .flex {
-                display: flex;
-                justify-content: space-between;
-            }
+    /* ── Amount in Words ────────────────────────────────────────────── */
+    .amount-in-words {
+        padding: 4px 8px;
+        font-weight: bold;
+        font-size: 9pt;
+        border-bottom: 0.5pt solid #000;
+    }
 
-            .bold { font-weight: bold; }
-        </style>
-        </head>
-        <body>
-            <div class="main-container">
-            <div class="company-info">
-                <h2>${CompanyName()}</h2>
-                <div>$companyAddress</div>
-                <div>$companyContact</div>
-                <h3>$documentType</h3>
-            </div>
+    /* ── Footer ─────────────────────────────────────────────────────── */
+    .footer-section {
+        display: flex;
+        height: 80px;
+    }
+    .terms {
+        width: 55%;
+        padding: 4px 8px;
+        font-size: 7.5pt;
+        line-height: 1.1;
+    }
+    .signature-section {
+        width: 45%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 4px 8px;
+        overflow: hidden;
+    }
 
-            <div class="invoice-info">
-                <div><strong>Date:</strong> $date</div>
-                <div style="text-align:right;"><strong>Voucher No:</strong> $voucherNo</div>
-            </div>
+    /* ── Utilities ──────────────────────────────────────────────────── */
+    .right  { text-align: right; }
+    .center { text-align: center; }
+    .bold   { font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="page-wrapper">
 
-            <div style="margin-top:4px;"><strong>Party:</strong> $partyName</div>
+    <!-- GST / Copy line -->
+    <div class="header-top border-b">
+        <table style="width:100%; border-collapse:collapse; border:none; table-layout:fixed;">
+            <tr>
+                <td style="padding:0; border:none; text-align:left;">GST : ${compInfo?.T4 ?: ""}</td>
+                <td style="padding:0; border:none; text-align:right;">Original Copy</td>
+            </tr>
+        </table>
+    </div>
 
-            <table>
+    <!-- Company header -->
+    <div class="header-center border-b">
+        <div class="title">$title</div>
+        <div class="company-name">${CompanyName()}</div>
+        <div class="company-info">
+            ${compInfo?.T3 ?: ""}<br>
+            Tel. : ${user?.Mobile ?: ""} &nbsp; email : ${user?.Email ?: ""}
+        </div>
+    </div>
+
+    <!-- Invoice / Transport info -->
+    <div class="info-section border-b">
+        <div class="info-col border-r">
+            <table class="info-table">
+                <tr><td class="label-cell">Invoice No.</td><td>: <b>$invoiceNo</b></td></tr>
+                <tr><td class="label-cell">Dated</td><td>: <b>${Tdate(date)}</b></td></tr>
+                <tr><td class="label-cell">Place of Supply</td><td>: ${partyDetails?.State ?: ""}</td></tr>
+                <tr><td class="label-cell">Reverse Charge</td><td>: </td></tr>
+                <tr><td class="label-cell">GR/RR No.</td><td>: ${transportDetails.gstRrNo}</td></tr>
+            </table>
+        </div>
+        <div class="info-col">
+            <table class="info-table">
+                <tr><td class="label-cell">Transport</td><td>: ${transportDetails.transportName}</td></tr>
+                <tr><td class="label-cell">Vehicle No.</td><td>: ${transportDetails.vehicleNo}</td></tr>
+                <tr><td class="label-cell">Station</td><td>: ${transportDetails.station}</td></tr>
+                <tr><td class="label-cell">E-Way Bill No.</td><td>: </td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Billing / Shipping -->
+    <div class="billing-section border-b">
+        <div class="billing-col border-r">
+            <b>Billed to :</b><br>
+            <b>$partyName</b><br>
+            ${
+            listOfNotNull(
+                partyDetails?.Address1,
+                partyDetails?.Address2,
+                partyDetails?.Address3,
+                partyDetails?.Address4
+            ).filter { it.isNotBlank() }.joinToString("<br>")
+        }<br>
+            <b>GSTIN / UIN &nbsp;&nbsp;&nbsp; : ${partyDetails?.GSTIN ?: ""}</b>
+        </div>
+        <div class="billing-col">
+            <b>Shipped to :</b><br>
+            <b>$shippedToName</b><br>
+            $shippedToAddress<br>
+            <b>GSTIN / UIN &nbsp;&nbsp;&nbsp; : $shippedToGstin</b>
+        </div>
+    </div>
+
+    <!-- Items table -->
+    <div class="items-grow-section">
+        <table class="items-table">
+            <thead>
                 <tr>
-                    <th>S.N</th>
-                    <th>Item Name</th>
-                    <th>Qty</th>
-                    <th>Rate (Rs.)</th>
-                    <th>Amount (Rs.)</th>
+                    <th style="width:3%">S.N.</th>
+                    <th style="width:33%">Description of Goods</th>
+                    <th style="width:9%">HSN/SAC Code</th>
+                    <th style="width:7%">Qty.</th>
+                    <th style="width:9%">Price</th>
+                    ${if (isIgst) """
+                    <th style="width:10%">IGST Rate</th>
+                    <th style="width:16%">IGST Amount</th>
+                    """ else """
+                    <th style="width:5%">CGST Rate</th>
+                    <th style="width:8%">CGST Amount</th>
+                    <th style="width:5%">SGST Rate</th>
+                    <th style="width:8%">SGST Amount</th>
+                    """}
+                    <th style="width:13%">Amount(₹)</th>
                 </tr>
-        """.trimIndent()
+            </thead>
+            <tbody>""".trimIndent()
     )
 
-    items.forEach { item ->
+    // ── Item rows ────────────────────────────────────────────────────────────
+    items.forEachIndexed { index, item ->
+        val unitTaxable = if (item.qty != 0) item.taxable / item.qty.absoluteValue else 0.0
+
+        val taxCells = if (isIgst) {
+            """
+            <td class="right">${item.gstPercentage.formatToAmtDec()}%</td>
+            <td class="right">${item.gstAmt.formatToAmtDec()}</td>
+            """.trimIndent()
+        } else {
+            val cgstRate = item.gstPercentage / 2
+            val sgstRate = item.gstPercentage / 2
+            val cgstAmt = item.gstAmt / 2
+            val sgstAmt = item.gstAmt / 2
+            """
+            <td class="right">${cgstRate.formatToAmtDec()}%</td>
+            <td class="right">${cgstAmt.formatToAmtDec()}</td>
+            <td class="right">${sgstRate.formatToAmtDec()}%</td>
+            <td class="right">${sgstAmt.formatToAmtDec()}</td>
+            """.trimIndent()
+        }
+
+        val serials = if (item.item_serial.isNotEmpty()) {
+            "<br/><span style='font-size:7.5pt; color:#444;'>" +
+                    item.item_serial.joinToString { it.SerialNo.toString() } +
+                    "</span>"
+        } else ""
+
         html.append(
             """
             <tr>
-                <td class="center">${item.sn}</td>
-                <td>${item.itemName}</td>
-                <td class="number">${item.qty.absoluteValue.formatToAmtDec()}</td>
-                <td class="number">${item.rate.formatToAmtDec()}</td>
-                <td class="number">${item.amount.formatToAmtDec()}</td>
-            </tr>
-            """.trimIndent()
+                <td class="center">${index + 1}.</td>
+                <td><b>${item.name}</b>$serials</td>
+                <td class="center"></td>
+                <td class="center">${item.qty.absoluteValue}.00</td>
+                <td class="right">${unitTaxable.formatToAmtDec()}</td>
+                $taxCells
+                <td class="right"><b>${item.net.formatToAmtDec()}</b></td>
+            </tr>""".trimIndent()
         )
     }
 
     html.append(
         """
-            <tr>
-                <th colspan="2" class="text">TOTAL</th>
-                <th class="number">${totalQty.absoluteValue.formatToAmtDec()}</th>
-                <th></th>
-                <th class="number">${totalAmount.formatToAmtDec()}</th>
+            <tr class="filler-row" style="height:100%;">
+                <td colspan="$colSpan"></td>
             </tr>
-            </table>
-        """.trimIndent()
+            </tbody>
+        </table>
+    </div><!-- end items-grow-section -->""".trimIndent()
     )
 
-//    // Particulars table (Discount, GST, etc.)
-//    html.append(
-//        """
-//            <table class="particulars">
-//                <tr>
-//                    <th>Particulars</th>
-//                    <th>Amount (Rs.)</th>
-//                </tr>
-//        """.trimIndent()
-//    )
-//
-//    particulars.forEach { p ->
-//        html.append(
-//            """
-//            <tr>
-//                <td>${p.name}</td>
-//                <td class="number">${p.amount.formatToAmtDec()}</td>
-//            </tr>
-//            """.trimIndent()
-//        )
-//    }
+    // ── Subtotal + Sundries ───────────────────────────────────────────────────
+    val subtotal = items.sumOf { it.net }
 
     html.append(
         """
-            </table>
-            <div class="grand-total">
-                Grand Total = Rs. ${grandTotal.formatToAmtDec()}
-            </div>
+    <div class="summary-container">
+        <table class="summary-table">
+            <tr>
+                <td class="sum-spacer"></td>
+                <td class="sum-label bold">Sub Total</td>
+                <td class="sum-amt bold">${subtotal.formatToAmtDec()}</td>
+            </tr>""".trimIndent()
+    )
 
-            <div class="footer">
-                <div style="width:60%">
-                    <b>Terms & Conditions</b><br>
-                    E.& O.E.<br>
-                    1. Goods once sold will not be taken back.<br>
-                    2. Interest @ 18% p.a. will be charged if payment is delayed.<br>
-                    3. Subject to '${SharedPrefs.User.get()?.State}' Jurisdiction only.
-                </div>
+    sundries.forEach { sun ->
+        val label = if ((sun.i1 == 0 && sun.i2 == 0) || (sun.i1 == 0 && sun.i2 == 1)) "Less : ${sun.name}" else "Add : ${sun.name}"
+        val amount = if (sun.i2 == 1) sun.percentValue else sun.amount
+        html.append(
+            """
+            <tr>
+                <td class="sum-spacer"></td>
+                <td class="sum-label">$label</td>
+                <td class="sum-amt">${amount.formatToAmtDec()}</td>
+            </tr>""".trimIndent()
+        )
+    }
 
-                <div style="width:35%; text-align:center;">
-                    For <b>${CompanyName()}</b><br><br><br>
-                    Authorised Signatory
-                </div>
+    html.append(
+        """
+        </table>
+    </div><!-- end summary-container -->""".trimIndent()
+    )
+
+    // ── Grand Total ───────────────────────────────────────────────────────────
+    html.append(
+        """
+    <div class="grand-total-row">
+        <div class="gt-label">Grand Total</div>
+        <div class="gt-qty">${items.sumOf { it.qty }.absoluteValue}.00</div>
+        <div class="gt-spacer"></div>
+        <div class="gt-amt">${grandTotal.formatToAmtDec()}</div>
+    </div>""".trimIndent()
+    )
+
+    // ── Tax Summary ───────────────────────────────────────────────────────────
+    html.append(
+        """
+    <div class="tax-summary-section">
+        <table class="tax-table">
+            <thead>
+                <tr>
+                    <th>Tax Rate</th>
+                    <th>Taxable Amt.</th>
+                    ${if (isIgst) "<th>IGST Amt.</th>" else "<th>CGST Amt.</th><th>SGST Amt.</th>"}
+                    <th>Total Tax</th>
+                </tr>
+            </thead>
+            <tbody>""".trimIndent()
+    )
+
+    val taxGroups = items.groupBy { it.gstPercentage }
+    taxGroups.forEach { (rate, groupItems) ->
+        val taxable  = groupItems.sumOf { it.taxable }
+        val gstTotal = groupItems.sumOf { it.gstAmt }
+
+        val taxSumCells = if (isIgst) {
+            """<td class="right">${gstTotal.formatToAmtDec()}</td>"""
+        } else {
+            """
+            <td class="right">${(gstTotal / 2).formatToAmtDec()}</td>
+            <td class="right">${(gstTotal / 2).formatToAmtDec()}</td>
+            """.trimIndent()
+        }
+
+        html.append(
+            """
+                <tr>
+                    <td class="center">${rate.formatToAmtDec()}%</td>
+                    <td class="right">${taxable.formatToAmtDec()}</td>
+                    $taxSumCells
+                    <td class="right">${gstTotal.formatToAmtDec()}</td>
+                </tr>""".trimIndent()
+        )
+    }
+
+    html.append(
+        """
+            </tbody>
+        </table>
+    </div><!-- end tax-summary-section -->""".trimIndent()
+    )
+
+    // ── Amount in Words ───────────────────────────────────────────────────────
+    html.append(
+        """
+    <div class="amount-in-words">
+        Rupees ${numberToWords(grandTotal.toInt())} Only
+    </div>""".trimIndent()
+    )
+
+    // ── Footer ────────────────────────────────────────────────────────────────
+    html.append(
+        """
+    <div class="footer-section">
+        <div class="terms border-r">
+            <b>Terms &amp; Conditions</b><br>
+            E.&amp; O.E.<br>
+            Subject to '${user?.State ?: ""}' Jurisdiction only.
+        </div>
+        <div class="signature-section">
+            <div style="font-size:8.5pt;">Receiver's Signature :</div>
+            <div style="text-align:center;">
+                For <b>${CompanyName()}</b><br><br>
+                <b>Authorised Signatory</b>
             </div>
-            </div>
-        </body>
-        </html>
-        """.trimIndent()
+        </div>
+    </div>
+
+</div><!-- end page-wrapper -->
+</body>
+</html>""".trimIndent()
     )
 
     return html.toString()
