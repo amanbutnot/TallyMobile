@@ -106,7 +106,7 @@ data class BusyLedgerReportItemScreen(
                         taxable = it.Amt ?: 0.0,
                         gstAmt = 0.0,
                         net = it.Amt ?: 0.0,
-                        CD = ""
+                        CD = "",hsn =it.hsn
                     )
                 }
 

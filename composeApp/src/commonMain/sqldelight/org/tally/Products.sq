@@ -25,7 +25,7 @@ CREATE TABLE Products (
     VendorCode REAL,
     MaintainStock REAL,
     ALTERID TEXT,
-    GUID TEXT UNIQUE,N1 REAL
+    GUID TEXT UNIQUE,N1 REAL,AltUnit REAL,ConFactor REAL,ConType REAL
 );
 
 existingItems:

@@ -327,7 +327,8 @@ fun salesInvoiceHtml(
                     <th style="width:9%">HSN/SAC Code</th>
                     <th style="width:7%">Qty.</th>
                     <th style="width:9%">Price</th>
-                    ${if (isIgst) """
+                    ${
+            if (isIgst) """
                     <th style="width:10%">IGST Rate</th>
                     <th style="width:16%">IGST Amount</th>
                     """ else """
@@ -335,7 +336,8 @@ fun salesInvoiceHtml(
                     <th style="width:8%">CGST Amount</th>
                     <th style="width:5%">SGST Rate</th>
                     <th style="width:8%">SGST Amount</th>
-                    """}
+                    """
+        }
                     <th style="width:13%">Amount(₹)</th>
                 </tr>
             </thead>
@@ -375,7 +377,7 @@ fun salesInvoiceHtml(
             <tr>
                 <td class="center">${index + 1}.</td>
                 <td><b>${item.name}</b>$serials</td>
-                <td class="center"></td>
+                <td class="center">${item.hsn}</td>
                 <td class="center">${item.qty.absoluteValue}.00</td>
                 <td class="right">${unitTaxable.formatToAmtDec()}</td>
                 $taxCells
@@ -409,7 +411,8 @@ fun salesInvoiceHtml(
     )
 
     sundries.forEach { sun ->
-        val label = if ((sun.i1 == 0 && sun.i2 == 0) || (sun.i1 == 0 && sun.i2 == 1)) "Less : ${sun.name}" else "Add : ${sun.name}"
+        val label =
+            if ((sun.i1 == 0 && sun.i2 == 0) || (sun.i1 == 0 && sun.i2 == 1)) "Less : ${sun.name}" else "Add : ${sun.name}"
         val amount = if (sun.i2 == 1) sun.percentValue else sun.amount
         html.append(
             """
@@ -456,7 +459,7 @@ fun salesInvoiceHtml(
 
     val taxGroups = items.groupBy { it.gstPercentage }
     taxGroups.forEach { (rate, groupItems) ->
-        val taxable  = groupItems.sumOf { it.taxable }
+        val taxable = groupItems.sumOf { it.taxable }
         val gstTotal = groupItems.sumOf { it.gstAmt }
 
         val taxSumCells = if (isIgst) {

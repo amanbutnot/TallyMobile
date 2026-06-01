@@ -388,7 +388,7 @@ fun salesHtml(
             <tr>
                 <td class="center">${index + 1}.</td>
                 <td><b>${item.name}</b>$serials</td>
-                <td class="center"></td>
+                <td class="center">${item.hsn}</td>
                 <td class="center">${item.qty.absoluteValue}.00</td>
                 <td class="right">${unitTaxable.formatToAmtDec()}</td>
                 $taxCells

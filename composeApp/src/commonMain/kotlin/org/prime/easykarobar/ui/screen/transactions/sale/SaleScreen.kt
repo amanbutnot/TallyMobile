@@ -210,6 +210,7 @@ data class InvoiceItem(
     val itemdesc18: String? = null,
     val itemdesc19: String? = null,
     val itemdesc20: String? = null,
+    val hsn: String? = null,
     val item_serial: List<@Contextual SerialNoEnterReportSale> = emptyList(),
     // Additional info
     val additionalinfo: String? = null,

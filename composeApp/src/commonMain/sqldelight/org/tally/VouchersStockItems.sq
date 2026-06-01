@@ -108,4 +108,16 @@ GROUP BY g.GUID, p.GUID
 ORDER BY p.Name;
 
 ledgerStockItemList:
-SELECT SRNO,CM1 AS Item_Name,D1 AS Qty,CM3 AS Unit,D2 AS Rate,D4 AS Amt FROM Vouchers_StockItems WHERE VCH_GUID=? ORDER BY SRNO;
+SELECT
+    VSI.SRNO,
+    VSI.CM1 AS Item_Name,
+    P.HSN AS hsn,
+    VSI.D1 AS Qty,
+    VSI.CM3 AS Unit,
+    VSI.D2 AS Rate,
+    VSI.D4 AS Amt
+FROM Vouchers_StockItems VSI
+LEFT JOIN Products P
+    ON TRIM(VSI.CM1) = TRIM(P.Name)
+WHERE VSI.VCH_GUID = ?
+ORDER BY VSI.SRNO;
