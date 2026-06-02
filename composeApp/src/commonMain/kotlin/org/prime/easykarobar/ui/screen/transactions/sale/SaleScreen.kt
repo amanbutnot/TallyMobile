@@ -50,6 +50,8 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DividerDefaults
@@ -937,6 +939,10 @@ data class SaleScreen(
                                                 initialSerialNumbers = pending.item_serial.map {
                                                     it.SerialNo ?: ""
                                                 },
+                                                mainUnit = product.UnitName ?: "",
+                                                altUnit = product.AltUnit,
+                                                conFactor = product.ConFactor,
+                                                conType = product.ConType,
                                                 onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers ->
                                                     val newItem = InvoiceItem(
                                                         name = product.Name ?: pending.name,
@@ -1016,6 +1022,7 @@ data class SaleScreen(
                                                 }
                                             )
                                         } else {
+                                            val productFallback = itemsList.find { it.Name == pending.name }
                                             ExpandedItemEditor1(
                                                 name = pending.name,
                                                 defaultListPrice = pending.listPrice,
@@ -1026,6 +1033,10 @@ data class SaleScreen(
                                                 initialSerialNumbers = pending.item_serial.map {
                                                     it.SerialNo ?: ""
                                                 },
+                                                mainUnit = productFallback?.UnitName ?: "",
+                                                altUnit = productFallback?.AltUnit,
+                                                conFactor = productFallback?.ConFactor,
+                                                conType = productFallback?.ConType,
                                                 onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers ->
                                                     val newItem = InvoiceItem(
                                                         name = pending.name,
@@ -2872,6 +2883,10 @@ fun ExpandedItemEditor1(
     initialDiscount: String,
     existingItem: InvoiceItem? = null,
     initialSerialNumbers: List<String> = emptyList(),
+    mainUnit: String = "",
+    altUnit: String? = null,
+    conFactor: Double? = null,
+    conType: Double? = null,
     onAdd: (
         qty: Int,
         unitPrice: Double,
@@ -2895,6 +2910,7 @@ fun ExpandedItemEditor1(
     var discountN by remember { mutableStateOf(initialDiscount.toString()) }
     var amountN by remember { mutableStateOf("") }
     var serialNumbers by remember { mutableStateOf(initialSerialNumbers) }
+    var selectedUnit by remember { mutableStateOf(mainUnit) }
 
     var editMode by remember { mutableStateOf(PriceEditMode.LIST_PRICE) }
     var isAmountManuallyEdited by remember { mutableStateOf(false) }
@@ -3024,6 +3040,51 @@ fun ExpandedItemEditor1(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+
+            if (altUnit != null && altUnit.isNotBlank() && altUnit != mainUnit) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Unit: ", style = MaterialTheme.typography.bodySmall)
+                    AssistChip(
+                        onClick = {
+                            if (selectedUnit != mainUnit) {
+                                val currentLP = listPriceN.toDoubleOrNull() ?: 0.0
+                                val factor = conFactor ?: 1.0
+                                if (conType == 1.0) { // Main/Alt: AltPrice = MainPrice * Factor => MainPrice = AltPrice / Factor
+                                    listPriceN = (currentLP / factor).toString()
+                                } else if (conType == 2.0) { // Alt/Main: AltPrice = MainPrice / Factor => MainPrice = AltPrice * Factor
+                                    listPriceN = (currentLP * factor).toString()
+                                }
+                                selectedUnit = mainUnit
+                            }
+                        },
+                        label = { Text(mainUnit) },
+                        colors = if (selectedUnit == mainUnit) AssistChipDefaults.assistChipColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        ) else AssistChipDefaults.assistChipColors()
+                    )
+                    AssistChip(
+                        onClick = {
+                            if (selectedUnit != altUnit) {
+                                val currentLP = listPriceN.toDoubleOrNull() ?: 0.0
+                                val factor = conFactor ?: 1.0
+                                if (conType == 1.0) { // Main/Alt: AltPrice = MainPrice * Factor
+                                    listPriceN = (currentLP * factor).toString()
+                                } else if (conType == 2.0) { // Alt/Main: AltPrice = MainPrice / Factor
+                                    listPriceN = (currentLP / factor).toString()
+                                }
+                                selectedUnit = altUnit
+                            }
+                        },
+                        label = { Text(altUnit) },
+                        colors = if (selectedUnit == altUnit) AssistChipDefaults.assistChipColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        ) else AssistChipDefaults.assistChipColors()
+                    )
+                }
+            }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
 

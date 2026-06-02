@@ -25,7 +25,7 @@ CREATE TABLE Products (
     VendorCode REAL,
     MaintainStock REAL,
     ALTERID TEXT,
-    GUID TEXT UNIQUE,N1 REAL,AltUnit REAL,ConFactor REAL,ConType REAL
+    GUID TEXT UNIQUE,N1 REAL,AltUnit TEXT,ConFactor REAL,ConType REAL
 );
 
 existingItems:
@@ -52,7 +52,10 @@ INSERT OR IGNORE INTO Products (
     SelfValPrice,
     SaleDisc,
     PurcDisc,
-    GUID
+    GUID,
+    AltUnit,
+    ConFactor,
+    ConType
 ) VALUES (
     :name,
     :alias,
@@ -72,7 +75,10 @@ INSERT OR IGNORE INTO Products (
     :selfValPrice,
     :saleDiscount,
     :purchDiscount,
-    :product_guid
+    :product_guid,
+    :altUnit,
+    :conFactor,
+    :conType
 );
 
  getItemByName:
@@ -169,6 +175,7 @@ SELECT
     ID, Name, Alias, PrintName, GroupName, GroupCode, UnitName, UnitCode, OpStk, OpStkValue,
     TaxCategory, TaxCategoryCode, HSN, SalesPrice, PurcPrice, MRP, MinSalesPrice, SelfValPrice,
     SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1,
+    AltUnit, ConFactor, ConType,
     IFNULL(VS.TotalD2, 0.0) AS McOpening
 FROM Products
 LEFT JOIN (
@@ -190,6 +197,7 @@ SELECT
     ID, Name, Alias, PrintName, GroupName, GroupCode, UnitName, UnitCode, OpStk, OpStkValue,
     TaxCategory, TaxCategoryCode, HSN, SalesPrice, PurcPrice, MRP, MinSalesPrice, SelfValPrice,
     SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1,
+    AltUnit, ConFactor, ConType,
     IFNULL(VS.TotalD2, 0.0) AS McOpening
 FROM Products
 LEFT JOIN (
@@ -210,6 +218,7 @@ SELECT
     ID, Name, Alias, PrintName, GroupName, GroupCode, UnitName, UnitCode, OpStk, OpStkValue,
     TaxCategory, TaxCategoryCode, HSN, SalesPrice, PurcPrice, MRP, MinSalesPrice, SelfValPrice,
     SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1,
+    AltUnit, ConFactor, ConType,
     IFNULL(VS.TotalD2, 0.0) AS McOpening
 FROM Products
 LEFT JOIN (
@@ -230,6 +239,7 @@ SELECT
     ID, Name, Alias, PrintName, GroupName, GroupCode, UnitName, UnitCode, OpStk, OpStkValue,
     TaxCategory, TaxCategoryCode, HSN, SalesPrice, PurcPrice, MRP, MinSalesPrice, SelfValPrice,
     SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1,
+    AltUnit, ConFactor, ConType,
     IFNULL(VS.TotalD2, 0.0) AS McOpening
 FROM Products
 LEFT JOIN (

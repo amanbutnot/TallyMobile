@@ -950,7 +950,10 @@ object ItemAddScreen : Screen {
                                             ?: 0.0,
                                         purchDiscount = state.data?.purchPrice?.toDoubleOrNull()
                                             ?: 0.0,
-                                        product_guid = state.data?.productGuid.toString()
+                                        product_guid = state.data?.productGuid.toString(),
+                                        altUnit = state.data?.altUnit,
+                                        conFactor = state.data?.conFactor ?: 1.0,
+                                        conType = if (state.data?.conType == CON_TYPE_OPTIONS[0]) 1.0 else 2.0
                                     )
                                 }
                                 showResultDialog = true

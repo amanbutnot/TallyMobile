@@ -90,7 +90,14 @@ object MasterAddScreen : Screen {
                                 ?: 0.0,
                             purchDiscount = data.purchPrice.toDoubleOrNull()
                                 ?: 0.0,
-                            product_guid = data.id.toString()
+                            product_guid = data.id.toString(),
+                            altUnit = data.altUnit,
+                            conFactor = data.conFactor.toDoubleOrNull() ?: 1.0,
+                            conType = when (data.conType) {
+                                "Main / Alt" -> 1.0
+                                "Alt / Main" -> 2.0
+                                else -> data.conType.toDoubleOrNull() ?: 1.0
+                            }
                         )
                     }
                     state.data?.data_bills?.forEach { data ->

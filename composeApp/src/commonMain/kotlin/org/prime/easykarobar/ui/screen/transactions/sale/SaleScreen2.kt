@@ -749,6 +749,10 @@ data class SaleScreen2(
                                                 initialSerialNumbers = pending.item_serial.map {
                                                     it.SerialNo ?: ""
                                                 },
+                                                mainUnit = product.UnitName ?: "",
+                                                altUnit = product.AltUnit,
+                                                conFactor = product.ConFactor,
+                                                conType = product.ConType,
                                                 onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers ->
                                                     val newItem = InvoiceItem(
                                                         name = product.Name ?: pending.name,
@@ -824,6 +828,7 @@ data class SaleScreen2(
                                                 }
                                             )
                                         } else {
+                                            val productFallback = itemsList.find { it.Name == pending.name }
                                             ExpandedItemEditor1(
                                                 name = pending.name,
                                                 defaultListPrice = pending.listPrice,
@@ -833,6 +838,10 @@ data class SaleScreen2(
                                                 initialSerialNumbers = pending.item_serial.map {
                                                     it.SerialNo ?: ""
                                                 },
+                                                mainUnit = productFallback?.UnitName ?: "",
+                                                altUnit = productFallback?.AltUnit,
+                                                conFactor = productFallback?.ConFactor,
+                                                conType = productFallback?.ConType,
                                                 onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers ->
                                                     val newItem = InvoiceItem(
                                                         name = pending.name,
