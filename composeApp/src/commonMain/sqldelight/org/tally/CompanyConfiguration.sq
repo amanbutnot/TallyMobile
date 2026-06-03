@@ -72,6 +72,6 @@ hideGroup:
 SELECT T2 FROM CompanyConfiguration WHERE GUID='1011';
 
 saleConfig:
-SELECT T8 FROM CompanyConfiguration WHERE GUID = '1010_9';
+SELECT GUID AS T8 FROM GodownMaster WHERE Name IN (  SELECT T8 FROM CompanyConfiguration WHERE GUID = '1010_9');
 purchaseConfig:
-SELECT T8 FROM CompanyConfiguration WHERE GUID = '1010_2';
+SELECT GUID  AS T8 FROM GodownMaster WHERE Name IN (  SELECT T8 FROM CompanyConfiguration WHERE GUID =  '1010_2');

@@ -143,7 +143,6 @@ import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
-import org.tally.Products
 import org.tally.Products_Pricing
 import org.tally.SerialNoEnterReportSale
 import yymmdd
@@ -361,6 +360,15 @@ data class SaleScreen2(
                             gstAmount = amount - taxableAmount; netAmount = amount
                         }
                     }
+
+                    val factor = product.ConFactor ?: 1.0
+                    val conTypeVal = product.ConType ?: 1.0
+                    val calculatedAltQty = if (conTypeVal == 1.0) {
+                        qty.toDouble() * factor
+                    } else {
+                        qty.toDouble() / factor
+                    }
+
                     selectedItems = selectedItems + InvoiceItem(
                         name = product.Name.orEmpty(), price = price, qty = qty,
                         discountPercentage = discount,
@@ -369,7 +377,13 @@ data class SaleScreen2(
                         guid = product.GUID ?: pendingSelectedProductGUID.orEmpty(),
                         gstPercentage = gstPercentage,
                         taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0,
-                        CD = if (discount != 0.0) discount.toString() else ""
+                        CD = if (discount != 0.0) discount.toString() else "",
+                        conFactor = product.ConFactor,
+                        conType = product.ConType,
+                        selectedUnit = product.UnitName,
+                        altQty = calculatedAltQty,
+                        mainUnit = product.UnitName,
+                        altUnit = product.AltUnit
                     )
                     displayItemName = product.Name.orEmpty()
                     showAddMorePopup = true
@@ -468,46 +482,53 @@ data class SaleScreen2(
                 selectedLedger = data.billing_name
                 selectedLedgerGUID = data.billing_guid
                 taxType = if (data.taxType == 1) TaxType.EXTRA else TaxType.INCLUSIVE
-                selectedItems = data.items.map {
+                selectedItems = data.items.map { itm ->
+                    val prodFromDb = itemsList.find { it.ID == itm.product_id.toLongOrNull() }
                     InvoiceItem(
-                        name = it.product_name,
-                        price = it.price.toDouble(),
-                        listPrice = it.list_price.toDouble(),
-                        qty = it.quantity,
-                        discountPercentage = it.discount_percent.toDouble(),
-                        taxable = it.item_amount.toDouble(),
-                        gstAmt = it.taxamt1.toDouble(),
-                        net = it.total_amt.toDouble(),
-                        gstPercentage = it.tax_rate1.toDouble(),
+                        name = itm.product_name,
+                        price = itm.price.toDouble(),
+                        listPrice = itm.list_price.toDouble(),
+                        qty = itm.quantity,
+                        discountPercentage = itm.discount_percent.toDouble(),
+                        taxable = itm.item_amount.toDouble(),
+                        gstAmt = itm.taxamt1.toDouble(),
+                        net = itm.total_amt.toDouble(),
+                        gstPercentage = itm.tax_rate1.toDouble(),
                         taxCategoryCode = 0,
-                        itemdesc1 = it.itemdesc1,
-                        itemdesc2 = it.itemdesc2,
-                        itemdesc3 = it.itemdesc3,
-                        itemdesc4 = it.itemdesc4,
-                        itemdesc5 = it.itemdesc5,
-                        CD = it.CD,
-                        itemdesc6 = it.itemdesc6,
-                        itemdesc7 = it.itemdesc7,
-                        itemdesc8 = it.itemdesc8,
-                        itemdesc9 = it.itemdesc9,
-                        itemdesc10 = it.itemdesc10,
-                        itemdesc11 = it.itemdesc11,
-                        itemdesc12 = it.itemdesc12,
-                        itemdesc13 = it.itemdesc13,
-                        itemdesc14 = it.itemdesc14,
-                        itemdesc15 = it.itemdesc15,
-                        itemdesc16 = it.itemdesc16,
-                        itemdesc17 = it.itemdesc17,
-                        itemdesc18 = it.itemdesc18,
-                        itemdesc19 = it.itemdesc19,
-                        itemdesc20 = it.itemdesc20,
-                        additionalinfo = it.additionalinfo,
-                        item_serial = it.item_serial.map { sn ->
+                        itemdesc1 = itm.itemdesc1,
+                        itemdesc2 = itm.itemdesc2,
+                        itemdesc3 = itm.itemdesc3,
+                        itemdesc4 = itm.itemdesc4,
+                        itemdesc5 = itm.itemdesc5,
+                        CD = itm.CD,
+                        itemdesc6 = itm.itemdesc6,
+                        itemdesc7 = itm.itemdesc7,
+                        itemdesc8 = itm.itemdesc8,
+                        itemdesc9 = itm.itemdesc9,
+                        itemdesc10 = itm.itemdesc10,
+                        itemdesc11 = itm.itemdesc11,
+                        itemdesc12 = itm.itemdesc12,
+                        itemdesc13 = itm.itemdesc13,
+                        itemdesc14 = itm.itemdesc14,
+                        itemdesc15 = itm.itemdesc15,
+                        itemdesc16 = itm.itemdesc16,
+                        itemdesc17 = itm.itemdesc17,
+                        itemdesc18 = itm.itemdesc18,
+                        itemdesc19 = itm.itemdesc19,
+                        itemdesc20 = itm.itemdesc20,
+                        additionalinfo = itm.additionalinfo,
+                        conFactor = itm.conFactor ?: prodFromDb?.ConFactor,
+                        conType = itm.conType ?: prodFromDb?.ConType,
+                        selectedUnit = itm.selectedUnit ?: prodFromDb?.UnitName,
+                        altQty = itm.altQty,
+                        mainUnit = prodFromDb?.UnitName,
+                        altUnit = prodFromDb?.AltUnit,
+                        item_serial = itm.item_serial.map { sn ->
                             SerialNoEnterReportSale(
                                 SerialNo = sn,
-                                MasterCode1 = it.product_id.toDoubleOrNull(),
+                                MasterCode1 = itm.product_id.toDoubleOrNull(),
                                 MasterCode2 = "",
-                                ProductName = it.product_name,
+                                ProductName = itm.product_name,
                                 UnitName = null,
                                 GroupName = null,
                                 Value1 = 1.0,
@@ -753,7 +774,7 @@ data class SaleScreen2(
                                                 altUnit = product.AltUnit,
                                                 conFactor = product.ConFactor,
                                                 conType = product.ConType,
-                                                onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers ->
+                                                onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers, cFactor, cType, sUnit, aQty ->
                                                     val newItem = InvoiceItem(
                                                         name = product.Name ?: pending.name,
                                                         price = unitPrice,
@@ -802,7 +823,13 @@ data class SaleScreen2(
                                                                 Value2 = 0.0,
                                                                 Value3 = 0.0
                                                             )
-                                                        }
+                                                        },
+                                                        conFactor = cFactor,
+                                                        conType = cType,
+                                                        selectedUnit = sUnit,
+                                                        altQty = aQty,
+                                                        mainUnit = product.UnitName,
+                                                        altUnit = product.AltUnit
                                                     )
                                                     val insertAt =
                                                         editingItemIndex ?: selectedItems.size
@@ -842,7 +869,7 @@ data class SaleScreen2(
                                                 altUnit = productFallback?.AltUnit,
                                                 conFactor = productFallback?.ConFactor,
                                                 conType = productFallback?.ConType,
-                                                onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers ->
+                                                onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers, cFactor, cType, sUnit, aQty ->
                                                     val newItem = InvoiceItem(
                                                         name = pending.name,
                                                         price = unitPrice,
@@ -890,7 +917,13 @@ data class SaleScreen2(
                                                                 Value2 = 0.0,
                                                                 Value3 = 0.0
                                                             )
-                                                        }
+                                                        },
+                                                        conFactor = cFactor,
+                                                        conType = cType,
+                                                        selectedUnit = sUnit,
+                                                        altQty = aQty,
+                                                        mainUnit = productFallback?.UnitName,
+                                                        altUnit = productFallback?.AltUnit
                                                     )
                                                     val insertAt =
                                                         editingItemIndex ?: selectedItems.size
@@ -961,11 +994,24 @@ data class SaleScreen2(
                                                                         amount
                                                                 }
                                                             }
+                                                            val factor = item1.conFactor ?: 1.0
+                                                            val conTypeVal = item1.conType ?: 1.0
+                                                            val calculatedAltQty = if (item1.selectedUnit == item1.altUnit) {
+                                                                newQty.toDouble()
+                                                            } else {
+                                                                if (conTypeVal == 1.0) {
+                                                                    newQty.toDouble() * factor
+                                                                } else {
+                                                                    newQty.toDouble() / factor
+                                                                }
+                                                            }
+
                                                             item1.copy(
                                                                 qty = newQty,
                                                                 taxable = newTaxableAmount,
                                                                 gstAmt = newGstAmount,
-                                                                net = newNetAmount
+                                                                net = newNetAmount,
+                                                                altQty = calculatedAltQty
                                                             )
                                                         } else item1
                                                     }
@@ -1362,6 +1408,14 @@ data class SaleScreen2(
                             }
                             val qty = pending.qty.toIntOrNull()?.coerceAtLeast(1) ?: 1
 
+                            val factor = prod?.ConFactor ?: 1.0
+                            val conTypeVal = prod?.ConType ?: 1.0
+                            val calculatedAltQty = if (conTypeVal == 1.0) {
+                                qty.toDouble() * factor
+                            } else {
+                                qty.toDouble() / factor
+                            }
+
                             val taxableAmt: Double
                             val gstAmt: Double
                             val netAmt: Double
@@ -1393,7 +1447,13 @@ data class SaleScreen2(
                                 guid = pending.product.GUID.orEmpty(),
                                 gstPercentage = gstPct,
                                 taxCategoryCode = taxCategoryCode.toInt(),
-                                CD = if (discount != 0.0) discount.toString() else ""
+                                CD = if (discount != 0.0) discount.toString() else "",
+                                conFactor = prod?.ConFactor,
+                                conType = prod?.ConType,
+                                selectedUnit = prod?.UnitName,
+                                altQty = calculatedAltQty,
+                                mainUnit = prod?.UnitName,
+                                altUnit = prod?.AltUnit
                             )
                             pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
                         } else if (pricing.isNotEmpty()) {
@@ -1420,6 +1480,14 @@ data class SaleScreen2(
                                 0.0
                             }
                             val qty = pending.qty.toIntOrNull()?.coerceAtLeast(1) ?: 1
+
+                            val factor = prod?.ConFactor ?: 1.0
+                            val conTypeVal = prod?.ConType ?: 1.0
+                            val calculatedAltQty = if (conTypeVal == 1.0) {
+                                qty.toDouble() * factor
+                            } else {
+                                qty.toDouble() / factor
+                            }
 
                             val taxableAmt: Double
                             val gstAmt: Double
@@ -1448,7 +1516,13 @@ data class SaleScreen2(
                                 guid = pending.product.GUID.orEmpty(),
                                 gstPercentage = gstPct,
                                 taxCategoryCode = taxCategoryCode.toInt(),
-                                CD = if (discount != 0.0) discount.toString() else ""
+                                CD = if (discount != 0.0) discount.toString() else "",
+                                conFactor = prod?.ConFactor,
+                                conType = prod?.ConType,
+                                selectedUnit = prod?.UnitName,
+                                altQty = calculatedAltQty,
+                                mainUnit = prod?.UnitName,
+                                altUnit = prod?.AltUnit
                             )
                             pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
                         }
@@ -1519,6 +1593,14 @@ data class SaleScreen2(
                             }
                             val qty = pending.qty.toIntOrNull()?.coerceAtLeast(1) ?: 1
 
+                            val factor = prod?.ConFactor ?: 1.0
+                            val conTypeVal = prod?.ConType ?: 1.0
+                            val calculatedAltQty = if (conTypeVal == 1.0) {
+                                qty.toDouble() * factor
+                            } else {
+                                qty.toDouble() / factor
+                            }
+
                             val taxableAmt: Double
                             val gstAmt: Double
                             val netAmt: Double
@@ -1547,7 +1629,13 @@ data class SaleScreen2(
                                 guid = pending.product.GUID.orEmpty(),
                                 gstPercentage = gstPct,
                                 taxCategoryCode = taxCategoryCode.toInt(),
-                                CD = pricing.CompoundDiscount
+                                CD = pricing.CompoundDiscount,
+                                conFactor = prod?.ConFactor,
+                                conType = prod?.ConType,
+                                selectedUnit = prod?.UnitName,
+                                altQty = calculatedAltQty,
+                                mainUnit = prod?.UnitName,
+                                altUnit = prod?.AltUnit
                             )
                             selectedPricing = null
                             pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
@@ -1649,7 +1737,13 @@ data class SaleScreen2(
                             gstPercentage = gstPct,
                             taxCategoryCode = taxCategoryCode.toInt(),
                             CD = compDisc,
-                            item_serial = selectedList
+                            item_serial = selectedList,
+                            conFactor = prod?.ConFactor ?: editingItem?.conFactor,
+                            conType = prod?.ConType ?: editingItem?.conType,
+                            selectedUnit = editingItem?.selectedUnit ?: prod?.UnitName,
+                            altQty = editingItem?.altQty, // recalculated in editor if needed
+                            mainUnit = prod?.UnitName ?: editingItem?.mainUnit,
+                            altUnit = prod?.AltUnit ?: editingItem?.altUnit
                         )
 
                         val list = selectedItems.toMutableList()
@@ -1794,7 +1888,11 @@ data class SaleScreen2(
                                     itemdesc19 = item.itemdesc19,
                                     itemdesc20 = item.itemdesc20,
                                     additionalinfo = item.additionalinfo,
-                                    item_serial = item.item_serial.map { it.SerialNo ?: "" }
+                                    item_serial = item.item_serial.map { it.SerialNo ?: "" },
+                                    conFactor = item.conFactor,
+                                    conType = item.conType,
+                                    selectedUnit = item.selectedUnit,
+                                    altQty = item.altQty
                                 )
                             }
                             viewmodel.createEditInventoryResponse(

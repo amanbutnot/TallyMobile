@@ -116,7 +116,12 @@ data class BillingItem(
     val itemdesc18: String? = null,
     val itemdesc19: String? = null,
     val itemdesc20: String? = null,
-    val additionalinfo: String? = null, val item_serial: List<String>
+    val additionalinfo: String? = null,
+    val item_serial: List<String>,
+    val conFactor: Double? = null,
+    val conType: Double? = null,
+    val selectedUnit: String? = null,
+    val altQty: Double? = null
 )
 
 
@@ -233,5 +238,8 @@ data class Item(
     val itemdesc20: String? = null,
     val item_serial: List<String> = emptyList(),
     val additionalinfo: String? = null,
-
-    )
+    val conFactor: Double? = null,
+    val conType: Double? = null,
+    val selectedUnit: String? = null,
+    val altQty: Double? = null
+)

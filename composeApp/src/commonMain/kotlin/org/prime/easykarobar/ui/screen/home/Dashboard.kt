@@ -44,6 +44,7 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import org.prime.easykarobar.business.viewmodel.AuthViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.getDeviceId
 import org.prime.easykarobar.data.model.LoginRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.SelectCompanyScreen
@@ -66,6 +67,7 @@ object Dashboard : Screen {
         val loginData = SharedPrefs.LoginData.get()
         val hasCompanies = loginData?.list != null
         val viewModel: AuthViewModel = viewModel { AuthViewModel() }
+        val deviceId = getDeviceId()
 
         TabNavigator(HomeTab) { tabNavigator ->
             Scaffold(
@@ -118,7 +120,7 @@ object Dashboard : Screen {
                                 viewModel.userLogin(
                                     LoginRequest(
                                         Username = loginData?.username ?: "",
-                                        Password = loginData?.password ?: ""
+                                        Password = loginData?.password ?: "", DeviceId = deviceId
                                     ),
                                     onSuccess = {
                                         nav.push(GoogleDriveDownloadScreen)

@@ -172,84 +172,156 @@ ORDER BY Name;
 
 selectAllFilterAGRPConfig:
 SELECT
-    ID, Name, Alias, PrintName, GroupName, GroupCode, UnitName, UnitCode, OpStk, OpStkValue,
-    TaxCategory, TaxCategoryCode, HSN, SalesPrice, PurcPrice, MRP, MinSalesPrice, SelfValPrice,
-    SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1,
-    AltUnit, ConFactor, ConType,
-    IFNULL(VS.TotalD2, 0.0) AS McOpening
+    Products.ID,
+    Products.Name,
+    Products.Alias,
+    Products.PrintName,
+    Products.GroupName,
+    Products.GroupCode,
+    Products.UnitName,
+    Products.UnitCode,
+    Products.OpStk,
+    Products.OpStkValue,
+    Products.TaxCategory,
+    Products.TaxCategoryCode,
+    Products.HSN,
+    Products.SalesPrice,
+    Products.PurcPrice,
+    Products.MRP,
+    Products.MinSalesPrice,
+    Products.SelfValPrice,
+    Products.SaleDisc,
+    Products.PurcDisc,
+    Products.Vendor,
+    Products.VendorCode,
+    Products.MaintainStock,
+    Products.ALTERID,
+    Products.GUID,
+    Products.N1,
+    Products.AltUnit,
+    Products.ConFactor,
+    Products.ConType,
+    CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening
 FROM Products
-LEFT JOIN (
-    SELECT
-        CM1,
-        SUM(D1) AS TotalD2
-    FROM Vouchers_StockItems
-    WHERE CM2 = :compConfigFilter  AND VchType NOT IN ('Sales Order','Purchase Order')
-    GROUP BY CM1
-) AS VS
-ON VS.CM1 = Products.Name
+LEFT JOIN ProductStock PS
+    ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
 WHERE GroupCode IN ?
-  AND GUID NOT IN ?
+  AND Products.GUID NOT IN ?
   AND (:applyN1Filter = 0 OR N1 > 0)
 ORDER BY Name;
 
 selectByGroupCodeConfig:
 SELECT
-    ID, Name, Alias, PrintName, GroupName, GroupCode, UnitName, UnitCode, OpStk, OpStkValue,
-    TaxCategory, TaxCategoryCode, HSN, SalesPrice, PurcPrice, MRP, MinSalesPrice, SelfValPrice,
-    SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1,
-    AltUnit, ConFactor, ConType,
-    IFNULL(VS.TotalD2, 0.0) AS McOpening
+    Products.ID,
+    Products.Name,
+    Products.Alias,
+    Products.PrintName,
+    Products.GroupName,
+    Products.GroupCode,
+    Products.UnitName,
+    Products.UnitCode,
+    Products.OpStk,
+    Products.OpStkValue,
+    Products.TaxCategory,
+    Products.TaxCategoryCode,
+    Products.HSN,
+    Products.SalesPrice,
+    Products.PurcPrice,
+    Products.MRP,
+    Products.MinSalesPrice,
+    Products.SelfValPrice,
+    Products.SaleDisc,
+    Products.PurcDisc,
+    Products.Vendor,
+    Products.VendorCode,
+    Products.MaintainStock,
+    Products.ALTERID,
+    Products.GUID,
+    Products.N1,
+    Products.AltUnit,
+    Products.ConFactor,
+    Products.ConType,
+    CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening
 FROM Products
-LEFT JOIN (
-    SELECT
-        CM1,
-        SUM(D1) AS TotalD2
-    FROM Vouchers_StockItems
-    WHERE CM2 = :compConfigFilter  AND VchType NOT IN ('Sales Order','Purchase Order')
-    GROUP BY CM1
-) AS VS
-ON VS.CM1 = Products.Name
-WHERE GroupCode IN ?
+LEFT JOIN ProductStock PS
+    ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
+    WHERE GroupCode IN ?
   AND (:applyN1Filter = 0 OR N1 > 0)
 ORDER BY Name;
 
 selectExcludingGuidConfig:
 SELECT
-    ID, Name, Alias, PrintName, GroupName, GroupCode, UnitName, UnitCode, OpStk, OpStkValue,
-    TaxCategory, TaxCategoryCode, HSN, SalesPrice, PurcPrice, MRP, MinSalesPrice, SelfValPrice,
-    SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1,
-    AltUnit, ConFactor, ConType,
-    IFNULL(VS.TotalD2, 0.0) AS McOpening
+    Products.ID,
+    Products.Name,
+    Products.Alias,
+    Products.PrintName,
+    Products.GroupName,
+    Products.GroupCode,
+    Products.UnitName,
+    Products.UnitCode,
+    Products.OpStk,
+    Products.OpStkValue,
+    Products.TaxCategory,
+    Products.TaxCategoryCode,
+    Products.HSN,
+    Products.SalesPrice,
+    Products.PurcPrice,
+    Products.MRP,
+    Products.MinSalesPrice,
+    Products.SelfValPrice,
+    Products.SaleDisc,
+    Products.PurcDisc,
+    Products.Vendor,
+    Products.VendorCode,
+    Products.MaintainStock,
+    Products.ALTERID,
+    Products.GUID,
+    Products.N1,
+    Products.AltUnit,
+    Products.ConFactor,
+    Products.ConType,
+   CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening
 FROM Products
-LEFT JOIN (
-    SELECT
-        CM1,
-        SUM(D1) AS TotalD2
-    FROM Vouchers_StockItems
-    WHERE CM2 = :compConfigFilter  AND VchType NOT IN ('Sales Order','Purchase Order')
-    GROUP BY CM1
-) AS VS
-ON VS.CM1 = Products.Name
-WHERE GUID NOT IN ?
+LEFT JOIN ProductStock PS
+    ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
+WHERE Products.GUID NOT IN ?
   AND (:applyN1Filter = 0 OR N1 > 0)
 ORDER BY Name;
 
 selectAllConfig:
 SELECT
-    ID, Name, Alias, PrintName, GroupName, GroupCode, UnitName, UnitCode, OpStk, OpStkValue,
-    TaxCategory, TaxCategoryCode, HSN, SalesPrice, PurcPrice, MRP, MinSalesPrice, SelfValPrice,
-    SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1,
-    AltUnit, ConFactor, ConType,
-    IFNULL(VS.TotalD2, 0.0) AS McOpening
+    Products.ID,
+    Products.Name,
+    Products.Alias,
+    Products.PrintName,
+    Products.GroupName,
+    Products.GroupCode,
+    Products.UnitName,
+    Products.UnitCode,
+    Products.OpStk,
+    Products.OpStkValue,
+    Products.TaxCategory,
+    Products.TaxCategoryCode,
+    Products.HSN,
+    Products.SalesPrice,
+    Products.PurcPrice,
+    Products.MRP,
+    Products.MinSalesPrice,
+    Products.SelfValPrice,
+    Products.SaleDisc,
+    Products.PurcDisc,
+    Products.Vendor,
+    Products.VendorCode,
+    Products.MaintainStock,
+    Products.ALTERID,
+    Products.GUID,
+    Products.N1,
+    Products.AltUnit,
+    Products.ConFactor,
+    Products.ConType,
+    CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening
 FROM Products
-LEFT JOIN (
-    SELECT
-        CM1,
-        SUM(D1) AS TotalD2
-    FROM Vouchers_StockItems
-    WHERE CM2 = :compConfigFilter  AND VchType NOT IN ('Sales Order','Purchase Order')
-    GROUP BY CM1
-) AS VS
-ON VS.CM1 = Products.Name
+LEFT JOIN ProductStock PS
+    ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
 WHERE (:applyN1Filter = 0 OR N1 > 0)
 ORDER BY Name;
