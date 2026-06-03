@@ -47,6 +47,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import kotlinx.coroutines.launch
 import org.prime.easykarobar.business.viewmodel.AuthViewModel
+import org.prime.easykarobar.data.expect.getDeviceId
 import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.LoginRequest
 import org.prime.easykarobar.ui.screen.startup.GoogleDriveDownloadScreen
@@ -62,7 +63,7 @@ data class SelectCompanyScreen(val username: String, val passwd: String, val lis
         val viewModel: AuthViewModel = viewModel { AuthViewModel() }
         val state by viewModel.authState
         val scope = rememberCoroutineScope()
-
+        val deviceId = getDeviceId()
         if (state.isLoading) {
             TallyLoadingDialog("Logging you in")
         }
@@ -107,7 +108,7 @@ data class SelectCompanyScreen(val username: String, val passwd: String, val lis
                                         LoginRequest(
                                             Username = username,
                                             Password = passwd,
-                                            CompanyID = company.CompanyID
+                                            CompanyID = company.CompanyID, DeviceId = deviceId
                                         ),
                                         onSuccess = {
 

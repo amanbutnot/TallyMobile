@@ -38,6 +38,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.jetbrains.compose.resources.painterResource
 import org.prime.easykarobar.business.viewmodel.AuthViewModel
+import org.prime.easykarobar.data.expect.getDeviceId
 import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.LoginRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
@@ -60,6 +61,7 @@ object LoginScreen : Screen {
         var password by remember { mutableStateOf("") }
         val viewModel: AuthViewModel = viewModel { AuthViewModel() }
         val state by viewModel.authState
+        val deviceId = getDeviceId()
 
         val nav = LocalNavigator.currentOrThrow
         val urlHandler = LocalUriHandler.current
@@ -179,7 +181,7 @@ object LoginScreen : Screen {
                                 viewModel.userLogin(
                                     LoginRequest(
                                         Username = email,
-                                        Password = password
+                                        Password = password, DeviceId = deviceId
                                     ),
                                     onSuccess = {
                                         SharedPrefs.LoginData.save(

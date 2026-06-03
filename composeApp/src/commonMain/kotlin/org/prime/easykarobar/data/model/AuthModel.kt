@@ -9,6 +9,7 @@ import org.prime.easykarobar.ui.shared.globalShared.perms
 data class LoginRequest(
     val Username: String,
     val Password: String,
+    val DeviceId: String,
     val CompanyID: Int? = null
 )
 
