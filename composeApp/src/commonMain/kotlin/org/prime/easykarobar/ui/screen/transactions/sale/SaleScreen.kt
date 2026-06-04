@@ -458,6 +458,14 @@ data class SaleScreen(
                         }
                     }
 
+                    val factor = product.ConFactor ?: 1.0
+                    val conTypeVal = product.ConType ?: 1.0
+                    val calculatedAltQty = if (conTypeVal == 1.0) {
+                        qty.toDouble() * factor
+                    } else {
+                        qty.toDouble() / factor
+                    }
+
                     selectedItems = selectedItems + InvoiceItem(
                         name = product.Name.orEmpty(),
                         price = price,
@@ -474,7 +482,9 @@ data class SaleScreen(
                         conFactor = product.ConFactor,
                         conType = product.ConType,
                         selectedUnit = product.UnitName,
-                        altQty = null
+                        altQty = calculatedAltQty,
+                        mainUnit = product.UnitName,
+                        altUnit = product.AltUnit
                     )
 
                     displayItemName = product.Name.orEmpty()
@@ -1012,7 +1022,9 @@ data class SaleScreen(
                                                         conFactor = cFactor,
                                                         conType = cType,
                                                         selectedUnit = sUnit,
-                                                        altQty = aQty
+                                                        altQty = aQty,
+                                                        mainUnit = product?.UnitName ?: pending.mainUnit,
+                                                        altUnit = product?.AltUnit ?: pending.altUnit
                                                     )
                                                     val insertAt =
                                                         editingItemIndex ?: selectedItems.size
@@ -1109,7 +1121,9 @@ data class SaleScreen(
                                                         conFactor = cFactor,
                                                         conType = cType,
                                                         selectedUnit = sUnit,
-                                                        altQty = aQty
+                                                        altQty = aQty,
+                                                        mainUnit = productFallback?.UnitName ?: pending.mainUnit,
+                                                        altUnit = productFallback?.AltUnit ?: pending.altUnit
                                                     )
                                                     val insertAt =
                                                         editingItemIndex ?: selectedItems.size
@@ -1606,7 +1620,9 @@ data class SaleScreen(
                                 conFactor = prod?.ConFactor,
                                 conType = prod?.ConType,
                                 selectedUnit = prod?.UnitName,
-                                altQty = null
+                                altQty = null,
+                                mainUnit = prod?.UnitName,
+                                altUnit = prod?.AltUnit
                             )
                             showItemSheet = false
                         } else if (pricingForProduct.isNotEmpty()) {
@@ -1632,7 +1648,9 @@ data class SaleScreen(
                                 conFactor = prod?.ConFactor,
                                 conType = prod?.ConType,
                                 selectedUnit = prod?.UnitName,
-                                altQty = null
+                                altQty = null,
+                                mainUnit = prod?.UnitName,
+                                altUnit = prod?.AltUnit
                             )
                             showItemSheet = false
                         }
@@ -1685,7 +1703,9 @@ data class SaleScreen(
                                 conFactor = prod?.ConFactor,
                                 conType = prod?.ConType,
                                 selectedUnit = prod?.UnitName,
-                                altQty = null
+                                altQty = null,
+                                mainUnit = prod?.UnitName,
+                                altUnit = prod?.AltUnit
                             )
 
                             showItemSheet = false
@@ -1761,6 +1781,21 @@ data class SaleScreen(
                             }
                         }
 
+                        val factor = prod?.ConFactor ?: editingItem?.conFactor ?: 1.0
+                        val conTypeVal = prod?.ConType ?: editingItem?.conType ?: 1.0
+                        val currentUnit = editingItem?.selectedUnit ?: prod?.UnitName
+                        val altUnitName = prod?.AltUnit ?: editingItem?.altUnit
+
+                        val calculatedAltQty = if (currentUnit == altUnitName && altUnitName != null) {
+                            qty.toDouble()
+                        } else {
+                            if (conTypeVal == 1.0) {
+                                qty.toDouble() * factor
+                            } else {
+                                qty.toDouble() / factor
+                            }
+                        }
+
                         val updatedItem = InvoiceItem(
                             name = pendingSelectedProductName ?: "",
                             price = pricePerUnit,
@@ -1778,8 +1813,10 @@ data class SaleScreen(
                             item_serial = selectedList,
                             conFactor = prod?.ConFactor ?: editingItem?.conFactor,
                             conType = prod?.ConType ?: editingItem?.conType,
-                            selectedUnit = editingItem?.selectedUnit ?: prod?.UnitName,
-                            altQty = null // Will be recalculated in editor
+                            selectedUnit = currentUnit,
+                            altQty = calculatedAltQty,
+                            mainUnit = prod?.UnitName ?: editingItem?.mainUnit,
+                            altUnit = altUnitName
                         )
 
                         val list = selectedItems.toMutableList()
@@ -3113,9 +3150,9 @@ fun ExpandedItemEditor1(
                             if (selectedUnit != mainUnit) {
                                 val currentLP = listPriceN.toDoubleOrNull() ?: 0.0
                                 val factor = conFactor ?: 1.0
-                                if (conType == 1.0) { // Main/Alt: AltPrice = MainPrice / Factor => MainPrice = AltPrice * Factor
+                                if (conType == 1.0) {
                                     listPriceN = (currentLP * factor).toString()
-                                } else if (conType == 2.0) { // Alt/Main: AltPrice = MainPrice * Factor => MainPrice = AltPrice / Factor
+                                } else if (conType == 2.0) {
                                     listPriceN = (currentLP / factor).toString()
                                 }
                                 selectedUnit = mainUnit
