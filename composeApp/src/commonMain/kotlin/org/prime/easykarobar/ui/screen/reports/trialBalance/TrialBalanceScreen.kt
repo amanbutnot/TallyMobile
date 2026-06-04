@@ -5,9 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,11 +30,11 @@ import org.prime.easykarobar.data.expect.stringToDouble
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.printing.threeHeaderHtml
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportScreen
-import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
@@ -50,7 +47,6 @@ import org.prime.easykarobar.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportLazyList
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.TrialBalanceList
-import org.prime.easykarobar.ui.shared.composables.smartSearch
 import kotlin.math.absoluteValue
 
 object TrialBalanceScreen : Screen {
@@ -111,72 +107,6 @@ object TrialBalanceScreen : Screen {
         val filterAccounts = if (perms?.FilterAccounts == "Y") 1L else 0L
         val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
         val excludeGuids = perms?.ConfigAccounts.parseToStringList()
-        val menuItems = listOf(
-            MenuItemData(
-                title = "Download",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Trial Balance",
-                            htmlContent = threeHeaderHtml(
-                                title = "Trial Balance",
-                                headers = Triple("Account Name", "Debit", "Credit"),
-                                rows = rows,
-                                totalDebit = totalDebit.formatToAmtDec().stringToDouble(),
-                                totalCredit = totalCredit.formatToAmtDec().stringToDouble(),
-                                date = StartDate()
-                            ),
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            ),
-            MenuItemData(
-                title = "Download Excel",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Trial Balance",
-                            headers = listOf("Account Name", "Debit", "Credit"),
-                            rows = rowsExcel,
-                            htmlContent = threeHeaderHtml(
-                                title = "Trial Balance",
-                                headers = Triple("Account Name", "Debit", "Credit"),
-                                rows = rows,
-                                totalDebit = totalDebit.formatToAmtDec().stringToDouble(),
-                                totalCredit = totalCredit.formatToAmtDec().stringToDouble(),
-                                date = StartDate()
-                            ),
-                            action = PdfAction.DownloadExcel,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            ),
-            MenuItemData(
-                title = "Share",
-                icon = Icons.Default.Share,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Trial Balance",
-                            htmlContent = threeHeaderHtml(
-                                title = "Trial Balance",
-                                headers = Triple("Account Name", "Debit", "Credit"),
-                                rows = rows,
-                                totalDebit = totalDebit,
-                                totalCredit = totalCredit, date = StartDate()
-                            ),
-                            action = PdfAction.Share,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            )
-        )
         if (shareLoading) {
             TallyLoadingDialog("Generating Report")
         }
@@ -213,10 +143,62 @@ object TrialBalanceScreen : Screen {
 
 
         TallyReportScaffold(
-            "Trial Balance", showBottomBar = true,
+            title = "Trial Balance",
+            showBottomBar = true,
             showSearchAction = true,
             showBurgerMenu = true,
-            menuItems = menuItems,
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Trial Balance",
+                        htmlContent = threeHeaderHtml(
+                            title = "Trial Balance",
+                            headers = Triple("Account Name", "Debit", "Credit"),
+                            rows = rows,
+                            totalDebit = totalDebit.formatToAmtDec().stringToDouble(),
+                            totalCredit = totalCredit.formatToAmtDec().stringToDouble(),
+                            date = StartDate()
+                        ),
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Trial Balance",
+                        htmlContent = threeHeaderHtml(
+                            title = "Trial Balance",
+                            headers = Triple("Account Name", "Debit", "Credit"),
+                            rows = rows,
+                            totalDebit = totalDebit,
+                            totalCredit = totalCredit, date = StartDate()
+                        ),
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Trial Balance",
+                        headers = listOf("Account Name", "Debit", "Credit"),
+                        rows = rowsExcel,
+                        htmlContent = threeHeaderHtml(
+                            title = "Trial Balance",
+                            headers = Triple("Account Name", "Debit", "Credit"),
+                            rows = rows,
+                            totalDebit = totalDebit.formatToAmtDec().stringToDouble(),
+                            totalCredit = totalCredit.formatToAmtDec().stringToDouble(),
+                            date = StartDate()
+                        ),
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
                 TallyReportBottomBar(

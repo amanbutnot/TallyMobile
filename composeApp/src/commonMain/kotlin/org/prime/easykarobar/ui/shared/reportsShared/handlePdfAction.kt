@@ -42,7 +42,7 @@ suspend fun handlePdfAction(
             createPdfFromHtml(htmlContent, fileName)
         } else {
             createExcel(
-                "Trial Balance",
+                fileName,
                 headers as List<String>, rows as List<List<String>>
             )
         }

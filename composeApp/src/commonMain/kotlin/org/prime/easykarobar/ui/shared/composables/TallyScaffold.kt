@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -110,6 +112,9 @@ fun TallyReportScaffold(
     onSearchClick: (() -> Unit)? = null,
     onBarcodeClick: (() -> Unit)? = null,
     onBackClick: (() -> Unit)? = null,
+    onDownloadClick: (() -> Unit)? = null,
+    onShareClick: (() -> Unit)? = null,
+    onExcelClick: (() -> Unit)? = null,
     menuItems: List<MenuItemData> = emptyList(),
     content: @Composable (PaddingValues) -> Unit
 ) {
@@ -178,6 +183,75 @@ fun TallyReportScaffold(
                         DropdownMenu(
                             expanded = expanded,
                             onDismissRequest = { expanded = false }) {
+                            onDownloadClick?.let {
+                                DropdownMenuItem(
+                                    modifier = Modifier.padding(4.dp),
+                                    text = {
+                                        Text(
+                                            text = "Download",
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Download,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    onClick = {
+                                        it()
+                                        expanded = false
+                                    }
+                                )
+                            }
+                            onExcelClick?.let {
+                                DropdownMenuItem(
+                                    modifier = Modifier.padding(4.dp),
+                                    text = {
+                                        Text(
+                                            text = "Download Excel",
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Download,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    onClick = {
+                                        it()
+                                        expanded = false
+                                    }
+                                )
+                            }
+                            onShareClick?.let {
+                                DropdownMenuItem(
+                                    modifier = Modifier.padding(4.dp),
+                                    text = {
+                                        Text(
+                                            text = "Share",
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Share,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    onClick = {
+                                        it()
+                                        expanded = false
+                                    }
+                                )
+                            }
                             menuItems.forEach { item ->
                                 DropdownMenuItem(
                                     modifier = Modifier.padding(4.dp),
