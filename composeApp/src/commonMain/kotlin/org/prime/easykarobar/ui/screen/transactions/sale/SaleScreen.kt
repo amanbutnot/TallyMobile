@@ -3148,8 +3148,8 @@ fun ExpandedItemEditor1(
                             if (selectedUnit != mainUnit) {
                                 val currentLP = listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
                                 val factor = conFactor ?: 1.0
-                                    listPriceN = (currentLP * factor).formatToAmtDec()
-
+                                val newPrice = if (conType == 1.0) currentLP * factor else currentLP * factor
+                                listPriceN = (kotlin.math.round(newPrice * 100.0) / 100.0).formatToAmtDec()
                                 selectedUnit = mainUnit
                             }
                         },
@@ -3163,7 +3163,8 @@ fun ExpandedItemEditor1(
                             if (selectedUnit != altUnit) {
                                 val currentLP = listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
                                 val factor = conFactor ?: 1.0
-                                    listPriceN = (currentLP / factor).formatToAmtDec()
+                                val newPrice = if (conType == 1.0) currentLP / factor else currentLP / factor
+                                listPriceN = (kotlin.math.round(newPrice * 100.0) / 100.0).formatToAmtDec()
                                 selectedUnit = altUnit
                             }
                         },
