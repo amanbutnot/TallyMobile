@@ -54,7 +54,7 @@ fun salesHtml(
     }
 
     val title = if (name == "Sale Invoice") "TAX INVOICE" else name.uppercase()
-    val colSpan = if (isIgst) 7 else 9
+    val colSpan = if (isIgst) 9 else 11
 
     val html = StringBuilder()
 
@@ -336,9 +336,10 @@ fun salesHtml(
             <thead>
                 <tr>
                     <th style="width:3%">S.N.</th>
-                    <th style="width:33%">Description of Goods</th>
+                    <th style="width:28%">Description of Goods</th>
                     <th style="width:9%">HSN/SAC Code</th>
                     <th style="width:7%">Qty.</th>
+                    <th style="width:5%">Unit</th>
                     <th style="width:9%">Price</th>
                     ${if (isIgst) """
                     <th style="width:10%">IGST Rate</th>
@@ -388,8 +389,9 @@ fun salesHtml(
             <tr>
                 <td class="center">${index + 1}.</td>
                 <td><b>${item.name}</b>$serials</td>
-                <td class="center">${item.hsn}</td>
+                <td class="center">${item.hsn ?: ""}</td>
                 <td class="center">${item.qty.absoluteValue}.00</td>
+                <td class="center">${item.selectedUnit ?: ""}</td>
                 <td class="right">${unitTaxable.formatToAmtDec()}</td>
                 $taxCells
                 <td class="right"><b>${item.net.formatToAmtDec()}</b></td>

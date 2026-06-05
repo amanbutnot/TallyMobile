@@ -102,7 +102,10 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.internal.BackHandler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import org.prime.easykarobar.business.viewmodel.transactions.InventoryVoucherViewModel
@@ -147,6 +150,10 @@ import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
+import org.tally.BSMaster
+import org.tally.CompanyInformation
+import org.tally.LedgerMaster
+import org.tally.ProductGroupMaster
 import org.tally.Products_Pricing
 import org.tally.SerialNoEnterReportSale
 import yymmdd
@@ -261,7 +268,9 @@ data class SaleScreen(
         LaunchedEffect(Unit) {
             SharedPrefs.LastVchType.save(vchType)
         }
-        val compInfo = db.companyInformationQueries.selectAll().executeAsOne()
+        var compInfo by remember { mutableStateOf<CompanyInformation?>(null) }
+        var isInitialLoading by remember { mutableStateOf(true) }
+
         var selectedLedger by remember { mutableStateOf(selectedLedger ?: "") }
         var barcodeQty by remember { mutableStateOf("") }
         var selectedLedgerGUID by remember { mutableStateOf(selectedLedgerGUID ?: "") }
@@ -298,21 +307,44 @@ data class SaleScreen(
         var pendingSelectedProductName by remember { mutableStateOf<String?>(null) }
         var pendingSelectedProductGUID by remember { mutableStateOf<String?>(null) }
 
-        val ledgerList = getLedgerMasters(db)
-        val busyLedgerList = db.bSMasterQueries.selectAll().executeAsList()
-        val itemsList = getConfigItemMasters(db,vchType)
-        println("item list is in sale order $itemsList" )
-        var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
-        val groupFilteredList = if (selectedGroups.isEmpty()) {
-            itemsList
-        } else {
-            itemsList.filter { it.GroupName in getProductsGroupCodesByName(selectedGroups) }
+        var ledgerList by remember { mutableStateOf<List<LedgerMaster>>(emptyList()) }
+        var busyLedgerList by remember { mutableStateOf<List<BSMaster>>(emptyList()) }
+        var itemsList by remember { mutableStateOf<List<ProductsWithConfig>>(emptyList()) }
+        var productGroups by remember { mutableStateOf<List<ProductGroupMaster>>(emptyList()) }
+        var productPricingList by remember { mutableStateOf<List<Products_Pricing>>(emptyList()) }
+
+        LaunchedEffect(Unit) {
+            withContext(Dispatchers.IO) {
+                val info = db.companyInformationQueries.selectAll().executeAsOneOrNull()
+                val ledgers = getLedgerMasters(db)
+                val busyLedgers = db.bSMasterQueries.selectAll().executeAsList()
+                val items = getConfigItemMasters(db, vchType)
+                val groups = db.productGroupMasterQueries.selectAll(
+                    filterGroup = filterItemGroups(),
+                    groupCodes = itemGroupCodes()
+                ).executeAsList()
+                val pricing = db.productsPricingQueries.selectAll().executeAsList()
+
+                withContext(Dispatchers.Main) {
+                    compInfo = info
+                    ledgerList = ledgers
+                    busyLedgerList = busyLedgers
+                    itemsList = items
+                    productGroups = groups
+                    productPricingList = pricing
+                    isInitialLoading = false
+                }
+            }
         }
-        val productGroups = remember {
-            db.productGroupMasterQueries.selectAll(
-                filterGroup = filterItemGroups(),
-                groupCodes = itemGroupCodes()
-            ).executeAsList()
+
+        println("item list is in sale order $itemsList")
+        var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
+        val groupFilteredList = remember(itemsList, selectedGroups) {
+            if (selectedGroups.isEmpty()) {
+                itemsList
+            } else {
+                itemsList.filter { it.GroupName in getProductsGroupCodesByName(selectedGroups) }
+            }
         }
 
         val viewmodel: InventoryVoucherViewModel = viewModel { InventoryVoucherViewModel() }
@@ -344,7 +376,6 @@ data class SaleScreen(
         var SbillingShipping by remember { mutableStateOf(false) }
         var SselectedBilling by remember { mutableStateOf("") }
         var editingItemIndex by remember { mutableStateOf<Int?>(null) }
-        var productPricingList by remember { mutableStateOf<List<Products_Pricing>>(emptyList()) }
 
         val optionalFields = remember {
             mutableStateListOf(*Array(20) { "" })
@@ -377,9 +408,12 @@ data class SaleScreen(
             onDismiss = { showExitPopup = false },
         )
 
-        productPricingList = db.productsPricingQueries.selectAll().executeAsList()
-
-        selectedLedgerGUID = ledgerList.find { l -> l.Name == selectedLedger }?.GUID ?: ""
+        LaunchedEffect(selectedLedger, ledgerList) {
+            val found = ledgerList.find { it.Name == selectedLedger }?.GUID
+            if (found != null) {
+                selectedLedgerGUID = found
+            }
+        }
 
         scannerLauncher = rememberBarcodeScanner { result ->
             demoBarcodeName = result.toString()
@@ -406,89 +440,95 @@ data class SaleScreen(
                         return@rememberBarcodeScanner
                     }
 
-                    val product = db.productsQueries.getItemByName(
-                        barcode, groupCodes = itemGroupCodes(),
-                        filterGroup = filterItemGroups(),
-                    ).executeAsOneOrNull()
+                    scope.launch(Dispatchers.IO) {
+                        val product = db.productsQueries.getItemByName(
+                            barcode, groupCodes = itemGroupCodes(),
+                            filterGroup = filterItemGroups(),
+                        ).executeAsOneOrNull()
 
-                    if (product == null) {
-                        demoBarcodeName = result.toString()
-                        showEmptyBarcode = true
-                        return@rememberBarcodeScanner
-                    }
+                        if (product == null) {
+                            withContext(Dispatchers.Main) {
+                                demoBarcodeName = result.toString()
+                                showEmptyBarcode = true
+                            }
+                            return@launch
+                        }
 
-                    showQtyPopup = false
+                        val listPrice = if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
+                        val discount = if (isSale) product.SaleDisc ?: 0.0 else product.PurcDisc ?: 0.0
+                        val price = listPrice - (listPrice * discount / 100.0)
+                        val qty = barcodeQty.toIntOrNull() ?: 1
 
-                    val listPrice = if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
-                    val discount = if (isSale) product.SaleDisc ?: 0.0 else product.PurcDisc ?: 0.0
-                    val price = listPrice - (listPrice * discount / 100.0)
-                    val qty = barcodeQty.toIntOrNull() ?: 1
+                        val gstPercentage = try {
+                            db.taxCategoryMastQueries.selectTaxRate(
+                                product.TaxCategoryCode?.toInt().toString(), selectedDate
+                            ).executeAsOneOrNull() ?: 0.0
+                        } catch (e: Exception) {
+                            println(e.message)
+                            0.0
+                        }
 
-                    val gstPercentage = try {
-                        db.taxCategoryMastQueries.selectTaxRate(
-                            product.TaxCategoryCode?.toInt().toString(), selectedDate
-                        ).executeAsOneOrNull() ?: 0.0
-                    } catch (e: Exception) {
-                        println(e.message)
-                        0.0
-                    }
+                        val taxableAmount: Double
+                        val gstAmount: Double
+                        val netAmount: Double
 
-                    val taxableAmount: Double
-                    val gstAmount: Double
-                    val netAmount: Double
-
-                    if (taxType == TaxType.EXTRA) {
-                        taxableAmount = price * qty
-                        gstAmount = taxableAmount * gstPercentage / 100.0
-                        netAmount = taxableAmount + gstAmount
-                    } else if (taxType == TaxType.VOUCHER) {
-                        taxableAmount = price * qty
-                        gstAmount = 0.0
-                        netAmount = price * qty
-                    } else {
-                        if (gstPercentage == 0.0) {
+                        if (taxType == TaxType.EXTRA) {
+                            taxableAmount = price * qty
+                            gstAmount = taxableAmount * gstPercentage / 100.0
+                            netAmount = taxableAmount + gstAmount
+                        } else if (taxType == TaxType.VOUCHER) {
                             taxableAmount = price * qty
                             gstAmount = 0.0
                             netAmount = price * qty
                         } else {
-                            val amount = price * qty
-                            taxableAmount = amount * 100.0 / (100.0 + gstPercentage)
-                            gstAmount = amount - taxableAmount
-                            netAmount = amount
+                            if (gstPercentage == 0.0) {
+                                taxableAmount = price * qty
+                                gstAmount = 0.0
+                                netAmount = price * qty
+                            } else {
+                                val amount = price * qty
+                                taxableAmount = amount * 100.0 / (100.0 + gstPercentage)
+                                gstAmount = amount - taxableAmount
+                                netAmount = amount
+                            }
+                        }
+
+                        val factor = product.ConFactor ?: 1.0
+                        val conTypeVal = product.ConType ?: 1.0
+                        val calculatedAltQty = if (conTypeVal == 1.0) {
+                            qty.toDouble() * factor
+                        } else {
+                            qty.toDouble() / factor
+                        }
+
+                        withContext(Dispatchers.Main) {
+                            showQtyPopup = false
+                            selectedItems = selectedItems + InvoiceItem(
+                                name = product.Name.orEmpty(),
+                                price = price,
+                                qty = qty,
+                                discountPercentage = discount,
+                                listPrice = listPrice,
+                                taxable = taxableAmount,
+                                gstAmt = gstAmount,
+                                net = netAmount,
+                                guid = product.GUID ?: pendingSelectedProductGUID.orEmpty(),
+                                gstPercentage = gstPercentage,
+                                taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0,
+                                CD = if (discount != 0.0) discount.toString() else "",
+                                conFactor = product.ConFactor,
+                                conType = product.ConType,
+                                selectedUnit = product.UnitName,
+                                altQty = calculatedAltQty,
+                                mainUnit = product.UnitName,
+                                altUnit = product.AltUnit,
+                                hsn = product.HSN
+                            )
+
+                            displayItemName = product.Name.orEmpty()
+                            showAddMorePopup = true
                         }
                     }
-
-                    val factor = product.ConFactor ?: 1.0
-                    val conTypeVal = product.ConType ?: 1.0
-                    val calculatedAltQty = if (conTypeVal == 1.0) {
-                        qty.toDouble() * factor
-                    } else {
-                        qty.toDouble() / factor
-                    }
-
-                    selectedItems = selectedItems + InvoiceItem(
-                        name = product.Name.orEmpty(),
-                        price = price,
-                        qty = qty,
-                        discountPercentage = discount,
-                        listPrice = listPrice,
-                        taxable = taxableAmount,
-                        gstAmt = gstAmount,
-                        net = netAmount,
-                        guid = product.GUID ?: pendingSelectedProductGUID.orEmpty(),
-                        gstPercentage = gstPercentage,
-                        taxCategoryCode = product.TaxCategoryCode?.toInt() ?: 0,
-                        CD = if (discount != 0.0) discount.toString() else "",
-                        conFactor = product.ConFactor,
-                        conType = product.ConType,
-                        selectedUnit = product.UnitName,
-                        altQty = calculatedAltQty,
-                        mainUnit = product.UnitName,
-                        altUnit = product.AltUnit
-                    )
-
-                    displayItemName = product.Name.orEmpty()
-                    showAddMorePopup = true
                 }
             }
         }
@@ -625,8 +665,8 @@ data class SaleScreen(
             tranId?.let { viewmodel.getOneInventoryVoucher(it) }
         }
 
-        LaunchedEffect(oneState.data) {
-            if (!isEdit) return@LaunchedEffect
+        LaunchedEffect(oneState.data, itemsList) {
+            if (!isEdit || itemsList.isEmpty()) return@LaunchedEffect
             oneState.data?.let { data ->
                 selectedDate = Tdate(data.created_at.take(10))
                 selectedLedger = data.billing_name
@@ -674,6 +714,7 @@ data class SaleScreen(
                         altQty = itm.altQty,
                         mainUnit = prodFromDb?.UnitName,
                         altUnit = prodFromDb?.AltUnit,
+                        hsn = prodFromDb?.HSN,
                         item_serial = itm.item_serial.map { sn ->
                             SerialNoEnterReportSale(
                                 SerialNo = sn,
@@ -852,7 +893,7 @@ data class SaleScreen(
             title = if (isEdit) "Edit $name" else name,
             content = { paddingValues ->
 
-                if (isEdit && oneState.isLoading) {
+                if (isInitialLoading || (isEdit && oneState.isLoading)) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         TallyCircularLoader()
                     }
@@ -871,7 +912,7 @@ data class SaleScreen(
                             InfoRow(
                                 icon = Icons.Default.Badge,
                                 label = "GST Number",
-                                value = compInfo.T4.toString()
+                                value = compInfo?.T4?.toString() ?: ""
                             )
 
                             ElevatedCard(
@@ -1024,7 +1065,8 @@ data class SaleScreen(
                                                         selectedUnit = sUnit,
                                                         altQty = aQty,
                                                         mainUnit = product?.UnitName ?: pending.mainUnit,
-                                                        altUnit = product?.AltUnit ?: pending.altUnit
+                                                        altUnit = product?.AltUnit ?: pending.altUnit,
+                                                        hsn = pending.hsn
                                                     )
                                                     val insertAt =
                                                         editingItemIndex ?: selectedItems.size
@@ -1123,7 +1165,8 @@ data class SaleScreen(
                                                         selectedUnit = sUnit,
                                                         altQty = aQty,
                                                         mainUnit = productFallback?.UnitName ?: pending.mainUnit,
-                                                        altUnit = productFallback?.AltUnit ?: pending.altUnit
+                                                        altUnit = productFallback?.AltUnit ?: pending.altUnit,
+                                                        hsn = pending.hsn
                                                     )
                                                     val insertAt =
                                                         editingItemIndex ?: selectedItems.size
@@ -1622,7 +1665,8 @@ data class SaleScreen(
                                 selectedUnit = prod?.UnitName,
                                 altQty = null,
                                 mainUnit = prod?.UnitName,
-                                altUnit = prod?.AltUnit
+                                altUnit = prod?.AltUnit,
+                                hsn = prod?.HSN
                             )
                             showItemSheet = false
                         } else if (pricingForProduct.isNotEmpty()) {
@@ -1650,7 +1694,8 @@ data class SaleScreen(
                                 selectedUnit = prod?.UnitName,
                                 altQty = null,
                                 mainUnit = prod?.UnitName,
-                                altUnit = prod?.AltUnit
+                                altUnit = prod?.AltUnit,
+                                hsn = prod?.HSN
                             )
                             showItemSheet = false
                         }
@@ -1705,7 +1750,8 @@ data class SaleScreen(
                                 selectedUnit = prod?.UnitName,
                                 altQty = null,
                                 mainUnit = prod?.UnitName,
-                                altUnit = prod?.AltUnit
+                                altUnit = prod?.AltUnit,
+                                hsn = prod?.HSN
                             )
 
                             showItemSheet = false
@@ -1816,7 +1862,8 @@ data class SaleScreen(
                             selectedUnit = currentUnit,
                             altQty = calculatedAltQty,
                             mainUnit = prod?.UnitName ?: editingItem?.mainUnit,
-                            altUnit = altUnitName
+                            altUnit = altUnitName,
+                            hsn = prod?.HSN ?: editingItem?.hsn
                         )
 
                         val list = selectedItems.toMutableList()
@@ -2046,107 +2093,62 @@ data class SaleScreen(
                                     bills_collection = selectedReferences,
                                 ),
                                 onSuccess = {
-                                    SharedPrefs.LastTaxType.save(vchType, taxType.ordinal)
-                                    db.transaction {
-                                        selectedReferences.forEach {
-                                            db.voucherBillAllocationsQueries.deleteOldBillAllocation(
-                                                state.data?.uniqueID.toString()
-                                            )
-                                        }
-                                    }
-                                    db.transaction {
-
-                                    }
-                                    db.transaction {
-                                        println(selectedReferences.size)
-                                        selectedReferences.forEachIndexed { index, ref ->
-
-
-                                            db.voucherBillAllocationsQueries.insertBillAllocation(
-                                                guid = "${state.data?.uniqueID}-${Uuid.random()}",
-
-                                                vch_guid = state.data?.uniqueID.toString(),
-
-                                                vchtype = ref.vchType,
-
-                                                date = ref.date,
-
-                                                duedate = ref.dueDate,
-
-                                                billnumber = ref.billNumber,
-
-                                                // order matters more than you think later
-                                                srno = (index + 1).toLong(),
-
-                                                // you're already storing cm1 in data → don’t ignore it
-                                                cm1 = selectedLedger,
-
-                                                cm2 = "Agst Ref", // still hardcoded, your call
-
-                                                cm3 = "",
-
-                                                billid = ref.billId?.toDoubleOrNull(),
-
-
-                                                //TODO: logic for sale me + purc me minus
-                                                //d1 = ref.d1?.absoluteValue,
-                                                d1 = when (vchType) {
-                                                    9 -> {
-                                                        makeNegativeConditional(ref.d1 ?: 0.0)
-                                                    }
-
-                                                    3 -> {
-                                                        ref.d1
-                                                    }
-
-                                                    2 -> {
-                                                        ref.d1
-                                                    }
-
-                                                    10 -> {
-                                                        makeNegativeConditional(ref.d1 ?: 0.0)
-                                                    }
-
-                                                    14 -> {
-                                                        makeNegativeConditional(ref.d1 ?: 0.0)
-                                                    }
-
-                                                    16 -> {
-                                                        ref.d1?.absoluteValue
-                                                    }
-
-                                                    else -> {
-                                                        ref.d1?.absoluteValue
-                                                    }
-                                                },
-
-                                                d2 = null,
-
-//if pending >0
-                                                e2 = null
-                                            )
-                                        }
-                                    }
-
-                                    db.transaction {
-                                        selectedItems.forEach { item ->
-                                            println("in adding serial to db ${state.data?.uniqueID}")
-                                            item.item_serial.forEach { serialObj ->
-                                                db.productSerialNoQueries.insertProductSerialNo(
-                                                    serialNo = serialObj.SerialNo,
-                                                    masterCode1 = item.guid.toDoubleOrNull(),
-                                                    masterCode2 = serialObj.UnitName
-                                                        ?: "", // Using UnitName as MasterCode2 placeholder if applicable
-                                                    value1 = -1.0,
-                                                    value2 = serialObj.Value2 ?: 0.0,
-                                                    value3 = serialObj.Value3 ?: 0.0,
-                                                    guid = "${state.data?.uniqueID}_${serialObj.SerialNo}"
+                                    scope.launch(Dispatchers.IO) {
+                                        SharedPrefs.LastTaxType.save(vchType, taxType.ordinal)
+                                        db.transaction {
+                                            selectedReferences.forEach {
+                                                db.voucherBillAllocationsQueries.deleteOldBillAllocation(
+                                                    state.data?.uniqueID.toString()
                                                 )
                                             }
                                         }
-                                    }
+                                        db.transaction {
+                                            println(selectedReferences.size)
+                                            selectedReferences.forEachIndexed { index, ref ->
+                                                db.voucherBillAllocationsQueries.insertBillAllocation(
+                                                    guid = "${state.data?.uniqueID}-${Uuid.random()}",
+                                                    vch_guid = state.data?.uniqueID.toString(),
+                                                    vchtype = ref.vchType,
+                                                    date = ref.date,
+                                                    duedate = ref.dueDate,
+                                                    billnumber = ref.billNumber,
+                                                    srno = (index + 1).toLong(),
+                                                    cm1 = selectedLedger,
+                                                    cm2 = "Agst Ref",
+                                                    cm3 = "",
+                                                    billid = ref.billId?.toDoubleOrNull(),
+                                                    d1 = when (vchType) {
+                                                        9, 10, 14 -> makeNegativeConditional(ref.d1 ?: 0.0)
+                                                        3, 2 -> ref.d1
+                                                        16 -> ref.d1?.absoluteValue
+                                                        else -> ref.d1?.absoluteValue
+                                                    },
+                                                    d2 = null,
+                                                    e2 = null
+                                                )
+                                            }
+                                        }
 
-                                    showResultDialog = true
+                                        db.transaction {
+                                            selectedItems.forEach { item ->
+                                                println("in adding serial to db ${state.data?.uniqueID}")
+                                                item.item_serial.forEach { serialObj ->
+                                                    db.productSerialNoQueries.insertProductSerialNo(
+                                                        serialNo = serialObj.SerialNo,
+                                                        masterCode1 = item.guid.toDoubleOrNull(),
+                                                        masterCode2 = serialObj.UnitName ?: "",
+                                                        value1 = -1.0,
+                                                        value2 = serialObj.Value2 ?: 0.0,
+                                                        value3 = serialObj.Value3 ?: 0.0,
+                                                        guid = "${state.data?.uniqueID}_${serialObj.SerialNo}"
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        withContext(Dispatchers.Main) {
+                                            showResultDialog = true
+                                        }
+                                    }
                                 },
                                 url = if (isEdit) "updateInventory" else "addInventoryVch"
                             )
@@ -3171,7 +3173,7 @@ fun ExpandedItemEditor1(
                                 if (conType == 1.0) { // Main/Alt: AltPrice = MainPrice / Factor
                                     listPriceN = (currentLP / factor).toString()
                                 } else if (conType == 2.0) { // Alt/Main: AltPrice = MainPrice * Factor
-                                    listPriceN = (currentLP * factor).toString()
+                                    listPriceN = (currentLP / factor).toString()
                                 }
                                 selectedUnit = altUnit
                             }
