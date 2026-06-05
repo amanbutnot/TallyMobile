@@ -112,6 +112,7 @@ import org.prime.easykarobar.business.viewmodel.transactions.InventoryVoucherVie
 import org.prime.easykarobar.data.expect.BarcodeScanResult
 import org.prime.easykarobar.data.expect.BarcodeScannerLauncher
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
 import org.prime.easykarobar.data.expect.rememberBarcodeScanner
 import org.prime.easykarobar.data.model.hasSalesmanPermission
@@ -157,9 +158,7 @@ import org.tally.ProductGroupMaster
 import org.tally.Products_Pricing
 import org.tally.SerialNoEnterReportSale
 import yymmdd
-import kotlin.math.abs
 import kotlin.math.absoluteValue
-import kotlin.math.round
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -177,10 +176,7 @@ data class ProductPricing(
 
 
 fun formatTwo(value: Double): String {
-    val cents = round(value * 100).toLong()
-    val whole = cents / 100
-    val frac = abs((cents % 100).toInt())
-    return "$whole.${if (frac < 10) "0$frac" else "$frac"}"
+    return value.formatToAmtDec()
 }
 
 @Serializable
@@ -3006,7 +3002,7 @@ fun ExpandedItemEditor1(
 ) {
 
     var qtyN by remember { mutableStateOf(if (initialQuantity == 0) "" else initialQuantity.toString()) }
-    var listPriceN by remember { mutableStateOf(defaultListPrice.toString()) }
+    var listPriceN by remember { mutableStateOf(defaultListPrice.formatToAmtDec()) }
     var discountN by remember { mutableStateOf(initialDiscount.toString()) }
     var amountN by remember { mutableStateOf("") }
     var serialNumbers by remember { mutableStateOf(initialSerialNumbers) }
@@ -3084,22 +3080,22 @@ fun ExpandedItemEditor1(
     val unitPrice by derivedStateOf {
         when (editMode) {
             PriceEditMode.LIST_PRICE, PriceEditMode.DISCOUNT -> {
-                val lp = listPriceN.toDoubleOrNull() ?: 0.0
+                val lp = listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
 
                 if (isCompoundDiscount) {
                     applyCompoundDiscount(lp, discountN)
                 } else {
-                    val dis = discountN.toDoubleOrNull() ?: 0.0
+                    val dis = discountN.trim().toDoubleOrNull() ?: 0.0
                     lp - (lp * dis / 100.0)
                 }
             }
 
             PriceEditMode.AMOUNT -> {
                 if (!isAmountManuallyEdited || qtyValue == 0) return@derivedStateOf 0.0
-                val amt = amountN.toDoubleOrNull() ?: 0.0
+                val amt = amountN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
                 val price = amt / qtyValue
                 discountN = "0"
-                listPriceN = price.toString()
+                listPriceN = price.formatToAmtDec()
                 price
             }
         }
@@ -3150,13 +3146,10 @@ fun ExpandedItemEditor1(
                     AssistChip(
                         onClick = {
                             if (selectedUnit != mainUnit) {
-                                val currentLP = listPriceN.toDoubleOrNull() ?: 0.0
+                                val currentLP = listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
                                 val factor = conFactor ?: 1.0
-                                if (conType == 1.0) {
-                                    listPriceN = (currentLP * factor).toString()
-                                } else if (conType == 2.0) {
-                                    listPriceN = (currentLP / factor).toString()
-                                }
+                                    listPriceN = (currentLP * factor).formatToAmtDec()
+
                                 selectedUnit = mainUnit
                             }
                         },
@@ -3168,13 +3161,9 @@ fun ExpandedItemEditor1(
                     AssistChip(
                         onClick = {
                             if (selectedUnit != altUnit) {
-                                val currentLP = listPriceN.toDoubleOrNull() ?: 0.0
+                                val currentLP = listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
                                 val factor = conFactor ?: 1.0
-                                if (conType == 1.0) { // Main/Alt: AltPrice = MainPrice / Factor
-                                    listPriceN = (currentLP / factor).toString()
-                                } else if (conType == 2.0) { // Alt/Main: AltPrice = MainPrice * Factor
-                                    listPriceN = (currentLP / factor).toString()
-                                }
+                                    listPriceN = (currentLP / factor).formatToAmtDec()
                                 selectedUnit = altUnit
                             }
                         },
@@ -3309,9 +3298,9 @@ fun ExpandedItemEditor1(
                         onAdd(
                             qtyValue,
                             unitPrice,
-                            if (isCompoundDiscount) 0.0 else discountN.toDoubleOrNull() ?: 0.0,
+                            if (isCompoundDiscount) 0.0 else discountN.trim().toDoubleOrNull() ?: 0.0,
                             if (isCompoundDiscount) discountN else null,
-                            listPriceN.toDoubleOrNull() ?: 0.0,
+                            listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0,
                             taxableAmount,
                             gstAmount,
                             netAmount,
