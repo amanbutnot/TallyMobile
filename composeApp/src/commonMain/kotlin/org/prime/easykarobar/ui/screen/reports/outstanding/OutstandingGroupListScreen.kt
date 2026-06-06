@@ -25,7 +25,10 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
+import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
@@ -172,9 +175,30 @@ data class OutstandingGroupListScreen(
 
 
         TallyReportScaffold(
-            name, showBottomBar = true,
+            title = name,
+            showBottomBar = true,
             showSearchAction = true,
-            showBurgerMenu = false,
+            showBurgerMenu = true,
+            onDownloadClick = {}, // Add PDF if needed later
+            onShareClick = {},    // Add PDF if needed later
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = filteredList.map { item ->
+                        listOf(
+                            item.Party ?: "",
+                            item.PenAmt?.formatToAmtDec() ?: "0.0"
+                        )
+                    }
+                    handlePdfAction(
+                        fileName = "${name.replace(" ", "_")}_GroupList",
+                        htmlContent = "",
+                        headers = listOf("Party", "Pending Amount"),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
                 TallyReportBottomBar(

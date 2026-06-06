@@ -11,9 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -45,7 +42,6 @@ import org.prime.easykarobar.ui.printing.TransportDetails
 import org.prime.easykarobar.ui.printing.receiptPaymentHtml
 import org.prime.easykarobar.ui.printing.salesInvoiceHtml
 import org.prime.easykarobar.ui.screen.transactions.sale.InvoiceItem
-import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
@@ -67,8 +63,12 @@ data class TallyLedgerReportItemScreen(
     @Composable
     override fun Content() {
         val db = DatabaseHolder.instance
-        val ledgerStockItemList = db.vouchersStockItemsQueries.ledgerStockItemList(guid).executeAsList()
-        val ledgerReportItemList = db.vouchersLedgersQueries.ledgerReportItemList(guid).executeAsList()
+        val ledgerStockItemList =
+            db.vouchersStockItemsQueries.ledgerStockItemList(guid).executeAsList()
+        println("demo ledger stock item list $ledgerStockItemList")
+        val ledgerReportItemList =
+            db.vouchersLedgersQueries.ledgerReportItemList(guid).executeAsList()
+        println("demo ledger stock item list $ledgerReportItemList")
         val vouchers = db.vouchersQueries.selectByGuid(guid).executeAsOneOrNull()
 
         var isLoading by remember { mutableStateOf(false) }
@@ -105,7 +105,7 @@ data class TallyLedgerReportItemScreen(
                         taxable = it.Amt ?: 0.0,
                         gstAmt = 0.0,
                         net = it.Amt ?: 0.0,
-                        CD = "",hsn =it.hsn
+                        CD = "", hsn = it.hsn
                     )
                 }
 
@@ -165,47 +165,75 @@ data class TallyLedgerReportItemScreen(
             }
         }
 
-        // ── Menu items ────────────────────────────────────────────────────────
-        val menuItems = listOf(
-            MenuItemData(
-                title = "Download",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        val htmlContent = withContext(Dispatchers.Default) { buildHtmlContent() }
-                        handlePdfAction(
-                            fileName = "$vchType Report",
-                            htmlContent = htmlContent,
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            ),
-            MenuItemData(
-                title = "Share",
-                icon = Icons.Default.Share,
-                onClick = {
-                    scope.launch {
-                        val htmlContent = withContext(Dispatchers.Default) { buildHtmlContent() }
-                        handlePdfAction(
-                            fileName = "$vchType Report",
-                            htmlContent = htmlContent,
-                            action = PdfAction.Share,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            )
-        )
-
         if (shareLoading) TallyLoadingDialog("Generating Report")
+
+        val htmlContent = remember(ledgerStockItemList, ledgerReportItemList, vouchers) {
+            buildHtmlContent()
+        }
 
         // ── UI Layout ─────────────────────────────────────────────────────────
         TallyReportScaffold(
             title = "$vchType Entry Details",
             showBurgerMenu = true,
-            menuItems = menuItems,
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "$vchType Report",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "$vchType Report",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = if (ledgerStockItemList.isNotEmpty()) {
+                        ledgerStockItemList.mapIndexed { index, item ->
+                            listOf(
+                                (index + 1).toString(),
+                                item.Item_Name ?: "",
+                                item.Qty?.absoluteValue?.formatToQtyDec().toString(),
+                                item.Rate?.absoluteValue?.formatToAmtDec().toString(),
+                                item.Amt?.absoluteValue?.formatToAmtDec().toString()
+                            )
+                        }
+                    } else {
+                        ledgerReportItemList.mapIndexed { index, item ->
+                            listOf(
+                                (index + 1).toString(),
+                                item.LedgerName ?: "",
+                                item.DebitAmt?.absoluteValue?.formatToAmtDec() ?: "0.0",
+                                item.CreditAmt?.absoluteValue?.formatToAmtDec() ?: "0.0"
+                            )
+                        }
+                    }
+
+                    val headers = if (ledgerStockItemList.isNotEmpty()) {
+                        listOf("S No.", "Item Name", "Qty", "Rate", "Amount")
+                    } else {
+                        listOf("S No.", "Account", "Debit", "Credit")
+                    }
+
+                    handlePdfAction(
+                        fileName = "${vchType}_${vchNo}",
+                        htmlContent = htmlContent,
+                        headers = headers,
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             showBottomBar = false,
             showSearchAction = false,
             content = { paddingValues ->
@@ -264,9 +292,24 @@ data class TallyLedgerReportItemScreen(
                                 ) {
                                     TableCell("S No.", stockColumn1Weight, isHeader = true)
                                     TableCell("Item Name", stockColumn2Weight, isHeader = true)
-                                    TableCell("Qty", stockColumn3Weight, textAlign = TextAlign.End, isHeader = true)
-                                    TableCell("Rate", stockColumn4Weight, textAlign = TextAlign.End, isHeader = true)
-                                    TableCell("Amount", stockColumn5Weight, textAlign = TextAlign.End, isHeader = true)
+                                    TableCell(
+                                        "Qty",
+                                        stockColumn3Weight,
+                                        textAlign = TextAlign.End,
+                                        isHeader = true
+                                    )
+                                    TableCell(
+                                        "Rate",
+                                        stockColumn4Weight,
+                                        textAlign = TextAlign.End,
+                                        isHeader = true
+                                    )
+                                    TableCell(
+                                        "Amount",
+                                        stockColumn5Weight,
+                                        textAlign = TextAlign.End,
+                                        isHeader = true
+                                    )
                                 }
                             }
 
@@ -289,17 +332,20 @@ data class TallyLedgerReportItemScreen(
                                             TableCell((index + 1).toString(), stockColumn1Weight)
                                             TableCell(item.Item_Name ?: "", stockColumn2Weight)
                                             TableCell(
-                                                item.Qty?.absoluteValue?.formatToQtyDec().toString(),
+                                                item.Qty?.absoluteValue?.formatToQtyDec()
+                                                    .toString(),
                                                 stockColumn3Weight,
                                                 textAlign = TextAlign.End
                                             )
                                             TableCell(
-                                                item.Rate?.absoluteValue?.formatToAmtDec().toString(),
+                                                item.Rate?.absoluteValue?.formatToAmtDec()
+                                                    .toString(),
                                                 stockColumn4Weight,
                                                 textAlign = TextAlign.End
                                             )
                                             TableCell(
-                                                item.Amt?.absoluteValue?.formatToAmtDec().toString(),
+                                                item.Amt?.absoluteValue?.formatToAmtDec()
+                                                    .toString(),
                                                 stockColumn5Weight,
                                                 textAlign = TextAlign.End
                                             )
@@ -352,12 +398,31 @@ data class TallyLedgerReportItemScreen(
                                         .padding(horizontal = 8.dp, vertical = 8.dp)
                                 ) {
                                     TableCell("S No.", stockColumn1Weight, isHeader = true)
-                                    TableCell("Account", stockColumn2Weight + stockColumn3Weight, isHeader = true)
+                                    TableCell(
+                                        "Account",
+                                        stockColumn2Weight + stockColumn3Weight,
+                                        isHeader = true
+                                    )
                                     if (ledgerStockItemList.isEmpty()) {
-                                        TableCell("Credit", stockColumn5Weight, textAlign = TextAlign.End, isHeader = true)
-                                        TableCell("Debit", stockColumn5Weight, textAlign = TextAlign.End, isHeader = true)
+                                        TableCell(
+                                            "Credit",
+                                            stockColumn5Weight,
+                                            textAlign = TextAlign.End,
+                                            isHeader = true
+                                        )
+                                        TableCell(
+                                            "Debit",
+                                            stockColumn5Weight,
+                                            textAlign = TextAlign.End,
+                                            isHeader = true
+                                        )
                                     } else {
-                                        TableCell("Amount", stockColumn5Weight, textAlign = TextAlign.End, isHeader = true)
+                                        TableCell(
+                                            "Amount",
+                                            stockColumn5Weight,
+                                            textAlign = TextAlign.End,
+                                            isHeader = true
+                                        )
                                     }
                                 }
                             }
@@ -379,21 +444,30 @@ data class TallyLedgerReportItemScreen(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             TableCell((index + 1).toString(), stockColumn1Weight)
-                                            TableCell(item.LedgerName ?: "", stockColumn2Weight + stockColumn3Weight)
+                                            TableCell(
+                                                item.LedgerName ?: "",
+                                                stockColumn2Weight + stockColumn3Weight
+                                            )
                                             if (ledgerStockItemList.isEmpty()) {
                                                 TableCell(
-                                                    item.CreditAmt?.absoluteValue?.formatToAmtDec().toString(),
+                                                    item.CreditAmt?.absoluteValue?.formatToAmtDec()
+                                                        .toString(),
                                                     stockColumn5Weight,
                                                     textAlign = TextAlign.End
                                                 )
                                                 TableCell(
-                                                    item.DebitAmt?.absoluteValue?.formatToAmtDec().toString(),
+                                                    item.DebitAmt?.absoluteValue?.formatToAmtDec()
+                                                        .toString(),
                                                     stockColumn5Weight,
                                                     textAlign = TextAlign.End
                                                 )
                                             } else {
                                                 TableCell(
-                                                    item.CreditAmt?.absoluteValue?.formatToAmtDec().toString(),
+                                                    if ((item.CreditAmt?.absoluteValue
+                                                            ?: 0.0) == 0.0
+                                                    ) item.DebitAmt?.absoluteValue?.formatToAmtDec()
+                                                        .toString() else item.CreditAmt?.absoluteValue?.formatToAmtDec()
+                                                        .toString(),
                                                     stockColumn5Weight,
                                                     textAlign = TextAlign.End
                                                 )

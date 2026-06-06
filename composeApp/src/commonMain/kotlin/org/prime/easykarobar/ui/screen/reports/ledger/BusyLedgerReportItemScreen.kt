@@ -165,47 +165,75 @@ data class BusyLedgerReportItemScreen(
             }
         }
 
-        // ── Menu items ────────────────────────────────────────────────────────
-        val menuItems = listOf(
-            MenuItemData(
-                title = "Download",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        val htmlContent = withContext(Dispatchers.Default) { buildHtmlContent() }
-                        handlePdfAction(
-                            fileName = "$vchType Report",
-                            htmlContent = htmlContent,
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            ),
-            MenuItemData(
-                title = "Share",
-                icon = Icons.Default.Share,
-                onClick = {
-                    scope.launch {
-                        val htmlContent = withContext(Dispatchers.Default) { buildHtmlContent() }
-                        handlePdfAction(
-                            fileName = "$vchType Report",
-                            htmlContent = htmlContent,
-                            action = PdfAction.Share,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            )
-        )
-
         if (shareLoading) TallyLoadingDialog("Generating Report")
+
+        val htmlContent = remember(ledgerStockItemList, ledgerStockBusyItemList, ledgerReportItemList, vouchers) {
+            buildHtmlContent()
+        }
 
         // ── UI Layout ─────────────────────────────────────────────────────────
         TallyReportScaffold(
             title = "$vchType Entry Details",
             showBurgerMenu = true,
-            menuItems = menuItems,
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "$vchType Report",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "$vchType Report",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = if (ledgerStockItemList.isNotEmpty()) {
+                        ledgerStockItemList.mapIndexed { index, item ->
+                            listOf(
+                                (index + 1).toString(),
+                                item.Item_Name ?: "",
+                                item.Qty?.absoluteValue?.formatToQtyDec().toString(),
+                                item.Rate?.absoluteValue?.formatToAmtDec().toString(),
+                                item.Amt?.absoluteValue?.formatToAmtDec().toString()
+                            )
+                        }
+                    } else {
+                        ledgerReportItemList.mapIndexed { index, item ->
+                            listOf(
+                                (index + 1).toString(),
+                                item.LedgerName ?: "",
+                                item.DebitAmt?.absoluteValue?.formatToAmtDec() ?: "0.0",
+                                item.CreditAmt?.absoluteValue?.formatToAmtDec() ?: "0.0"
+                            )
+                        }
+                    }
+
+                    val headers = if (ledgerStockItemList.isNotEmpty()) {
+                        listOf("S No.", "Item Name", "Qty", "Rate", "Amount")
+                    } else {
+                        listOf("S No.", "Account", "Debit", "Credit")
+                    }
+
+                    handlePdfAction(
+                        fileName = "${vchType}_${vchNo}",
+                        htmlContent = htmlContent,
+                        headers = headers,
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             showBottomBar = false,
             showSearchAction = false,
             content = { paddingValues ->

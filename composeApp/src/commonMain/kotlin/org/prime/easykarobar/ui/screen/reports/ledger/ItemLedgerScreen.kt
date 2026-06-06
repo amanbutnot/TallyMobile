@@ -179,57 +179,17 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
             return rows
         }
 
-        val menuItems = listOf(
-            MenuItemData(
-                title = "Download",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Item_Ledger_Report_$accountName",
-                            htmlContent = itemLedgerHtml(
-                                itemName = accountName,
-                                startDate = startDate,
-                                endDate = endDate,
-                                openingBalance = openingBalance?.OpeningBal ?: 0.0,
-                                openingAmount = openingBalance?.OpeningAmt ?: 0.0,
-                                rows = generateLedgerRows(),
-                                totalInward = totalInward,
-                                totalOutward = totalOutward,
-                                closingBalance = closingBalance,
-                                closingAmount = closingAmount
-                            ),
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            ),
-            MenuItemData(
-                title = "Share",
-                icon = Icons.Default.Share,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Item_Ledger_Report_$accountName",
-                            htmlContent = itemLedgerHtml(
-                                itemName = accountName,
-                                startDate = startDate,
-                                endDate = endDate,
-                                openingBalance = openingBalance?.OpeningBal ?: 0.0,
-                                openingAmount = openingBalance?.OpeningAmt ?: 0.0,
-                                rows = generateLedgerRows(),
-                                totalInward = totalInward,
-                                totalOutward = totalOutward,
-                                closingBalance = closingBalance,
-                                closingAmount = closingAmount
-                            ),
-                            action = PdfAction.Share,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            )
+        val htmlContent = itemLedgerHtml(
+            itemName = accountName,
+            startDate = startDate,
+            endDate = endDate,
+            openingBalance = openingBalance?.OpeningBal ?: 0.0,
+            openingAmount = openingBalance?.OpeningAmt ?: 0.0,
+            rows = generateLedgerRows(),
+            totalInward = totalInward,
+            totalOutward = totalOutward,
+            closingBalance = closingBalance,
+            closingAmount = closingAmount
         )
 
         if (shareLoading) {
@@ -239,7 +199,103 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
         TallyReportScaffold(
             title = "Item Ledger Report",
             showBurgerMenu = true,
-            menuItems = menuItems,
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Item_Ledger_Report_$accountName",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Item_Ledger_Report_$accountName",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = mutableListOf<List<String>>()
+
+                    // Opening
+                    excelRows.add(
+                        listOf(
+                            "", "", "", "Opening Balance",
+                            "",
+                            "",
+                            openingBalance?.OpeningAmt?.formatToAmtDec() ?: "0.0",
+                            openingBalance?.OpeningBal?.formatToAmtDec() ?: "0.0"
+                        )
+                    )
+
+                    // Transactions
+                    var bal = openingBalance?.OpeningBal ?: 0.0
+                    filteredList.forEach { item ->
+                        val qty = item.D1 ?: 0.0
+                        val amount = item.D3 ?: 0.0
+                        bal += qty
+
+                        excelRows.add(
+                            listOf(
+                                Tdate(item.DATE ?: ""),
+                                item.VchType ?: "",
+                                item.VOUCHERNUMBER ?: "",
+                                item.AccountName ?: "",
+                                if (qty > 0) qty.absoluteValue.formatToAmtDec() else "",
+                                if (qty < 0) qty.absoluteValue.formatToAmtDec() else "",
+                                amount.absoluteValue.formatToAmtDec(),
+                                bal.formatToAmtDec()
+                            )
+                        )
+                    }
+
+                    // Totals
+                    excelRows.add(
+                        listOf(
+                            "", "", "", "Total",
+                            totalInward.formatToAmtDec(),
+                            totalOutward.formatToAmtDec(),
+                            "",
+                            ""
+                        )
+                    )
+
+                    // Closing
+                    excelRows.add(
+                        listOf(
+                            "", "", "", "Closing Balance",
+                            "",
+                            "",
+                            closingAmount.formatToAmtDec(),
+                            closingBalance.formatToAmtDec()
+                        )
+                    )
+
+                    handlePdfAction(
+                        fileName = "Item_Ledger_Report_$accountName",
+                        htmlContent = htmlContent,
+                        headers = listOf(
+                            "Date",
+                            "Vch Type",
+                            "Vch No.",
+                            "Particulars",
+                            "In Qty",
+                            "Out Qty",
+                            "Amount",
+                            "Balance"
+                        ),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             showBottomBar = true,
             showSearchAction = true,
             onSearchClick = { showSearchBar = !showSearchBar },

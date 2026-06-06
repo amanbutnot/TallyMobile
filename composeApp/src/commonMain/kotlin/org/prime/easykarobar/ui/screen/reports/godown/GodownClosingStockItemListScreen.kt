@@ -157,47 +157,12 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
         }
 
 
-        val menuItems = listOf(
-            MenuItemData(
-                title = "Download",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "GodownItem",
-                            htmlContent = fourHeaderHtml(
-                                title = "Godown Item $itemName",
-                                headers = Quadruple("Item Name", "Unit", "Qty", "Amount"),
-                                rows = rows,
-                                total1 = totalQty.formatToQtyDec(),
-                                total2 = totalAmt.formatToAmtDec(),
-                            ),
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            ),
-            MenuItemData(
-                title = "Share",
-                icon = Icons.Default.Share,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "GodownItem",
-                            htmlContent = fourHeaderHtml(
-                                title = "Godown Item",
-                                headers = Quadruple("Date", "Name", "Vch No", "Amount"),
-                                rows = rows,
-                                total1 = totalQty.formatToQtyDec(),
-                                total2 = totalAmt.formatToAmtDec(),
-                            ),
-                            action = PdfAction.Share,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            )
+        val htmlContent = fourHeaderHtml(
+            title = "Godown Item $itemName",
+            headers = Quadruple("Item Name", "Unit", "Qty", "Amount"),
+            rows = rows,
+            total1 = totalQty.formatToQtyDec(),
+            total2 = totalAmt.formatToAmtDec(),
         )
         if (shareLoading) {
             TallyLoadingDialog("Generating Report")
@@ -207,7 +172,47 @@ data class GodownClosingStockItemListScreen(val itemName: String?) : Screen {
             "Godown Item Report",
             showBottomBar = true,
             showBurgerMenu = true,
-            menuItems = menuItems,
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "GodownItem",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "GodownItem",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = filteredList.map { item ->
+                        listOf(
+                            item.ItemName ?: "",
+                            item.UnitName ?: "",
+                            item.Item_Qty?.formatToQtyDec() ?: "0.0",
+                            item.Item_Alt_Qty?.formatToQtyDec() ?: "0.0",
+                            item.Item_Amt?.absoluteValue?.formatToAmtDec() ?: "0.0"
+                        )
+                    }
+                    handlePdfAction(
+                        fileName = "GodownItem_${itemName ?: "Report"}",
+                        htmlContent = htmlContent,
+                        headers = listOf("Item Name", "Unit", "M Qty", "A Qty", "Amount"),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             showSearchAction = true,
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {

@@ -584,44 +584,13 @@ data class AttendanceScreenUi(
             )
         }
 
-        val menuItems = listOf(
-            MenuItemData(
-                title = "Download",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = if (isCheckIn) "Check In" else "Attendance",
-                            htmlContent = attendanceHtml(
-                                title = if (isCheckIn) "Check In" else "Attendance",
-                                rows = rows as List<AttendanceRow>,
-                                startDate = startDate, endDate = endDate, isCheckIn = isCheckIn
-                            ),
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            ),
-            MenuItemData(
-                title = "Share",
-                icon = Icons.Default.Share,
-                onClick = {
+        val htmlContent = attendanceHtml(
+            title = if (isCheckIn) "Check In" else "Attendance",
+            rows = rows as List<AttendanceRow>,
+            startDate = startDate, endDate = endDate, isCheckIn = isCheckIn
+        )
 
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = if (isCheckIn) "Check In" else "Attendance",
-                            htmlContent = attendanceHtml(
-                                title = if (isCheckIn) "Check In" else "Attendance",
-                                rows = rows as List<AttendanceRow>,
-                                startDate = startDate, endDate = endDate, isCheckIn = isCheckIn
-                            ),
-                            action = PdfAction.Share,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            ),
+        val menuItems = listOf(
             MenuItemData(
                 title = "Filter",
                 icon = Icons.Default.Filter1,
@@ -637,6 +606,47 @@ data class AttendanceScreenUi(
         TallyReportScaffold(
             title = if (isCheckIn) "Check In/Out Records" else "Attendance Records",
             showBurgerMenu = true,
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = if (isCheckIn) "Check In" else "Attendance",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = if (isCheckIn) "Check In" else "Attendance",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = (rows as List<AttendanceRow>).map { item ->
+                        listOf(
+                            item.date,
+                            item.time,
+                            item.party,
+                            item.status,
+                            item.address
+                        )
+                    }
+                    handlePdfAction(
+                        fileName = if (isCheckIn) "Check_In_Out_Report" else "Attendance_Report",
+                        htmlContent = htmlContent,
+                        headers = listOf("Date", "Time", "Party", "Status", "Address"),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             menuItems = menuItems,
             showSearchAction = true,
             onSearchClick = { showSearchBar = !showSearchBar },

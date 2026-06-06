@@ -127,49 +127,13 @@ object GodownClosingStockListScreen : Screen {
         }
 
 
-        val menuItems = listOf(
-            MenuItemData(
-                title = "Download",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "GodownClosingStock",
-                            htmlContent = threeHeaderHtml(
-                                title = "Godown Closing Stock",
-                                headers = Triple("Account Name", "Qty", "Amount"),
-                                rows = rows,
-                                totalDebit = totalQty.formatToAmtDec().toDouble(),
-                                totalCredit = totalAmt.formatToAmtDec().toDouble(),
-                                date = StartDate()
-                            ),
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            ),
-            MenuItemData(
-                title = "Share",
-                icon = Icons.Default.Share,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "GodownClosingStock",
-                            htmlContent = threeHeaderHtml(
-                                title = "Godown Closing Stock",
-                                headers = Triple("Account Name", "Debit", "Credit"),
-                                rows = rows,
-                                totalDebit = totalQty.formatToAmtDec().toDouble(),
-                                totalCredit = totalAmt.formatToAmtDec().toDouble(),
-                                date = StartDate()
-                            ),
-                            action = PdfAction.Share,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            )
+        val htmlContent = threeHeaderHtml(
+            title = "Godown Closing Stock",
+            headers = Triple("Account Name", "Qty", "Amount"),
+            rows = rows,
+            totalDebit = totalQty.formatToAmtDec().toDouble(),
+            totalCredit = totalAmt.formatToAmtDec().toDouble(),
+            date = StartDate()
         )
         if (shareLoading) {
             TallyLoadingDialog("Generating Report")
@@ -178,7 +142,46 @@ object GodownClosingStockListScreen : Screen {
 
         TallyReportScaffold(
             "Godown Closing Stock", showBottomBar = true,
-            showBurgerMenu = true, menuItems = menuItems,
+            showBurgerMenu = true,
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "GodownClosingStock",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "GodownClosingStock",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = filteredList.map { item ->
+                        listOf(
+                            item.Item_Godown ?: "",
+                            item.Item_Qty?.formatToQtyDec() ?: "0.0",
+                            item.Item_Amt?.formatToAmtDec() ?: "0.0"
+                        )
+                    }
+                    handlePdfAction(
+                        fileName = "GodownClosingStock",
+                        htmlContent = htmlContent,
+                        headers = listOf("Location Name", "Qty", "Amount"),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             showSearchAction = true,
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {

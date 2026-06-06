@@ -4,9 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,7 +31,6 @@ import org.prime.easykarobar.ui.printing.purchaseRegisterHtml
 import org.prime.easykarobar.ui.printing.registerHtml
 import org.prime.easykarobar.ui.printing.salesRegisterHtml
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportItemScreen
-import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
@@ -146,80 +142,29 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
         }
 
 
-        val menuItems = listOf(
-            MenuItemData(
-                title = "Download",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = name,
-                            htmlContent = when (name) {
-                                "Sales" -> salesRegisterHtml(
-                                    startDate = startDate,
-                                    endDate = endDate,
-                                    rows = rows,
-                                    totalAmount = totalAmt.absoluteValue.formatToAmtDec()
-                                )
-
-                                "Purchase" -> purchaseRegisterHtml(
-                                    startDate = startDate,
-                                    endDate = endDate,
-                                    rows = rows,
-                                    totalAmount = totalAmt.absoluteValue.formatToAmtDec()
-                                )
-
-                                else -> registerHtml(
-                                    title = "$name Register",
-                                    startDate = startDate,
-                                    endDate = endDate,
-                                    rows = rows,
-                                    totalAmount = totalAmt.absoluteValue.formatToAmtDec()
-                                )
-                            },
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            ),
-            MenuItemData(
-                title = "Share",
-                icon = Icons.Default.Share,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = name,
-                            htmlContent = when (name) {
-                                "Sales" -> salesRegisterHtml(
-                                    startDate = startDate,
-                                    endDate = endDate,
-                                    rows = rows,
-                                    totalAmount = totalAmt.absoluteValue.formatToAmtDec()
-                                )
-
-                                "Purchase" -> purchaseRegisterHtml(
-                                    startDate = startDate,
-                                    endDate = endDate,
-                                    rows = rows,
-                                    totalAmount = totalAmt.absoluteValue.formatToAmtDec()
-                                )
-
-                                else -> registerHtml(
-                                    title = "$name Register",
-                                    startDate = startDate,
-                                    endDate = endDate,
-                                    rows = rows,
-                                    totalAmount = totalAmt.absoluteValue.formatToAmtDec()
-                                )
-                            },
-                            action = PdfAction.Share,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
+        val htmlContent = when (name) {
+            "Sales" -> salesRegisterHtml(
+                startDate = startDate,
+                endDate = endDate,
+                rows = rows,
+                totalAmount = totalAmt.absoluteValue.formatToAmtDec()
             )
-        )
+
+            "Purchase" -> purchaseRegisterHtml(
+                startDate = startDate,
+                endDate = endDate,
+                rows = rows,
+                totalAmount = totalAmt.absoluteValue.formatToAmtDec()
+            )
+
+            else -> registerHtml(
+                title = "$name Register",
+                startDate = startDate,
+                endDate = endDate,
+                rows = rows,
+                totalAmount = totalAmt.absoluteValue.formatToAmtDec()
+            )
+        }
         if (shareLoading) {
             TallyLoadingDialog("Generating Report")
         }
@@ -229,8 +174,47 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
             "$name Report", showBottomBar = true,
             showSearchAction = true,
             showBurgerMenu = true,
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = name,
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = name,
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = filteredList.map { item ->
+                        listOf(
+                            Tdate(item.DATE ?: ""),
+                            item.CM1 ?: "",
+                            item.VOUCHERNUMBER?.trim() ?: "",
+                            item.D1?.absoluteValue?.formatToAmtDec() ?: ""
+                        )
+                    }
+                    handlePdfAction(
+                        fileName = name,
+                        htmlContent = htmlContent,
+                        headers = listOf("Date", "Account", "Vch No", "Amount"),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             onSearchClick = { showSearchBar = !showSearchBar },
-            menuItems = menuItems,
             bottomBarContent = {
                 TallyReportBottomBar(
                     columns = listOf(

@@ -450,20 +450,6 @@ data class OutstandingReportScreen(
             )
         }
 
-        val menuItems = listOf(
-            MenuItemData(
-                title = "Download", icon = Icons.Default.Download, onClick = {
-                    isDownload = true
-                    showFormatSelection = true
-
-                }), MenuItemData(
-                title = "Share", icon = Icons.Default.Share, onClick = {
-                    isDownload = false
-                    showFormatSelection = true
-
-                })
-        )
-
         if (shareLoading) {
             TallyLoadingDialog("Generating Report")
         }
@@ -482,7 +468,50 @@ data class OutstandingReportScreen(
         TallyReportScaffold(
             title = "$name Report",
             showBurgerMenu = true,
-            menuItems = menuItems,
+            onDownloadClick = {
+                isDownload = true
+                showFormatSelection = true
+            },
+            onShareClick = {
+                isDownload = false
+                showFormatSelection = true
+            },
+            onExcelClick = {
+                scope.launch {
+                    val list = if (name == "Bill Receivable" || name == "Pending Sale Order") {
+                        filteredReceivableList
+                    } else {
+                        filteredPayableList
+                    }
+
+                    val excelRows = list.map { item ->
+                        listOf(
+                            Tdate(item.date.toString()),
+                            item.vchType ?: "",
+                            item.billNumber ?: "",
+                            item.cm1 ?: "",
+                            item.d1?.absoluteValue?.formatToAmtDec() ?: "0.0",
+                            item.adjustmentAmount?.absoluteValue?.formatToAmtDec() ?: "0.0",
+                            ((item.d1?.absoluteValue ?: 0.0) - (item.adjustmentAmount?.absoluteValue ?: 0.0)).formatToAmtDec(),
+                            Tdate(item.dueDate.toString()),
+                            DueDays(endDate, item.dueDate.toString())
+                        )
+                    }
+
+                    handlePdfAction(
+                        fileName = "${name.replace(" ", "_")}_Report",
+                        htmlContent = "",
+                        headers = listOf(
+                            "Date", "Vch Type", "Ref No.", "Party Name",
+                            "Bill Amount", "Pending Amount", "Adjusted Amount",
+                            "Due Date", "Due Days"
+                        ),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             showBottomBar = true,
             showSearchAction = true,
             onSearchClick = { showSearchBar = !showSearchBar },

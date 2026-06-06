@@ -17,6 +17,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,12 +27,14 @@ import androidx.compose.ui.text.style.TextAlign
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.launch
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingReportScreen
 import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheet
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
+import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
@@ -40,11 +43,13 @@ import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
 import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
+import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TableCell
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportHeaderCard
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportLazyList
+import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.PendingPurchaseOrderList
 import org.prime.easykarobar.ui.shared.composables.smartSearch
 import kotlin.math.absoluteValue
@@ -141,12 +146,39 @@ data class PendingOrderPartyList(
         }
 
 
+        val scope = rememberCoroutineScope()
+        var shareLoading by remember { mutableStateOf(false) }
+
+        if (shareLoading) {
+            TallyLoadingDialog("Generating Report")
+        }
+
         TallyReportScaffold(
             title = name,
             showBottomBar = true,
             showSearchAction = true,
             showBarcodeIcon = false,
-            showBurgerMenu = false,
+            showBurgerMenu = true,
+            onDownloadClick = {}, // Add PDF later if needed
+            onShareClick = {},    // Add PDF later if needed
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = groupFilteredReceivableList.map { item ->
+                        listOf(
+                            item.PartyName ?: "",
+                            item.PendingQty?.absoluteValue?.formatToAmtDec() ?: "0.0"
+                        )
+                    }
+                    handlePdfAction(
+                        fileName = "${name.replace(" ", "_")}_List",
+                        htmlContent = "",
+                        headers = listOf("Party Name", "Pending Qty"),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             bottomBarContent = {
                 TallyReportBottomBar(
                     columns = listOf(

@@ -23,6 +23,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,8 +52,11 @@ import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
+import kotlinx.coroutines.launch
+import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
+import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.SerialNoEnterReport
 import org.prime.easykarobar.ui.shared.composables.smartSearch
 import kotlin.math.absoluteValue
@@ -74,6 +78,7 @@ data class SerialNumberReport(
         var searchQuery by remember { mutableStateOf("") }
         val focusRequester = remember { FocusRequester() }
         var shareLoading by remember { mutableStateOf(false) }
+        val scope = rememberCoroutineScope()
         var showGroupFilterSheet by remember { mutableStateOf(false) }
         val productGroups = remember { db.productGroupMasterQueries.selectAll(   filterGroup = filterItemGroups(),
             groupCodes = itemGroupCodes()).executeAsList() }
@@ -178,8 +183,28 @@ data class SerialNumberReport(
             title = "Serial No. Report",
             showBottomBar = true,
             showSearchAction = true,
-            showBurgerMenu = false,
-           // menuItems = menuItems,
+            showBurgerMenu = true,
+            onDownloadClick = {},
+            onShareClick = {},
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = filteredList.map { item ->
+                        listOf(
+                            item.ProductName ?: "",
+                            item.SerialNo ?: "",
+                            item.Value3?.toString() ?: "0.0"
+                        )
+                    }
+                    handlePdfAction(
+                        fileName = "Serial_No_Report",
+                        htmlContent = "",
+                        headers = listOf("Product Name", "Serial No", "Qty"),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
                 TallyReportBottomBar(

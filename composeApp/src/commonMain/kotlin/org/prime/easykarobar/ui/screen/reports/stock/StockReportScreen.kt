@@ -159,48 +159,12 @@ object StockReportScreen : Screen {
             )
         }
 
-        val menuItems = listOf(
-            MenuItemData(
-                title = "Download",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Stock",
-                            htmlContent = fourHeaderHtml(
-                                title = "Stock",
-                                headers = Quadruple("Item Name", "Unit", "Qty", "Amount"),
-                                rows = rows,
-                                total1 = totalQty.formatToQtyDec(),
-                                total2 = totalAmt.formatToAmtDec()
-                            ),
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            ),
-            MenuItemData(
-                title = "Share",
-                icon = Icons.Default.Share,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Stock",
-                            htmlContent = fourHeaderHtml(
-                                title = "Stock",
-                                headers = Quadruple("Item Name", "Unit", "Qty", "Amount"),
-                                rows = rows,
-                                total1 = totalQty.formatToQtyDec(),
-                                total2 = totalAmt.formatToAmtDec()
-
-                            ),
-                            action = PdfAction.Share,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            )
+        val htmlContent = fourHeaderHtml(
+            title = "Stock",
+            headers = Quadruple("Item Name", "Unit", "Qty", "Amount"),
+            rows = rows,
+            total1 = totalQty.formatToQtyDec(),
+            total2 = totalAmt.formatToAmtDec()
         )
         if (shareLoading) {
             TallyLoadingDialog("Generating Report")
@@ -221,7 +185,47 @@ object StockReportScreen : Screen {
             "Stock Report", showBottomBar = true,
             showSearchAction = true,
             showBurgerMenu = true,
-            menuItems = menuItems,
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Stock",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Stock",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = filteredList.map { item ->
+                        listOf(
+                            item.ProductName ?: "",
+                            item.UnitName ?: "",
+                            item.Value1?.formatToQtyDec() ?: "0.0",
+                            item.Value2?.formatToQtyDec() ?: "0.0",
+                            item.Value3?.formatToAmtDec() ?: "0.0"
+                        )
+                    }
+                    handlePdfAction(
+                        fileName = "Stock_Report",
+                        htmlContent = htmlContent,
+                        headers = listOf("Item Name", "Unit", "M. Qty", "A. Qty", "Amount"),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
                 TallyReportBottomBar(

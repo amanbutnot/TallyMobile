@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
@@ -49,8 +50,10 @@ import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
+import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
+import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.BatchNoEnterReport
 import org.prime.easykarobar.ui.shared.composables.smartSearch
 import kotlin.math.absoluteValue
@@ -82,9 +85,6 @@ data class BatchNoReport(
             isLoading = true
             withContext(Dispatchers.IO) {
                 val perms = SharedPrefs.Permissions.get()
-                val enableParam = if (perms?.FilterParam1 == "Y") 1L else 0L
-                val paramFilters =
-                    if (enableParam == 1L) perms?.ConfigParam1.parseToStringList() else emptyList()
                 val filterGroup = if (perms?.FilterIGRP == "Y") 1L else 0L
                 val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
                 val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L
@@ -93,8 +93,6 @@ data class BatchNoReport(
                     if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
                 val godownCodes =
                     if (filterGodown == 1L) perms?.ConfigGodown.parseToStringList() else emptyList()
-                println("IS MAIN $isMain and $productGuid")
-                println("IS MAING $isDirect and $godownCode")
                 list = db.productBatchNoQueries.batchNoEnterReport(
                     filterGroup = filterGroup,
                     groupCodes = filterItemGroupCodes(),
@@ -107,7 +105,6 @@ data class BatchNoReport(
                     filterSingleG = if (isDirect) 0L else 1L,
                     includeSingleG = godownCode
                 ).executeAsList()
-                println(list)
             }
             isLoading = false
         }
@@ -138,31 +135,6 @@ data class BatchNoReport(
             TallyLoadingDialog("Generating Report")
         }
 
-//
-//        val menuItems = listOf(
-//            MenuItemData(
-//                title = "Download", icon = Icons.Default.Download, onClick = {
-//                    scope.launch {
-//                        handlePdfAction(
-//                            fileName = "Product Report", htmlContent = productReportHtml(
-//                                rows = list
-//                            ), action = PdfAction.Download, onLoadingChange = { shareLoading = it })
-//                    }
-//                }), MenuItemData(
-//                title = "Share", icon = Icons.Default.Share, onClick = {
-//                    scope.launch {
-//                        handlePdfAction(
-//                            fileName = "Barcode Report", htmlContent = productReportHtml(
-//                                rows = list
-//                            ), action = PdfAction.Share, onLoadingChange = { shareLoading = it })
-//                    }
-//                })
-//        )
-
-        if (shareLoading) {
-            TallyLoadingDialog("Generating Report")
-        }
-
         if (showGroupFilterSheet) {
             GroupFilterBottomSheet(
                 show = showGroupFilterSheet,
@@ -180,8 +152,28 @@ data class BatchNoReport(
             title = "Batch No. Report",
             showBottomBar = true,
             showSearchAction = true,
-            showBurgerMenu = false,
-            // menuItems = menuItems,
+            showBurgerMenu = true,
+            onDownloadClick = {},
+            onShareClick = {},
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = filteredList.map { item ->
+                        listOf(
+                            item.ProductName ?: "",
+                            item.BatchNo ?: "",
+                            item.Value3?.toString() ?: "0.0"
+                        )
+                    }
+                    handlePdfAction(
+                        fileName = "Batch_No_Report",
+                        htmlContent = "",
+                        headers = listOf("Product Name", "Batch No", "Qty"),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
                 TallyReportBottomBar(

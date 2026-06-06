@@ -44,12 +44,10 @@ import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
@@ -450,8 +448,10 @@ data class SaleScreen(
                             return@launch
                         }
 
-                        val listPrice = if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
-                        val discount = if (isSale) product.SaleDisc ?: 0.0 else product.PurcDisc ?: 0.0
+                        val listPrice =
+                            if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
+                        val discount =
+                            if (isSale) product.SaleDisc ?: 0.0 else product.PurcDisc ?: 0.0
                         val price = listPrice - (listPrice * discount / 100.0)
                         val qty = barcodeQty.toIntOrNull() ?: 1
 
@@ -851,28 +851,6 @@ data class SaleScreen(
         )
 
         val menuList = buildList {
-            add(MenuItemData(Icons.Default.Download, "Download", {
-                scope.launch {
-                    handlePdfAction(
-                        fileName = oneState.data?.billed_vchno
-                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
-                            ?: CompanyName(),
-                        htmlContent = htmlContent,
-                        action = PdfAction.Download,
-                        onLoadingChange = { shareLoading = it })
-                }
-            }))
-            add(MenuItemData(Icons.Default.Share, "Share", {
-                scope.launch {
-                    handlePdfAction(
-                        fileName = oneState.data?.billed_vchno
-                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
-                            ?: CompanyName(),
-                        htmlContent = htmlContent,
-                        action = PdfAction.Share,
-                        onLoadingChange = { shareLoading = it })
-                }
-            }))
             if (enableUpdateButton || SharedPrefs.User.get()?.role == "admin") {
                 add(
                     MenuItemData(Icons.Default.Delete, "Delete") { showDeleteDialog = true }
@@ -885,6 +863,65 @@ data class SaleScreen(
             onBackClick = { showExitPopup = true },
             showBarcodeIcon = true,
             onBarcodeClick = { showQtyPopup = true },
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = oneState.data?.billed_vchno
+                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
+                            ?: CompanyName(),
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it })
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = oneState.data?.billed_vchno
+                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
+                            ?: CompanyName(),
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it })
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = selectedItems.mapIndexed { index, item ->
+                        listOf(
+                            (index + 1).toString(),
+                            item.name,
+                            item.qty.toString(),
+                            item.listPrice.formatToAmtDec(),
+                            item.CD,
+                            item.taxable.formatToAmtDec(),
+                            item.gstPercentage.toString(),
+                            item.gstAmt.formatToAmtDec(),
+                            item.net.formatToAmtDec()
+                        )
+                    }
+                    handlePdfAction(
+                        fileName = oneState.data?.billed_vchno
+                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
+                            ?: CompanyName(),
+                        htmlContent = htmlContent,
+                        headers = listOf(
+                            "S No.",
+                            "Item Name",
+                            "Qty",
+                            "Price",
+                            "Disc",
+                            "Taxable",
+                            "GST %",
+                            "GST Amt",
+                            "Total"
+                        ),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             menuItems = menuList,
             title = if (isEdit) "Edit $name" else name,
             content = { paddingValues ->
@@ -1060,8 +1097,10 @@ data class SaleScreen(
                                                         conType = cType,
                                                         selectedUnit = sUnit,
                                                         altQty = aQty,
-                                                        mainUnit = product?.UnitName ?: pending.mainUnit,
-                                                        altUnit = product?.AltUnit ?: pending.altUnit,
+                                                        mainUnit = product?.UnitName
+                                                            ?: pending.mainUnit,
+                                                        altUnit = product?.AltUnit
+                                                            ?: pending.altUnit,
                                                         hsn = pending.hsn
                                                     )
                                                     val insertAt =
@@ -1093,7 +1132,8 @@ data class SaleScreen(
                                                 }
                                             )
                                         } else {
-                                            val productFallback = itemsList.find { it.Name == pending.name }
+                                            val productFallback =
+                                                itemsList.find { it.Name == pending.name }
                                             ExpandedItemEditor1(
                                                 name = pending.name,
                                                 defaultListPrice = pending.listPrice,
@@ -1160,8 +1200,10 @@ data class SaleScreen(
                                                         conType = cType,
                                                         selectedUnit = sUnit,
                                                         altQty = aQty,
-                                                        mainUnit = productFallback?.UnitName ?: pending.mainUnit,
-                                                        altUnit = productFallback?.AltUnit ?: pending.altUnit,
+                                                        mainUnit = productFallback?.UnitName
+                                                            ?: pending.mainUnit,
+                                                        altUnit = productFallback?.AltUnit
+                                                            ?: pending.altUnit,
                                                         hsn = pending.hsn
                                                     )
                                                     val insertAt =
@@ -1241,15 +1283,16 @@ data class SaleScreen(
 
                                                             val factor = item1.conFactor ?: 1.0
                                                             val conTypeVal = item1.conType ?: 1.0
-                                                            val calculatedAltQty = if (item1.selectedUnit == item1.altUnit) {
-                                                                newQty.toDouble()
-                                                            } else {
-                                                                if (conTypeVal == 1.0) {
-                                                                    newQty.toDouble() * factor
+                                                            val calculatedAltQty =
+                                                                if (item1.selectedUnit == item1.altUnit) {
+                                                                    newQty.toDouble()
                                                                 } else {
-                                                                    newQty.toDouble() / factor
+                                                                    if (conTypeVal == 1.0) {
+                                                                        newQty.toDouble() * factor
+                                                                    } else {
+                                                                        newQty.toDouble() / factor
+                                                                    }
                                                                 }
-                                                            }
 
                                                             item1.copy(
                                                                 qty = newQty,
@@ -1386,32 +1429,34 @@ data class SaleScreen(
                                     )
                                 }
                             }
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Transport Details",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                            if (isBusy()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 )
-                                TextButton(
-                                    onClick = { showTransportDetails = !showTransportDetails }
-                                ) {
-                                    Icon(
-                                        imageVector = if (showTransportDetails) Icons.Default.RemoveCircleOutline
-                                        else Icons.Default.AddCircleOutline,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                {
                                     Text(
-                                        text = if (showTransportDetails) "Remove" else "Add",
-                                        style = MaterialTheme.typography.labelLarge
+                                        text = "Transport Details",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                    TextButton(
+                                        onClick = { showTransportDetails = !showTransportDetails }
+                                    ) {
+                                        Icon(
+                                            imageVector = if (showTransportDetails) Icons.Default.RemoveCircleOutline
+                                            else Icons.Default.AddCircleOutline,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = if (showTransportDetails) "Remove" else "Add",
+                                            style = MaterialTheme.typography.labelLarge
+                                        )
+                                    }
                                 }
                             }
 
@@ -1423,7 +1468,8 @@ data class SaleScreen(
                                 exit = fadeOut(animationSpec = tween(300)) + shrinkVertically(
                                     animationSpec = tween(300)
                                 )
-                            ) {
+                            )
+                            {
                                 ElevatedCard(
                                     modifier = Modifier.fillMaxWidth()
                                         .padding(horizontal = 16.dp)
@@ -1514,37 +1560,39 @@ data class SaleScreen(
                                     }
                                 }
                             }
+                            if (isBusy()) {
+                                ShippingCard(
+                                    showShippingDetails = SshowShippingDetails,
+                                    onShowChange = { SshowShippingDetails = !SshowShippingDetails },
+                                    billingShipping = SbillingShipping,
+                                    onBillingShippingChange = { SbillingShipping = it },
+                                    partyName = SpartyName,
+                                    onPartyNameChange = { SpartyName = it },
+                                    address1 = Saddress1,
+                                    onAddressChange1 = { if (it.length < 40) Saddress1 = it },
+                                    address2 = Saddress2,
+                                    onAddressChange2 = { if (it.length < 40) Saddress2 = it },
+                                    address3 = Saddress3,
+                                    onAddressChange3 = { if (it.length < 40) Saddress3 = it },
+                                    address4 = Saddress4,
+                                    onAddressChange4 = { if (it.length < 40) Saddress4 = it },
+                                    state = SshipState,
+                                    onStateChange = { SshipState = it },
+                                    mobileNo = SmobileNo,
+                                    onMobileChange = { SmobileNo = it },
+                                    email = Semail,
+                                    onEmailChange = { Semail = it },
+                                    itPan = SitPan,
+                                    onPanChange = { SitPan = it },
+                                    gstIn = SgstIn,
+                                    onGstChange = { SgstIn = it },
+                                    adharNo = SadharNo,
+                                    onAdharChange = { SadharNo = it },
+                                    onbillingShippingSelected = { SselectedBilling = it },
+                                    selectedBilling = SselectedBilling
+                                )
 
-                            ShippingCard(
-                                showShippingDetails = SshowShippingDetails,
-                                onShowChange = { SshowShippingDetails = !SshowShippingDetails },
-                                billingShipping = SbillingShipping,
-                                onBillingShippingChange = { SbillingShipping = it },
-                                partyName = SpartyName,
-                                onPartyNameChange = { SpartyName = it },
-                                address1 = Saddress1,
-                                onAddressChange1 = { if (it.length < 40) Saddress1 = it },
-                                address2 = Saddress2,
-                                onAddressChange2 = { if (it.length < 40) Saddress2 = it },
-                                address3 = Saddress3,
-                                onAddressChange3 = { if (it.length < 40) Saddress3 = it },
-                                address4 = Saddress4,
-                                onAddressChange4 = { if (it.length < 40) Saddress4 = it },
-                                state = SshipState,
-                                onStateChange = { SshipState = it },
-                                mobileNo = SmobileNo,
-                                onMobileChange = { SmobileNo = it },
-                                email = Semail,
-                                onEmailChange = { Semail = it },
-                                itPan = SitPan,
-                                onPanChange = { SitPan = it },
-                                gstIn = SgstIn,
-                                onGstChange = { SgstIn = it },
-                                adharNo = SadharNo,
-                                onAdharChange = { SadharNo = it },
-                                onbillingShippingSelected = { SselectedBilling = it },
-                                selectedBilling = SselectedBilling
-                            )
+                            }
 
                             if (vchType !in listOf(12, 13, 15)) {
                                 Row(
@@ -1595,15 +1643,16 @@ data class SaleScreen(
                                 uniqueId = uniqueId, vchType = vchType
                             )
 
-
-                            OptionalFieldCard(
-                                showOptionalField = showOptionalField,
-                                onShowChange = { showOptionalField = !showOptionalField },
-                                optionalFields = optionalFields,
-                                onFieldChange = { index, value ->
-                                    optionalFields[index] = value
-                                }
-                            )
+                            if (isBusy()) {
+                                OptionalFieldCard(
+                                    showOptionalField = showOptionalField,
+                                    onShowChange = { showOptionalField = !showOptionalField },
+                                    optionalFields = optionalFields,
+                                    onFieldChange = { index, value ->
+                                        optionalFields[index] = value
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -1671,7 +1720,8 @@ data class SaleScreen(
                             val prod = itemsList.find { it.Name == itemName.Name }
                             val listPrice =
                                 if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
-                            val discount = if (isSale) prod?.SaleDisc ?: 0.0 else prod?.PurcDisc ?: 0.0
+                            val discount =
+                                if (isSale) prod?.SaleDisc ?: 0.0 else prod?.PurcDisc ?: 0.0
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
                                 price = listPrice - (listPrice * discount / 100.0),
@@ -1828,15 +1878,16 @@ data class SaleScreen(
                         val currentUnit = editingItem?.selectedUnit ?: prod?.UnitName
                         val altUnitName = prod?.AltUnit ?: editingItem?.altUnit
 
-                        val calculatedAltQty = if (currentUnit == altUnitName && altUnitName != null) {
-                            qty.toDouble()
-                        } else {
-                            if (conTypeVal == 1.0) {
-                                qty.toDouble() * factor
+                        val calculatedAltQty =
+                            if (currentUnit == altUnitName && altUnitName != null) {
+                                qty.toDouble()
                             } else {
-                                qty.toDouble() / factor
+                                if (conTypeVal == 1.0) {
+                                    qty.toDouble() * factor
+                                } else {
+                                    qty.toDouble() / factor
+                                }
                             }
-                        }
 
                         val updatedItem = InvoiceItem(
                             name = pendingSelectedProductName ?: "",
@@ -1918,7 +1969,8 @@ data class SaleScreen(
                     SelectionSheetTwo(
                         show = showSundrySheet,
                         title = "Select Ledger",
-                        options = ledgerList.map { Pair(it.Name ?: "", it.GUID ?: "") },
+                        options = ledgerList.filter { it.L1 == 0.0 && it.L2 == 0.0 && it.L3 == 0.0 }
+                            .map { Pair(it.Name ?: "", it.GUID ?: "") },
                         onSelect = { sundryName, GUID ->
                             if (!selectedSundries.any { it.name == sundryName }) {
                                 val newItem = SundryItem(
@@ -2114,7 +2166,10 @@ data class SaleScreen(
                                                     cm3 = "",
                                                     billid = ref.billId?.toDoubleOrNull(),
                                                     d1 = when (vchType) {
-                                                        9, 10, 14 -> makeNegativeConditional(ref.d1 ?: 0.0)
+                                                        9, 10, 14 -> makeNegativeConditional(
+                                                            ref.d1 ?: 0.0
+                                                        )
+
                                                         3, 2 -> ref.d1
                                                         16 -> ref.d1?.absoluteValue
                                                         else -> ref.d1?.absoluteValue
@@ -3146,10 +3201,13 @@ fun ExpandedItemEditor1(
                     AssistChip(
                         onClick = {
                             if (selectedUnit != mainUnit) {
-                                val currentLP = listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
+                                val currentLP =
+                                    listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
                                 val factor = conFactor ?: 1.0
-                                val newPrice = if (conType == 1.0) currentLP * factor else currentLP * factor
-                                listPriceN = (kotlin.math.round(newPrice * 100.0) / 100.0).formatToAmtDec()
+                                val newPrice =
+                                    if (conType == 1.0) currentLP * factor else currentLP * factor
+                                listPriceN =
+                                    (kotlin.math.round(newPrice * 100.0) / 100.0).formatToAmtDec()
                                 selectedUnit = mainUnit
                             }
                         },
@@ -3161,10 +3219,13 @@ fun ExpandedItemEditor1(
                     AssistChip(
                         onClick = {
                             if (selectedUnit != altUnit) {
-                                val currentLP = listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
+                                val currentLP =
+                                    listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
                                 val factor = conFactor ?: 1.0
-                                val newPrice = if (conType == 1.0) currentLP / factor else currentLP / factor
-                                listPriceN = (kotlin.math.round(newPrice * 100.0) / 100.0).formatToAmtDec()
+                                val newPrice =
+                                    if (conType == 1.0) currentLP / factor else currentLP / factor
+                                listPriceN =
+                                    (kotlin.math.round(newPrice * 100.0) / 100.0).formatToAmtDec()
                                 selectedUnit = altUnit
                             }
                         },
@@ -3299,7 +3360,8 @@ fun ExpandedItemEditor1(
                         onAdd(
                             qtyValue,
                             unitPrice,
-                            if (isCompoundDiscount) 0.0 else discountN.trim().toDoubleOrNull() ?: 0.0,
+                            if (isCompoundDiscount) 0.0 else discountN.trim().toDoubleOrNull()
+                                ?: 0.0,
                             if (isCompoundDiscount) discountN else null,
                             listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0,
                             taxableAmount,

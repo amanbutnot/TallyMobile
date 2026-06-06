@@ -100,58 +100,65 @@ data class SalesmanTargetReportScreen(val month: String, val year: Int, val name
         val totalBalAmt = salesmanData.sumOf { it.balanceAmt }
 
 
-        val menuItems = listOf(
-            MenuItemData(
-                title = "Download",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "SalesmanWiseReport",
-                            htmlContent = salesmanReportHtml(
-                                title = "Target for ($month $year)",
-                                rows = salesmanData,
-                                totalTargetQty = totalTargetQty,
-                                totalAchQty = totalAchQty,
-                                totalBalQty = totalBalQty,
-                                totalTargetAmt = totalTargetAmt,
-                                totalAchAmt = totalAchAmt,
-                                totalBalAmt = totalBalAmt,
-                            ),
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            ),
-            MenuItemData(
-                title = "Share",
-                icon = Icons.Default.Share,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "SalesmanWiseReport",
-                            htmlContent = salesmanReportHtml(
-                                title = "Target for ($month $year)",
-                                rows = salesmanData,
-                                totalTargetQty = totalTargetQty,
-                                totalAchQty = totalAchQty,
-                                totalBalQty = totalBalQty,
-                                totalTargetAmt = totalTargetAmt,
-                                totalAchAmt = totalAchAmt,
-                                totalBalAmt = totalBalAmt,
-                            ),
-                            action = PdfAction.Share,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            )
+        val htmlContent = salesmanReportHtml(
+            title = "Target for ($month $year)",
+            rows = salesmanData,
+            totalTargetQty = totalTargetQty,
+            totalAchQty = totalAchQty,
+            totalBalQty = totalBalQty,
+            totalTargetAmt = totalTargetAmt,
+            totalAchAmt = totalAchAmt,
+            totalBalAmt = totalBalAmt,
         )
         TallyReportScaffold(
             title = "Target for ($month $year)",
             showBurgerMenu = true,
-            menuItems = menuItems,
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "SalesmanWiseReport",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "SalesmanWiseReport",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = salesmanData.map { item ->
+                        listOf(
+                            item.name,
+                            item.targetQty.formatToQtyDec(),
+                            item.achievedQty.formatToQtyDec(),
+                            item.balanceQty.formatToQtyDec(),
+                            item.targetAmt.formatToAmtDec(),
+                            item.achievedAmt.formatToAmtDec(),
+                            item.balanceAmt.formatToAmtDec()
+                        )
+                    }
+                    handlePdfAction(
+                        fileName = "SalesmanTargetReport",
+                        htmlContent = htmlContent,
+                        headers = listOf(
+                            "Salesman Name", "Target Qty", "Achieved Qty", "Balance Qty",
+                            "Target Amt", "Achieved Amt", "Balance Amt"
+                        ),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             showBottomBar = true,
             bottomBarContent = { TotalBottomBar(salesmanData) },
             content = { paddingValues ->

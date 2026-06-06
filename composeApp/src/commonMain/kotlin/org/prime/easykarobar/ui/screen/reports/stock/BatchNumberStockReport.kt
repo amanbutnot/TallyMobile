@@ -130,69 +130,59 @@ data class BatchNumberStockReport(val isDirect:Boolean, val godownCode:String?=n
             )
         }
 
-        val menuItems = listOf(
-            MenuItemData(
-                title = "Download",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Stock",
-                            htmlContent = fourHeaderHtml(
-                                title = "Stock",
-                                headers = Quadruple("Item Name", "Unit", "Qty", "Amount"),
-                                rows = rows,
-                                total1 = totalQty.formatToQtyDec(),
-                                total2 = totalAmt.formatToAmtDec()
-                            ),
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            ),
-            MenuItemData(
-                title = "Share",
-                icon = Icons.Default.Share,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Stock",
-                            htmlContent = fourHeaderHtml(
-                                title = "Stock",
-                                headers = Quadruple("Item Name", "Unit", "Qty", "Amount"),
-                                rows = rows,
-                                total1 = totalQty.formatToQtyDec(),
-                                total2 = totalAmt.formatToAmtDec()
-
-                            ),
-                            action = PdfAction.Share,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            )
+        val htmlContent = fourHeaderHtml(
+            title = "Batch Number Stock",
+            headers = Quadruple("Item Name", "Unit", "Qty", "Amount"),
+            rows = rows,
+            total1 = totalQty.formatToQtyDec(),
+            total2 = totalAmt.formatToAmtDec()
         )
-        if (shareLoading) {
-            TallyLoadingDialog("Generating Report")
-        }
-
-        GroupFilterBottomSheet(
-            show = showGroupFilterSheet,
-            items = productGroups, // can be any list
-            selectedItems = selectedGroups,
-            itemNameSelector = { it.Name },
-            onSelectedItemsChange = { selectedGroups = it },
-            onDismiss = { showGroupFilterSheet = false },
-            bottomSheetState = bottomSheetState
-        )
-
 
         TallyReportScaffold(
-            "Item Batch Number Wise", showBottomBar = true,
+            title = "Item Batch Number Wise",
+            showBottomBar = true,
             showSearchAction = true,
             showBurgerMenu = true,
-            menuItems = menuItems,
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "BatchNumberStock",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "BatchNumberStock",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = filteredList.map { item ->
+                        listOf(
+                            item.ProductName ?: "",
+                            item.UnitName ?: "",
+                            item.Value1?.formatToQtyDec() ?: "0.0",
+                            item.Value3?.formatToAmtDec() ?: "0.0"
+                        )
+                    }
+                    handlePdfAction(
+                        fileName = "BatchNumberStock",
+                        htmlContent = htmlContent,
+                        headers = listOf("Item Name", "Unit", "Qty", "Amount"),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
                 TallyReportBottomBar(

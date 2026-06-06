@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -48,11 +45,11 @@ import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.stringToDouble
 import org.prime.easykarobar.ui.printing.LedgerRow
 import org.prime.easykarobar.ui.printing.accountLedgerHtml
-import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
@@ -61,7 +58,6 @@ import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.vouchersLedgers.LedgerOpeningBalance
 import org.tally.vouchersLedgers.LedgerReportList
-import org.prime.easykarobar.ui.shared.composables.smartSearch
 import kotlin.math.absoluteValue
 
 data class LedgerReportScreen(val accountName: String, val startDate: String, val endDate: String) :
@@ -170,61 +166,19 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
             return rows
         }
 
-        val menuItems = listOf(
-            MenuItemData(
-                title = "Download",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Ledger_Report_$accountName",
-                            htmlContent = accountLedgerHtml(
-                                accountName = accountName,
-                                startDate = startDate,
-                                endDate = endDate,
-                                openingBalance = kotlin.math.abs(
-                                    openingBalance?.OpeningBal?.toDouble() ?: 0.0
-                                ),
-                                openingBalanceType = openingBalType,
-                                rows = generateLedgerRows(),
-                                totalDebit = totalDebit,
-                                totalCredit = totalCredit,
-                                closingBalance = kotlin.math.abs(closingBalance),
-                                closingBalanceType = closingBalanceType
-                            ),
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
+        val htmlContent = accountLedgerHtml(
+            accountName = accountName,
+            startDate = startDate,
+            endDate = endDate,
+            openingBalance = kotlin.math.abs(
+                openingBalance?.OpeningBal?.toDouble() ?: 0.0
             ),
-            MenuItemData(
-                title = "Share",
-                icon = Icons.Default.Share,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Ledger_Report_$accountName",
-                            htmlContent = accountLedgerHtml(
-                                accountName = accountName,
-                                startDate = startDate,
-                                endDate = endDate,
-                                openingBalance = kotlin.math.abs(
-                                    openingBalance?.OpeningBal?.toDouble() ?: 0.0
-                                ),
-                                openingBalanceType = openingBalType,
-                                rows = generateLedgerRows(),
-                                totalDebit = totalDebit,
-                                totalCredit = totalCredit,
-                                closingBalance = kotlin.math.abs(closingBalance),
-                                closingBalanceType = closingBalanceType
-                            ),
-                            action = PdfAction.Share,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            )
+            openingBalanceType = openingBalType,
+            rows = generateLedgerRows(),
+            totalDebit = totalDebit,
+            totalCredit = totalCredit,
+            closingBalance = kotlin.math.abs(closingBalance),
+            closingBalanceType = closingBalanceType
         )
 
         if (shareLoading) {
@@ -234,7 +188,105 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
         TallyReportScaffold(
             title = "Ledger Report",
             showBurgerMenu = true,
-            menuItems = menuItems,
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Ledger_Report_$accountName",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Ledger_Report_$accountName",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = mutableListOf<List<String>>()
+                    // Opening
+                    excelRows.add(
+                        listOf(
+                            "", "", "", "Opening Balance",
+                            if ((openingBalance?.OpeningBal?.toDouble()
+                                    ?: 0.0) < 0
+                            ) openingBalance?.OpeningBal?.absoluteValue?.formatToAmtDec()
+                                ?: "0.0" else "",
+                            if ((openingBalance?.OpeningBal?.toDouble()
+                                    ?: 0.0) >= 0
+                            ) openingBalance?.OpeningBal?.absoluteValue?.formatToAmtDec()
+                                ?: "0.0" else "",
+                            "${
+                                openingBalance?.OpeningBal?.absoluteValue?.formatToAmtDec() ?: "0.0"
+                            } $openingBalType"
+                        )
+                    )
+
+                    // Transactions
+                    var currentBal = openingBalance?.OpeningBal?.toDouble() ?: 0.0
+                    filteredList.forEach { item ->
+                        val credit = item.D2 ?: 0.0 // Cr
+                        val debit = item.D3 ?: 0.0  // Dr
+                        currentBal += credit - debit
+                        val balType = if (currentBal >= 0) "Cr" else "Dr"
+
+                        excelRows.add(
+                            listOf(
+                                Tdate(item.DATE ?: ""),
+                                item.VchType ?: "",
+                                item.VOUCHERNUMBER ?: "",
+                                item.AccountName ?: "",
+                                if (debit != 0.0) debit.formatToAmtDec() else "",
+                                if (credit != 0.0) credit.formatToAmtDec() else "",
+                                "${currentBal.absoluteValue.formatToAmtDec()} $balType"
+                            )
+                        )
+                    }
+
+                    // Totals
+                    excelRows.add(
+                        listOf(
+                            "", "", "", "Total",
+                            totalCredit.formatToAmtDec(), // holds sum of D3 (Dr)
+                            totalDebit.formatToAmtDec(),  // holds sum of D2 (Cr)
+                            ""
+                        )
+                    )
+
+                    // Closing
+                    excelRows.add(
+                        listOf(
+                            "", "", "", "Closing Balance",
+                            "", "",
+                            "${closingBalance.absoluteValue.formatToAmtDec()} $closingBalanceType"
+                        )
+                    )
+
+                    handlePdfAction(
+                        fileName = "Ledger_Report_$accountName",
+                        htmlContent = htmlContent,
+                        headers = listOf(
+                            "Date",
+                            "Vch Type",
+                            "Vch No.",
+                            "Particulars",
+                            "Debit",
+                            "Credit",
+                            "Balance"
+                        ),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             showBottomBar = true,
             showSearchAction = true,
             onSearchClick = { showSearchBar = !showSearchBar },

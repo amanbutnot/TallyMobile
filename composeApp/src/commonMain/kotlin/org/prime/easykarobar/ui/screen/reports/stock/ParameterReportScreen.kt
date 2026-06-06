@@ -158,49 +158,13 @@ object ParameterReportScreen : Screen {
         val totalQty = totals.first
         val totalAmt = totals.second
 
-        val menuItems = listOf(
-            MenuItemData(
-                title = "Download",
-                icon = Icons.Default.Download,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Parameter",
-                            htmlContent = threeHeaderHtml(
-                                title = "Parameter",
-                                headers = Triple("Item Name", "Qty", "Amount"),
-                                rows = rows,
-                                totalDebit = totalQty.formatToQtyDec().toDouble(),
-                                totalCredit = totalAmt.formatToAmtDec().toDouble(),
-                                date = ""
-                            ),
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            ),
-            MenuItemData(
-                title = "Share",
-                icon = Icons.Default.Share,
-                onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Parameter",
-                            htmlContent = threeHeaderHtml(
-                                title = "Parameter",
-                                headers = Triple("Item Name", "Qty", "Amount"),
-                                rows = rows,
-                                totalDebit = totalQty.formatToQtyDec().toDouble(),
-                                totalCredit = totalAmt.formatToAmtDec().toDouble(),
-                                date = ""
-                            ),
-                            action = PdfAction.Download,
-                            onLoadingChange = { shareLoading = it }
-                        )
-                    }
-                }
-            )
+        val htmlContent = threeHeaderHtml(
+            title = "Parameter",
+            headers = Triple("Item Name", "Qty", "Amount"),
+            rows = rows,
+            totalDebit = totalQty.formatToQtyDec().toDouble(),
+            totalCredit = totalAmt.formatToAmtDec().toDouble(),
+            date = ""
         )
         if (shareLoading) {
             TallyLoadingDialog("Generating Report")
@@ -224,7 +188,45 @@ object ParameterReportScreen : Screen {
             "Parameter Report", showBottomBar = true,
             showSearchAction = true,
             showBurgerMenu = true,
-            menuItems = menuItems,
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Parameter",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Parameter",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = filteredList.map { item ->
+                        listOf(
+                            item.ProductName ?: "",
+                            item.mvalue1?.formatToQtyDec() ?: "0.0",
+                            item.mvalue2?.formatToAmtDec() ?: "0.0"
+                        )
+                    }
+                    handlePdfAction(
+                        fileName = "Parameter_Report",
+                        htmlContent = htmlContent,
+                        headers = listOf("Item Name", "Qty", "Amount"),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
                 TallyReportBottomBar(

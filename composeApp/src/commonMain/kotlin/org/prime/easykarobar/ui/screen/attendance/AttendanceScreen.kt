@@ -211,7 +211,7 @@ data class AttendanceScreen(
                             list.filter { it.L5 == 1.0 }
                                 .map { Pair(it.Name ?: "", it.GUID ?: "") }
                         } else {
-                            list
+                            list.filter { it.L1 == 1.0 || it.L2 == 1.0 || it.L3 == 1.0 }
                                 .map { Pair(it.Name ?: "", it.GUID ?: "") }
                         }
                         TransactionBottomSheet(

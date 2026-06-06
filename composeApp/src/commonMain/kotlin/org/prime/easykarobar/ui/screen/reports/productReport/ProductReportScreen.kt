@@ -147,24 +147,8 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
         }
 
 
-        val menuItems = listOf(
-            MenuItemData(
-                title = "Download", icon = Icons.Default.Download, onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Product Report", htmlContent = productReportHtml(
-                                rows = list
-                            ), action = PdfAction.Download, onLoadingChange = { shareLoading = it })
-                    }
-                }), MenuItemData(
-                title = "Share", icon = Icons.Default.Share, onClick = {
-                    scope.launch {
-                        handlePdfAction(
-                            fileName = "Barcode Report", htmlContent = productReportHtml(
-                                rows = list
-                            ), action = PdfAction.Share, onLoadingChange = { shareLoading = it })
-                    }
-                })
+        val htmlContent = productReportHtml(
+            rows = list
         )
 
         if (shareLoading) {
@@ -189,7 +173,49 @@ data class ProductReportScreen(val productGuid: String? = null, val isMain: Bool
             showBottomBar = true,
             showSearchAction = true,
             showBurgerMenu = true,
-            menuItems = menuItems,
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Product Report",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Product Report",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = filteredList.map { item ->
+                        listOf(
+                            item.ProductName ?: "",
+                            item.GodownName ?: "",
+                            item.Value1?.toString() ?: "0.0",
+                            item.Value2?.toString() ?: "0.0",
+                            item.C1 ?: "",
+                            item.C2 ?: "",
+                            item.C3 ?: ""
+                        )
+                    }
+                    handlePdfAction(
+                        fileName = "Barcode_Report",
+                        htmlContent = htmlContent,
+                        headers = listOf("Product Name", "Location", "Main Qty", "Alt Qty", "C1", "C2", "C3"),
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             onSearchClick = { showSearchBar = !showSearchBar },
             bottomBarContent = {
                 TallyReportBottomBar(
