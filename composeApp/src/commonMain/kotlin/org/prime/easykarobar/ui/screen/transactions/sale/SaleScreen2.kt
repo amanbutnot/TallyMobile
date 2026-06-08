@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -76,6 +77,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -2147,7 +2149,11 @@ fun MultiSelectItemSheet(
         modifier = Modifier.fillMaxHeight()
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-
+            val listState = rememberSaveable(
+                saver = LazyListState.Saver
+            ) {
+                LazyListState()
+            }
             // ── Header ────────────────────────────────────────────────────────
             Row(
                 modifier = Modifier
@@ -2187,7 +2193,7 @@ fun MultiSelectItemSheet(
             }
 
             // ── Item list ─────────────────────────────────────────────────────
-            LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth(),state = listState) {
                 if (query.isNotBlank()) {
                     item {
                         Text(

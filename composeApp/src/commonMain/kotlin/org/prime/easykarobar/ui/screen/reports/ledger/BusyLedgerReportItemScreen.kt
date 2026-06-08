@@ -11,9 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -43,9 +40,8 @@ import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.ui.printing.ReceiptPaymentRow
 import org.prime.easykarobar.ui.printing.TransportDetails
 import org.prime.easykarobar.ui.printing.receiptPaymentHtml
-import org.prime.easykarobar.ui.printing.salesInvoiceHtml
+import org.prime.easykarobar.ui.printing.salesHtml
 import org.prime.easykarobar.ui.screen.transactions.sale.InvoiceItem
-import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
@@ -72,6 +68,9 @@ data class BusyLedgerReportItemScreen(
         val ledgerReportItemList = db.vouchersLedgersQueries.ledgerReportItemList(guid).executeAsList()
         val vouchers = db.vouchersQueries.selectByGuid(guid).executeAsOneOrNull()
 
+
+        println("alksfklasdf "+ledgerStockItemList)
+        println(vouchers)
         var isLoading by remember { mutableStateOf(false) }
         var shareLoading by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
@@ -88,6 +87,7 @@ data class BusyLedgerReportItemScreen(
         val stockColumn1Weight = 0.4f
         val stockColumn2Weight = 0.8f
         val stockColumn3Weight = 0.3f
+        val stockColumnUnitWeight = 0.3f
         val stockColumn4Weight = 0.5f
         val stockColumn5Weight = 0.5f
 
@@ -106,7 +106,8 @@ data class BusyLedgerReportItemScreen(
                         taxable = it.Amt ?: 0.0,
                         gstAmt = 0.0,
                         net = it.Amt ?: 0.0,
-                        CD = "",hsn =it.hsn
+                        CD = "",hsn =it.hsn,
+                        selectedUnit = it.Unit
                     )
                 }
 
@@ -124,7 +125,7 @@ data class BusyLedgerReportItemScreen(
                     )
                 }
 
-                salesInvoiceHtml(
+                salesHtml(
                     name = vchType,
                     partyName = ledgerReportItemList.firstOrNull()?.LedgerName ?: "",
                     partyGuid = guid,
@@ -141,7 +142,8 @@ data class BusyLedgerReportItemScreen(
                         station = "",
                         pincode = "",
                         gstRrDate = ""
-                    )
+                    ),
+                    showTax = false
                 )
             } else {
                 val rows = ledgerReportItemList.mapIndexed { index, it ->
@@ -185,6 +187,30 @@ data class BusyLedgerReportItemScreen(
                     )
                 }
             },
+            onShareText = "Share VchWise",
+            onShareSecondText = "Share Itemwise",
+            onDownloadText = "Download Vchwise",
+            onDownloadSecondText = "Download Itemwise",
+            onDownloadSecondClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "$vchType Report",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareSecondClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "$vchType Report",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             onShareClick = {
                 scope.launch {
                     handlePdfAction(
@@ -203,6 +229,7 @@ data class BusyLedgerReportItemScreen(
                                 (index + 1).toString(),
                                 item.Item_Name ?: "",
                                 item.Qty?.absoluteValue?.formatToQtyDec().toString(),
+                                item.Unit ?: "",
                                 item.Rate?.absoluteValue?.formatToAmtDec().toString(),
                                 item.Amt?.absoluteValue?.formatToAmtDec().toString()
                             )
@@ -219,7 +246,7 @@ data class BusyLedgerReportItemScreen(
                     }
 
                     val headers = if (ledgerStockItemList.isNotEmpty()) {
-                        listOf("S No.", "Item Name", "Qty", "Rate", "Amount")
+                        listOf("S No.", "Item Name", "Qty", "Unit", "Rate", "Amount")
                     } else {
                         listOf("S No.", "Account", "Debit", "Credit")
                     }
@@ -293,6 +320,7 @@ data class BusyLedgerReportItemScreen(
                                     TableCell("S No.", stockColumn1Weight, isHeader = true)
                                     TableCell("Item Name", stockColumn2Weight, isHeader = true)
                                     TableCell("Qty", stockColumn3Weight, textAlign = TextAlign.End, isHeader = true)
+                                    TableCell("Unit", stockColumnUnitWeight, textAlign = TextAlign.End, isHeader = true)
                                     TableCell("Rate", stockColumn4Weight, textAlign = TextAlign.End, isHeader = true)
                                     TableCell("Amount", stockColumn5Weight, textAlign = TextAlign.End, isHeader = true)
                                 }
@@ -322,6 +350,11 @@ data class BusyLedgerReportItemScreen(
                                                 textAlign = TextAlign.End
                                             )
                                             TableCell(
+                                                item.Unit ?: "",
+                                                stockColumnUnitWeight,
+                                                textAlign = TextAlign.End
+                                            )
+                                            TableCell(
                                                 item.Rate?.absoluteValue?.formatToAmtDec().toString(),
                                                 stockColumn4Weight,
                                                 textAlign = TextAlign.End
@@ -340,7 +373,7 @@ data class BusyLedgerReportItemScreen(
                                 columns = listOf(
                                     ReportColumn(
                                         "Total:",
-                                        (stockColumn1Weight + stockColumn2Weight + stockColumn3Weight + stockColumn4Weight),
+                                        (stockColumn1Weight + stockColumn2Weight + stockColumn3Weight + stockColumnUnitWeight + stockColumn4Weight),
                                         TextAlign.End
                                     ),
                                     ReportColumn(

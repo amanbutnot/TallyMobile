@@ -83,7 +83,8 @@ object SplashScreen : Screen {
 
         Box(
             modifier = Modifier.fillMaxSize().background(colors.background).navigationBarsPadding()
-        ) {
+        )
+        {
             Column(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally,

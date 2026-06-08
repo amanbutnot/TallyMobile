@@ -40,7 +40,7 @@ import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.ui.printing.ReceiptPaymentRow
 import org.prime.easykarobar.ui.printing.TransportDetails
 import org.prime.easykarobar.ui.printing.receiptPaymentHtml
-import org.prime.easykarobar.ui.printing.salesInvoiceHtml
+import org.prime.easykarobar.ui.printing.salesHtml
 import org.prime.easykarobar.ui.screen.transactions.sale.InvoiceItem
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
@@ -87,6 +87,7 @@ data class TallyLedgerReportItemScreen(
         val stockColumn1Weight = 0.4f
         val stockColumn2Weight = 0.8f
         val stockColumn3Weight = 0.3f
+        val stockColumnUnitWeight = 0.3f
         val stockColumn4Weight = 0.5f
         val stockColumn5Weight = 0.5f
 
@@ -105,7 +106,8 @@ data class TallyLedgerReportItemScreen(
                         taxable = it.Amt ?: 0.0,
                         gstAmt = 0.0,
                         net = it.Amt ?: 0.0,
-                        CD = "", hsn = it.hsn
+                        CD = "", hsn = it.hsn,
+                        selectedUnit = it.Unit
                     )
                 }
 
@@ -124,7 +126,7 @@ data class TallyLedgerReportItemScreen(
                     )
                 }
 
-                salesInvoiceHtml(
+                salesHtml(
                     name = vchType,
                     partyName = ledgerReportItemList.firstOrNull()?.LedgerName ?: "",
                     partyGuid = guid,
@@ -141,7 +143,8 @@ data class TallyLedgerReportItemScreen(
                         station = "",
                         pincode = "",
                         gstRrDate = ""
-                    )
+                    ),
+                    showTax = false
                 )
             } else {
                 val rows = ledgerReportItemList.mapIndexed { index, it ->
@@ -185,6 +188,30 @@ data class TallyLedgerReportItemScreen(
                     )
                 }
             },
+            onShareText = "Share VchWise",
+            onShareSecondText = "Share Itemwise",
+            onDownloadText = "Download Vchwise",
+            onDownloadSecondText = "Download Itemwise",
+            onDownloadSecondClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "$vchType Report",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareSecondClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "$vchType Report",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             onShareClick = {
                 scope.launch {
                     handlePdfAction(
@@ -203,6 +230,7 @@ data class TallyLedgerReportItemScreen(
                                 (index + 1).toString(),
                                 item.Item_Name ?: "",
                                 item.Qty?.absoluteValue?.formatToQtyDec().toString(),
+                                item.Unit ?: "",
                                 item.Rate?.absoluteValue?.formatToAmtDec().toString(),
                                 item.Amt?.absoluteValue?.formatToAmtDec().toString()
                             )
@@ -219,7 +247,7 @@ data class TallyLedgerReportItemScreen(
                     }
 
                     val headers = if (ledgerStockItemList.isNotEmpty()) {
-                        listOf("S No.", "Item Name", "Qty", "Rate", "Amount")
+                        listOf("S No.", "Item Name", "Qty", "Unit", "Rate", "Amount")
                     } else {
                         listOf("S No.", "Account", "Debit", "Credit")
                     }
@@ -299,6 +327,12 @@ data class TallyLedgerReportItemScreen(
                                         isHeader = true
                                     )
                                     TableCell(
+                                        "Unit",
+                                        stockColumnUnitWeight,
+                                        textAlign = TextAlign.End,
+                                        isHeader = true
+                                    )
+                                    TableCell(
                                         "Rate",
                                         stockColumn4Weight,
                                         textAlign = TextAlign.End,
@@ -338,6 +372,11 @@ data class TallyLedgerReportItemScreen(
                                                 textAlign = TextAlign.End
                                             )
                                             TableCell(
+                                                item.Unit ?: "",
+                                                stockColumnUnitWeight,
+                                                textAlign = TextAlign.End
+                                            )
+                                            TableCell(
                                                 item.Rate?.absoluteValue?.formatToAmtDec()
                                                     .toString(),
                                                 stockColumn4Weight,
@@ -358,7 +397,7 @@ data class TallyLedgerReportItemScreen(
                                 columns = listOf(
                                     ReportColumn(
                                         "Total:",
-                                        (stockColumn1Weight + stockColumn2Weight + stockColumn3Weight + stockColumn4Weight),
+                                        (stockColumn1Weight + stockColumn2Weight + stockColumn3Weight + stockColumnUnitWeight + stockColumn4Weight),
                                         TextAlign.End
                                     ),
                                     ReportColumn(

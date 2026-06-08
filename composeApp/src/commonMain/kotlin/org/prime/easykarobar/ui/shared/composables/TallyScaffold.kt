@@ -113,7 +113,13 @@ fun TallyReportScaffold(
     onBarcodeClick: (() -> Unit)? = null,
     onBackClick: (() -> Unit)? = null,
     onDownloadClick: (() -> Unit)? = null,
+    onDownloadSecondClick: (() -> Unit)? = null,
+    onDownloadSecondText: String? = null,
+    onDownloadText: String? = null,
     onShareClick: (() -> Unit)? = null,
+    onShareSecondClick: (() -> Unit)? = null,
+    onShareSecondText: String? = null,
+    onShareText: String? = null,
     onExcelClick: (() -> Unit)? = null,
     menuItems: List<MenuItemData> = emptyList(),
     content: @Composable (PaddingValues) -> Unit
@@ -142,7 +148,7 @@ fun TallyReportScaffold(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { if(onBackClick==null)nav.pop() else onBackClick() }) {
+                    IconButton(onClick = { if (onBackClick == null) nav.pop() else onBackClick() }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
@@ -188,7 +194,30 @@ fun TallyReportScaffold(
                                     modifier = Modifier.padding(4.dp),
                                     text = {
                                         Text(
-                                            text = "Download",
+                                            text = onDownloadText ?: "Download",
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Download,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    onClick = {
+                                        it()
+                                        expanded = false
+                                    }
+                                )
+                            }
+                            onDownloadSecondClick?.let {
+                                DropdownMenuItem(
+                                    modifier = Modifier.padding(4.dp),
+                                    text = {
+                                        Text(
+                                            text = onDownloadSecondText ?: "Download 2nd",
                                             color = MaterialTheme.colorScheme.onSurface,
                                             style = MaterialTheme.typography.bodyLarge
                                         )
@@ -234,14 +263,38 @@ fun TallyReportScaffold(
                                     modifier = Modifier.padding(4.dp),
                                     text = {
                                         Text(
-                                            text = "Share",
+                                            text = onShareText?:"Share",
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Share,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    onClick = {
+                                        it()
+                                        expanded = false
+                                    }
+                                )
+                            }
+
+                            onShareSecondClick?.let {
+                                DropdownMenuItem(
+                                    modifier = Modifier.padding(4.dp),
+                                    text = {
+                                        Text(
+                                            text = onShareSecondText ?: "Share 2nd",
                                             color = MaterialTheme.colorScheme.onSurface,
                                             style = MaterialTheme.typography.bodyLarge
                                         )
                                     },
                                     leadingIcon = {
                                         Icon(
-                                            imageVector = Icons.Default.Share,
+                                            imageVector = Icons.Default.Download,
                                             contentDescription = null,
                                             tint = MaterialTheme.colorScheme.primary
                                         )

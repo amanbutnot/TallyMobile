@@ -18,7 +18,8 @@ fun salesInvoiceHtml(
     items: List<InvoiceItem>,
     sundries: List<SundryItem>,
     grandTotal: Double,
-    transportDetails: TransportDetails
+    transportDetails: TransportDetails,
+    showTax: Boolean = true
 ): String {
     val db = DatabaseHolder.instance
     val compInfo = db.companyInformationQueries.getCompanyInformation().executeAsOneOrNull()
@@ -53,7 +54,10 @@ fun salesInvoiceHtml(
     }
 
     val title = if (name == "Sale Invoice") "TAX INVOICE" else name.uppercase()
-    val colSpan = if (isIgst) 7 else 9
+    val colSpan = if (showTax) (if (isIgst) 9 else 11) else 6 // SalesInvoiceHtml has one less column (Unit) in its original code? Let me check.
+
+    val qtyStartWidth = if (showTax) "45%" else "71%"
+    val labelWidth = if (showTax) "35%" else "9%"
 
     val html = StringBuilder()
 
@@ -323,21 +327,21 @@ fun salesInvoiceHtml(
             <thead>
                 <tr>
                     <th style="width:3%">S.N.</th>
-                    <th style="width:33%">Description of Goods</th>
+                    <th style="width:${if (showTax) 33 else 59}%">Description of Goods</th>
                     <th style="width:9%">HSN/SAC Code</th>
                     <th style="width:7%">Qty.</th>
                     <th style="width:9%">Price</th>
-                    ${
-            if (isIgst) """
-                    <th style="width:10%">IGST Rate</th>
-                    <th style="width:16%">IGST Amount</th>
-                    """ else """
-                    <th style="width:5%">CGST Rate</th>
-                    <th style="width:8%">CGST Amount</th>
-                    <th style="width:5%">SGST Rate</th>
-                    <th style="width:8%">SGST Amount</th>
-                    """
-        }
+                    ${if (showTax) {
+                        if (isIgst) """
+                        <th style="width:10%">IGST Rate</th>
+                        <th style="width:16%">IGST Amount</th>
+                        """ else """
+                        <th style="width:5%">CGST Rate</th>
+                        <th style="width:8%">CGST Amount</th>
+                        <th style="width:5%">SGST Rate</th>
+                        <th style="width:8%">SGST Amount</th>
+                        """
+                    } else ""}
                     <th style="width:13%">Amount(₹)</th>
                 </tr>
             </thead>
@@ -348,23 +352,25 @@ fun salesInvoiceHtml(
     items.forEachIndexed { index, item ->
         val unitTaxable = if (item.qty != 0) item.taxable / item.qty.absoluteValue else 0.0
 
-        val taxCells = if (isIgst) {
-            """
-            <td class="right">${item.gstPercentage.formatToAmtDec()}%</td>
-            <td class="right">${item.gstAmt.formatToAmtDec()}</td>
-            """.trimIndent()
-        } else {
-            val cgstRate = item.gstPercentage / 2
-            val sgstRate = item.gstPercentage / 2
-            val cgstAmt = item.gstAmt / 2
-            val sgstAmt = item.gstAmt / 2
-            """
-            <td class="right">${cgstRate.formatToAmtDec()}%</td>
-            <td class="right">${cgstAmt.formatToAmtDec()}</td>
-            <td class="right">${sgstRate.formatToAmtDec()}%</td>
-            <td class="right">${sgstAmt.formatToAmtDec()}</td>
-            """.trimIndent()
-        }
+        val taxCells = if (showTax) {
+            if (isIgst) {
+                """
+                <td class="right">${item.gstPercentage.formatToAmtDec()}%</td>
+                <td class="right">${item.gstAmt.formatToAmtDec()}</td>
+                """.trimIndent()
+            } else {
+                val cgstRate = item.gstPercentage / 2
+                val sgstRate = item.gstPercentage / 2
+                val cgstAmt = item.gstAmt / 2
+                val sgstAmt = item.gstAmt / 2
+                """
+                <td class="right">${cgstRate.formatToAmtDec()}%</td>
+                <td class="right">${cgstAmt.formatToAmtDec()}</td>
+                <td class="right">${sgstRate.formatToAmtDec()}%</td>
+                <td class="right">${sgstAmt.formatToAmtDec()}</td>
+                """.trimIndent()
+            }
+        } else ""
 
         val serials = if (item.item_serial.isNotEmpty()) {
             "<br/><span style='font-size:7.5pt; color:#444;'>" +
@@ -404,9 +410,10 @@ fun salesInvoiceHtml(
     <div class="summary-container">
         <table class="summary-table">
             <tr>
-                <td class="sum-spacer"></td>
-                <td class="sum-label bold">Sub Total</td>
-                <td class="sum-amt bold">${subtotal.formatToAmtDec()}</td>
+                <td class="sum-spacer" style="width:$qtyStartWidth; border-right:0.5pt solid #000;"></td>
+                <td class="sum-amt bold" style="width:7%; text-align:center; border-right:0.5pt solid #000;">${items.sumOf { it.qty }.absoluteValue}.00</td>
+                <td class="sum-label bold" style="width:$labelWidth; text-align:right;">Sub Total</td>
+                <td class="sum-amt bold" style="width:13%">${subtotal.formatToAmtDec()}</td>
             </tr>""".trimIndent()
     )
 
@@ -417,8 +424,8 @@ fun salesInvoiceHtml(
         html.append(
             """
             <tr>
-                <td class="sum-spacer"></td>
-                <td class="sum-label">$label</td>
+                <td class="sum-spacer" colspan="2" style="border-right:0.5pt solid #000;"></td>
+                <td class="sum-label" style="text-align:right;">$label</td>
                 <td class="sum-amt">${amount.formatToAmtDec()}</td>
             </tr>""".trimIndent()
         )
@@ -434,17 +441,17 @@ fun salesInvoiceHtml(
     html.append(
         """
     <div class="grand-total-row">
-        <div class="gt-label">Grand Total</div>
-        <div class="gt-qty">${items.sumOf { it.qty }.absoluteValue}.00</div>
-        <div class="gt-spacer"></div>
-        <div class="gt-amt">${grandTotal.formatToAmtDec()}</div>
+        <div class="gt-spacer" style="width:$qtyStartWidth;"></div>
+        <div class="gt-qty" style="width:7%; text-align:center; border-bottom:1px solid #888; padding:2px 0;">${items.sumOf { it.qty }.absoluteValue}.00</div>
+        <div class="gt-label" style="width:$labelWidth; text-align:right; padding:2px 8px;">Grand Total</div>
+        <div class="gt-amt" style="width:13%; text-align:right; padding:2px 4px;">${grandTotal.formatToAmtDec()}</div>
     </div>""".trimIndent()
     )
 
     // ── Tax Summary ───────────────────────────────────────────────────────────
     html.append(
         """
-    <div class="tax-summary-section">
+    <div class="tax-summary-section" ${if (!showTax) "style='display:none;'" else ""}>
         <table class="tax-table">
             <thead>
                 <tr>
@@ -493,6 +500,7 @@ fun salesInvoiceHtml(
     html.append(
         """
     <div class="amount-in-words">
+        Total Qty : <b>${items.sumOf { it.qty }.absoluteValue}.00</b><br>
         Rupees ${numberToWords(grandTotal.toInt())} Only
     </div>""".trimIndent()
     )
