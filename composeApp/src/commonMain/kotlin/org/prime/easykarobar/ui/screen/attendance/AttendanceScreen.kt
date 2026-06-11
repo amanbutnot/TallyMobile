@@ -1,6 +1,6 @@
 package org.prime.easykarobar.ui.screen.attendance
 
-import CurrentDate
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box

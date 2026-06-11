@@ -1,7 +1,7 @@
 package org.prime.easykarobar.ui.screen.transactions.sale
 
-import CurrentDate
-import TallyDatePickerRow
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
+import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -151,13 +151,13 @@ import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
+import org.prime.easykarobar.ui.shared.reportsShared.yymmdd
 import org.tally.BSMaster
 import org.tally.CompanyInformation
 import org.tally.LedgerMaster
 import org.tally.ProductGroupMaster
 import org.tally.Products_Pricing
 import org.tally.SerialNoEnterReportSale
-import yymmdd
 import kotlin.math.absoluteValue
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -2897,7 +2897,7 @@ fun TransactionItemBottomList(
         smartSearch(
             list = list,
             query = query,
-            selectors = listOf { it.toString() }
+            selectors = listOf { it.Name }
         )
     }
 

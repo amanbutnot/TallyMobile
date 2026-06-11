@@ -27,7 +27,8 @@ suspend fun handlePdfAction(
     rows: List<List<String>>? = null,
     onLoadingChange: (Boolean) -> Unit
 ) {
-    println("📄 [handlePdfAction] Started — fileName: $fileName | action: $action")
+    val sanitizedFileName = fileName.replace(Regex("[\\\\/:*?\"<>|]"), "_")
+    println("📄 [handlePdfAction] Started — fileName: $fileName (sanitized: $sanitizedFileName) | action: $action")
     println("📄 [handlePdfAction] HTML content length: ${htmlContent.length} chars")
 
     onLoadingChange(true)
@@ -39,10 +40,10 @@ suspend fun handlePdfAction(
     try {
         println("📄 [handlePdfAction] Calling createPdfFromHtml...")
         filePath = if (action == PdfAction.Download || action == PdfAction.Share) {
-            createPdfFromHtml(htmlContent, fileName)
+            createPdfFromHtml(htmlContent, sanitizedFileName)
         } else {
             createExcel(
-                fileName,
+                sanitizedFileName,
                 headers as List<String>, rows as List<List<String>>
             )
         }
@@ -56,7 +57,7 @@ suspend fun handlePdfAction(
         when (action) {
             PdfAction.Download -> {
                 println("📄 [handlePdfAction] Action: Download — opening file saver")
-                val uniqueName = generateUniqueFileName(fileName)
+                val uniqueName = generateUniqueFileName(sanitizedFileName)
                 println("📄 [handlePdfAction] Suggested file name: $uniqueName")
                 val file = FileKit.openFileSaver(
                     suggestedName = uniqueName,
@@ -79,7 +80,7 @@ suspend fun handlePdfAction(
 
             PdfAction.ShareExcel -> {}
             PdfAction.DownloadExcel -> {
-                val uniqueName = generateUniqueFileName(fileName)
+                val uniqueName = generateUniqueFileName(sanitizedFileName)
                 val file = FileKit.openFileSaver(
                     suggestedName = uniqueName,
                     extension = "xlsx"

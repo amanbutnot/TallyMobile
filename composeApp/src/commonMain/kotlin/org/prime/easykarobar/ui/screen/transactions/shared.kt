@@ -45,8 +45,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
-import org.tally.LedgerMaster
 import org.prime.easykarobar.ui.shared.composables.smartSearch
+import org.tally.LedgerMaster
 
 
 @Composable
@@ -188,7 +188,7 @@ fun TransactionBottomSheet(
         smartSearch(
             list = list,
             query = query,
-            selectors = listOf { it.toString() }
+            selectors = listOf { it.first }
         )
     }
 
@@ -359,7 +359,7 @@ fun TransactionBottomSheetThree(
         smartSearch(
             list = list,
             query = query,
-            selectors = listOf { it.toString() }
+            selectors = listOf { it.first }
         )
     }
 

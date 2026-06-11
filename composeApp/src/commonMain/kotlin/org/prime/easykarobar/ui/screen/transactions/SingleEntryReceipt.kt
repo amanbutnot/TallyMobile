@@ -1,7 +1,7 @@
 package org.prime.easykarobar.ui.screen.transactions
 
-import CurrentDate
-import TallyDatePickerRow
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
+import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable

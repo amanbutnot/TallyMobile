@@ -1,7 +1,7 @@
 package org.prime.easykarobar.ui.screen.home.tabs
 
-import CurrentDate
-import OutstandingDate
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
+import org.prime.easykarobar.ui.shared.reportsShared.OutstandingDate
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -107,9 +107,9 @@ import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.attendance.AttendanceListScreen
 import org.prime.easykarobar.ui.screen.attendance.AttendanceScreen
-import org.prime.easykarobar.ui.screen.distributor.order.AllProductScreen
+import org.prime.easykarobar.ui.screen.distributor.order.AllProductsPremiumScreen
+import org.prime.easykarobar.ui.screen.distributor.order.CategoryShoppingScreen
 import org.prime.easykarobar.ui.screen.distributor.order.MyOrdersScreen
-import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen
 import org.prime.easykarobar.ui.screen.home.ROLE
 import org.prime.easykarobar.ui.screen.home.userRole
 import org.prime.easykarobar.ui.screen.masters.AccountAddScreen
@@ -338,7 +338,8 @@ object HomeTab : Tab {
 
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                    ) {
+                    )
+                    {
                         filteredReportList.take(6).chunked(2).forEach { rowItems ->
                             Row(
                                 modifier = Modifier.fillMaxWidth()
@@ -509,7 +510,8 @@ object HomeTab : Tab {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
+                    )
+                    {
                         // First Card - Bill Receivable
                         ReportActionCard(
                             title = "Bill Receivable",
@@ -533,8 +535,9 @@ object HomeTab : Tab {
                             description = "Create and place a new order",
                             icon = Icons.Default.ShoppingCart,
                             onClick = {
-                                nav?.push(if (hideGroup) AllProductScreen() else ShoppingScreen)
-                            })  // Second Card - Ledger
+                                nav?.push(if (hideGroup) AllProductsPremiumScreen() else CategoryShoppingScreen)
+                            })
+  // Second Card - Ledger
                         ReportActionCard(
                             title = "View Order",
                             description = "View your orders",

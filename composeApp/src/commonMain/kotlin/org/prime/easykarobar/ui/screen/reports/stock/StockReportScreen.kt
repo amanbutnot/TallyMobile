@@ -1,6 +1,6 @@
 package org.prime.easykarobar.ui.screen.reports.stock
 
-import CurrentDate
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,9 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,7 +41,6 @@ import org.prime.easykarobar.ui.printing.Quadruple
 import org.prime.easykarobar.ui.printing.fourHeaderHtml
 import org.prime.easykarobar.ui.screen.reports.ledger.ItemLedgerScreen
 import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheet
-import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog

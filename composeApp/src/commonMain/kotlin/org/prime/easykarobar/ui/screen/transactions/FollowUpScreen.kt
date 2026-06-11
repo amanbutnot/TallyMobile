@@ -1,6 +1,6 @@
 package org.prime.easykarobar.ui.screen.transactions
 
-import CurrentDate
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement

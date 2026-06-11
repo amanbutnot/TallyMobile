@@ -10,8 +10,8 @@ package org.prime.easykarobar.ui.screen.transactions.sale
 // applyCompoundDiscount) are UNCHANGED — do not re-declare them.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import CurrentDate
-import TallyDatePickerRow
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
+import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -143,9 +143,9 @@ import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
+import org.prime.easykarobar.ui.shared.reportsShared.yymmdd
 import org.tally.Products_Pricing
 import org.tally.SerialNoEnterReportSale
-import yymmdd
 import kotlin.math.absoluteValue
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -2132,7 +2132,7 @@ fun MultiSelectItemSheet(
         smartSearch(
             list = options,
             query = query,
-            selectors = listOf { it.toString() }
+            selectors = listOf { it.Name }
         )
     }
 
