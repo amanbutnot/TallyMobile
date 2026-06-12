@@ -2,6 +2,7 @@ package org.prime.easykarobar.data.expect
 
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
+import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import org.prime.easykarobar.TallyDatabase
@@ -26,7 +27,7 @@ actual class DriverFactory(private val context: Context) {
             output.write(bytes)
         }
 
-        return AndroidSqliteDriver(
+        val driver = AndroidSqliteDriver(
             schema = TallyDatabase.Schema,
             context = context,
             name = dbName,
@@ -36,5 +37,34 @@ actual class DriverFactory(private val context: Context) {
                 }
             }
         )
+
+        // Manual check for columns after database is loaded
+        try {
+            driver.executeQuery(null, "PRAGMA table_info(Products)", { cursor ->
+                val existingColumns = mutableSetOf<String>()
+                while (cursor.next().value) {
+                    cursor.getString(1)?.let { existingColumns.add(it) }
+                }
+
+                val columnsToAdd = listOf(
+                    "N1" to "REAL",
+                    "AltUnit" to "TEXT",
+                    "ConFactor" to "REAL",
+                    "ConType" to "REAL"
+                )
+
+                columnsToAdd.forEach { (name, type) ->
+                    if (!existingColumns.contains(name)) {
+                        println("⚠️ $name column missing in Products table, adding it...")
+                        driver.execute(null, "ALTER TABLE Products ADD COLUMN $name $type", 0)
+                    }
+                }
+                QueryResult.Unit
+            }, 0)
+        } catch (e: Exception) {
+            println("❌ Error during manual migration: ${e.message}")
+        }
+
+        return driver
     }
 }
