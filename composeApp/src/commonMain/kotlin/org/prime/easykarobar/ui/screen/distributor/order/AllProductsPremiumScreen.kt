@@ -3,23 +3,52 @@ package org.prime.easykarobar.ui.screen.distributor.order
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
@@ -40,9 +69,7 @@ import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.composables.QuantityTextField
-import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
-import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
 import org.tally.GetProductsForDis
 import tallymobile.composeapp.generated.resources.Res
@@ -51,34 +78,14 @@ import tallymobile.composeapp.generated.resources.category_placeholder
 data class AllProductsPremiumScreen(
     val categoryName: String? = null,
     val productCode: Double? = null,
+    val isTab: Boolean
 ) : Screen {
 
     @Composable
     override fun Content() {
-        val nav = LocalNavigator.currentOrThrow
-        val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
-        val db = DatabaseHolder.instance
-        val showProductInfo = remember { mutableStateOf(false) }
-        val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
-
-        var searchQuery by remember { mutableStateOf("") }
-
-        val perms = SharedPrefs.Permissions.get()
-        val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
-        val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
-
-        val productList = remember(productCode) {
-            db.productsQueries.getProductsForDis(
-                filterGroup = filterAGRP,
-                groupCodes = groupCodes,
-                productCode = productCode
-            ).executeAsList()
-        }
-
-        val filteredProducts = remember(searchQuery, productList) {
-            if (searchQuery.isEmpty()) productList
-            else productList.filter { it.product_name?.contains(searchQuery, ignoreCase = true) == true }
-        }
+        val navigator = LocalNavigator.currentOrThrow
+        val nav = if (isTab) (navigator.parent?.parent ?: navigator.parent) else navigator
+        val cartViewModel = nav?.rememberNavigatorScreenModel { CartViewModel() }
 
         Scaffold(
             containerColor = Color.White,
@@ -95,7 +102,7 @@ data class AllProductsPremiumScreen(
                             .padding(horizontal = 8.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = { nav.pop() }) {
+                        IconButton(onClick = { (nav ?: navigator).pop() }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
@@ -117,19 +124,19 @@ data class AllProductsPremiumScreen(
 
                         BadgedBox(
                             badge = {
-                                if (cartViewModel.getTotalProductCount() > 0) {
+                                if ((cartViewModel?.getTotalProductCount() ?: 0) > 0) {
                                     Badge(
                                         containerColor = Color(0xFFE53935),
                                         contentColor = Color.White
                                     ) {
-                                        Text(cartViewModel.getTotalProductCount().toString())
+                                        Text(cartViewModel?.getTotalProductCount().toString())
                                     }
                                 }
                             },
                             modifier = Modifier.padding(end = 8.dp)
                         ) {
                             IconButton(
-                                onClick = { nav.push(CartScreen) }
+                                onClick = { (nav ?: navigator).push(CartScreen) }
                             ) {
                                 Icon(
                                     Icons.Default.ShoppingCart,
@@ -139,63 +146,191 @@ data class AllProductsPremiumScreen(
                             }
                         }
                     }
-
-                    // Clean Search Bar
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFF2F4F7)
-                    ) {
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = {
-                                Text(
-                                    "Search products...",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        color = Color(0xFF667085)
-                                    )
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Search,
-                                    contentDescription = null,
-                                    tint = Color(0xFF667085),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                disabledContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                cursorColor = Color(0xFF1A1C1E)
-                            ),
-                            singleLine = true
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
         ) { paddingValues ->
+            Box(Modifier.padding(paddingValues)) {
+                if (cartViewModel != null) {
+                    AllProductsPremiumContent(cartViewModel)
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun AllProductsPremiumContent(cartViewModel: CartViewModel) {
+        val db = DatabaseHolder.instance
+        val showProductInfo = remember { mutableStateOf(false) }
+        val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
+
+        var searchQuery by remember { mutableStateOf("") }
+        var selectedPriceRange by remember { mutableStateOf<Pair<Double, Double>?>(null) }
+
+        val perms = SharedPrefs.Permissions.get()
+        val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
+        val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
+
+        val productList = remember(productCode) {
+            db.productsQueries.getProductsForDis(
+                filterGroup = filterAGRP,
+                groupCodes = groupCodes,
+                productCode = productCode
+            ).executeAsList()
+        }
+
+        val priceRanges = remember(productList) {
+            val maxPrice = productList.maxOfOrNull { it.sales_price ?: 0.0 } ?: 0.0
+            val ranges = mutableListOf<Pair<Double, Double>>()
+            if (maxPrice > 0) {
+                val step = when {
+                    maxPrice <= 250 -> 50.0
+                    maxPrice <= 1000 -> 250.0
+                    maxPrice <= 5000 -> 1000.0
+                    maxPrice <= 20000 -> 5000.0
+                    else -> 10000.0
+                }
+                var current = 0.0
+                while (current < maxPrice) {
+                    ranges.add(current to (current + step))
+                    current += step
+                }
+            }
+            ranges
+        }
+
+        val filteredProducts = remember(searchQuery, selectedPriceRange, productList) {
+            productList.filter { product ->
+                val matchesSearch = searchQuery.isEmpty() || product.product_name?.contains(
+                    searchQuery,
+                    ignoreCase = true
+                ) == true
+                val matchesPrice = selectedPriceRange == null || (
+                        (product.sales_price ?: 0.0) >= selectedPriceRange!!.first &&
+                                (product.sales_price ?: 0.0) <= selectedPriceRange!!.second
+                        )
+                matchesSearch && matchesPrice
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+        ) {
+            // Clean Search Bar
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFF2F4F7)
+            ) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = {
+                        Text(
+                            "Search products...",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = Color(0xFF667085)
+                            )
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            tint = Color(0xFF667085),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        cursorColor = Color(0xFF1A1C1E)
+                    ),
+                    singleLine = true
+                )
+            }
+
+            if (priceRanges.isNotEmpty()) {
+                var expanded by remember { mutableStateOf(false) }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { expanded = !expanded },
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF2F4F7)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = selectedPriceRange?.let { "Price: ${it.first.toInt()} - ${it.second.toInt()}" } ?: "All Prices",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = Color(0xFF1A1C1E),
+                                    fontWeight = FontWeight.Medium
+                                )
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null,
+                                tint = Color(0xFF667085)
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier
+                            .fillMaxWidth(0.9f)
+                            .background(Color.White)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("All Prices") },
+                            onClick = {
+                                selectedPriceRange = null
+                                expanded = false
+                            }
+                        )
+                        priceRanges.forEach { range ->
+                            DropdownMenuItem(
+                                text = { Text("${range.first.toInt()} - ${range.second.toInt()}") },
+                                onClick = {
+                                    selectedPriceRange = range
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 contentPadding = PaddingValues(
                     start = 16.dp,
                     end = 16.dp,
-                    top = paddingValues.calculateTopPadding() + 8.dp,
+                    top = 8.dp,
                     bottom = 32.dp
                 ),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.White)
+                modifier = Modifier.fillMaxSize()
             ) {
                 items(filteredProducts) { product ->
                     PremiumProductItem(

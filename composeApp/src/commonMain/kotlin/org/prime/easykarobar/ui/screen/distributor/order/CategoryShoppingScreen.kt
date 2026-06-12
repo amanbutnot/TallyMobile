@@ -74,62 +74,9 @@ object CategoryShoppingScreen : Screen {
 
     @Composable
     override fun Content() {
-        val nav = LocalNavigator.currentOrThrow
+        val navigator = LocalNavigator.currentOrThrow
+        val nav = navigator.parent?.parent ?: navigator.parent ?: navigator
         val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
-        val db = DatabaseHolder.instance
-        val showProductInfo = remember { mutableStateOf(false) }
-        val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
-        val sliderImages = listOf(
-            "https://picsum.photos/1600/700?random=1",
-            "https://picsum.photos/1600/700?random=2",
-            "https://picsum.photos/1600/700?random=3",
-            "https://picsum.photos/1600/700?random=4",
-            "https://picsum.photos/1600/700?random=5",
-            "https://picsum.photos/1600/700?random=6",
-            "https://picsum.photos/1600/700?random=7",
-            "https://picsum.photos/1600/700?random=8",
-            "https://picsum.photos/1600/700?random=9",
-            "https://picsum.photos/1600/700?random=10"
-        )
-        val realSize = sliderImages.size
-        val startPage = Int.MAX_VALUE / 2
-
-        val pagerState = rememberPagerState(
-            initialPage = startPage - (startPage % realSize),
-            pageCount = { Int.MAX_VALUE }
-        )
-
-        LaunchedEffect(Unit) {
-            while (true) {
-                delay(3000.milliseconds)
-                pagerState.animateScrollToPage(
-                    pagerState.currentPage + 1
-                )
-            }
-        }
-
-
-        var searchQuery by remember { mutableStateOf("") }
-
-        val categoryList = remember {
-            db.productsQueries.productCategoriesForDis(
-                filterGroup = filterItemGroups(),
-                groupCodes = itemGroupCodes()
-            ).executeAsList()
-        }
-
-        val productList = remember {
-            db.productsQueries.getProductsForDis(
-                filterGroup = filterItemGroups(),
-                groupCodes = itemGroupCodes(),
-                productCode = null
-            ).executeAsList()
-        }
-
-        val filteredCategories = remember(searchQuery, categoryList) {
-            if (searchQuery.isEmpty()) categoryList
-            else categoryList.filter { it.Name?.contains(searchQuery, ignoreCase = true) == true }
-        }
 
         Scaffold(
             containerColor = Color.White,
@@ -188,58 +135,129 @@ object CategoryShoppingScreen : Screen {
                             }
                         }
                     }
-
-                    // Clean Search Bar
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFF2F4F7)
-                    ) {
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = {
-                                Text(
-                                    "Search categories...",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        color = Color(0xFF667085)
-                                    )
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Search,
-                                    contentDescription = null,
-                                    tint = Color(0xFF667085),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                disabledContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                cursorColor = Color(0xFF1A1C1E)
-                            ),
-                            singleLine = true
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
         ) { paddingValues ->
+            Box(Modifier.padding(paddingValues)) {
+                CategoryShoppingContent()
+            }
+        }
+    }
+
+    @Composable
+    fun CategoryShoppingContent() {
+        val navigator = LocalNavigator.currentOrThrow
+        val nav = navigator.parent?.parent ?: navigator.parent ?: navigator
+        val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
+        val db = DatabaseHolder.instance
+        val showProductInfo = remember { mutableStateOf(false) }
+        val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
+        val sliderImages = listOf(
+            "https://picsum.photos/1600/700?random=1",
+            "https://picsum.photos/1600/700?random=2",
+            "https://picsum.photos/1600/700?random=3",
+            "https://picsum.photos/1600/700?random=4",
+            "https://picsum.photos/1600/700?random=5",
+            "https://picsum.photos/1600/700?random=6",
+            "https://picsum.photos/1600/700?random=7",
+            "https://picsum.photos/1600/700?random=8",
+            "https://picsum.photos/1600/700?random=9",
+            "https://picsum.photos/1600/700?random=10"
+        )
+        val realSize = sliderImages.size
+        val startPage = Int.MAX_VALUE / 2
+
+        val pagerState = rememberPagerState(
+            initialPage = startPage - (startPage % realSize),
+            pageCount = { Int.MAX_VALUE }
+        )
+
+        LaunchedEffect(Unit) {
+            while (true) {
+                delay(3000.milliseconds)
+                pagerState.animateScrollToPage(
+                    pagerState.currentPage + 1
+                )
+            }
+        }
+
+
+        var searchQuery by remember { mutableStateOf("") }
+
+        val categoryList = remember {
+            db.productsQueries.productCategoriesForDis(
+                filterGroup = filterItemGroups(),
+                groupCodes = itemGroupCodes()
+            ).executeAsList()
+        }
+
+        val productList = remember {
+            db.productsQueries.getProductsForDis(
+                filterGroup = filterItemGroups(),
+                groupCodes = itemGroupCodes(),
+                productCode = null
+            ).executeAsList()
+        }
+
+        val filteredCategories = remember(searchQuery, categoryList) {
+            if (searchQuery.isEmpty()) categoryList
+            else categoryList.filter { it.Name?.contains(searchQuery, ignoreCase = true) == true }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+        ) {
+            // Clean Search Bar moved inside content so it shows when called without scaffold if needed,
+            // or I can keep it in the screen content.
+            // Actually, user wants to remove scaffold, but they probably still want the search bar if it was part of the header.
+            // Looking at the original code, the search bar was in the topBar of the Scaffold.
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFF2F4F7)
+            ) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = {
+                        Text(
+                            "Search categories...",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = Color(0xFF667085)
+                            )
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            tint = Color(0xFF667085),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        cursorColor = Color(0xFF1A1C1E)
+                    ),
+                    singleLine = true
+                )
+            }
+
             LazyColumn(
                 contentPadding = PaddingValues(
-                    top = paddingValues.calculateTopPadding(),
                     bottom = 32.dp
                 ),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.White)
+                modifier = Modifier.fillMaxSize()
             ) {
                 item {
                     HorizontalPager(state = pagerState) { page ->
@@ -298,7 +316,8 @@ object CategoryShoppingScreen : Screen {
                                             nav.push(
                                                 AllProductsPremiumScreen(
                                                     categoryName = category.Name,
-                                                    productCode = category.GUID?.toDouble() ?: 0.0
+                                                    productCode = category.GUID?.toDouble() ?: 0.0,
+                                                    isTab = false
                                                 )
                                             )
                                         }
@@ -336,7 +355,8 @@ object CategoryShoppingScreen : Screen {
                             nav.push(
                                 AllProductsPremiumScreen(
                                     categoryName = category.Name,
-                                    productCode = category.GUID?.toDouble() ?: 0.0
+                                    productCode = category.GUID?.toDouble() ?: 0.0,
+                                    isTab = false
                                 )
                             )
                         }
@@ -474,7 +494,7 @@ object CategoryShoppingScreen : Screen {
                     ) {
                         rowItems.forEach { product ->
                             Box(modifier = Modifier.weight(1f)) {
-                                AllProductsPremiumScreen(null, null).PremiumProductItem(
+                                AllProductsPremiumScreen(null, null, false).PremiumProductItem(
                                     product = product,
                                     cartViewModel = cartViewModel,
                                     onClick = { onItemClick(product) }

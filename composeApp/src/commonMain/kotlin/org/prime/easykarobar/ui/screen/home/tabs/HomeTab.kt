@@ -1,8 +1,7 @@
 package org.prime.easykarobar.ui.screen.home.tabs
 
-import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
-import org.prime.easykarobar.ui.shared.reportsShared.OutstandingDate
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -26,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -42,7 +42,6 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.Cases
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
@@ -55,7 +54,6 @@ import androidx.compose.material.icons.filled.NoteAlt
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.ShoppingBasket
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.AlertDialog
@@ -68,6 +66,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -91,7 +90,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.Tab
+import cafe.adriel.voyager.navigator.tab.TabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import dev.jordond.compass.Priority
 import dev.jordond.compass.geolocation.Geolocator
@@ -105,18 +106,14 @@ import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.hasSalesmanPermission
 import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.screen.distributor.order.AllProductsPremiumTab
 import org.prime.easykarobar.ui.screen.attendance.AttendanceListScreen
 import org.prime.easykarobar.ui.screen.attendance.AttendanceScreen
-import org.prime.easykarobar.ui.screen.distributor.order.AllProductsPremiumScreen
-import org.prime.easykarobar.ui.screen.distributor.order.CategoryShoppingScreen
-import org.prime.easykarobar.ui.screen.distributor.order.MyOrdersScreen
 import org.prime.easykarobar.ui.screen.home.ROLE
 import org.prime.easykarobar.ui.screen.home.userRole
 import org.prime.easykarobar.ui.screen.masters.AccountAddScreen
 import org.prime.easykarobar.ui.screen.reports.ledger.ItemLedgerScreen
-import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportFilterScreen
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportScreen
-import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingDisFilterScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingReportScreen
 import org.prime.easykarobar.ui.screen.reports.registers.RegisterReportScreen
 import org.prime.easykarobar.ui.screen.transactions.SingleEntryReceipt
@@ -138,6 +135,8 @@ import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodes
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
+import org.prime.easykarobar.ui.shared.reportsShared.OutstandingDate
 import kotlin.math.absoluteValue
 
 object HomeTab : Tab {
@@ -150,14 +149,69 @@ object HomeTab : Tab {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
+        val db = DatabaseHolder.instance
+        if (userRole() == ROLE.DISTRIBUTOR) {
+            val hideGroup = db.companyConfigurationQueries.hideGroup().executeAsOneOrNull()?.T2.toString() == "Y"
+            TabNavigator(if (hideGroup) AllProductsPremiumTab else DistributorHomeSubTab) { tabNavigator ->
+                Scaffold(
+                    bottomBar = {
+                        Row(
+                            modifier = Modifier
+                                .padding(vertical = 8.dp)
+                                .fillMaxWidth()
+                                .navigationBarsPadding(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            listOf(DistributorHomeSubTab, DistributorCategorySubTab).forEach { tab ->
+                                val actualTab = if (tab == DistributorCategorySubTab && hideGroup) {
+                                    AllProductsPremiumTab
+                                } else {
+                                    tab
+                                }
+                                val selected = tabNavigator.current == actualTab
+                                val colorTint by animateColorAsState(
+                                    targetValue = if (selected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                    modifier = Modifier
+                                        .clickable { tabNavigator.current = actualTab }
+                                        .padding(vertical = 8.dp, horizontal = 16.dp)
+                                ) {
+                                    tab.options.icon?.let { icon ->
+                                        Icon(
+                                            painter = icon,
+                                            contentDescription = tab.options.title,
+                                            tint = colorTint
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = tab.options.title,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = colorTint
+                                    )
+                                }
+                            }
+                        }
+                    }
+                ) { padding ->
+                    Box(Modifier.padding(padding)) {
+                        CurrentTab()
+                    }
+                }
+            }
+            return
+        }
+
         val scope = rememberCoroutineScope()
 
         var showLocationPopup by remember { mutableStateOf(false) }
         var showLoading by remember { mutableStateOf(false) }
-        val db = DatabaseHolder.instance
         val queries = db.companyInformationQueries
         val compInfo = queries.getCompanyInformation().executeAsOne()
-        val configHideGroup = db.companyConfigurationQueries.hideGroup().executeAsOneOrNull()
         var showDeniedDialog by remember { mutableStateOf(false) }
         var showLedgerSearch by remember { mutableStateOf(false) }
         var showItemSearch by remember { mutableStateOf(false) }
@@ -263,9 +317,6 @@ object HomeTab : Tab {
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                if (userRole() == ROLE.DISTRIBUTOR) {
-                    HeadingTitle("Hi, ${SharedPrefs.DistributorData.get()?.UserName ?: "User"}")
-                }
                 CompanyInfoCard(
                     companyName = CompanyName(),
                     address = compInfo.T3.toString(),
@@ -502,50 +553,6 @@ object HomeTab : Tab {
                     }
                     HeadingTitle("Create")
                     ExpandableGrid()
-                } else if (userRole() == ROLE.DISTRIBUTOR) {
-                    Spacer(Modifier.height(8.dp))
-                    HeadingTitle("Quick Actions")
-
-                    val hideGroup = configHideGroup?.T2.toString() == "Y"
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    )
-                    {
-                        // First Card - Bill Receivable
-                        ReportActionCard(
-                            title = "Bill Receivable",
-                            description = "View outstanding receivables and pending bills",
-                            icon = Icons.Default.Receipt,
-                            onClick = {
-                                nav?.push(OutstandingDisFilterScreen)
-                            })
-
-                        // Second Card - Ledger
-                        ReportActionCard(
-                            title = "Ledger Report",
-                            description = "Access detailed ledger statements and transactions",
-                            icon = Icons.Default.Cases,
-                            onClick = {
-                                nav?.push(LedgerReportFilterScreen(showAccount = false))
-                            })
-                        // Second Card - Ledger
-                        ReportActionCard(
-                            title = "Raise Order",
-                            description = "Create and place a new order",
-                            icon = Icons.Default.ShoppingCart,
-                            onClick = {
-                                nav?.push(if (hideGroup) AllProductsPremiumScreen() else CategoryShoppingScreen)
-                            })
-  // Second Card - Ledger
-                        ReportActionCard(
-                            title = "View Order",
-                            description = "View your orders",
-                            icon = Icons.Default.ShoppingBasket,
-                            onClick = {
-                                nav?.push(MyOrdersScreen)
-                            })
-                    }
                 } else {
                     HeadingTitle("Create")
                     ExpandableGrid()
@@ -896,7 +903,7 @@ fun ExpandableGrid() {
 }
 
 @Composable
-private fun HeadingTitle(title: String) {
+fun HeadingTitle(title: String) {
     Text(
         title,
         style = MaterialTheme.typography.headlineLarge.copy(
@@ -949,7 +956,7 @@ fun CreateCard(
 }
 
 @Composable
-private fun CompanyInfoCard(
+fun CompanyInfoCard(
     companyName: String,
     address: String,
     financialYear: String,
