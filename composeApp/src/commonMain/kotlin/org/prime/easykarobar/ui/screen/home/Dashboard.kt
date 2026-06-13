@@ -79,7 +79,7 @@ object Dashboard : Screen {
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(8.dp))
                                     .then(
-                                        if (hasCompanies) {
+                                        if (hasCompanies && userRole() != ROLE.DISTRIBUTOR) {
                                             Modifier.clickable {
                                                 nav.push(
                                                     SelectCompanyScreen(
@@ -104,7 +104,7 @@ object Dashboard : Screen {
                                     ), maxLines = 1, overflow = TextOverflow.Ellipsis
                                 )
 
-                                if (hasCompanies) {
+                                if (hasCompanies && userRole() != ROLE.DISTRIBUTOR) {
                                     Spacer(Modifier.width(4.dp))
                                     Icon(
                                         imageVector = Icons.Rounded.KeyboardArrowDown,
@@ -116,40 +116,42 @@ object Dashboard : Screen {
                         },
 
                         actions = {
-                            IconButton(onClick = {
-                                viewModel.userLogin(
-                                    LoginRequest(
-                                        Username = loginData?.username ?: "",
-                                        Password = loginData?.password ?: "", DeviceId = deviceId
-                                    ),
-                                    onSuccess = {
-                                        nav.push(GoogleDriveDownloadScreen)
-                                    }, onListSuccess = { companyList ->
-                                        SharedPrefs.LoginInfo.save(
-                                            loginData?.username?.trim() ?: ""
-                                        )
-                                        SharedPrefs.LoginData.save(
-                                            SharedPrefs.LoginDataModel(
-                                                username = loginData?.username?.trim() ?: "",
-                                                password = loginData?.password?.trim() ?: "",
-                                                list = companyList,
+                            if (userRole() != ROLE.DISTRIBUTOR) {
+                                IconButton(onClick = {
+                                    viewModel.userLogin(
+                                        LoginRequest(
+                                            Username = loginData?.username ?: "",
+                                            Password = loginData?.password ?: "", DeviceId = deviceId
+                                        ),
+                                        onSuccess = {
+                                            nav.push(GoogleDriveDownloadScreen)
+                                        }, onListSuccess = { companyList ->
+                                            SharedPrefs.LoginInfo.save(
+                                                loginData?.username?.trim() ?: ""
                                             )
-                                        )
-                                        nav.push(
-                                            SelectCompanyScreen(
-                                                loginData?.username?.trim() ?: "",
-                                                loginData?.password?.trim() ?: "",
-                                                companyList
+                                            SharedPrefs.LoginData.save(
+                                                SharedPrefs.LoginDataModel(
+                                                    username = loginData?.username?.trim() ?: "",
+                                                    password = loginData?.password?.trim() ?: "",
+                                                    list = companyList,
+                                                )
                                             )
-                                        )
-                                    }
-                                )
-                            }) {
-                                Icon(
-                                    Icons.Default.CloudSync,
-                                    contentDescription = "Cloud Sync",
-                                    tint = colors.onBackground
-                                )
+                                            nav.push(
+                                                SelectCompanyScreen(
+                                                    loginData?.username?.trim() ?: "",
+                                                    loginData?.password?.trim() ?: "",
+                                                    companyList
+                                                )
+                                            )
+                                        }
+                                    )
+                                }) {
+                                    Icon(
+                                        Icons.Default.CloudSync,
+                                        contentDescription = "Cloud Sync",
+                                        tint = colors.onBackground
+                                    )
+                                }
                             }
                             IconButton(onClick = { nav.push(SettingScreen) }) {
                                 Icon(

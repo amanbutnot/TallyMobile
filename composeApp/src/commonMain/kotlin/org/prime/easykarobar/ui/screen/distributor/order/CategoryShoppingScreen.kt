@@ -287,49 +287,18 @@ object CategoryShoppingScreen : Screen {
                 }
                 // Categories Grid at Top
                 item {
-                    Column(modifier = Modifier.padding(horizontal = 12.dp)) {
-                        Text(
-                            text = "All Categories",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 17.sp
-                            ),
-                            modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp)
-                        )
-
-                        // Using a simple grid-like layout for all categories
-                        val chunks = filteredCategories.chunked(4)
-                        chunks.forEach { rowItems ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                rowItems.forEach { category ->
-                                    CategoryItem(
-                                        modifier = Modifier.weight(1f),
-                                        name = category.Name.orEmpty(),
-                                        imageUrl = getCategoryImage(
-                                            SharedPrefs.User.get()?.ID.toString(),
-                                            category.GUID.toString()
-                                        ),
-                                        onClick = {
-                                            nav.push(
-                                                AllProductsPremiumScreen(
-                                                    categoryName = category.Name,
-                                                    productCode = category.GUID?.toDouble() ?: 0.0,
-                                                    isTab = false
-                                                )
-                                            )
-                                        }
-                                    )
-                                }
-                                // Fill empty slots
-                                repeat(4 - rowItems.size) {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
-                            }
+                    CategoriesGrid(
+                        categories = filteredCategories,
+                        onCategoryClick = { category ->
+                            nav.push(
+                                AllProductsPremiumScreen(
+                                    categoryName = category.Name,
+                                    productCode = category.GUID?.toDouble() ?: 0.0,
+                                    isTab = false
+                                )
+                            )
                         }
-                    }
+                    )
                 }
 
                 item {
@@ -384,7 +353,49 @@ object CategoryShoppingScreen : Screen {
     }
 
     @Composable
-    private fun CategoryItem(
+    fun CategoriesGrid(
+        categories: List<ProductCategoriesForDis>,
+        onCategoryClick: (ProductCategoriesForDis) -> Unit
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp)) {
+            Text(
+                text = "All Categories",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
+                ),
+                modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp)
+            )
+
+            // Using a simple grid-like layout for all categories
+            val chunks = categories.chunked(4)
+            chunks.forEach { rowItems ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    rowItems.forEach { category ->
+                        CategoryItem(
+                            modifier = Modifier.weight(1f),
+                            name = category.Name.orEmpty(),
+                            imageUrl = getCategoryImage(
+                                SharedPrefs.User.get()?.ID.toString(),
+                                category.GUID.toString()
+                            ),
+                            onClick = { onCategoryClick(category) }
+                        )
+                    }
+                    // Fill empty slots
+                    repeat(4 - rowItems.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    internal fun CategoryItem(
         modifier: Modifier = Modifier,
         name: String,
         imageUrl: String,

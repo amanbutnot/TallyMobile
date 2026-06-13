@@ -1,5 +1,11 @@
 package org.prime.easykarobar.ui.screen.distributor.order
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,8 +29,10 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -32,16 +40,18 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +60,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -157,6 +169,7 @@ data class AllProductsPremiumScreen(
         }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun AllProductsPremiumContent(cartViewModel: CartViewModel) {
         val db = DatabaseHolder.instance
@@ -164,7 +177,9 @@ data class AllProductsPremiumScreen(
         val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
 
         var searchQuery by remember { mutableStateOf("") }
-        var selectedPriceRange by remember { mutableStateOf<Pair<Double, Double>?>(null) }
+        var showRangeSlider by remember { mutableStateOf(false) }
+        var showSortSheet by remember { mutableStateOf(false) }
+        var sortOrder by remember { mutableStateOf("Default") }
 
         val perms = SharedPrefs.Permissions.get()
         val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
@@ -178,37 +193,29 @@ data class AllProductsPremiumScreen(
             ).executeAsList()
         }
 
-        val priceRanges = remember(productList) {
-            val maxPrice = productList.maxOfOrNull { it.sales_price ?: 0.0 } ?: 0.0
-            val ranges = mutableListOf<Pair<Double, Double>>()
-            if (maxPrice > 0) {
-                val step = when {
-                    maxPrice <= 250 -> 50.0
-                    maxPrice <= 1000 -> 250.0
-                    maxPrice <= 5000 -> 1000.0
-                    maxPrice <= 20000 -> 5000.0
-                    else -> 10000.0
-                }
-                var current = 0.0
-                while (current < maxPrice) {
-                    ranges.add(current to (current + step))
-                    current += step
-                }
-            }
-            ranges
+        val maxPrice = remember(productList) {
+            productList.maxOfOrNull { it.sales_price ?: 0.0 }?.toFloat() ?: 1000f
         }
 
-        val filteredProducts = remember(searchQuery, selectedPriceRange, productList) {
-            productList.filter { product ->
+        var priceRange by remember(maxPrice) {
+            mutableStateOf(0f..maxPrice)
+        }
+
+        val filteredProducts = remember(searchQuery, priceRange, productList, sortOrder) {
+            val filtered = productList.filter { product ->
                 val matchesSearch = searchQuery.isEmpty() || product.product_name?.contains(
                     searchQuery,
                     ignoreCase = true
                 ) == true
-                val matchesPrice = selectedPriceRange == null || (
-                        (product.sales_price ?: 0.0) >= selectedPriceRange!!.first &&
-                                (product.sales_price ?: 0.0) <= selectedPriceRange!!.second
-                        )
+                val price = product.sales_price ?: 0.0
+                val matchesPrice = price >= priceRange.start && price <= priceRange.endInclusive
                 matchesSearch && matchesPrice
+            }
+
+            when (sortOrder) {
+                "Price: Low to High" -> filtered.sortedBy { it.sales_price ?: 0.0 }
+                "Price: High to Low" -> filtered.sortedByDescending { it.sales_price ?: 0.0 }
+                else -> filtered
             }
         }
 
@@ -217,22 +224,23 @@ data class AllProductsPremiumScreen(
                 .fillMaxSize()
                 .background(Color.White)
         ) {
-            // Clean Search Bar
+            // Modern Search Bar with Shadow
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFF2F4F7)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFFF7F8F9),
+                shadowElevation = 1.dp
             ) {
                 TextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     placeholder = {
                         Text(
-                            "Search products...",
+                            "Search for products...",
                             style = MaterialTheme.typography.bodyMedium.copy(
-                                color = Color(0xFF667085)
+                                color = Color(0xFF94A3B8)
                             )
                         )
                     },
@@ -240,9 +248,21 @@ data class AllProductsPremiumScreen(
                         Icon(
                             Icons.Default.Search,
                             contentDescription = null,
-                            tint = Color(0xFF667085),
-                            modifier = Modifier.size(20.dp)
+                            tint = Color(0xFF64748B),
+                            modifier = Modifier.size(22.dp)
                         )
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(
+                                    imageVector = Icons.Default.Add, // Using Add as a placeholder for close/clear if Icons.Default.Close is not available
+                                    contentDescription = "Clear",
+                                    tint = Color(0xFF64748B),
+                                    modifier = Modifier.size(18.dp).graphicsLayer(rotationZ = 45f)
+                                )
+                            }
+                        }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
@@ -251,74 +271,107 @@ data class AllProductsPremiumScreen(
                         disabledContainerColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = Color(0xFF1A1C1E)
+                        cursorColor = Color(0xFF004D40)
                     ),
                     singleLine = true
                 )
             }
 
-            if (priceRanges.isNotEmpty()) {
-                var expanded by remember { mutableStateOf(false) }
+            // High-end Filter and Sort Bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                FilterSortButton(
+                    text = "Filter Price",
+                    icon = Icons.Default.FilterList,
+                    isActive = showRangeSlider || priceRange.start > 0f || priceRange.endInclusive < maxPrice,
+                    onClick = { showRangeSlider = !showRangeSlider },
+                    modifier = Modifier.weight(1f)
+                )
 
-                Box(
+                FilterSortButton(
+                    text = if (sortOrder == "Default") "Sort" else sortOrder,
+                    icon = Icons.AutoMirrored.Filled.Sort,
+                    isActive = sortOrder != "Default",
+                    onClick = { showSortSheet = true },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            AnimatedVisibility(
+                visible = showRangeSlider,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    color = Color(0xFFF8FAFC),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                 ) {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { expanded = !expanded },
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFF2F4F7)
+                    Column(
+                        modifier = Modifier.padding(16.dp)
                     ) {
                         Row(
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = selectedPriceRange?.let { "Price: ${it.first.toInt()} - ${it.second.toInt()}" } ?: "All Prices",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = Color(0xFF1A1C1E),
-                                    fontWeight = FontWeight.Medium
+                                "Price Range",
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1E293B)
                                 )
                             )
-                            Icon(
-                                imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = null,
-                                tint = Color(0xFF667085)
+                            Text(
+                                "₹${priceRange.start.toInt()} - ₹${priceRange.endInclusive.toInt()}",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF004D40)
+                                )
                             )
                         }
-                    }
 
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false },
-                        modifier = Modifier
-                            .fillMaxWidth(0.9f)
-                            .background(Color.White)
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("All Prices") },
-                            onClick = {
-                                selectedPriceRange = null
-                                expanded = false
-                            }
+                        Spacer(Modifier.height(12.dp))
+
+                        RangeSlider(
+                            value = priceRange,
+                            onValueChange = { priceRange = it },
+                            valueRange = 0f..maxPrice,
+                            colors = androidx.compose.material3.SliderDefaults.colors(
+                                thumbColor = Color(0xFF004D40),
+                                activeTrackColor = Color(0xFF004D40),
+                                inactiveTrackColor = Color(0xFFE2E8F0)
+                            ),
+                            modifier = Modifier.height(24.dp)
                         )
-                        priceRanges.forEach { range ->
-                            DropdownMenuItem(
-                                text = { Text("${range.first.toInt()} - ${range.second.toInt()}") },
-                                onClick = {
-                                    selectedPriceRange = range
-                                    expanded = false
-                                }
-                            )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("₹0", style = MaterialTheme.typography.labelSmall, color = Color(0xFF64748B))
+                            Text("₹${maxPrice.toInt()}", style = MaterialTheme.typography.labelSmall, color = Color(0xFF64748B))
                         }
                     }
                 }
             }
+
+            // Results count
+            Text(
+                text = "${filteredProducts.size} Products found",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = Color(0xFF64748B),
+                    fontWeight = FontWeight.Medium
+                ),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
@@ -358,6 +411,132 @@ data class AllProductsPremiumScreen(
                             cartViewModel.addProduct(it)
                         }
                     }
+                )
+            }
+        }
+
+        if (showSortSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showSortSheet = false },
+                sheetState = rememberModalBottomSheetState(),
+                containerColor = Color.White,
+                dragHandle = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            Modifier
+                                .padding(vertical = 12.dp)
+                                .size(width = 32.dp, height = 4.dp)
+                                .background(Color(0xFFE2E8F0), RoundedCornerShape(2.dp))
+                        )
+                    }
+                }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .padding(bottom = 40.dp)
+                ) {
+                    Text(
+                        "Sort Products By",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E293B)
+                        ),
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                    
+                    listOf(
+                        "Default" to null,
+                        "Price: Low to High" to "Low to High",
+                        "Price: High to Low" to "High to Low"
+                    ).forEach { (option, _) ->
+                        val isSelected = sortOrder == option
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .clickable {
+                                    sortOrder = option
+                                    showSortSheet = false
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) Color(0xFFF0F9F6) else Color.Transparent,
+                            border = if (isSelected) BorderStroke(1.dp, Color(0xFF004D40).copy(0.2f)) else null
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = option,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) Color(0xFF004D40) else Color(0xFF475569)
+                                    )
+                                )
+                                if (isSelected) {
+                                    Icon(
+                                        Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = Color(0xFF004D40),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun FilterSortButton(
+        text: String,
+        icon: ImageVector,
+        isActive: Boolean,
+        onClick: () -> Unit,
+        modifier: Modifier = Modifier
+    ) {
+        Surface(
+            modifier = modifier
+                .height(44.dp)
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null,
+                    onClick = onClick
+                ),
+            shape = RoundedCornerShape(12.dp),
+            color = if (isActive) Color(0xFFF0F9F6) else Color.White,
+            border = BorderStroke(
+                width = 1.dp,
+                color = if (isActive) Color(0xFF004D40) else Color(0xFFE2E8F0)
+            )
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = if (isActive) Color(0xFF004D40) else Color(0xFF64748B)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = if (isActive) Color(0xFF004D40) else Color(0xFF475569)
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
