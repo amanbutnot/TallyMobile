@@ -39,10 +39,10 @@ class FollowupViewmodel : ViewModel() {
         }
     }
 
-    fun getFollowupList() {
+    fun getFollowupList(startDate: String, endDate: String,actCode:String,salesman:String) {
         viewModelScope.launch {
             _listState.value = DataState(isLoading = true)
-            val res = FollowupRepo.getFollowupList()
+            val res = FollowupRepo.getFollowupList(startDate,endDate,actCode,salesman)
             if (res?.statuscode == 200) {
                 _listState.value = DataState(
                     success = true,

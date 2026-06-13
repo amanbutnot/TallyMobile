@@ -43,6 +43,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.withContext
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.model.hasSalesmanPermission
 import org.prime.easykarobar.ui.screen.home.TallyToggleRow
@@ -60,6 +63,7 @@ fun AllOneFilterScreen(
     showEndDate: Boolean,
     showDueDate: Boolean,
     showOtherToggle: Boolean,
+    showSalesmanFilter: Boolean = false,
     buttonText: String = "Generate Report",
     onGenerateClick: (GenerateOneAllReportData) -> Unit
 ) {
@@ -75,9 +79,20 @@ fun AllOneFilterScreen(
         var selectedGUID by rememberSaveable { mutableStateOf("") }
         var showBottomSheet by remember { mutableStateOf(false) }
         var reportType by rememberSaveable { mutableStateOf("ALL") }
+        var reportTypeSalesman by rememberSaveable { mutableStateOf("ALL") }
         var calculateDays by rememberSaveable { mutableStateOf("Bill Date") }
 
         val db = DatabaseHolder.instance
+        var salesmanList by remember { mutableStateOf<List<String>>(emptyList()) }
+        var selectedSalesman by remember { mutableStateOf("") }
+        var showSalesmanNameList by remember { mutableStateOf(false) }
+
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            withContext(Dispatchers.IO) {
+                salesmanList = db.salesManTargetQueries.getSalesmanName().executeAsList().map { it.SalesmanName.toString() }
+            }
+        }
+
         val list = getLedgerMasters(db)
         val nameList = list.map { (it.Name ?: "") to (it.GUID ?: "") }
         val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -116,7 +131,7 @@ fun AllOneFilterScreen(
                     // Report Type Section
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = "Report Type",
+                            text = if (showSalesmanFilter) "Select Account" else "Report Type",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -258,6 +273,152 @@ fun AllOneFilterScreen(
                             }
                         }
                     }
+
+                    if (showSalesmanFilter) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = "Select Salesman",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                // All Salesman Option
+                                Surface(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable {
+                                            reportTypeSalesman = "ALL"
+                                            selectedSalesman = ""
+                                        },
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (reportTypeSalesman == "ALL")
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.surfaceContainer,
+                                    border = BorderStroke(
+                                        1.5.dp,
+                                        if (reportTypeSalesman == "ALL")
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.outlineVariant
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        RadioButton(
+                                            selected = reportTypeSalesman == "ALL",
+                                            onClick = null,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            "All Salesman",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = if (reportTypeSalesman == "ALL")
+                                                MaterialTheme.colorScheme.onPrimaryContainer
+                                            else
+                                                MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+
+                                // Single Salesman Option
+                                Surface(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { reportTypeSalesman = "SINGLE" },
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (reportTypeSalesman == "SINGLE")
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.surfaceContainer,
+                                    border = BorderStroke(
+                                        1.5.dp,
+                                        if (reportTypeSalesman == "SINGLE")
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.outlineVariant
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        RadioButton(
+                                            selected = reportTypeSalesman == "SINGLE",
+                                            onClick = null,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            "Single Salesman",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = if (reportTypeSalesman == "SINGLE")
+                                                MaterialTheme.colorScheme.onPrimaryContainer
+                                            else
+                                                MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        if (reportTypeSalesman == "SINGLE") {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    text = "Select Salesman",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { showSalesmanNameList = true },
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainer,
+                                    border = BorderStroke(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                                    )
+                                )
+                                {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 14.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = selectedSalesman.ifEmpty { "Choose a salesman" },
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = if (selectedSalesman.isEmpty())
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            else
+                                                MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Icon(
+                                            imageVector = Icons.Outlined.KeyboardArrowDown,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
 
                     // Date Range Section
                     if (showStartDate || showEndDate) {
@@ -453,14 +614,16 @@ fun AllOneFilterScreen(
                                 accountGUID = selectedGUID,
                                 accountName = selectedAccount,
                                 startDate = startDate,
-                                endDate = endDate, calculateDays = calculateDays,showOtherToggle=showOther
+                                endDate = endDate, calculateDays = calculateDays,showOtherToggle=showOther,
+                                salesmanName = selectedSalesman
                             )
                         )
                     }
                 },
                 enabled = (!showStartDate || startDate.isNotEmpty()) &&
                         (!showEndDate || endDate.isNotEmpty()) &&
-                        (reportType == "ALL" || selectedAccount.isNotEmpty()),
+                        (reportType == "ALL" || selectedAccount.isNotEmpty()) &&
+                        (!showSalesmanFilter || reportTypeSalesman == "ALL" || selectedSalesman.isNotEmpty()),
                 backgroundColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
@@ -477,6 +640,17 @@ fun AllOneFilterScreen(
             onDismiss = { showBottomSheet = false },
             bottomSheetState = state
         )
+
+        org.prime.easykarobar.ui.screen.transactions.TransactionOneBottomSheet(
+            showBottomSheet = showSalesmanNameList,
+            list = salesmanList,
+            onSelected = {
+                selectedSalesman = it
+            },
+            onDismiss = { showSalesmanNameList = false },
+            bottomSheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            title = "Select Salesman"
+        )
     }
 }
 
@@ -486,5 +660,6 @@ data class GenerateOneAllReportData(
     val startDate: String,
     val endDate: String,
     val calculateDays: String,
-    val showOtherToggle: Boolean
+    val showOtherToggle: Boolean,
+    val salesmanName: String = ""
 )

@@ -34,7 +34,13 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 
-data class FollowupListScreen(val accountName: String, val actCode: String) : Screen {
+data class FollowupListScreen(
+    val accountName: String,
+    val actCode: String,
+    val startDate: String,
+    val endDate: String,
+    val salesman: String = ""
+) : Screen {
     @Composable
     override fun Content() {
         val nav = LocalNavigator.currentOrThrow
@@ -43,7 +49,7 @@ data class FollowupListScreen(val accountName: String, val actCode: String) : Sc
         val db = DatabaseHolder.instance
 
         LaunchedEffect(Unit) {
-            viewmodel.getFollowupList()
+            viewmodel.getFollowupList(startDate,endDate,actCode, salesman = salesman)
         }
 
         val filteredList = remember(state.data, actCode) {

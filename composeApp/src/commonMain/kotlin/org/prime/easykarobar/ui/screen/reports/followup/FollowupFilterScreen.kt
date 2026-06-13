@@ -12,15 +12,19 @@ class FollowupFilterScreen : Screen {
         val nav = LocalNavigator.currentOrThrow
         AllOneFilterScreen(
             title = "Followup Filter",
-            showStartDate = false,
-            showEndDate = false,
+            showStartDate = true,
+            showEndDate = true,
             showDueDate = false,
             showOtherToggle = false,
+            showSalesmanFilter = true,
             onGenerateClick = {
                 nav.push(
                     FollowupListScreen(
                         accountName = it.accountName,
-                        actCode = it.accountGUID
+                        actCode = it.accountGUID,
+                        startDate = it.startDate,
+                        endDate = it.endDate,
+                        salesman = it.salesmanName
                     )
                 )
             }

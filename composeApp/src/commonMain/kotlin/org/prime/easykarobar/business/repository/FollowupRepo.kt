@@ -7,6 +7,7 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlinx.serialization.Serializable
 import org.prime.easykarobar.business.repository.AuthRepository.client
 import org.prime.easykarobar.data.model.ApiResponse
 import org.prime.easykarobar.data.model.FollowupData
@@ -33,12 +34,25 @@ object FollowupRepo {
         }
     }
 
-    suspend fun getFollowupList(): ApiResponse<List<FollowupData>>? {
+    suspend fun getFollowupList(
+        startDate: String,
+        endDate: String,
+        actCode: String,
+        salesman: String
+    ): ApiResponse<List<FollowupData>>? {
         return try {
             val response = client.post("${BASE_URL}/Locations/ListFollowups.php") {
                 val token = SharedPrefs.Token.get()
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
+                setBody(
+                    FollowupRequest(
+                        startDate = startDate,
+                        endDate = endDate,
+                        salesman = salesman,
+                        accountCode = actCode
+                    )
+                )
             }
             println(response.bodyAsText())
             response.body()
@@ -48,3 +62,11 @@ object FollowupRepo {
         }
     }
 }
+
+@Serializable
+data class FollowupRequest(
+    val startDate: String,
+    val endDate: String,
+    val salesman: String,
+    val accountCode: String
+)
