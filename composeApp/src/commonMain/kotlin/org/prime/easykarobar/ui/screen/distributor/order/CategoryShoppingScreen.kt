@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -44,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -260,14 +262,36 @@ object CategoryShoppingScreen : Screen {
                 modifier = Modifier.fillMaxSize()
             ) {
                 item {
-                    HorizontalPager(state = pagerState) { page ->
-                        val imageIndex = page % realSize
-                        AsyncImage(
-                            modifier = Modifier.fillMaxWidth(),
-                            model = sliderImages[imageIndex],
-                            onLoading = { Res.drawable.category_placeholder },
-                            contentDescription = null
-                        )
+                    Box(contentAlignment = Alignment.BottomCenter) {
+                        HorizontalPager(state = pagerState) { page ->
+                            val imageIndex = page % realSize
+                            AsyncImage(
+                                modifier = Modifier.fillMaxWidth(),
+                                model = sliderImages[imageIndex],
+                                onLoading = { Res.drawable.category_placeholder },
+                                contentDescription = null
+                            )
+                        }
+
+                        Row(
+                            Modifier
+                                .height(24.dp)
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            repeat(realSize) { iteration ->
+                                val color =
+                                    if (pagerState.currentPage % realSize == iteration) Color.DarkGray else Color.LightGray
+                                Box(
+                                    modifier = Modifier
+                                        .padding(2.dp)
+                                        .clip(CircleShape)
+                                        .background(color)
+                                        .size(8.dp)
+                                )
+                            }
+                        }
                     }
                     Spacer(Modifier.height(8.dp))
                     AsyncImage(

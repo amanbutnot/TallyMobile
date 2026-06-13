@@ -65,6 +65,7 @@ import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.OnBoardingScreen
 import org.prime.easykarobar.ui.screen.distributor.CreateDistributorScreen
 import org.prime.easykarobar.ui.screen.distributor.ListDistributorScreen
+import org.prime.easykarobar.ui.screen.distributor.order.MyOrdersScreen
 import org.prime.easykarobar.ui.shared.composables.TallyAlertBox
 import org.prime.easykarobar.ui.shared.composables.TallyDivider
 import org.prime.easykarobar.ui.shared.composables.TallyIconButton
@@ -225,6 +226,36 @@ object SettingScreen : Screen {
 //                        )
 //                    }
                     if (userRole() == ROLE.DISTRIBUTOR) {
+                        Text(
+                            text = "Order Management",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = colors.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                        )
+                        ManagementCard(
+                            icon = Icons.AutoMirrored.Filled.List,
+                            label = "My Orders",
+                            subtitle = "Track and view your orders",
+                            containerColor = colors.primary,
+                            contentColor = colors.onPrimary,
+                            onClick = { nav.push(MyOrdersScreen) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+                        TallyDivider()
+
+                        Text(
+                            text = "Store Information",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = colors.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                        )
+
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             ProfileItem(
                                 Icons.Default.Store,
