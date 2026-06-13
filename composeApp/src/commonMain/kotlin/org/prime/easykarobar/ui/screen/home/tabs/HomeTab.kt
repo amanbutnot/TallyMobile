@@ -80,6 +80,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -155,50 +156,64 @@ object HomeTab : Tab {
             TabNavigator(if (hideGroup) AllProductsPremiumTab else DistributorHomeSubTab) { tabNavigator ->
                 Scaffold(
                     bottomBar = {
-                        Row(
-                            modifier = Modifier
-                                .padding(vertical = 8.dp)
-                                .fillMaxWidth()
-                                .navigationBarsPadding(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                        Surface(
+                            color = Color.White,
+                            shadowElevation = 8.dp
                         ) {
-                            listOf(DistributorHomeSubTab, DistributorCategorySubTab).forEach { tab ->
-                                val actualTab = if (tab == DistributorCategorySubTab && hideGroup) {
-                                    AllProductsPremiumTab
-                                } else {
-                                    tab
-                                }
-                                val selected = tabNavigator.current == actualTab
-                                val colorTint by animateColorAsState(
-                                    targetValue = if (selected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                    modifier = Modifier
-                                        .clickable { tabNavigator.current = actualTab }
-                                        .padding(vertical = 8.dp, horizontal = 16.dp)
-                                ) {
-                                    tab.options.icon?.let { icon ->
-                                        Icon(
-                                            painter = icon,
-                                            contentDescription = tab.options.title,
-                                            tint = colorTint
+                            Row(
+                                modifier = Modifier
+                                    .padding(vertical = 4.dp)
+                                    .fillMaxWidth()
+                                    .navigationBarsPadding(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                listOf(DistributorHomeSubTab, DistributorCategorySubTab).forEach { tab ->
+                                    val actualTab = if (tab == DistributorCategorySubTab && hideGroup) {
+                                        AllProductsPremiumTab
+                                    } else {
+                                        tab
+                                    }
+                                    val selected = tabNavigator.current == actualTab
+                                    val colorTint by animateColorAsState(
+                                        targetValue = if (selected) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    )
+                                    val scale by animateFloatAsState(if (selected) 1.1f else 1f)
+
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center,
+                                        modifier = Modifier
+                                            .clickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null
+                                            ) { tabNavigator.current = actualTab }
+                                            .padding(vertical = 8.dp, horizontal = 16.dp)
+                                            .graphicsLayer(scaleX = scale, scaleY = scale)
+                                    ) {
+                                        tab.options.icon?.let { icon ->
+                                            Icon(
+                                                painter = icon,
+                                                contentDescription = tab.options.title,
+                                                tint = colorTint,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = tab.options.title,
+                                            style = MaterialTheme.typography.labelMedium.copy(
+                                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                                            ),
+                                            color = colorTint
                                         )
                                     }
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = tab.options.title,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = colorTint
-                                    )
                                 }
                             }
                         }
                     }
                 ) { padding ->
-                    Box(Modifier.padding(padding)) {
+                    Box(Modifier.padding(bottom = padding.calculateBottomPadding())) {
                         CurrentTab()
                     }
                 }

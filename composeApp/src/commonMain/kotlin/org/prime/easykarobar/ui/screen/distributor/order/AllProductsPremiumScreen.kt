@@ -100,61 +100,66 @@ data class AllProductsPremiumScreen(
         val cartViewModel = nav?.rememberNavigatorScreenModel { CartViewModel() }
 
         Scaffold(
-            containerColor = Color.White,
+            containerColor = Color(0xFFF8F9FB),
             topBar = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.White)
-                        .statusBarsPadding()
+                Surface(
+                    color = Color.White,
+                    shadowElevation = 2.dp
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .statusBarsPadding()
                     ) {
-                        IconButton(onClick = { (nav ?: navigator).pop() }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color(0xFF1A1C1E)
-                            )
-                        }
-                        Text(
-                            text = categoryName ?: "All Products",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp,
-                                letterSpacing = (-0.5).sp
-                            ),
-                            color = Color(0xFF1A1C1E),
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        BadgedBox(
-                            badge = {
-                                if ((cartViewModel?.getTotalProductCount() ?: 0) > 0) {
-                                    Badge(
-                                        containerColor = Color(0xFFE53935),
-                                        contentColor = Color.White
-                                    ) {
-                                        Text(cartViewModel?.getTotalProductCount().toString())
-                                    }
-                                }
-                            },
-                            modifier = Modifier.padding(end = 8.dp)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            IconButton(
-                                onClick = { (nav ?: navigator).push(CartScreen) }
-                            ) {
+                            IconButton(onClick = { (nav ?: navigator).pop() }) {
                                 Icon(
-                                    Icons.Default.ShoppingCart,
-                                    contentDescription = "Cart",
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back",
                                     tint = Color(0xFF1A1C1E)
                                 )
+                            }
+                            Text(
+                                text = categoryName ?: "All Products",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 22.sp,
+                                    letterSpacing = (-0.5).sp
+                                ),
+                                color = Color(0xFF1A1C1E),
+                                modifier = Modifier.weight(1f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            BadgedBox(
+                                badge = {
+                                    if ((cartViewModel?.getTotalProductCount() ?: 0) > 0) {
+                                        Badge(
+                                            containerColor = Color(0xFFE53935),
+                                            contentColor = Color.White
+                                        ) {
+                                            Text(cartViewModel?.getTotalProductCount().toString())
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.padding(end = 12.dp)
+                            ) {
+                                IconButton(
+                                    onClick = { (nav ?: navigator).push(CartScreen) }
+                                ) {
+                                    Icon(
+                                        Icons.Default.ShoppingCart,
+                                        contentDescription = "Cart",
+                                        tint = Color(0xFF1A1C1E),
+                                        modifier = Modifier.size(26.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -222,83 +227,90 @@ data class AllProductsPremiumScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(Color(0xFFF8F9FB))
         ) {
-            // Modern Search Bar with Shadow
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                shape = RoundedCornerShape(16.dp),
-                color = Color(0xFFF7F8F9),
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White,
                 shadowElevation = 1.dp
             ) {
-                TextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = {
-                        Text(
-                            "Search for products...",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = Color(0xFF94A3B8)
-                            )
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Default.Search,
-                            contentDescription = null,
-                            tint = Color(0xFF64748B),
-                            modifier = Modifier.size(22.dp)
-                        )
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(
-                                    imageVector = Icons.Default.Add, // Using Add as a placeholder for close/clear if Icons.Default.Close is not available
-                                    contentDescription = "Clear",
-                                    tint = Color(0xFF64748B),
-                                    modifier = Modifier.size(18.dp).graphicsLayer(rotationZ = 45f)
+                Column {
+                    // Modern Search Bar with Shadow
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF2F4F7)
+                    ) {
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = {
+                                Text(
+                                    "Search for products...",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        color = Color(0xFF94A3B8)
+                                    )
                                 )
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = Color(0xFF004D40)
-                    ),
-                    singleLine = true
-                )
-            }
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = null,
+                                    tint = Color(0xFF64748B),
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { searchQuery = "" }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Add, // Using Add as a placeholder for close/clear if Icons.Default.Close is not available
+                                            contentDescription = "Clear",
+                                            tint = Color(0xFF64748B),
+                                            modifier = Modifier.size(18.dp).graphicsLayer(rotationZ = 45f)
+                                        )
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                disabledContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                cursorColor = Color(0xFF004D40)
+                            ),
+                            singleLine = true
+                        )
+                    }
 
-            // High-end Filter and Sort Bar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                FilterSortButton(
-                    text = "Filter Price",
-                    icon = Icons.Default.FilterList,
-                    isActive = showRangeSlider || priceRange.start > 0f || priceRange.endInclusive < maxPrice,
-                    onClick = { showRangeSlider = !showRangeSlider },
-                    modifier = Modifier.weight(1f)
-                )
+                    // High-end Filter and Sort Bar
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        FilterSortButton(
+                            text = "Filter Price",
+                            icon = Icons.Default.FilterList,
+                            isActive = showRangeSlider || priceRange.start > 0f || priceRange.endInclusive < maxPrice,
+                            onClick = { showRangeSlider = !showRangeSlider },
+                            modifier = Modifier.weight(1f)
+                        )
 
-                FilterSortButton(
-                    text = if (sortOrder == "Default") "Sort" else sortOrder,
-                    icon = Icons.AutoMirrored.Filled.Sort,
-                    isActive = sortOrder != "Default",
-                    onClick = { showSortSheet = true },
-                    modifier = Modifier.weight(1f)
-                )
+                        FilterSortButton(
+                            text = if (sortOrder == "Default") "Sort" else sortOrder,
+                            icon = Icons.AutoMirrored.Filled.Sort,
+                            isActive = sortOrder != "Default",
+                            onClick = { showSortSheet = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
             }
 
             AnimatedVisibility(
@@ -551,7 +563,7 @@ data class AllProductsPremiumScreen(
         val inCart = cartViewModel.isProductInCart(product)
         val quantity = cartViewModel.getProductQuantity(product)
 
-        Column(
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(
@@ -559,17 +571,25 @@ data class AllProductsPremiumScreen(
                     indication = null,
                     onClick = onClick
                 ),
-            horizontalAlignment = Alignment.CenterHorizontally
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White,
+            shadowElevation = 1.dp
         ) {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFFF0F5FF),
-                    border = null
-                ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF0F5FF),
+                        border = null
+                    ) {
                     AsyncImage(
                         model = getProductImage(
                             storeId = SharedPrefs.User.get()?.ID.toString(),
@@ -734,4 +754,5 @@ data class AllProductsPremiumScreen(
             }
         }
     }
+}
 }

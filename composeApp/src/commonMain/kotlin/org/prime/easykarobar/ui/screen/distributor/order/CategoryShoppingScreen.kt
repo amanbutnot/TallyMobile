@@ -27,7 +27,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -81,59 +80,64 @@ object CategoryShoppingScreen : Screen {
         val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
 
         Scaffold(
-            containerColor = Color.White,
+            containerColor = Color(0xFFF8F9FB),
             topBar = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.White)
-                        .statusBarsPadding()
+                Surface(
+                    color = Color.White,
+                    shadowElevation = 2.dp
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .statusBarsPadding()
                     ) {
-                        IconButton(onClick = { nav.pop() }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color(0xFF1A1C1E)
-                            )
-                        }
-                        Text(
-                            text = "Store",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp,
-                                letterSpacing = (-0.5).sp
-                            ),
-                            color = Color(0xFF1A1C1E),
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        BadgedBox(
-                            badge = {
-                                if (cartViewModel.getTotalProductCount() > 0) {
-                                    Badge(
-                                        containerColor = Color(0xFFE53935),
-                                        contentColor = Color.White
-                                    ) {
-                                        Text(cartViewModel.getTotalProductCount().toString())
-                                    }
-                                }
-                            },
-                            modifier = Modifier.padding(end = 8.dp)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            IconButton(
-                                onClick = { nav.push(CartScreen) }
-                            ) {
+                            IconButton(onClick = { nav.pop() }) {
                                 Icon(
-                                    Icons.Default.ShoppingCart,
-                                    contentDescription = "Cart",
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back",
                                     tint = Color(0xFF1A1C1E)
                                 )
+                            }
+                            Text(
+                                text = "Store",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 22.sp,
+                                    letterSpacing = (-0.5).sp
+                                ),
+                                color = Color(0xFF1A1C1E),
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            BadgedBox(
+                                badge = {
+                                    if (cartViewModel.getTotalProductCount() > 0) {
+                                        Badge(
+                                            containerColor = Color(0xFFE53935),
+                                            contentColor = Color.White
+                                        ) {
+                                            Text(cartViewModel.getTotalProductCount().toString())
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.padding(end = 12.dp)
+                            ) {
+                                IconButton(
+                                    onClick = { nav.push(CartScreen) }
+                                ) {
+                                    Icon(
+                                        Icons.Default.ShoppingCart,
+                                        contentDescription = "Cart",
+                                        tint = Color(0xFF1A1C1E),
+                                        modifier = Modifier.size(26.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -209,50 +213,52 @@ object CategoryShoppingScreen : Screen {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(Color(0xFFF8F9FB))
         ) {
-            // Clean Search Bar moved inside content so it shows when called without scaffold if needed,
-            // or I can keep it in the screen content.
-            // Actually, user wants to remove scaffold, but they probably still want the search bar if it was part of the header.
-            // Looking at the original code, the search bar was in the topBar of the Scaffold.
-
             Surface(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFF2F4F7)
+                    .fillMaxWidth(),
+                color = Color.White,
+                shadowElevation = 1.dp
             ) {
-                TextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = {
-                        Text(
-                            "Search categories...",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = Color(0xFF667085)
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF2F4F7)
+                ) {
+                    TextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = {
+                            Text(
+                                "Search products, categories...",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = Color(0xFF667085)
+                                )
                             )
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Default.Search,
-                            contentDescription = null,
-                            tint = Color(0xFF667085),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = Color(0xFF1A1C1E)
-                    ),
-                    singleLine = true
-                )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = null,
+                                tint = Color(0xFF667085),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            cursorColor = Color(0xFF1A1C1E)
+                        ),
+                        singleLine = true
+                    )
+                }
             }
 
             LazyColumn(
@@ -262,98 +268,143 @@ object CategoryShoppingScreen : Screen {
                 modifier = Modifier.fillMaxSize()
             ) {
                 item {
-                    Box(contentAlignment = Alignment.BottomCenter) {
-                        HorizontalPager(state = pagerState) { page ->
-                            val imageIndex = page % realSize
-                            AsyncImage(
-                                modifier = Modifier.fillMaxWidth(),
-                                model = sliderImages[imageIndex],
-                                onLoading = { Res.drawable.category_placeholder },
-                                contentDescription = null
-                            )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            shadowElevation = 4.dp
+                        ) {
+                            HorizontalPager(state = pagerState) { page ->
+                                val imageIndex = page % realSize
+                                AsyncImage(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(180.dp),
+                                    model = sliderImages[imageIndex],
+                                    onLoading = { Res.drawable.category_placeholder },
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
                         }
 
                         Row(
                             Modifier
-                                .height(24.dp)
-                                .fillMaxWidth()
-                                .padding(bottom = 8.dp),
+                                .padding(bottom = 12.dp)
+                                .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
                             horizontalArrangement = Arrangement.Center
                         ) {
                             repeat(realSize) { iteration ->
                                 val color =
-                                    if (pagerState.currentPage % realSize == iteration) Color.DarkGray else Color.LightGray
+                                    if (pagerState.currentPage % realSize == iteration) Color.White else Color.White.copy(alpha = 0.5f)
                                 Box(
                                     modifier = Modifier
                                         .padding(2.dp)
                                         .clip(CircleShape)
                                         .background(color)
-                                        .size(8.dp)
+                                        .size(6.dp)
                                 )
                             }
                         }
                     }
-                    Spacer(Modifier.height(8.dp))
-                    AsyncImage(
-                        modifier = Modifier.fillMaxWidth(),
-                        model = sliderImages[2],
-                        onLoading = { Res.drawable.category_placeholder },
-                        contentDescription = null
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    AsyncImage(
-                        modifier = Modifier.fillMaxWidth(),
-                        model = sliderImages[3],
-                        onLoading = { Res.drawable.category_placeholder },
-                        contentDescription = null
-                    )
-
+                }
+                item {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        shadowElevation = 4.dp
+                    ) {
+                        AsyncImage(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp),
+                            model = sliderImages[2],
+                            onLoading = { Res.drawable.category_placeholder },
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+                item {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        shadowElevation = 4.dp
+                    ) {
+                        AsyncImage(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp),
+                            model = sliderImages[3],
+                            onLoading = { Res.drawable.category_placeholder },
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 }
                 // Categories Grid at Top
                 item {
-                    CategoriesGrid(
-                        categories = filteredCategories,
-                        onCategoryClick = { category ->
-                            nav.push(
-                                AllProductsPremiumScreen(
-                                    categoryName = category.Name,
-                                    productCode = category.GUID?.toDouble() ?: 0.0,
-                                    isTab = false
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color.White,
+                        shadowElevation = 1.dp
+                    ) {
+                        CategoriesGrid(
+                            categories = filteredCategories,
+                            onCategoryClick = { category ->
+                                nav.push(
+                                    AllProductsPremiumScreen(
+                                        categoryName = category.Name,
+                                        productCode = category.GUID?.toDouble() ?: 0.0,
+                                        isTab = false
+                                    )
                                 )
-                            )
-                        }
-                    )
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        thickness = 1.dp,
-                        color = Color(0xFFF2F4F7)
-                    )
+                            }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
 
                 // Category Sections with Products
                 items(filteredCategories) { category ->
-                    CategoryProductSection(
-                        category = category,
-                        products = productList.filter { it.category_id?.toDouble() == category.GUID?.toDouble() },
-                        cartViewModel = cartViewModel,
-                        onItemClick = { item ->
-                            selectedProduct.value = item
-                            showProductInfo.value = true
-                        },
-                        onMoreClick = {
-                            nav.push(
-                                AllProductsPremiumScreen(
-                                    categoryName = category.Name,
-                                    productCode = category.GUID?.toDouble() ?: 0.0,
-                                    isTab = false
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        color = Color.White,
+                        shadowElevation = 1.dp
+                    ) {
+                        CategoryProductSection(
+                            category = category,
+                            products = productList.filter { it.category_id?.toDouble() == category.GUID?.toDouble() },
+                            cartViewModel = cartViewModel,
+                            onItemClick = { item ->
+                                selectedProduct.value = item
+                                showProductInfo.value = true
+                            },
+                            onMoreClick = {
+                                nav.push(
+                                    AllProductsPremiumScreen(
+                                        categoryName = category.Name,
+                                        productCode = category.GUID?.toDouble() ?: 0.0,
+                                        isTab = false
+                                    )
                                 )
-                            )
-                        }
-                    )
+                            }
+                        )
+                    }
                 }
             }
         }
