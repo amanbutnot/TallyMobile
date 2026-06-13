@@ -49,7 +49,7 @@ object FollowupRepo {
                     FollowupRequest(
                         startDate = startDate,
                         endDate = endDate,
-                        salesman = salesman,
+                        salesman_mobile = salesman,
                         accountCode = actCode
                     )
                 )
@@ -67,6 +67,6 @@ object FollowupRepo {
 data class FollowupRequest(
     val startDate: String,
     val endDate: String,
-    val salesman: String,
+    val salesman_mobile: String,
     val accountCode: String
 )

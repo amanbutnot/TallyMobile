@@ -224,136 +224,155 @@ object SettingScreen : Screen {
 //                            modifier = Modifier.weight(1f)
 //                        )
 //                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-                    TallyDivider()
-
-                    Text(
-                        text = "Account Information",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = colors.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-                    )
-
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ProfileItem(Icons.Default.Email, "Email Address", compInfo.T7.toString())
-                        ProfileItem(
-                            Icons.Default.Person,
-                            "Name",
-                            SharedPrefs.User.get()?.FirstName ?: "-"
-                        )
-                        ProfileItem(
-                            Icons.Default.Numbers,
-                            "Mobile Number",
-                            SharedPrefs.User.get()?.Mobile ?: "-"
-                        )
-                        ProfileItem(Icons.Default.Business, "Company Name", CompanyName())
-                        ProfileItem(
-                            Icons.Default.LocationOn,
-                            "Business Address",
-                            compInfo.T3.toString()
-                        )
-                        ProfileItem(
-                            Icons.Default.Store,
-                            "Store ID",
-                            SharedPrefs.User.get()?.ID.toString()
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-                    TallyDivider()
-
-                    Text(
-                        text = "Business Details",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = colors.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-                    )
-
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ProfileItem(Icons.Default.DateRange, "Financial Year", StartDate())
-
-                        ProfileItem(Icons.Default.Receipt, "GST Number", compInfo.T4.toString())
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-                    TallyDivider()
-
-                    Text(
-                        text = "Format & Display Settings",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = colors.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-                    )
-
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ProfileItem(
-                            Icons.Default.CurrencyRupee,
-                            "Currency Symbol",
-                            compInfo.T9.toString()
-                        )
-                        ProfileItem(
-                            Icons.Default.Numbers,
-                            "Quantity Decimal",
-                            compInfo.D3.toString()
-                        )
-                        ProfileItem(
-                            Icons.Default.MonetizationOn,
-                            "Amount Decimal",
-                            compInfo.D4.toString()
-                        )
-                        ProfileItem(
-                            Icons.Default.CalendarToday,
-                            "Date Format",
-                            compInfo.T8.toString()
-                        )
-                        ProfileItem(
-                            Icons.Default.SyncLock,
-                            "Last Synced from Software",
-                            compInfo.C8.toString()
-                        )
-                        if (userRole() !in listOf(
-                                ROLE.STAFF_MANAGER,
-                                ROLE.OFFICE_STAFF
+                    if (userRole() == ROLE.DISTRIBUTOR) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ProfileItem(
+                                Icons.Default.Store,
+                                "Store ID",
+                                SharedPrefs.User.get()?.ID.toString()
                             )
-                        ) {
-                            TallyToggleRow(
-                                checked = zeroStock,
-                                onCheckedChange = {
-                                    SharedPrefs.ShowZeroStock.save(it)
-                                    zeroStock = it
-                                },
-                                title = "Show Zero Stock in billing",
-                                desc = "Include items with zero stock in billing"
+                            ProfileItem(
+                                Icons.Default.SyncLock,
+                                "Last Synced from Software",
+                                compInfo.C8.toString()
                             )
+                        }
+                    } else {
 
+
+                        Spacer(modifier = Modifier.height(20.dp))
+                        TallyDivider()
+
+                        Text(
+                            text = "Account Information",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = colors.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                        )
+
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ProfileItem(
+                                Icons.Default.Email,
+                                "Email Address",
+                                compInfo.T7.toString()
+                            )
+                            ProfileItem(
+                                Icons.Default.Person,
+                                "Name",
+                                SharedPrefs.User.get()?.FirstName ?: "-"
+                            )
+                            ProfileItem(
+                                Icons.Default.Numbers,
+                                "Mobile Number",
+                                SharedPrefs.User.get()?.Mobile ?: "-"
+                            )
+                            ProfileItem(Icons.Default.Business, "Company Name", CompanyName())
+                            ProfileItem(
+                                Icons.Default.LocationOn,
+                                "Business Address",
+                                compInfo.T3.toString()
+                            )
+                            ProfileItem(
+                                Icons.Default.Store,
+                                "Store ID",
+                                SharedPrefs.User.get()?.ID.toString()
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+                        TallyDivider()
+
+                        Text(
+                            text = "Business Details",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = colors.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                        )
+
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ProfileItem(Icons.Default.DateRange, "Financial Year", StartDate())
+
+                            ProfileItem(Icons.Default.Receipt, "GST Number", compInfo.T4.toString())
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+                        TallyDivider()
+
+                        Text(
+                            text = "Format & Display Settings",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = colors.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                        )
+
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ProfileItem(
+                                Icons.Default.CurrencyRupee,
+                                "Currency Symbol",
+                                compInfo.T9.toString()
+                            )
+                            ProfileItem(
+                                Icons.Default.Numbers,
+                                "Quantity Decimal",
+                                compInfo.D3.toString()
+                            )
+                            ProfileItem(
+                                Icons.Default.MonetizationOn,
+                                "Amount Decimal",
+                                compInfo.D4.toString()
+                            )
+                            ProfileItem(
+                                Icons.Default.CalendarToday,
+                                "Date Format",
+                                compInfo.T8.toString()
+                            )
+                            ProfileItem(
+                                Icons.Default.SyncLock,
+                                "Last Synced from Software",
+                                compInfo.C8.toString()
+                            )
+                            if (userRole() !in listOf(
+                                    ROLE.STAFF_MANAGER,
+                                    ROLE.OFFICE_STAFF
+                                )
+                            ) {
+                                TallyToggleRow(
+                                    checked = zeroStock,
+                                    onCheckedChange = {
+                                        SharedPrefs.ShowZeroStock.save(it)
+                                        zeroStock = it
+                                    },
+                                    title = "Show Zero Stock in billing",
+                                    desc = "Include items with zero stock in billing"
+                                )
+
+                            }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
-                TallyIconButton("Sign Out", Icons.AutoMirrored.Filled.Logout) {
-                    showAlertBox = true
+                    TallyIconButton("Sign Out", Icons.AutoMirrored.Filled.Logout) {
+                        showAlertBox = true
+                    }
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(8.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Text(
+                            "v $MOBILE_VERSION",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.height(20.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(8.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Text(
-                        "v $MOBILE_VERSION",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-                    )
-                }
-
 
                 if (showAlertBox) {
                     TallyAlertBox(

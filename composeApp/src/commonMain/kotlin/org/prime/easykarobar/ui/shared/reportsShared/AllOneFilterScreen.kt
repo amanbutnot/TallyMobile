@@ -41,11 +41,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.withContext
+import org.prime.easykarobar.business.viewmodel.attendance.AttendanceViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.model.hasSalesmanPermission
 import org.prime.easykarobar.ui.screen.home.TallyToggleRow
@@ -83,13 +82,18 @@ fun AllOneFilterScreen(
         var calculateDays by rememberSaveable { mutableStateOf("Bill Date") }
 
         val db = DatabaseHolder.instance
-        var salesmanList by remember { mutableStateOf<List<String>>(emptyList()) }
+
+        val attendanceViewModel: AttendanceViewModel = viewModel { AttendanceViewModel() }
+        val attendanceState by attendanceViewModel.salesmanList
+        val salesmanData = attendanceState.data ?: emptyList()
+        val salesmanList = salesmanData.map { "${it.salesman_name} (${it.salesman_mobile})" }
+
         var selectedSalesman by remember { mutableStateOf("") }
         var showSalesmanNameList by remember { mutableStateOf(false) }
 
         androidx.compose.runtime.LaunchedEffect(Unit) {
-            withContext(Dispatchers.IO) {
-                salesmanList = db.salesManTargetQueries.getSalesmanName().executeAsList().map { it.SalesmanName.toString() }
+            if (showSalesmanFilter) {
+                attendanceViewModel.getSalesmanList()
             }
         }
 
@@ -615,7 +619,9 @@ fun AllOneFilterScreen(
                                 accountName = selectedAccount,
                                 startDate = startDate,
                                 endDate = endDate, calculateDays = calculateDays,showOtherToggle=showOther,
-                                salesmanName = selectedSalesman
+                                salesmanName = if (selectedSalesman.isNotEmpty()) {
+                                    "\\((.*?)\\)".toRegex().find(selectedSalesman)?.groupValues?.get(1) ?: selectedSalesman
+                                } else ""
                             )
                         )
                     }

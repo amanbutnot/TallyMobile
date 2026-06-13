@@ -47,19 +47,11 @@ data class FollowupListScreen(
         val viewmodel: FollowupViewmodel = viewModel { FollowupViewmodel() }
         val state by viewmodel.listState
         val db = DatabaseHolder.instance
-
+println("followup screen salesman is $salesman")
         LaunchedEffect(Unit) {
-            viewmodel.getFollowupList(startDate,endDate,actCode, salesman = salesman)
+            viewmodel.getFollowupList(startDate, endDate, actCode, salesman = salesman)
         }
-
-        val filteredList = remember(state.data, actCode) {
-            val list = state.data ?: emptyList()
-            if (actCode.isNotEmpty()) {
-                list.filter { it.ActCode == actCode }
-            } else {
-                list
-            }
-        }
+        val list = state.data ?: emptyList()
 
         TallyScaffold(
             title = if (accountName.isNotEmpty()) "$accountName Followups" else "Followup List",
@@ -71,24 +63,29 @@ data class FollowupListScreen(
                         TallyCircularLoader()
                     }
                 }
+
                 state.error != null -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(state.error ?: "Error fetching followups")
                     }
                 }
+
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        if (filteredList.isEmpty()) {
+                        if (list.isEmpty()) {
                             item {
-                                Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
+                                Box(
+                                    modifier = Modifier.fillParentMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     Text("No followups found")
                                 }
                             }
                         } else {
-                            items(filteredList) { item ->
+                            items(list) { item ->
                                 FollowupItem(item, db)
                             }
                         }
@@ -113,8 +110,14 @@ data class FollowupListScreen(
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(Modifier.height(4.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Date: ${Tdate(item.followupdate.split(" ").first())}", style = MaterialTheme.typography.bodyMedium)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "Date: ${Tdate(item.followupdate.split(" ").first())}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                     Text(
                         "Status: ${item.status}",
                         style = MaterialTheme.typography.bodyMedium,
@@ -122,7 +125,10 @@ data class FollowupListScreen(
                     )
                 }
                 Spacer(Modifier.height(4.dp))
-                Text("Next Followup: ${Tdate(item.nextfollowup)}", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "Next Followup: ${Tdate(item.nextfollowup)}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
                 if (!item.remarks.isNullOrEmpty()) {
                     Spacer(Modifier.height(4.dp))
                     Text("Remarks: ${item.remarks}", style = MaterialTheme.typography.bodySmall)

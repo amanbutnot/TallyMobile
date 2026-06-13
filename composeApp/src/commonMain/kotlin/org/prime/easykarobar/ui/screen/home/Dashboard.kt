@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -121,7 +122,8 @@ object Dashboard : Screen {
                                     viewModel.userLogin(
                                         LoginRequest(
                                             Username = loginData?.username ?: "",
-                                            Password = loginData?.password ?: "", DeviceId = deviceId
+                                            Password = loginData?.password ?: "",
+                                            DeviceId = deviceId
                                         ),
                                         onSuccess = {
                                             nav.push(GoogleDriveDownloadScreen)
@@ -155,7 +157,7 @@ object Dashboard : Screen {
                             }
                             IconButton(onClick = { nav.push(SettingScreen) }) {
                                 Icon(
-                                    Icons.Default.Settings,
+                                    if (userRole() == ROLE.DISTRIBUTOR) Icons.Default.Person else Icons.Default.Settings,
                                     contentDescription = "Settings icon",
                                     tint = colors.onBackground
                                 )
