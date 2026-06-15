@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -163,48 +162,51 @@ object HomeTab : Tab {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .navigationBarsPadding(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
+                                    .height(64.dp),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 listOf(DistributorHomeSubTab, DistributorCategorySubTab).forEach { tab ->
-                                    val actualTab = if (tab == DistributorCategorySubTab && hideGroup) {
-                                        AllProductsPremiumTab
-                                    } else {
-                                        tab
-                                    }
+                                    val actualTab =
+                                        if (tab == DistributorCategorySubTab && hideGroup) AllProductsPremiumTab
+                                        else tab
+
                                     val selected = tabNavigator.current == actualTab
+
                                     val colorTint by animateColorAsState(
                                         targetValue = if (selected) MaterialTheme.colorScheme.primary
                                         else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                                     )
-                                    val scale by animateFloatAsState(if (selected) 1.1f else 1f)
 
                                     Column(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         verticalArrangement = Arrangement.Center,
                                         modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
                                             .clickable(
                                                 interactionSource = remember { MutableInteractionSource() },
                                                 indication = null
-                                            ) { tabNavigator.current = actualTab }
-                                            .padding(top = 8.dp, bottom = 2.dp, start = 16.dp, end = 16.dp)
-                                            .graphicsLayer(scaleX = scale, scaleY = scale)
+                                            ) {
+                                                tabNavigator.current = actualTab
+                                            }
                                     ) {
-                                        tab.options.icon?.let { icon ->
+                                        tab.options.icon?.let {
                                             Icon(
-                                                painter = icon,
+                                                painter = it,
                                                 contentDescription = tab.options.title,
                                                 tint = colorTint,
                                                 modifier = Modifier.size(24.dp)
                                             )
                                         }
-                                        Spacer(modifier = Modifier.height(2.dp))
+
+                                        Spacer(Modifier.height(2.dp))
+
                                         Text(
                                             text = tab.options.title,
-                                            style = MaterialTheme.typography.labelMedium.copy(
-                                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
-                                            ),
-                                            color = colorTint
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = colorTint,
+                                            maxLines = 1
                                         )
                                     }
                                 }

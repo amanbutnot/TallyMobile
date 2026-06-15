@@ -1879,7 +1879,7 @@ data class SaleScreen2(
                     modifier = Modifier.fillMaxWidth(), shadowElevation = 12.dp,
                     tonalElevation = 2.dp, color = MaterialTheme.colorScheme.surface
                 ) {
-                    Column(modifier = Modifier.padding(16.dp).navigationBarsPadding()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Column(
                             horizontalAlignment = Alignment.End,
                             modifier = Modifier.fillMaxWidth()
