@@ -263,7 +263,7 @@ object CategoryShoppingScreen : Screen {
 
             LazyColumn(
                 contentPadding = PaddingValues(
-                    bottom = 32.dp
+                    bottom = 8.dp
                 ),
                 modifier = Modifier.fillMaxSize()
             ) {

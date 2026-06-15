@@ -162,7 +162,6 @@ object HomeTab : Tab {
                         ) {
                             Row(
                                 modifier = Modifier
-                                    .padding(vertical = 4.dp)
                                     .fillMaxWidth()
                                     .navigationBarsPadding(),
                                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -188,7 +187,7 @@ object HomeTab : Tab {
                                                 interactionSource = remember { MutableInteractionSource() },
                                                 indication = null
                                             ) { tabNavigator.current = actualTab }
-                                            .padding(vertical = 8.dp, horizontal = 16.dp)
+                                            .padding(top = 8.dp, bottom = 2.dp, start = 16.dp, end = 16.dp)
                                             .graphicsLayer(scaleX = scale, scaleY = scale)
                                     ) {
                                         tab.options.icon?.let { icon ->

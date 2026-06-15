@@ -361,7 +361,7 @@ data class AllProductsPremiumScreen(
                                 activeTrackColor = Color(0xFF004D40),
                                 inactiveTrackColor = Color(0xFFE2E8F0)
                             ),
-                            modifier = Modifier.height(24.dp)
+                            modifier = Modifier.height(24.dp), steps = 10
                         )
 
                         Row(
@@ -391,7 +391,7 @@ data class AllProductsPremiumScreen(
                     start = 16.dp,
                     end = 16.dp,
                     top = 8.dp,
-                    bottom = 32.dp
+                    bottom = 8.dp
                 ),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
