@@ -28,31 +28,31 @@ fun salesHtml(
     println("party detail is $partyDetails and guid is $partyGuid and name is $partyName")
     val user = SharedPrefs.User.get()
 
-    val isIgst = user?.State != partyDetails?.State &&
-            partyDetails?.State?.isNotBlank() == true &&
-            user?.State?.isNotBlank() == true
+    val isIgst = user?.State.clean() != partyDetails?.State.clean() &&
+            partyDetails?.State.clean().isNotBlank() &&
+            user?.State.clean().isNotBlank()
 
-    val hasShipping = transportDetails.Saddress1?.isNotBlank() == true ||
-            transportDetails.SpartyName?.isNotBlank() == true
-    val shippedToName = if (hasShipping) transportDetails.SpartyName ?: partyName else partyName
+    val hasShipping = transportDetails.Saddress1.clean().isNotBlank() ||
+            transportDetails.SpartyName.clean().isNotBlank()
+    val shippedToName = if (hasShipping) transportDetails.SpartyName.clean().takeIf { it.isNotBlank() } ?: partyName.clean() else partyName.clean()
     val shippedToGstin = if (hasShipping)
-        transportDetails.SgstIn ?: (partyDetails?.GSTIN ?: "")
+        transportDetails.SgstIn.clean().takeIf { it.isNotBlank() } ?: (partyDetails?.GSTIN.clean())
     else
-        partyDetails?.GSTIN ?: ""
+        partyDetails?.GSTIN.clean()
     val shippedToAddress = if (hasShipping) {
         listOfNotNull(
             transportDetails.Saddress1,
             transportDetails.Saddress2,
             transportDetails.Saddress3,
             transportDetails.Saddress4
-        ).filter { it.isNotBlank() }.joinToString("<br>")
+        ).map { it.clean() }.filter { it.isNotBlank() }.joinToString("<br>")
     } else {
         listOfNotNull(
             partyDetails?.Address1,
             partyDetails?.Address2,
             partyDetails?.Address3,
             partyDetails?.Address4
-        ).filter { it.isNotBlank() }.joinToString("<br>")
+        ).map { it.clean() }.filter { it.isNotBlank() }.joinToString("<br>")
     }
 
     val title = if (name == "Sale Invoice") "TAX INVOICE" else name.uppercase()
@@ -275,7 +275,7 @@ fun salesHtml(
     <div class="header-top border-b">
         <table style="width:100%; border-collapse:collapse; border:none; table-layout:fixed;">
             <tr>
-                <td style="padding:0; border:none; text-align:left;">GST : ${compInfo?.T4 ?: ""}</td>
+                <td style="padding:0; border:none; text-align:left;">GST : ${compInfo?.T4.clean()}</td>
                 <td style="padding:0; border:none; text-align:right;">Original Copy</td>
             </tr>
         </table>
@@ -286,8 +286,8 @@ fun salesHtml(
         <div class="title">$title</div>
         <div class="company-name">${CompanyName()}</div>
         <div class="company-info">
-            ${compInfo?.T3 ?: ""}<br>
-            Tel. : ${user?.Mobile ?: ""} &nbsp; email : ${user?.Email ?: ""}
+            ${compInfo?.T3.clean()}<br>
+            Tel. : ${user?.Mobile.clean()} &nbsp; email : ${user?.Email.clean()}
         </div>
     </div>
 
@@ -295,18 +295,18 @@ fun salesHtml(
     <div class="info-section border-b">
         <div class="info-col border-r">
             <table class="info-table">
-                <tr><td class="label-cell">Invoice No.</td><td>: <b>$invoiceNo</b></td></tr>
+                <tr><td class="label-cell">Invoice No.</td><td>: <b>${invoiceNo.clean()}</b></td></tr>
                 <tr><td class="label-cell">Dated</td><td>: <b>${Tdate(date)}</b></td></tr>
-                <tr><td class="label-cell">Place of Supply</td><td>: ${partyDetails?.State ?: ""}</td></tr>
+                <tr><td class="label-cell">Place of Supply</td><td>: ${partyDetails?.State.clean()}</td></tr>
                 <tr><td class="label-cell">Reverse Charge</td><td>: </td></tr>
-                <tr><td class="label-cell">GR/RR No.</td><td>: ${transportDetails.gstRrNo}</td></tr>
+                <tr><td class="label-cell">GR/RR No.</td><td>: ${transportDetails.gstRrNo.clean()}</td></tr>
             </table>
         </div>
         <div class="info-col">
             <table class="info-table">
-                <tr><td class="label-cell">Transport</td><td>: ${transportDetails.transportName}</td></tr>
-                <tr><td class="label-cell">Vehicle No.</td><td>: ${transportDetails.vehicleNo}</td></tr>
-                <tr><td class="label-cell">Station</td><td>: ${transportDetails.station}</td></tr>
+                <tr><td class="label-cell">Transport</td><td>: ${transportDetails.transportName.clean()}</td></tr>
+                <tr><td class="label-cell">Vehicle No.</td><td>: ${transportDetails.vehicleNo.clean()}</td></tr>
+                <tr><td class="label-cell">Station</td><td>: ${transportDetails.station.clean()}</td></tr>
                 <tr><td class="label-cell">E-Way Bill No.</td><td>: </td></tr>
             </table>
         </div>
@@ -316,22 +316,22 @@ fun salesHtml(
     <div class="billing-section border-b">
         <div class="billing-col border-r">
             <b>Billed to :</b><br>
-            <b>$partyName</b><br>
+            <b>${partyName.clean()}</b><br>
             ${
             listOfNotNull(
                 partyDetails?.Address1,
                 partyDetails?.Address2,
                 partyDetails?.Address3,
                 partyDetails?.Address4
-            ).filter { it.isNotBlank() }.joinToString("<br>")
+            ).map { it.clean() }.filter { it.isNotBlank() }.joinToString("<br>")
         }<br>
-            <b>GSTIN / UIN &nbsp;&nbsp;&nbsp; : ${partyDetails?.GSTIN ?: ""}</b>
+            <b>GSTIN / UIN &nbsp;&nbsp;&nbsp; : ${partyDetails?.GSTIN.clean()}</b>
         </div>
         <div class="billing-col">
             <b>Shipped to :</b><br>
-            <b>$shippedToName</b><br>
+            <b>${shippedToName.clean()}</b><br>
             $shippedToAddress<br>
-            <b>GSTIN / UIN &nbsp;&nbsp;&nbsp; : $shippedToGstin</b>
+            <b>GSTIN / UIN &nbsp;&nbsp;&nbsp; : ${shippedToGstin.clean()}</b>
         </div>
     </div>
 
@@ -387,9 +387,10 @@ fun salesHtml(
             }
         } else ""
 
-        val serials = if (item.item_serial.isNotEmpty()) {
+        val serialList = item.item_serial.mapNotNull { it.SerialNo.clean().takeIf { s -> s.isNotBlank() } }
+        val serials = if (serialList.isNotEmpty()) {
             "<br/><span style='font-size:7.5pt; color:#444;'>" +
-                    item.item_serial.joinToString { it.SerialNo.toString() } +
+                    serialList.joinToString() +
                     "</span>"
         } else ""
 
@@ -397,10 +398,10 @@ fun salesHtml(
             """
             <tr>
                 <td class="center">${index + 1}.</td>
-                <td><b>${item.name}</b>$serials</td>
-                <td class="center">${item.hsn ?: ""}</td>
+                <td><b>${item.name.clean()}</b>$serials</td>
+                <td class="center">${item.hsn.clean()}</td>
                 <td class="center">${item.qty.absoluteValue}.00</td>
-                <td class="center">${item.selectedUnit ?: ""}</td>
+                <td class="center">${item.selectedUnit.clean()}</td>
                 <td class="right">${unitTaxable.formatToAmtDec()}</td>
                 $taxCells
                 <td class="right"><b>${item.net.formatToAmtDec()}</b></td>
@@ -622,3 +623,5 @@ fun numberToWords(num: Int): String {
 
     return result.toString().trim()
 }
+
+private fun String?.clean(): String = if (this == null || this.lowercase() == "null") "" else this

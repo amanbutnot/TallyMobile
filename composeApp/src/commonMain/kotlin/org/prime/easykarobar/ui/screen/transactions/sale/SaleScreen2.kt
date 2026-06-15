@@ -10,8 +10,6 @@ package org.prime.easykarobar.ui.screen.transactions.sale
 // applyCompoundDiscount) are UNCHANGED — do not re-declare them.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
-import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -140,10 +138,11 @@ import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.isBusy
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
+import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
-import org.prime.easykarobar.ui.shared.reportsShared.yymmdd
 import org.tally.Products_Pricing
 import org.tally.SerialNoEnterReportSale
 import kotlin.math.absoluteValue
@@ -1954,7 +1953,7 @@ data class SaleScreen2(
                                     billing_country = "", billing_address = "",
                                     taxType = if (taxType == TaxType.EXTRA) 1 else 2,
                                     items = billingItems, sundries = selectedSundries,
-                                    TranDate = selectedDate.yymmdd(), Narration = narration,
+                                    TranDate = selectedDate, Narration = narration,
                                     TransactionID = tranId, total_amt = grandTotal,
                                     transportDetails = TransportDetails(
                                         transportName = transportName,

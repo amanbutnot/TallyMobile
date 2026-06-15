@@ -92,7 +92,7 @@ data class TallyLedgerReportItemScreen(
         val stockColumn5Weight = 0.5f
 
         // ── Shared HTML builder ───────────────────────────────────────────────
-        fun buildHtmlContent(): String {
+        fun buildHtmlContent(showTax: Boolean = false): String {
             return if (ledgerStockItemList.isNotEmpty()) {
                 val invoiceItems = ledgerStockItemList.map { it ->
                     InvoiceItem(
@@ -144,7 +144,7 @@ data class TallyLedgerReportItemScreen(
                         pincode = "",
                         gstRrDate = ""
                     ),
-                    showTax = false
+                    showTax = showTax
                 )
             } else {
                 val rows = ledgerReportItemList.mapIndexed { index, it ->
@@ -171,7 +171,10 @@ data class TallyLedgerReportItemScreen(
         if (shareLoading) TallyLoadingDialog("Generating Report")
 
         val htmlContent = remember(ledgerStockItemList, ledgerReportItemList, vouchers) {
-            buildHtmlContent()
+            buildHtmlContent(showTax = false)
+        }
+        val itemWiseHtmlContent = remember(ledgerStockItemList, ledgerReportItemList, vouchers) {
+            buildHtmlContent(showTax = true)
         }
 
         // ── UI Layout ─────────────────────────────────────────────────────────
@@ -196,7 +199,7 @@ data class TallyLedgerReportItemScreen(
                 scope.launch {
                     handlePdfAction(
                         fileName = "$vchType Report",
-                        htmlContent = htmlContent,
+                        htmlContent = itemWiseHtmlContent,
                         action = PdfAction.Download,
                         onLoadingChange = { shareLoading = it }
                     )
@@ -206,7 +209,7 @@ data class TallyLedgerReportItemScreen(
                 scope.launch {
                     handlePdfAction(
                         fileName = "$vchType Report",
-                        htmlContent = htmlContent,
+                        htmlContent = itemWiseHtmlContent,
                         action = PdfAction.Share,
                         onLoadingChange = { shareLoading = it }
                     )

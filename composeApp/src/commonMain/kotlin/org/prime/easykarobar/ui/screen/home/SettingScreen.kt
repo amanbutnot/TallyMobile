@@ -72,6 +72,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyIconButton
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
+import org.prime.easykarobar.ui.shared.globalShared.Tdate
 
 object SettingScreen : Screen {
     @OptIn(InternalVoyagerApi::class, ExperimentalMaterial3Api::class)
@@ -325,7 +326,7 @@ object SettingScreen : Screen {
                         )
 
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ProfileItem(Icons.Default.DateRange, "Financial Year", StartDate())
+                            ProfileItem(Icons.Default.DateRange, "Financial Year", Tdate(StartDate()))
 
                             ProfileItem(Icons.Default.Receipt, "GST Number", compInfo.T4.toString())
                         }

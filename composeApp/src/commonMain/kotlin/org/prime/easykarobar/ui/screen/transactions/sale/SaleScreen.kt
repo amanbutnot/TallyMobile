@@ -1,7 +1,5 @@
 package org.prime.easykarobar.ui.screen.transactions.sale
 
-import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
-import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -148,8 +146,10 @@ import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.isBusy
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
+import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.yymmdd
 import org.tally.BSMaster
@@ -2083,7 +2083,9 @@ data class SaleScreen(
                                     altQty = item.altQty
                                 )
                             }
-
+println("selected date from sale invoice is $selectedDate")
+println("using my function " +
+        "selected date from sale invoice is ${selectedDate.yymmdd()}")
                             viewmodel.createEditInventoryResponse(
                                 inventoryVoucherRequest = InventoryVoucherRequest(
                                     billing_guid = selectedLedgerGUID,
@@ -2096,7 +2098,7 @@ data class SaleScreen(
                                     taxType = if (taxType == TaxType.EXTRA) 1 else 2,
                                     items = billingItems,
                                     sundries = selectedSundries,
-                                    TranDate = selectedDate.yymmdd(),
+                                    TranDate = selectedDate,
                                     Narration = narration,
                                     TransactionID = tranId,
                                     total_amt = grandTotal,
