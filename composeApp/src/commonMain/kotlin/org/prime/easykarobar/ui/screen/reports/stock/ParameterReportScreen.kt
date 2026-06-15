@@ -7,9 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,16 +34,17 @@ import kotlinx.coroutines.withContext
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
+import org.prime.easykarobar.data.expect.stringToDouble
 import org.prime.easykarobar.data.utils.showAmtToSalesman
 import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.threeHeaderHtml
 import org.prime.easykarobar.ui.screen.reports.productReport.ProductReportScreen
 import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheet
-import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getProductParamStockItems
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
@@ -62,7 +60,6 @@ import org.prime.easykarobar.ui.shared.reportsShared.TallyReportLazyList
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductParamStockList
 import org.tally.ProductGroupMaster
-import org.prime.easykarobar.ui.shared.composables.smartSearch
 import kotlin.math.absoluteValue
 
 object ParameterReportScreen : Screen {
@@ -162,8 +159,8 @@ object ParameterReportScreen : Screen {
             title = "Parameter",
             headers = Triple("Item Name", "Qty", "Amount"),
             rows = rows,
-            totalDebit = totalQty.formatToQtyDec().toDouble(),
-            totalCredit = totalAmt.formatToAmtDec().toDouble(),
+            totalDebit = totalQty.formatToQtyDec().stringToDouble(),
+            totalCredit = totalAmt.formatToAmtDec().stringToDouble(),
             date = ""
         )
         if (shareLoading) {
@@ -237,13 +234,13 @@ object ParameterReportScreen : Screen {
                             TextAlign.Start
                         ),
                         ReportColumn(
-                            if (showQtyToSalesman()) totalQty.absoluteValue.formatToQtyDec() else "",
-                            column2Weight,
+                            if (showAmtToSalesman()) totalAmt.absoluteValue.formatToAmtDec() else "",
+                            column3Weight,
                             TextAlign.End
                         ),
                         ReportColumn(
-                            if (showAmtToSalesman()) totalAmt.absoluteValue.formatToAmtDec() else "",
-                            column3Weight,
+                            if (showQtyToSalesman()) totalQty.absoluteValue.formatToQtyDec() else "",
+                            column2Weight,
                             TextAlign.End
                         )
                     ),

@@ -9,7 +9,7 @@ fun threeHeaderHtml(
     rows: List<Triple<String, String, String>>,
     totalDebit: Double,
     totalCredit: Double,
-    date:String
+    date: String
 ): String {
     val html = StringBuilder()
     html.append(
@@ -28,7 +28,11 @@ fun threeHeaderHtml(
         </head>
         <body>
         <h1>$title</h1>
-        <h3>"As on -> ${Tdate(date)}"</h3>
+                ${
+            if (date.isNotBlank()) {
+                "<h3>As on -> ${ Tdate(date) }</h3>"
+            } else ""
+        }
         <h3>${CompanyName()}</h3>
         <table>
         <tr>
