@@ -177,7 +177,7 @@ WHERE VchType = 'Payment' AND CM1 IN (
   AND DATE <= ?2;
 
 getCompanyInformation:
-SELECT * FROM CompanyInformation;
+SELECT * FROM CompanyInformation LIMIT 1;
 
 
 followUpOutstanding:

@@ -115,7 +115,7 @@ data class InventoryListScreen(
                                                 vchType = vchType,
                                                 tranId = item.id,
                                                 isEdit = true,
-                                                enableUpdateButton = item.status_billed == ORDERSTATUS.Pending.name
+                                                enableUpdateButton = item.status_billed == ORDERSTATUS.Pending.name || item.status_billed == ORDERSTATUS.Billed.name
                                             )
                                         )
                                     }

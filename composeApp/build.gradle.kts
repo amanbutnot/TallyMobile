@@ -169,10 +169,15 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
-        getByName("release") {
-            isMinifyEnabled = false
-        }
+//        getByName("release") {
+//            isMinifyEnabled = false
+//        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
