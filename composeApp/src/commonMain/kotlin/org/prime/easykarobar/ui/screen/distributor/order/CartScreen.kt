@@ -18,11 +18,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.HorizontalRule
+import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -46,6 +49,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -73,6 +77,21 @@ import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
+
+data class Coupon(
+    val code: String,
+    val title: String,
+    val description: String,
+    val discountType: String, // "flat" or "percent"
+    val discountValue: Double,
+    val minOrderValue: Double
+)
+
+val demoCoupons = listOf(
+    Coupon("WELCOME100", "₹100 OFF", "Flat ₹100 off on orders above ₹1000", "flat", 100.0, 1000.0),
+    Coupon("SAVE5", "5% OFF", "5% off on orders above ₹1000", "percent", 5.0, 1000.0),
+    Coupon("FESTIVE200", "₹200 OFF", "Flat ₹200 off on orders above ₹2500", "flat", 200.0, 2500.0)
+)
 
 object CartScreen : Screen {
     @Composable
@@ -112,6 +131,10 @@ private fun CartContent(
 ) {
     val nav = LocalNavigator.currentOrThrow
     val viewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
+
+    var couponText by remember { mutableStateOf("") }
+    var appliedCoupon by remember { mutableStateOf<Coupon?>(null) }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -122,8 +145,29 @@ private fun CartContent(
         }
 
         item {
+            CouponSection(
+                couponText = couponText,
+                onCouponTextChange = { couponText = it },
+                onApplyCoupon = { code ->
+                    val coupon = demoCoupons.find { it.code.equals(code, ignoreCase = true) }
+                    if (coupon != null) {
+                        appliedCoupon = coupon
+                    }
+                },
+                availableCoupons = demoCoupons,
+                onSelectCoupon = { appliedCoupon = it },
+                appliedCoupon = appliedCoupon
+            )
+        }
+
+        item {
             Spacer(modifier = Modifier.height(4.dp))
-            CartSummary(products = list, cartViewModel = viewModel, showOnly = false)
+            CartSummary(
+                products = list,
+                cartViewModel = viewModel,
+                showOnly = false,
+                appliedCoupon = appliedCoupon
+            )
         }
     }
 }
@@ -341,7 +385,12 @@ private fun CartProductItem(
 }
 
 @Composable
-fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel? = null, showOnly: Boolean) {
+fun CartSummary(
+    products: List<CartItem>,
+    cartViewModel: CartViewModel? = null,
+    showOnly: Boolean,
+    appliedCoupon: Coupon? = null
+) {
 
 //    val totalMrp = products.sumOf {
 //        val mrp = it.product.MRP ?: 0.0
@@ -369,8 +418,18 @@ fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel? = null, 
         gstPerItem * it.quantity.value
     }
 
+    val totalBeforeCoupon = (totalDiscountedPrice + totalGst).toDouble()
 
-    val finalTotal = (totalDiscountedPrice + totalGst).toDouble()
+    val couponDiscount = if (appliedCoupon != null) {
+        if (appliedCoupon.discountType == "flat") {
+            appliedCoupon.discountValue
+        } else {
+            (totalDiscountedPrice * appliedCoupon.discountValue) / 100.0
+        }
+    } else 0.0
+
+    val finalTotal = totalBeforeCoupon - couponDiscount
+    val totalSavingsCombined = totalSavings + couponDiscount
 
 
     val orderViewModel: OrderViewModel = viewModel { OrderViewModel() }
@@ -466,6 +525,16 @@ fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel? = null, 
                 // valueColor = MaterialTheme.colorScheme.tertiary
             )
 
+            if (appliedCoupon != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                SummaryRow(
+                    label = "Coupon (${appliedCoupon.code})",
+                    value = "-${couponDiscount.formatToAmtDec()}",
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                    valueColor = MaterialTheme.colorScheme.primary
+                )
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -512,7 +581,7 @@ fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel? = null, 
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            if (totalSavings > 0) {
+            if (totalSavingsCombined > 0) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -529,7 +598,7 @@ fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel? = null, 
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "🎉 You saved ${totalSavings?.formatToAmtDec()} on this order!",
+                        text = "🎉 You saved ${totalSavingsCombined?.formatToAmtDec()} on this order!",
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
@@ -653,6 +722,227 @@ fun CartSummary(products: List<CartItem>, cartViewModel: CartViewModel? = null, 
 }
 
 
+@Composable
+fun CouponSection(
+    couponText: String,
+    onCouponTextChange: (String) -> Unit,
+    onApplyCoupon: (String) -> Unit,
+    availableCoupons: List<Coupon>,
+    onSelectCoupon: (Coupon?) -> Unit,
+    appliedCoupon: Coupon?
+) {
+    val focusManager = LocalFocusManager.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 12.dp, start = 4.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocalOffer,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Offers & Coupons",
+                style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        // Manual entry field
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp)
+            ) {
+                TallyTextField(
+                    value = couponText,
+                    onValueChange = onCouponTextChange,
+                    placeholder = "Enter coupon code",
+                    isPassword = false,
+                    isNumber = false,
+                    label = "Coupon Code",
+                    modifier = Modifier.weight(1f)
+                )
+
+                Text(
+                    text = "APPLY",
+                    color = if (couponText.isNotEmpty()) MaterialTheme.colorScheme.primary else Color.Gray,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier
+                        .clickable(enabled = couponText.isNotEmpty()) {
+                            onApplyCoupon(couponText)
+                            focusManager.clearFocus()
+                        }
+                        .padding(16.dp)
+                )
+            }
+        }
+
+        if (appliedCoupon != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                        RoundedCornerShape(8.dp)
+                    )
+                    .border(
+                        0.5.dp,
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                        RoundedCornerShape(8.dp)
+                    )
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = Color(0xFF4CAF50),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "'${appliedCoupon.code}' applied",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Text(
+                    text = "REMOVE",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Red.copy(alpha = 0.7f),
+                    modifier = Modifier.clickable { onSelectCoupon(null) }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Available Coupons",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(start = 4.dp, end = 4.dp, bottom = 4.dp)
+        ) {
+            items(availableCoupons) { coupon ->
+                CouponItem(
+                    coupon = coupon,
+                    isSelected = appliedCoupon?.code == coupon.code,
+                    onApply = {
+                        if (appliedCoupon?.code == coupon.code) {
+                            onSelectCoupon(null)
+                        } else {
+                            onSelectCoupon(coupon)
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CouponItem(
+    coupon: Coupon,
+    isSelected: Boolean,
+    onApply: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .width(240.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            else MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(
+            width = if (isSelected) 1.5.dp else 1.dp,
+            color = if (isSelected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            RoundedCornerShape(6.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = coupon.code,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Text(
+                    text = if (isSelected) "APPLIED" else "APPLY",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (isSelected) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.ExtraBold,
+                    modifier = Modifier.clickable { onApply() }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = coupon.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = coupon.description,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 14.sp
+            )
+        }
+    }
+}
 @Composable
 fun SummaryRow(
     label: String,
