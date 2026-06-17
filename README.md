@@ -51,7 +51,6 @@
 
 *   Android Studio
 *   Xcode
-*   Kotlin Multiplatform Mobile plugin
 
 ### Clone the repository
 
