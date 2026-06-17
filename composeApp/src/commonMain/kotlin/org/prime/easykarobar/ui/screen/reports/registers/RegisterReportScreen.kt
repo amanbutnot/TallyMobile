@@ -50,7 +50,7 @@ import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.RegisterReportList
 import kotlin.math.absoluteValue
 
-data class RegisterReportScreen(val name: String, val startDate: String, val endDate: String) :
+data class RegisterReportScreen(val name: String, val startDate: String, val endDate: String,val account:String?=null) :
     Screen {
     @Composable
     override fun Content() {
@@ -130,7 +130,11 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
             query = searchQuery,
             selectors = listOf { it.CM1 }
         )
-
+val mainList = if(account !=null){
+    filteredList.filter { it.CM1 ==account }
+}else{
+    filteredList
+}
 
         val rows: List<Quadruple<String, String, String, String>> = filteredList.map { item ->
             Quadruple(
@@ -278,7 +282,7 @@ data class RegisterReportScreen(val name: String, val startDate: String, val end
                             )
                         )
                         TallyReportLazyList(
-                            items = filteredList,
+                            items = mainList,
                             onItemClick = { item ->
                                 nav.push(
                                     LedgerReportItemScreen(

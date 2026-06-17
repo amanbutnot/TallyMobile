@@ -4,9 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,11 +26,11 @@ import kotlinx.coroutines.withContext
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
+import org.prime.easykarobar.data.expect.stringToDouble
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.data.utils.showAmtToSalesman
 import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.threeHeaderHtml
-import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
@@ -131,8 +128,8 @@ object GodownClosingStockListScreen : Screen {
             title = "Godown Closing Stock",
             headers = Triple("Account Name", "Qty", "Amount"),
             rows = rows,
-            totalDebit = totalQty.formatToAmtDec().toDouble(),
-            totalCredit = totalAmt.formatToAmtDec().toDouble(),
+            totalDebit = totalQty.formatToAmtDec().stringToDouble(),
+            totalCredit = totalAmt.formatToAmtDec().stringToDouble(),
             date = StartDate()
         )
         if (shareLoading) {

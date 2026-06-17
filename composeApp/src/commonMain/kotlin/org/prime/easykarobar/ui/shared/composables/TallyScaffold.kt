@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
@@ -121,6 +122,7 @@ fun TallyReportScaffold(
     onShareSecondText: String? = null,
     onShareText: String? = null,
     onExcelClick: (() -> Unit)? = null,
+    onFilterClick: (() -> Unit)? = null,
     menuItems: List<MenuItemData> = emptyList(),
     content: @Composable (PaddingValues) -> Unit
 ) {
@@ -158,6 +160,11 @@ fun TallyReportScaffold(
                 },
                 actions = {
                     Row {
+                        if (onFilterClick != null) {
+                            IconButton(onClick = { onFilterClick() }) {
+                                Icon(Icons.Default.FilterList, "", tint = colors.onSurface)
+                            }
+                        }
                         if (showBarcodeIcon) {
                             IconButton(onClick = { onBarcodeClick?.invoke() }) {
                                 Icon(
@@ -263,9 +270,9 @@ fun TallyReportScaffold(
                                     modifier = Modifier.padding(4.dp),
                                     text = {
                                         Text(
-                                            text = onShareText?:"Share",
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        style = MaterialTheme.typography.bodyLarge
+                                            text = onShareText ?: "Share",
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            style = MaterialTheme.typography.bodyLarge
                                         )
                                     },
                                     leadingIcon = {

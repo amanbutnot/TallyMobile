@@ -15,7 +15,7 @@ data class AttendanceRow(
 
 fun attendanceHtml(
     title: String,
-    rows: List<AttendanceRow>,
+    rows: List<AttendanceRow>?,
     startDate: String,
     endDate: String,
     isCheckIn: Boolean,
@@ -55,7 +55,7 @@ fun attendanceHtml(
         """.trimIndent()
     )
 
-    rows.forEach { row ->
+    rows?.forEach { row ->
 //        val photoTag = if (row.photoUrl.isNotBlank())
 //            """<img class="attendance-photo" src="${row.photoUrl}" alt="photo" />"""
 //        else
@@ -83,7 +83,7 @@ fun attendanceHtml(
     html.append(
         """
         <tr>
-            <th colspan="$colSpan" style="text-align: center;">Total Records: ${rows.size}</th>
+            <th colspan="$colSpan" style="text-align: center;">Total Records: ${rows?.size?:0}</th>
         </tr>
         </table>
         </body>

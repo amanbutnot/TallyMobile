@@ -10,19 +10,20 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,7 +49,7 @@ import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.ui.printing.LedgerRow
 import org.prime.easykarobar.ui.printing.itemLedgerHtml
-import org.prime.easykarobar.ui.shared.composables.MenuItemData
+import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
@@ -58,19 +59,23 @@ import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TableCell
+import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.vouchersStockItems.LedgerOpeningBalance
 import org.tally.vouchersStockItems.LedgerReportList
 import kotlin.math.absoluteValue
 
-data class ItemLedgerScreen(val accountName: String, val startDate: String, val endDate: String) :
+data class ItemLedgerScreen(val accountName: String, var startDate: String, var endDate: String) :
     Screen {
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val db = DatabaseHolder.instance
+        var selectedStartDate by remember { mutableStateOf(startDate) }
+        var selectedEndDate by remember { mutableStateOf(endDate) }
 
-        var list by remember {
+        var list by remember(selectedStartDate, selectedEndDate) {
             mutableStateOf<List<LedgerReportList>>(
                 emptyList()
             )
@@ -78,6 +83,7 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
         var isLoading by remember { mutableStateOf(true) }
         var showSearchBar by remember { mutableStateOf(false) }
         var shareLoading by remember { mutableStateOf(false) }
+        var showFilterBottomSheet by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
         var searchQuery by remember { mutableStateOf("") }
         val focusRequester = remember { FocusRequester() }
@@ -93,14 +99,14 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
         val columnSmallWeight = 2.0f
         val columnBigWeight = 8.0f
 
-        LaunchedEffect(Unit) {
+        LaunchedEffect(selectedStartDate,selectedEndDate) {
             isLoading = true
             withContext(Dispatchers.IO) {
                 println("DB Started")
                 val reportList = db.vouchersStockItemsQueries.ledgerReportList(
                     CM1 = accountName,
-                    DATE = startDate,
-                    DATE_ = endDate
+                    DATE = selectedStartDate,
+                    DATE_ = selectedEndDate
                 ).executeAsList().filter { it.VchType != "Opening" }
                 println("DB Ended")
 
@@ -199,6 +205,9 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
         TallyReportScaffold(
             title = "Item Ledger Report",
             showBurgerMenu = true,
+            onFilterClick = {
+                showFilterBottomSheet = true
+            },
             onDownloadClick = {
                 scope.launch {
                     handlePdfAction(
@@ -625,6 +634,31 @@ data class ItemLedgerScreen(val accountName: String, val startDate: String, val 
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+                if (showFilterBottomSheet) {
+                    ModalBottomSheet(
+                        sheetState = rememberModalBottomSheetState(),
+                        onDismissRequest = { showFilterBottomSheet = false }) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(24.dp).navigationBarsPadding()) {
+                            Text("Date Filter",style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.height(12.dp))
+                            TallyDatePickerRow(
+                                label = "Start Date",
+                                selectedDate = selectedStartDate,
+                                onDateSelected = { selectedStartDate = it},
+                                defaultDate = selectedStartDate,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            TallyDatePickerRow(
+                                label = "End Date",
+                                selectedDate = selectedEndDate,
+                                onDateSelected = { selectedEndDate = it},
+                                defaultDate = selectedEndDate,
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            TallyButton(label = "Apply", onClick = {})
                         }
                     }
                 }

@@ -1,6 +1,5 @@
 package org.prime.easykarobar.ui.screen.attendance
 
-import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -102,6 +101,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -320,7 +320,7 @@ data class AttendanceScreen(
                                                                 RegisterReportScreen(
                                                                     name = "Receipt",
                                                                     startDate = StartDate(),
-                                                                    endDate = CurrentDate()
+                                                                    endDate = CurrentDate(), account = selectedAccount
                                                                 )
                                                             )
                                                         }

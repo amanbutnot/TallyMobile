@@ -1,7 +1,5 @@
 package org.prime.easykarobar.ui.screen.attendance
 
-import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
-import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -104,7 +102,9 @@ import org.prime.easykarobar.ui.shared.globalShared.extractNumericValue
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.googleMapsLink
 import org.prime.easykarobar.ui.shared.globalShared.parseDate
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
+import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 
 data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Screen {
@@ -584,7 +584,7 @@ data class AttendanceScreenUi(
 
         val htmlContent = attendanceHtml(
             title = if (isCheckIn) "Check In" else "Attendance",
-            rows = rows as List<AttendanceRow>,
+            rows = rows,
             startDate = startDate, endDate = endDate, isCheckIn = isCheckIn
         )
 
