@@ -168,8 +168,8 @@ fun accountLedgerHtml(
             </tbody>
             <tr>
                 <th colspan="4" class="text">Grand Total</th>
-                <th class="number">${totalDebit.formatToAmtDec()}</th>
                 <th class="number">${totalCredit.formatToAmtDec()}</th>
+                <th class="number">${totalDebit.formatToAmtDec()}</th>
                 <th></th>
             </tr>
             <tr>
