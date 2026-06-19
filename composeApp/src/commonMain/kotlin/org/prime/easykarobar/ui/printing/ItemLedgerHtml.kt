@@ -37,10 +37,29 @@ fun itemLedgerHtml(
                 line-height: 1.2;
             }
 
+            .main-container {
+                border: 2px solid #000;
+                border-radius: 8px;
+                padding: 12px;
+                min-height: 270mm;
+            }
+
             h2, h3, h4 {
                 text-align: center;
                 margin: 2px 0;
                 font-weight: normal;
+            }
+
+            .company-info {
+                text-align: center;
+                margin-bottom: 10px;
+            }
+
+            .ledger-info {
+                margin-top: 10px;
+                font-size: 10pt;
+                display: flex;
+                justify-content: space-between;
             }
 
             table {
@@ -60,30 +79,38 @@ fun itemLedgerHtml(
                 font-size: 9pt;
             }
 
+            thead {
+                display: table-header-group;
+            }
+
             td {
                 font-size: 9pt;
             }
 
-            td.number { text-align: right; }
-            td.text { text-align: left; }
-            td.center { text-align: center; }
+            .number { text-align: right; }
+            .text { text-align: left; }
+            .center { text-align: center; }
 
-            .opening-balance, .closing-balance {
+            .opening-balance {
                 font-weight: bold;
                 text-align: right;
                 font-size: 9pt;
                 margin: 4px 0;
             }
-
-            .closing-balance { margin-top: 8px; }
         </style>
         </head>
         <body>
-            <h2>${CompanyName()}</h2>
-            <h3>GSTIN : ${CompanyGst()}</h3>
-            <h2>Item Ledger</h2>
-            <h3>Item: $itemName</h3> 
-            <h3>From ${Tdate(startDate)} to ${Tdate(endDate)}</h3>
+            <div class="main-container">
+            <div class="company-info">
+                <h2>${CompanyName()}</h2>
+                <div>GSTIN : ${CompanyGst()}</div>
+                <h2 style="margin-top: 8px;">Item Ledger</h2>
+            </div>
+
+            <div class="ledger-info">
+                <div><strong>Item:</strong> $itemName</div>
+                <div style="text-align:right;"><strong>Period:</strong> ${Tdate(startDate)} to ${Tdate(endDate)}</div>
+            </div>
 
             <div class="opening-balance">
                 Opening Qty: ${openingBalance.formatToAmtDec()} | Opening Amt: ${openingAmount.formatToAmtDec()}
@@ -130,16 +157,18 @@ fun itemLedgerHtml(
                 </tbody>
                 <tfoot>
                     <tr>
-                        <th colspan="4" class="text">Total</th>
+                        <th colspan="4" class="number">Grand Total</th>
                         <th class="number">${totalInward.formatToAmtDec()}</th>
                         <th class="number">${totalOutward.formatToAmtDec()}</th>
                         <th></th>
                     </tr>
+                    <tr>
+                        <th colspan="5" class="number">Closing Balance</th>
+                        <th class="number">${closingAmount.formatToAmtDec()}</th>
+                        <th class="number">${closingBalance.formatToAmtDec()}</th>
+                    </tr>
                 </tfoot>
             </table>
-
-            <div class="closing-balance">
-                Closing Qty: ${closingBalance.formatToAmtDec()} | Closing Amt: ${closingAmount.formatToAmtDec()}
             </div>
         </body>
         </html>

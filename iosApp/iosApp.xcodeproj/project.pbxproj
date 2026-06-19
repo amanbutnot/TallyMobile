@@ -269,7 +269,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.9.93;
+				MARKETING_VERSION = 1.9.95;
 				PRODUCT_BUNDLE_IDENTIFIER = org.prime.easykarobar;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -307,7 +307,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.9.93;
+				MARKETING_VERSION = 1.9.95;
 				PRODUCT_BUNDLE_IDENTIFIER = org.prime.easykarobar;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;

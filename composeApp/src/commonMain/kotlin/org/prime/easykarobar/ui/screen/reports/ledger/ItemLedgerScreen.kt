@@ -107,11 +107,13 @@ data class ItemLedgerScreen(val accountName: String, var startDate: String, var 
                     CM1 = accountName,
                     DATE = selectedStartDate,
                     DATE_ = selectedEndDate
-                ).executeAsList().filter { it.VchType != "Opening" }
+                ).executeAsList().filter { 
+                    it.VchType != "Opening" && it.VchType != "Sales Order" && it.VchType != "Purchase Order" 
+                }
                 println("DB Ended")
 
                 val opening = db.vouchersStockItemsQueries
-                    .ledgerOpeningBalance(accountName, startDate)
+                    .ledgerOpeningBalance(accountName, selectedStartDate)
                     .executeAsOne()
 
                 // Now switch back to main thread to update Compose states
@@ -187,8 +189,8 @@ data class ItemLedgerScreen(val accountName: String, var startDate: String, var 
 
         val htmlContent = itemLedgerHtml(
             itemName = accountName,
-            startDate = startDate,
-            endDate = endDate,
+            startDate = selectedStartDate,
+            endDate = selectedEndDate,
             openingBalance = openingBalance?.OpeningBal ?: 0.0,
             openingAmount = openingBalance?.OpeningAmt ?: 0.0,
             rows = generateLedgerRows(),
@@ -407,7 +409,7 @@ data class ItemLedgerScreen(val accountName: String, var startDate: String, var 
                         )
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            "From ${Tdate(startDate)}  →  To ${Tdate(endDate)}",
+                            "From ${Tdate(selectedStartDate)}  →  To ${Tdate(selectedEndDate)}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -658,7 +660,9 @@ data class ItemLedgerScreen(val accountName: String, var startDate: String, var 
                                 defaultDate = selectedEndDate,
                             )
                             Spacer(Modifier.height(12.dp))
-                            TallyButton(label = "Apply", onClick = {})
+                            TallyButton(label = "Apply", onClick = {
+                                showFilterBottomSheet = false
+                            })
                         }
                     }
                 }

@@ -98,9 +98,9 @@ fun accountLedgerHtml(
                 font-size: 9pt;
             }
 
-            td.number { text-align: right; }
-            td.text { text-align: left; }
-            td.center { text-align: center; }
+            .number { text-align: right; }
+            .text { text-align: left; }
+            .center { text-align: center; }
 
             .opening-balance {
                 font-weight: bold;
@@ -155,8 +155,8 @@ fun accountLedgerHtml(
                 <td class="center">${row.type}</td>
                 <td class="text">${row.vchBillNo}</td>
                 <td class="text">${row.account}</td>
-                <td class="number">$creditStr</td>
                 <td class="number">$debitStr</td>
+                <td class="number">$creditStr</td>
                 <td class="number">$balanceStr</td>
             </tr>
             """.trimIndent()
@@ -167,15 +167,14 @@ fun accountLedgerHtml(
         """
             </tbody>
             <tr>
-                <th colspan="4" class="text">Grand Total</th>
+                <th colspan="4" class="number">Grand Total</th>
                 <th class="number">${totalDebit.formatToAmtDec()}</th>
                 <th class="number">${totalCredit.formatToAmtDec()}</th>
                 <th></th>
             </tr>
             <tr>
-                <td colspan="5"></td>
-                <td class="number">${closingBalance.formatToAmtDec()} $closingBalanceType</td>
-                <td></td>
+                <th colspan="6" class="number">Closing Balance</th>
+                <th class="number">${closingBalance.formatToAmtDec()} $closingBalanceType</th>
             </tr>
             </table>
             </div>
