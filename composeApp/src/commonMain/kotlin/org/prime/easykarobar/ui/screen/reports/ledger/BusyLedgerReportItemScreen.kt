@@ -192,9 +192,9 @@ data class BusyLedgerReportItemScreen(
                     )
                 }
             },
-            onShareText = "Share VchWise",
+            onShareText = if (isReceiptOrPayment) "Share" else "Share VchWise",
             onShareSecondText = if (isReceiptOrPayment) null else "Share Itemwise",
-            onDownloadText = "Download Vchwise",
+            onDownloadText = if (isReceiptOrPayment) "Download" else "Download Vchwise",
             onDownloadSecondText = if (isReceiptOrPayment) null else "Download Itemwise",
             onDownloadSecondClick = if (isReceiptOrPayment) null else {
                 {

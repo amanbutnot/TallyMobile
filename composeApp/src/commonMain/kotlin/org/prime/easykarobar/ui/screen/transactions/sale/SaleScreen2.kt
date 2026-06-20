@@ -23,7 +23,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -89,7 +88,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -763,30 +761,57 @@ data class SaleScreen2(
                             SectionCard(
                                 title = "ITEMS", count = selectedItems.size,
                                 headerAction = {
-                                    AssistChip(
-                                        onClick = { showItemSheet = true },
-                                        enabled = editingItem == null,
-                                        label = {
-                                            Text(
-                                                "Add Item",
-                                                style = MaterialTheme.typography.labelLarge,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Default.Add,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        },
-                                        colors = AssistChipDefaults.assistChipColors(
-                                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                            labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            leadingIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                        ),
-                                        border = null
-                                    )
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        AssistChip(
+                                            onClick = { showGroupFilterSheet = true },
+                                            label = {
+                                                Text(
+                                                    "Group Filter",
+                                                    style = MaterialTheme.typography.labelLarge,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Default.FilterList,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            },
+                                            colors = AssistChipDefaults.assistChipColors(
+                                                labelColor = MaterialTheme.colorScheme.primary,
+                                                leadingIconContentColor = MaterialTheme.colorScheme.primary
+                                            ),
+                                            border = null
+                                        )
+                                        AssistChip(
+                                            onClick = { showItemSheet = true },
+                                            enabled = editingItem == null,
+                                            label = {
+                                                Text(
+                                                    "Add Item",
+                                                    style = MaterialTheme.typography.labelLarge,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Default.Add,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            },
+                                            colors = AssistChipDefaults.assistChipColors(
+                                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                leadingIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                            ),
+                                            border = null
+                                        )
+                                    }
                                 }
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -986,28 +1011,6 @@ data class SaleScreen2(
                                                 }
                                             )
                                         }
-                                    }
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                                        horizontalArrangement = Arrangement.End,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        AssistChip(
-                                            onClick = { showGroupFilterSheet = true },
-                                            label = { Text("Group Filter") },
-                                            leadingIcon = {
-                                                Icon(
-                                                    Icons.Default.FilterList,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                            },
-                                            colors = AssistChipDefaults.assistChipColors(
-                                                labelColor = MaterialTheme.colorScheme.primary,
-                                                leadingIconContentColor = MaterialTheme.colorScheme.primary
-                                            )
-                                        )
                                     }
                                     if (selectedItems.isNotEmpty()) SubtotalRow(
                                         "Subtotal",

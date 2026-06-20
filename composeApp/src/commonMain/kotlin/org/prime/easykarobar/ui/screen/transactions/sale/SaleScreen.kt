@@ -982,31 +982,57 @@ data class SaleScreen(
                                 title = "ITEMS",
                                 count = selectedItems.size,
                                 headerAction = {
-
-                                    AssistChip(
-                                        onClick = { showItemSheet = true },
-                                        enabled = editingItem == null,
-                                        label = {
-                                            Text(
-                                                "Add Item",
-                                                style = MaterialTheme.typography.labelLarge,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Default.Add,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        },
-                                        colors = AssistChipDefaults.assistChipColors(
-                                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                            labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            leadingIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                        ),
-                                        border = null
-                                    )
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        AssistChip(
+                                            onClick = { showGroupFilterSheet = true },
+                                            label = {
+                                                Text(
+                                                    "Group Filter",
+                                                    style = MaterialTheme.typography.labelLarge,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Default.FilterList,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            },
+                                            colors = AssistChipDefaults.assistChipColors(
+                                                labelColor = MaterialTheme.colorScheme.primary,
+                                                leadingIconContentColor = MaterialTheme.colorScheme.primary
+                                            ),
+                                            border = null
+                                        )
+                                        AssistChip(
+                                            onClick = { showItemSheet = true },
+                                            enabled = editingItem == null,
+                                            label = {
+                                                Text(
+                                                    "Add Item",
+                                                    style = MaterialTheme.typography.labelLarge,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Default.Add,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            },
+                                            colors = AssistChipDefaults.assistChipColors(
+                                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                leadingIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                            ),
+                                            border = null
+                                        )
+                                    }
                                 }
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1213,28 +1239,6 @@ data class SaleScreen(
                                                 }
                                             )
                                         }
-                                    }
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                                        horizontalArrangement = Arrangement.End,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        AssistChip(
-                                            onClick = { showGroupFilterSheet = true },
-                                            label = { Text("Group Filter") },
-                                            leadingIcon = {
-                                                Icon(
-                                                    Icons.Default.FilterList,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                            },
-                                            colors = AssistChipDefaults.assistChipColors(
-                                                labelColor = MaterialTheme.colorScheme.primary,
-                                                leadingIconContentColor = MaterialTheme.colorScheme.primary
-                                            )
-                                        )
                                     }
 
                                     if (selectedItems.isNotEmpty()) {
