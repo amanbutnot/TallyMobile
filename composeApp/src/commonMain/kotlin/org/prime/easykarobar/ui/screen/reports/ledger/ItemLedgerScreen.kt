@@ -74,6 +74,8 @@ data class ItemLedgerScreen(val accountName: String, var startDate: String, var 
         val db = DatabaseHolder.instance
         var selectedStartDate by remember { mutableStateOf(startDate) }
         var selectedEndDate by remember { mutableStateOf(endDate) }
+        var tempStartDate by remember { mutableStateOf(startDate) }
+        var tempEndDate by remember { mutableStateOf(endDate) }
 
         var list by remember(selectedStartDate, selectedEndDate) {
             mutableStateOf<List<LedgerReportList>>(
@@ -208,6 +210,8 @@ data class ItemLedgerScreen(val accountName: String, var startDate: String, var 
             title = "Item Ledger Report",
             showBurgerMenu = true,
             onFilterClick = {
+                tempStartDate = selectedStartDate
+                tempEndDate = selectedEndDate
                 showFilterBottomSheet = true
             },
             onDownloadClick = {
@@ -648,19 +652,21 @@ data class ItemLedgerScreen(val accountName: String, var startDate: String, var 
                             Spacer(Modifier.height(12.dp))
                             TallyDatePickerRow(
                                 label = "Start Date",
-                                selectedDate = selectedStartDate,
-                                onDateSelected = { selectedStartDate = it},
-                                defaultDate = selectedStartDate,
+                                selectedDate = tempStartDate,
+                                onDateSelected = { tempStartDate = it},
+                                defaultDate = tempStartDate,
                             )
                             Spacer(Modifier.height(8.dp))
                             TallyDatePickerRow(
                                 label = "End Date",
-                                selectedDate = selectedEndDate,
-                                onDateSelected = { selectedEndDate = it},
-                                defaultDate = selectedEndDate,
+                                selectedDate = tempEndDate,
+                                onDateSelected = { tempEndDate = it},
+                                defaultDate = tempEndDate,
                             )
                             Spacer(Modifier.height(12.dp))
                             TallyButton(label = "Apply", onClick = {
+                                selectedStartDate = tempStartDate
+                                selectedEndDate = tempEndDate
                                 showFilterBottomSheet = false
                             })
                         }

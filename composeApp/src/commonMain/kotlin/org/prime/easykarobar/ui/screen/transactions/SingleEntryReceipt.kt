@@ -1,7 +1,5 @@
 package org.prime.easykarobar.ui.screen.transactions
 
-import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
-import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -44,6 +42,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,6 +56,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.launch
 import org.prime.easykarobar.business.viewmodel.transactions.SingleEntryViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
@@ -71,11 +71,15 @@ import org.prime.easykarobar.ui.screen.transactions.sale.makeNegativeConditional
 import org.prime.easykarobar.ui.shared.composables.DownloadResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
-import org.prime.easykarobar.ui.shared.composables.TallyScaffold
+import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
+import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
+import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
+import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import kotlin.math.absoluteValue
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -168,6 +172,24 @@ data class SingleEntryReceipt(
         val isEdit = existingTransaction != null
         var uniqueId by remember { mutableStateOf("") }
 
+        val scope = rememberCoroutineScope()
+        var shareLoading by remember { mutableStateOf(false) }
+
+        val htmlContent =
+            remember(selectedAccount, selectedSettlement, amount, selectedReferences, selectedDate) {
+                entryTypesHtml(
+                    voucherNo = existingTransaction?.VchNo ?: "",
+                    date = selectedDate,
+                    data = EntryTypesHtml(
+                        ledger = selectedAccount,
+                        settlement = selectedSettlement,
+                        amount = amount.toDoubleOrNull() ?: 0.0,
+                        bills = selectedReferences
+                    ),
+                    title = name
+                )
+            }
+
         if (pdcType == PDCTYPE.PDC.name) showPdcDate = true
         if (pdcType == PDCTYPE.REGULAR.name) showPdcDate = false
         if (existingTransaction != null) {
@@ -186,6 +208,7 @@ data class SingleEntryReceipt(
                 TallyLoadingDialog("Creating your transaction")
             }
         }
+        if (shareLoading) TallyLoadingDialog("Generating Report")
         val enabled = run {
 
             val checks = mapOf(
@@ -231,8 +254,56 @@ data class SingleEntryReceipt(
             finalEnabled
         }
 
-        TallyScaffold(
+        TallyReportScaffold(
             title = if (isEdit) "Edit $name Entry" else "Create $name Entry",
+            showBurgerMenu = isEdit,
+            onDownloadClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "${name}_${existingTransaction?.VchNo}",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onShareClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "${name}_${existingTransaction?.VchNo}",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onExcelClick = {
+                scope.launch {
+                    val excelRows = listOf(
+                        listOf(
+                            "1",
+                            selectedAccount,
+                            if (name == "Payment") amount else "",
+                            if (name == "Receipt") amount else ""
+                        ),
+                        listOf(
+                            "2",
+                            selectedSettlement,
+                            if (name == "Receipt") amount else "",
+                            if (name == "Payment") amount else ""
+                        )
+                    )
+                    val headers = listOf("S No.", "Account", "Debit", "Credit")
+                    handlePdfAction(
+                        fileName = "${name}_${existingTransaction?.VchNo}",
+                        htmlContent = htmlContent,
+                        headers = headers,
+                        rows = excelRows,
+                        action = PdfAction.DownloadExcel,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             content = { paddingValues ->
                 Column(
                     modifier = Modifier.padding(paddingValues).padding(horizontal = 16.dp)
