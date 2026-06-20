@@ -49,10 +49,13 @@ import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -760,26 +763,30 @@ data class SaleScreen2(
                             SectionCard(
                                 title = "ITEMS", count = selectedItems.size,
                                 headerAction = {
-                                    TextButton(
+                                    AssistChip(
                                         onClick = { showItemSheet = true },
                                         enabled = editingItem == null,
-                                        contentPadding = PaddingValues(
-                                            horizontal = 8.dp,
-                                            vertical = 4.dp
-                                        )
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Add,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(Modifier.width(4.dp))
-                                        Text(
-                                            "Add more items",
-                                            style = MaterialTheme.typography.labelLarge,
-                                            textDecoration = TextDecoration.Underline
-                                        )
-                                    }
+                                        label = {
+                                            Text(
+                                                "Add Item",
+                                                style = MaterialTheme.typography.labelLarge,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Default.Add,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        },
+                                        colors = AssistChipDefaults.assistChipColors(
+                                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                            labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            leadingIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                        ),
+                                        border = null
+                                    )
                                 }
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1080,13 +1087,25 @@ data class SaleScreen2(
                                     }
 
                                     Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                        horizontalArrangement = Arrangement.End,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        TextButton(onClick = {
-                                            showGroupFilterSheet = true
-                                        }) { Text("Group Filter") }
+                                        AssistChip(
+                                            onClick = { showGroupFilterSheet = true },
+                                            label = { Text("Group Filter") },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Default.FilterList,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            },
+                                            colors = AssistChipDefaults.assistChipColors(
+                                                labelColor = MaterialTheme.colorScheme.primary,
+                                                leadingIconContentColor = MaterialTheme.colorScheme.primary
+                                            )
+                                        )
                                     }
                                     if (selectedItems.isNotEmpty()) SubtotalRow(
                                         "Subtotal",
