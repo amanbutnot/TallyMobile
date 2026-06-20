@@ -155,8 +155,8 @@ fun accountLedgerHtml(
                 <td class="center">${row.type}</td>
                 <td class="text">${row.vchBillNo}</td>
                 <td class="text">${row.account}</td>
+                                <td class="number">$debitStr</td>
                 <td class="number">$creditStr</td>
-                <td class="number">$debitStr</td>
                 <td class="number">$balanceStr</td>
             </tr>
             """.trimIndent()
@@ -168,8 +168,8 @@ fun accountLedgerHtml(
             </tbody>
             <tr>
                 <th colspan="4" class="text">Grand Total</th>
+                                <th class="number">${totalDebit.formatToAmtDec()}</th>
                 <th class="number">${totalCredit.formatToAmtDec()}</th>
-                <th class="number">${totalDebit.formatToAmtDec()}</th>
                 <th></th>
             </tr>
             <tr>
