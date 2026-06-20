@@ -176,6 +176,8 @@ data class BusyLedgerReportItemScreen(
             buildHtmlContent(showTax = true)
         }
 
+        val isReceiptOrPayment = vchType.contains("Receipt", ignoreCase = true) || vchType.contains("Payment", ignoreCase = true)
+
         // ── UI Layout ─────────────────────────────────────────────────────────
         TallyReportScaffold(
             title = "$vchType Entry Details",
@@ -191,27 +193,31 @@ data class BusyLedgerReportItemScreen(
                 }
             },
             onShareText = "Share VchWise",
-            onShareSecondText = "Share Itemwise",
+            onShareSecondText = if (isReceiptOrPayment) null else "Share Itemwise",
             onDownloadText = "Download Vchwise",
-            onDownloadSecondText = "Download Itemwise",
-            onDownloadSecondClick = {
-                scope.launch {
-                    handlePdfAction(
-                        fileName = "$vchType Report",
-                        htmlContent = itemWiseHtmlContent,
-                        action = PdfAction.Download,
-                        onLoadingChange = { shareLoading = it }
-                    )
+            onDownloadSecondText = if (isReceiptOrPayment) null else "Download Itemwise",
+            onDownloadSecondClick = if (isReceiptOrPayment) null else {
+                {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = "$vchType Report",
+                            htmlContent = itemWiseHtmlContent,
+                            action = PdfAction.Download,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
                 }
             },
-            onShareSecondClick = {
-                scope.launch {
-                    handlePdfAction(
-                        fileName = "$vchType Report",
-                        htmlContent = itemWiseHtmlContent,
-                        action = PdfAction.Share,
-                        onLoadingChange = { shareLoading = it }
-                    )
+            onShareSecondClick = if (isReceiptOrPayment) null else {
+                {
+                    scope.launch {
+                        handlePdfAction(
+                            fileName = "$vchType Report",
+                            htmlContent = itemWiseHtmlContent,
+                            action = PdfAction.Share,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    }
                 }
             },
             onShareClick = {

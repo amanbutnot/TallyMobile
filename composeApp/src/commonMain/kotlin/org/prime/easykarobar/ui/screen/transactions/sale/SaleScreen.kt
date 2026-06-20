@@ -1011,323 +1011,208 @@ data class SaleScreen(
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     val pending = editingItem
-                                    val product = itemsList.find { it.Name == pending?.name }
 
-                                    if (pending != null) {
+                                    @Composable
+                                    fun RenderEditor(pendingItem: InvoiceItem, index: Int?) {
+                                        val product = itemsList.find { it.Name == pendingItem.name }
                                         val gst = try {
                                             if (isEdit) {
-                                                pending.gstPercentage
+                                                pendingItem.gstPercentage
                                             } else {
                                                 db.taxCategoryMastQueries.selectTaxRate(
-                                                    pending.taxCategoryCode.toString(),
+                                                    pendingItem.taxCategoryCode.toString(),
                                                     selectedDate
                                                 ).executeAsOneOrNull() ?: 0.0
                                             }
                                         } catch (e: Exception) {
-                                            println(e.message)
                                             0.0
                                         }
 
-                                        println("This is value of gst ${pending.taxCategoryCode}")
+                                        ExpandedItemEditor1(
+                                            name = product?.Name ?: pendingItem.name,
+                                            defaultListPrice = if (pendingItem.listPrice == 0.0)
+                                                if (isSale) product?.SalesPrice ?: 0.0
+                                                else product?.PurcPrice ?: 0.0
+                                            else pendingItem.listPrice,
+                                            initialQuantity = pendingItem.qty,
+                                            initialDiscount = pendingItem.CD.ifBlank { pendingItem.discountPercentage.toString() },
+                                            taxType = taxType,
+                                            existingItem = pendingItem,
+                                            initialSerialNumbers = pendingItem.item_serial.map { it.SerialNo ?: "" },
+                                            mainUnit = product?.UnitName ?: pendingItem.mainUnit ?: "",
+                                            altUnit = product?.AltUnit ?: pendingItem.altUnit,
+                                            conFactor = product?.ConFactor ?: pendingItem.conFactor,
+                                            conType = product?.ConType ?: pendingItem.conType,
+                                            gstPercentage = gst,
+                                            onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers, cFactor, cType, sUnit, aQty ->
+                                                val newItem = InvoiceItem(
+                                                    name = product?.Name ?: pendingItem.name,
+                                                    price = unitPrice,
+                                                    qty = qty,
+                                                    discountPercentage = discount,
+                                                    listPrice = listPriceText,
+                                                    taxable = taxable,
+                                                    CD = compoundDiscount ?: "",
+                                                    gstAmt = gstAmount,
+                                                    net = net,
+                                                    guid = product?.GUID ?: pendingSelectedProductGUID ?: pendingItem.guid,
+                                                    gstPercentage = gstPercentage,
+                                                    taxCategoryCode = product?.TaxCategoryCode?.toInt() ?: pendingItem.taxCategoryCode,
+                                                    itemdesc1 = itemDescs.getOrNull(0),
+                                                    itemdesc2 = itemDescs.getOrNull(1),
+                                                    itemdesc3 = itemDescs.getOrNull(2),
+                                                    itemdesc4 = itemDescs.getOrNull(3),
+                                                    itemdesc5 = itemDescs.getOrNull(4),
+                                                    itemdesc6 = itemDescs.getOrNull(5),
+                                                    itemdesc7 = itemDescs.getOrNull(6),
+                                                    itemdesc8 = itemDescs.getOrNull(7),
+                                                    itemdesc9 = itemDescs.getOrNull(8),
+                                                    itemdesc10 = itemDescs.getOrNull(9),
+                                                    itemdesc11 = itemDescs.getOrNull(10),
+                                                    itemdesc12 = itemDescs.getOrNull(11),
+                                                    itemdesc13 = itemDescs.getOrNull(12),
+                                                    itemdesc14 = itemDescs.getOrNull(13),
+                                                    itemdesc15 = itemDescs.getOrNull(14),
+                                                    itemdesc16 = itemDescs.getOrNull(15),
+                                                    itemdesc17 = itemDescs.getOrNull(16),
+                                                    itemdesc18 = itemDescs.getOrNull(17),
+                                                    itemdesc19 = itemDescs.getOrNull(18),
+                                                    itemdesc20 = itemDescs.getOrNull(19),
+                                                    additionalinfo = additionalInfos.getOrNull(0),
+                                                    item_serial = serialNumbers.map { sn ->
+                                                        SerialNoEnterReportSale(
+                                                            SerialNo = sn,
+                                                            MasterCode1 = product?.GUID?.toDoubleOrNull() ?: pendingItem.guid.toDoubleOrNull(),
+                                                            ProductName = pendingItem.name,
+                                                            UnitName = null,
+                                                            GroupName = null,
+                                                            Value1 = 1.0,
+                                                            Value2 = 0.0,
+                                                            Value3 = 0.0, MasterCode2 = ""
+                                                        )
+                                                    },
+                                                    conFactor = cFactor,
+                                                    conType = cType,
+                                                    selectedUnit = sUnit,
+                                                    altQty = aQty,
+                                                    mainUnit = product?.UnitName ?: pendingItem.mainUnit,
+                                                    altUnit = product?.AltUnit ?: pendingItem.altUnit,
+                                                    hsn = pendingItem.hsn
+                                                )
+                                                val mutable = selectedItems.toMutableList()
+                                                if (index != null) {
+                                                    mutable[index] = newItem
+                                                } else {
+                                                    mutable.add(newItem)
+                                                }
+                                                selectedItems = mutable
+                                                editingItemIndex = null
+                                                editingItem = null
+                                            },
+                                            onBack = {
+                                                editingItemIndex = null
+                                                editingItem = null
+                                            },
+                                            onCancel = {
+                                                editingItemIndex = null
+                                                editingItem = null
+                                            }
+                                        )
+                                    }
 
-                                        if (product != null) {
-                                            ExpandedItemEditor1(
-                                                name = product.Name ?: pending.name,
-                                                defaultListPrice = if (pending.listPrice == 0.0)
-                                                    if (isSale) product.SalesPrice ?: 0.0
-                                                    else product.PurcPrice ?: 0.0
-                                                else pending.listPrice,
-                                                initialQuantity = pending.qty,
-                                                initialDiscount = pending.CD.ifBlank { pending.discountPercentage.toString() },
-                                                taxType = taxType,
-                                                existingItem = pending,
-                                                initialSerialNumbers = pending.item_serial.map {
-                                                    it.SerialNo ?: ""
-                                                },
-                                                mainUnit = product.UnitName ?: "",
-                                                altUnit = product.AltUnit,
-                                                conFactor = product.ConFactor,
-                                                conType = product.ConType,
-                                                onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers, cFactor, cType, sUnit, aQty ->
-                                                    val newItem = InvoiceItem(
-                                                        name = product.Name ?: pending.name,
-                                                        price = unitPrice,
-                                                        qty = qty,
-                                                        discountPercentage = discount,
-                                                        listPrice = listPriceText,
-                                                        taxable = taxable,
-                                                        CD = compoundDiscount ?: "",
-                                                        gstAmt = gstAmount,
-                                                        net = net,
-                                                        guid = product.GUID
-                                                            ?: pendingSelectedProductGUID ?: "",
-                                                        gstPercentage = gstPercentage,
-                                                        taxCategoryCode = product.TaxCategoryCode?.toInt()
-                                                            ?: 0,
-                                                        itemdesc1 = itemDescs.getOrNull(0),
-                                                        itemdesc2 = itemDescs.getOrNull(1),
-                                                        itemdesc3 = itemDescs.getOrNull(2),
-                                                        itemdesc4 = itemDescs.getOrNull(3),
-                                                        itemdesc5 = itemDescs.getOrNull(4),
-                                                        itemdesc6 = itemDescs.getOrNull(5),
-                                                        itemdesc7 = itemDescs.getOrNull(6),
-                                                        itemdesc8 = itemDescs.getOrNull(7),
-                                                        itemdesc9 = itemDescs.getOrNull(8),
-                                                        itemdesc10 = itemDescs.getOrNull(9),
-                                                        itemdesc11 = itemDescs.getOrNull(10),
-                                                        itemdesc12 = itemDescs.getOrNull(11),
-                                                        itemdesc13 = itemDescs.getOrNull(12),
-                                                        itemdesc14 = itemDescs.getOrNull(13),
-                                                        itemdesc15 = itemDescs.getOrNull(14),
-                                                        itemdesc16 = itemDescs.getOrNull(15),
-                                                        itemdesc17 = itemDescs.getOrNull(16),
-                                                        itemdesc18 = itemDescs.getOrNull(17),
-                                                        itemdesc19 = itemDescs.getOrNull(18),
-                                                        itemdesc20 = itemDescs.getOrNull(19),
-                                                        additionalinfo = additionalInfos.getOrNull(0),
-                                                        item_serial = serialNumbers.map { sn ->
-                                                            SerialNoEnterReportSale(
-                                                                SerialNo = sn,
-                                                                MasterCode1 = product?.GUID?.toDoubleOrNull(),
-                                                                ProductName = pending.name,
-                                                                UnitName = null,
-                                                                GroupName = null,
-                                                                Value1 = 1.0,
-                                                                Value2 = 0.0,
-                                                                Value3 = 0.0, MasterCode2 = ""
-                                                            )
-                                                        },
-                                                        conFactor = cFactor,
-                                                        conType = cType,
-                                                        selectedUnit = sUnit,
-                                                        altQty = aQty,
-                                                        mainUnit = product?.UnitName
-                                                            ?: pending.mainUnit,
-                                                        altUnit = product?.AltUnit
-                                                            ?: pending.altUnit,
-                                                        hsn = pending.hsn
-                                                    )
-                                                    val insertAt =
-                                                        editingItemIndex ?: selectedItems.size
-                                                    val mutable = selectedItems.toMutableList()
-                                                    mutable.add(insertAt, newItem)
-                                                    selectedItems = mutable
-                                                    editingItemIndex = null
-                                                    editingItem = null
-                                                },
-                                                onBack = {
-                                                    val insertAt =
-                                                        editingItemIndex ?: selectedItems.size
-                                                    val mutable = selectedItems.toMutableList()
-                                                    mutable.add(insertAt, pending)
-                                                    selectedItems = mutable
-                                                    editingItemIndex = null
-                                                    editingItem = null
-                                                },
-                                                gstPercentage = gst,
-                                                onCancel = {
-                                                    if (editingItemIndex != null && editingItem != null) {
-                                                        val list = selectedItems.toMutableList()
-                                                        list.add(editingItemIndex!!, editingItem!!)
-                                                        selectedItems = list
-                                                    }
-                                                    editingItemIndex = null
-                                                    editingItem = null
-                                                }
-                                            )
-                                        } else {
-                                            val productFallback =
-                                                itemsList.find { it.Name == pending.name }
-                                            ExpandedItemEditor1(
-                                                name = pending.name,
-                                                defaultListPrice = pending.listPrice,
-                                                initialDiscount = pending.CD.ifBlank { pending.discountPercentage.toString() },
-                                                initialQuantity = pending.qty,
-                                                taxType = taxType,
-                                                existingItem = pending,
-                                                initialSerialNumbers = pending.item_serial.map {
-                                                    it.SerialNo ?: ""
-                                                },
-                                                mainUnit = productFallback?.UnitName ?: "",
-                                                altUnit = productFallback?.AltUnit,
-                                                conFactor = productFallback?.ConFactor,
-                                                conType = productFallback?.ConType,
-                                                onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers, cFactor, cType, sUnit, aQty ->
-                                                    val newItem = InvoiceItem(
-                                                        name = pending.name,
-                                                        price = unitPrice,
-                                                        qty = qty,
-                                                        discountPercentage = discount,
-                                                        listPrice = listPriceText,
-                                                        taxable = taxable,
-                                                        CD = compoundDiscount.toString(),
-                                                        gstAmt = gstAmount,
-                                                        net = net,
-                                                        guid = pendingSelectedProductGUID ?: "",
-                                                        gstPercentage = gstPercentage,
-                                                        taxCategoryCode = product?.TaxCategoryCode?.toInt()
-                                                            ?: 0,
-                                                        itemdesc1 = itemDescs.getOrNull(0),
-                                                        itemdesc2 = itemDescs.getOrNull(1),
-                                                        itemdesc3 = itemDescs.getOrNull(2),
-                                                        itemdesc4 = itemDescs.getOrNull(3),
-                                                        itemdesc5 = itemDescs.getOrNull(4),
-                                                        itemdesc6 = itemDescs.getOrNull(5),
-                                                        itemdesc7 = itemDescs.getOrNull(6),
-                                                        itemdesc8 = itemDescs.getOrNull(7),
-                                                        itemdesc9 = itemDescs.getOrNull(8),
-                                                        itemdesc10 = itemDescs.getOrNull(9),
-                                                        itemdesc11 = itemDescs.getOrNull(10),
-                                                        itemdesc12 = itemDescs.getOrNull(11),
-                                                        itemdesc13 = itemDescs.getOrNull(12),
-                                                        itemdesc14 = itemDescs.getOrNull(13),
-                                                        itemdesc15 = itemDescs.getOrNull(14),
-                                                        itemdesc16 = itemDescs.getOrNull(15),
-                                                        itemdesc17 = itemDescs.getOrNull(16),
-                                                        itemdesc18 = itemDescs.getOrNull(17),
-                                                        itemdesc19 = itemDescs.getOrNull(18),
-                                                        itemdesc20 = itemDescs.getOrNull(19),
-                                                        additionalinfo = additionalInfos.getOrNull(0),
-                                                        item_serial = serialNumbers.map { sn ->
-                                                            SerialNoEnterReportSale(
-                                                                SerialNo = sn,
-                                                                MasterCode1 = product?.GUID?.toDoubleOrNull(),
-                                                                ProductName = pending.name,
-                                                                UnitName = null,
-                                                                GroupName = null,
-                                                                Value1 = 1.0,
-                                                                Value2 = 0.0,
-                                                                Value3 = 0.0, MasterCode2 = ""
-                                                            )
-                                                        },
-                                                        conFactor = cFactor,
-                                                        conType = cType,
-                                                        selectedUnit = sUnit,
-                                                        altQty = aQty,
-                                                        mainUnit = productFallback?.UnitName
-                                                            ?: pending.mainUnit,
-                                                        altUnit = productFallback?.AltUnit
-                                                            ?: pending.altUnit,
-                                                        hsn = pending.hsn
-                                                    )
-                                                    val insertAt =
-                                                        editingItemIndex ?: selectedItems.size
-                                                    val mutable = selectedItems.toMutableList()
-                                                    mutable.add(insertAt, newItem)
-                                                    selectedItems = mutable
-                                                    editingItemIndex = null
-                                                    editingItem = null
-                                                },
-                                                onBack = {
-                                                    val insertAt =
-                                                        editingItemIndex ?: selectedItems.size
-                                                    val mutable = selectedItems.toMutableList()
-                                                    mutable.add(insertAt, pending)
-                                                    selectedItems = mutable
-                                                    editingItemIndex = null
-                                                    editingItem = null
-                                                },
-                                                gstPercentage = gst,
-                                                onCancel = {
-                                                    if (editingItemIndex != null && editingItem != null) {
-                                                        val list = selectedItems.toMutableList()
-                                                        list.add(editingItemIndex!!, editingItem!!)
-                                                        selectedItems = list
-                                                    }
-                                                    editingItemIndex = null
-                                                    editingItem = null
-                                                }
-                                            )
-                                        }
+                                    if (pending != null && editingItemIndex == null) {
+                                        RenderEditor(pending, null)
                                     }
 
                                     selectedItems.forEachIndexed { index, item ->
-                                        CompactItemCard(
-                                            index = index,
-                                            item = item,
-                                            gstPercentage = item.gstPercentage,
-                                            taxType = taxType,
-                                            onQuantityChange = { newQty ->
-                                                selectedItems =
-                                                    selectedItems.mapIndexed { index1, item1 ->
-                                                        if (index1 == index) {
-                                                            val newTaxableAmount: Double
-                                                            val newGstAmount: Double
-                                                            val newNetAmount: Double
+                                        if (pending != null && editingItemIndex == index) {
+                                            RenderEditor(pending, index)
+                                        } else {
+                                            CompactItemCard(
+                                                index = index,
+                                                item = item,
+                                                gstPercentage = item.gstPercentage,
+                                                taxType = taxType,
+                                                onQuantityChange = { newQty ->
+                                                    selectedItems =
+                                                        selectedItems.mapIndexed { index1, item1 ->
+                                                            if (index1 == index) {
+                                                                val newTaxableAmount: Double
+                                                                val newGstAmount: Double
+                                                                val newNetAmount: Double
 
-                                                            if (taxType == TaxType.EXTRA) {
-                                                                newTaxableAmount =
-                                                                    item1.price * newQty
-                                                                newGstAmount =
-                                                                    newTaxableAmount * item1.gstPercentage / 100.0
-                                                                newNetAmount =
-                                                                    newTaxableAmount + newGstAmount
-                                                            } else if (taxType == TaxType.VOUCHER) {
-                                                                newTaxableAmount =
-                                                                    item1.price * newQty
-                                                                newGstAmount = 0.0
-                                                                newNetAmount = item1.price * newQty
-                                                            } else {
-                                                                if (item1.gstPercentage == 0.0) {
+                                                                if (taxType == TaxType.EXTRA) {
+                                                                    newTaxableAmount =
+                                                                        item1.price * newQty
+                                                                    newGstAmount =
+                                                                        newTaxableAmount * item1.gstPercentage / 100.0
+                                                                    newNetAmount =
+                                                                        newTaxableAmount + newGstAmount
+                                                                } else if (taxType == TaxType.VOUCHER) {
                                                                     newTaxableAmount =
                                                                         item1.price * newQty
                                                                     newGstAmount = 0.0
-                                                                    newNetAmount =
-                                                                        item1.price * newQty
+                                                                    newNetAmount = item1.price * newQty
                                                                 } else {
-                                                                    val amount =
-                                                                        item1.price * newQty
-                                                                    newTaxableAmount =
-                                                                        amount * 100.0 / (100.0 + item1.gstPercentage)
-                                                                    newGstAmount =
-                                                                        amount - newTaxableAmount
-                                                                    newNetAmount = amount
-                                                                }
-                                                            }
-
-                                                            val factor = item1.conFactor ?: 1.0
-                                                            val conTypeVal = item1.conType ?: 1.0
-                                                            val calculatedAltQty =
-                                                                if (item1.selectedUnit == item1.altUnit) {
-                                                                    newQty.toDouble()
-                                                                } else {
-                                                                    if (conTypeVal == 1.0) {
-                                                                        newQty.toDouble() * factor
+                                                                    if (item1.gstPercentage == 0.0) {
+                                                                        newTaxableAmount =
+                                                                            item1.price * newQty
+                                                                        newGstAmount = 0.0
+                                                                        newNetAmount =
+                                                                            item1.price * newQty
                                                                     } else {
-                                                                        newQty.toDouble() / factor
+                                                                        val amount =
+                                                                            item1.price * newQty
+                                                                        newTaxableAmount =
+                                                                            amount * 100.0 / (100.0 + item1.gstPercentage)
+                                                                        newGstAmount =
+                                                                            amount - newTaxableAmount
+                                                                        newNetAmount = amount
                                                                     }
                                                                 }
 
-                                                            item1.copy(
-                                                                qty = newQty,
-                                                                taxable = newTaxableAmount,
-                                                                gstAmt = newGstAmount,
-                                                                net = newNetAmount,
-                                                                altQty = calculatedAltQty
-                                                            )
-                                                        } else item1
+                                                                val factor = item1.conFactor ?: 1.0
+                                                                val conTypeVal = item1.conType ?: 1.0
+                                                                val calculatedAltQty =
+                                                                    if (item1.selectedUnit == item1.altUnit) {
+                                                                        newQty.toDouble()
+                                                                    } else {
+                                                                        if (conTypeVal == 1.0) {
+                                                                            newQty.toDouble() * factor
+                                                                        } else {
+                                                                            newQty.toDouble() / factor
+                                                                        }
+                                                                    }
+
+                                                                item1.copy(
+                                                                    qty = newQty,
+                                                                    taxable = newTaxableAmount,
+                                                                    gstAmt = newGstAmount,
+                                                                    net = newNetAmount,
+                                                                    altQty = calculatedAltQty
+                                                                )
+                                                            } else item1
+                                                        }
+                                                },
+                                                onRemove = { if (editingItem == null) selectedItems = selectedItems - item },
+                                                onEdit = {
+                                                    if (editingItem == null) {
+                                                        editingItemIndex = index
+                                                        editingItem = item
                                                     }
-                                            },
-                                            onRemove = { selectedItems = selectedItems - item },
-                                            onEdit = {
-                                                if (editingItem == null) {
-                                                    editingItemIndex = index
-                                                    editingItem = item
-                                                    selectedItems = selectedItems - item
+                                                },
+                                                onSerialNo = {
+                                                    if (editingItem == null) {
+                                                        editingItemIndex = index
+                                                        editingItem = item
+                                                        pendingSelectedProductGUID = item.guid
+                                                        pendingSelectedProductName = item.name
+                                                        selectedInitialSerialNo = item.item_serial
+                                                        showSerialNumberBottomSheet = true
+                                                    }
                                                 }
-                                            },
-                                            onSerialNo = {
-                                                if (editingItem == null) {
-                                                    editingItemIndex = index
-                                                    editingItem = item
-                                                    selectedItems = selectedItems - item
-                                                    pendingSelectedProductGUID = item.guid
-                                                    pendingSelectedProductName = item.name
-                                                    selectedInitialSerialNo = item.item_serial
-                                                    showSerialNumberBottomSheet = true
-                                                }
-                                            }
-                                        )
+                                            )
+                                        }
                                     }
 
                                     Row(
@@ -1830,11 +1715,6 @@ data class SaleScreen(
                         it.SerialNo ?: ""
                     },
                     onDismiss = {
-                        if (editingItemIndex != null && editingItem != null) {
-                            val list = selectedItems.toMutableList()
-                            list.add(editingItemIndex!!, editingItem!!)
-                            selectedItems = list
-                        }
                         showSerialNumberBottomSheet = false
                         selectedInitialSerialNo = emptyList()
                         editingItemIndex = null
@@ -1929,7 +1809,7 @@ data class SaleScreen(
 
                         val list = selectedItems.toMutableList()
                         if (editingItemIndex != null) {
-                            list.add(editingItemIndex!!, updatedItem)
+                            list[editingItemIndex!!] = updatedItem
                         } else {
                             list.add(updatedItem)
                         }
