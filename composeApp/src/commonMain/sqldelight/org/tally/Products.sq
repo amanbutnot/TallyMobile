@@ -165,6 +165,46 @@ FROM Products
 WHERE (:filterGroup = 0 OR Products.GroupCode IN :groupCodes) AND (:productCode IS NULL OR Products.GroupCode = :productCode)
 ORDER BY Name;
 
+getProductsByGuidsForDis:
+SELECT
+    GUID AS product_id,
+    GUID AS hospital_id,
+    Name AS product_name,
+    GroupCode AS category_id,
+    UnitCode AS unit_id,
+    SalesPrice AS sales_price,
+    MRP,
+    PurcPrice AS purchase_price,
+    SaleDisc AS discount,
+
+COALESCE(
+    (
+        SELECT IGST
+        FROM Tax_Category_Mast
+        WHERE Tax_Category_Mast.GUID = Products.TaxCategoryCode
+          AND AppDate <= '2025-04-01'
+        ORDER BY AppDate DESC
+        LIMIT 1
+    ),
+    0
+) AS gst_tax_percentage,
+
+    Name AS product_description,
+    '' AS created_at,
+    '' AS updated_at,
+
+    ROUND(
+        CASE
+            WHEN IFNULL(SaleDisc, 0) = 0 THEN SalesPrice
+            ELSE SalesPrice - (SalesPrice * SaleDisc / 100.0)
+        END,
+        2
+    ) AS discounted_price
+
+FROM Products
+WHERE GUID IN :guids
+ORDER BY Name;
+
 
 
 -- FOR SALE PURCHASE CONFIGURATIONS

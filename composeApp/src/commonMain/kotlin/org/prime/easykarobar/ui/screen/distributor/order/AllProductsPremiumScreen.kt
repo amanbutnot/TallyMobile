@@ -90,7 +90,8 @@ import tallymobile.composeapp.generated.resources.category_placeholder
 data class AllProductsPremiumScreen(
     val categoryName: String? = null,
     val productCode: Double? = null,
-    val isTab: Boolean
+    val isTab: Boolean,
+    val productGuids: List<String>? = null
 ) : Screen {
 
     @Composable
@@ -190,12 +191,33 @@ data class AllProductsPremiumScreen(
         val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
         val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
 
-        val productList = remember(productCode) {
-            db.productsQueries.getProductsForDis(
-                filterGroup = filterAGRP,
-                groupCodes = groupCodes,
-                productCode = productCode
-            ).executeAsList()
+        val productList = remember(productCode, productGuids) {
+            if (productGuids != null) {
+                db.productsQueries.getProductsByGuidsForDis(productGuids) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price ->
+                    GetProductsForDis(
+                        product_id,
+                        hospital_id,
+                        product_name,
+                        category_id,
+                        unit_id,
+                        sales_price,
+                        MRP,
+                        purchase_price,
+                        discount,
+                        gst_tax_percentage,
+                        product_description,
+                        created_at,
+                        updated_at,
+                        discounted_price
+                    )
+                }.executeAsList()
+            } else {
+                db.productsQueries.getProductsForDis(
+                    filterGroup = filterAGRP,
+                    groupCodes = groupCodes,
+                    productCode = productCode
+                ).executeAsList()
+            }
         }
 
         val maxPrice = remember(productList) {

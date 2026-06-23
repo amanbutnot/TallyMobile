@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -64,7 +65,10 @@ import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getCategoryImage
+import org.prime.easykarobar.ui.shared.globalShared.handleBannerClick
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
+import org.prime.easykarobar.ui.shared.globalShared.toValidUrl
+import org.tally.BANNER_MASTER
 import org.tally.GetProductsForDis
 import org.tally.ProductCategoriesForDis
 import tallymobile.composeapp.generated.resources.Res
@@ -158,19 +162,15 @@ object CategoryShoppingScreen : Screen {
         val db = DatabaseHolder.instance
         val showProductInfo = remember { mutableStateOf(false) }
         val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
-        val sliderImages = listOf(
-            "https://picsum.photos/1600/700?random=1",
-            "https://picsum.photos/1600/700?random=2",
-            "https://picsum.photos/1600/700?random=3",
-            "https://picsum.photos/1600/700?random=4",
-            "https://picsum.photos/1600/700?random=5",
-            "https://picsum.photos/1600/700?random=6",
-            "https://picsum.photos/1600/700?random=7",
-            "https://picsum.photos/1600/700?random=8",
-            "https://picsum.photos/1600/700?random=9",
-            "https://picsum.photos/1600/700?random=10"
-        )
-        val realSize = sliderImages.size
+        val sliderMaster = db.slide_MasterQueries.selectAll().executeAsOneOrNull()
+        val sliderImages = if (sliderMaster != null) {
+            db.slide_MasterQueries.selectImagesBySlideId(sliderMaster.ID).executeAsList()
+        } else {
+            emptyList()
+        }
+        val bannerImages = db.banner_MasterQueries.selectAll().executeAsList()
+        val urlProvider = LocalUriHandler.current
+        val realSize = if (sliderImages.isEmpty()) 1 else sliderImages.size
         val startPage = Int.MAX_VALUE / 2
 
         val pagerState = rememberPagerState(
@@ -282,29 +282,55 @@ object CategoryShoppingScreen : Screen {
                             shadowElevation = 4.dp
                         ) {
                             HorizontalPager(state = pagerState) { page ->
-                                val imageIndex = page % realSize
-                                AsyncImage(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(180.dp),
-                                    model = sliderImages[imageIndex],
-                                    onLoading = { Res.drawable.category_placeholder },
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop
-                                )
+                                if (sliderImages.isNotEmpty()) {
+                                    val imageIndex = page % realSize
+                                    val slide = sliderImages[imageIndex]
+                                    AsyncImage(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(180.dp)
+                                            .clickable {
+                                                handleBannerClick(
+                                                    slideImg = slide,
+                                                    nav = nav,
+                                                    urlProvider = urlProvider,
+                                                    showProductInfo = showProductInfo,
+                                                    selectedProduct = selectedProduct
+                                                )
+                                            },
+                                        model = slide.C10,
+                                        onLoading = { Res.drawable.category_placeholder },
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    AsyncImage(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(180.dp),
+                                        model = Res.drawable.category_placeholder,
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
                             }
                         }
 
                         Row(
                             Modifier
                                 .padding(bottom = 12.dp)
-                                .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+                                .background(
+                                    Color.Black.copy(alpha = 0.3f),
+                                    RoundedCornerShape(10.dp)
+                                )
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                             horizontalArrangement = Arrangement.Center
                         ) {
                             repeat(realSize) { iteration ->
                                 val color =
-                                    if (pagerState.currentPage % realSize == iteration) Color.White else Color.White.copy(alpha = 0.5f)
+                                    if (pagerState.currentPage % realSize == iteration) Color.White else Color.White.copy(
+                                        alpha = 0.5f
+                                    )
                                 Box(
                                     modifier = Modifier
                                         .padding(2.dp)
@@ -317,42 +343,34 @@ object CategoryShoppingScreen : Screen {
                     }
                 }
                 item {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        shadowElevation = 4.dp
-                    ) {
-                        AsyncImage(
+                    bannerImages.forEach {
+                        Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(180.dp),
-                            model = sliderImages[2],
-                            onLoading = { Res.drawable.category_placeholder },
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop
-                        )
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            shadowElevation = 4.dp
+                        ) {
+                            AsyncImage(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp).clickable {
+                                        handleBannerClick(
+                                            banner = it,
+                                            nav = nav,
+                                            urlProvider = urlProvider,
+                                            showProductInfo = showProductInfo,
+                                            selectedProduct = selectedProduct
+                                        )
+                                    },
+                                model = it.C10,
+                                onLoading = { Res.drawable.category_placeholder },
+                                contentDescription = null,
+                                contentScale = ContentScale.Fit
+                            )
+                        }
                     }
-                }
-                item {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        shadowElevation = 4.dp
-                    ) {
-                        AsyncImage(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(180.dp),
-                            model = sliderImages[3],
-                            onLoading = { Res.drawable.category_placeholder },
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop
-                        )
-                    }
+
                 }
                 // Categories Grid at Top
                 item {
@@ -596,3 +614,4 @@ object CategoryShoppingScreen : Screen {
         }
     }
 }
+

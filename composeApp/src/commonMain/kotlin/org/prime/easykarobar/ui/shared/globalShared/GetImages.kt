@@ -7,3 +7,14 @@ fun getCategoryImage(storeId: String, guid: String): String {
 fun getProductImage(storeId: String, guid: String): String {
     return "https://images.easykarobar.in/stores/${storeId}/t/$storeId$guid.webp?v=104"
 }
+
+fun String.toValidUrl(): String {
+    val value = trim()
+
+    return when {
+        value.startsWith("http://", true) ||
+                value.startsWith("https://", true) -> value
+
+        else -> "https://$value"
+    }
+}

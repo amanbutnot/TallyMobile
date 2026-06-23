@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -49,6 +50,7 @@ import org.prime.easykarobar.data.expect.getDeviceId
 import org.prime.easykarobar.data.model.LoginRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.SelectCompanyScreen
+import org.prime.easykarobar.ui.screen.distributor.order.CartScreen
 import org.prime.easykarobar.ui.screen.home.tabs.HomeTab
 import org.prime.easykarobar.ui.screen.home.tabs.MastersTab
 import org.prime.easykarobar.ui.screen.home.tabs.ReportingTab
@@ -151,6 +153,17 @@ object Dashboard : Screen {
                                     Icon(
                                         Icons.Default.CloudSync,
                                         contentDescription = "Cloud Sync",
+                                        tint = colors.onBackground
+                                    )
+                                }
+                            }
+                            if(userRole() == ROLE.DISTRIBUTOR){
+                                IconButton(onClick = {
+                                    nav.push(CartScreen)
+                                }){
+                                    Icon(
+                                        Icons.Default.ShoppingCart,
+                                        contentDescription = "cart",
                                         tint = colors.onBackground
                                     )
                                 }
