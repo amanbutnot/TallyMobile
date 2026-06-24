@@ -66,6 +66,9 @@ import coil3.compose.AsyncImage
 import org.prime.easykarobar.business.viewmodel.distributor.CartItem
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
+import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.globalShared.convertCouponDate
+import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.CreateOrderRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
@@ -85,12 +88,6 @@ data class Coupon(
     val discountType: String, // "flat" or "percent"
     val discountValue: Double,
     val minOrderValue: Double
-)
-
-val demoCoupons = listOf(
-    Coupon("WELCOME100", "₹100 OFF", "Flat ₹100 off on orders above ₹1000", "flat", 100.0, 1000.0),
-    Coupon("SAVE5", "5% OFF", "5% off on orders above ₹1000", "percent", 5.0, 1000.0),
-    Coupon("FESTIVE200", "₹200 OFF", "Flat ₹200 off on orders above ₹2500", "flat", 200.0, 2500.0)
 )
 
 object CartScreen : Screen {
@@ -135,6 +132,44 @@ private fun CartContent(
     var couponText by remember { mutableStateOf("") }
     var appliedCoupon by remember { mutableStateOf<Coupon?>(null) }
 
+    val availableCoupons = remember {
+        try {
+            DatabaseHolder.instance.coupon_MasterQueries.selectAll().executeAsList().map {
+                val discType = it.DISC_TYPE?.lowercase() ?: "flat"
+                val expDateFormatted = convertCouponDate(it.EXP_DATE)
+                val expDisplay = if (expDateFormatted != null) "Expires: ${Tdate(expDateFormatted)}" else ""
+
+                Coupon(
+                    code = it.CODE,
+                    title = when (discType) {
+                        "percentage" -> "${it.DISC_PER.formatToAmtDec(0)}% OFF"
+                        "flat" -> "₹${it.DISC_PER.formatToAmtDec(0)} OFF"
+                        "cashback" -> "₹${it.DISC_PER.formatToAmtDec(0)} Cashback"
+                        else -> "₹${it.DISC_PER.formatToAmtDec(0)} OFF"
+                    },
+                    description = when (discType) {
+                        "percentage" -> "${it.DISC_PER.formatToAmtDec(0)}% off on orders above ₹${it.BILL_VAL.formatToAmtDec(0)}. $expDisplay"
+                        "flat" -> "Flat ₹${it.DISC_PER.formatToAmtDec(0)} off on orders above ₹${it.BILL_VAL.formatToAmtDec(0)}. $expDisplay"
+                        "cashback" -> "₹${it.DISC_PER.formatToAmtDec(0)} cashback on orders above ₹${it.BILL_VAL.formatToAmtDec(0)}. $expDisplay"
+                        else -> "Discount on orders above ₹${it.BILL_VAL.formatToAmtDec(0)}. $expDisplay"
+                    }.trim(),
+                    discountType = if (discType == "percentage") "percent" else "flat",
+                    discountValue = it.DISC_PER,
+                    minOrderValue = it.BILL_VAL
+                )
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    val totalDiscountedPrice = list.sumOf {
+        val discounted = it.product.discounted_price ?: 0.0
+        discounted * it.quantity.value
+    }
+
+    var couponError by remember { mutableStateOf<String?>(null) }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -147,17 +182,47 @@ private fun CartContent(
         item {
             CouponSection(
                 couponText = couponText,
-                onCouponTextChange = { couponText = it },
+                onCouponTextChange = {
+                    couponText = it
+                    couponError = null
+                },
                 onApplyCoupon = { code ->
-                    val coupon = demoCoupons.find { it.code.equals(code, ignoreCase = true) }
+                    val coupon = availableCoupons.find { it.code.trim().equals(code.trim(), true) }
                     if (coupon != null) {
-                        appliedCoupon = coupon
+                        if (totalDiscountedPrice >= coupon.minOrderValue) {
+                            appliedCoupon = coupon
+                            couponError = null
+                        } else {
+                            couponError = "Minimum order value of ₹${coupon.minOrderValue.formatToAmtDec(0)} required"
+                        }
+                    } else {
+                        couponError = "Invalid coupon code"
                     }
                 },
-                availableCoupons = demoCoupons,
-                onSelectCoupon = { appliedCoupon = it },
+                availableCoupons = availableCoupons,
+                onSelectCoupon = {
+                    if (it != null) {
+                        if (totalDiscountedPrice >= it.minOrderValue) {
+                            appliedCoupon = it
+                            couponError = null
+                        } else {
+                            couponError = "Minimum order value of ₹${it.minOrderValue.formatToAmtDec(0)} required"
+                        }
+                    } else {
+                        appliedCoupon = null
+                        couponError = null
+                    }
+                },
                 appliedCoupon = appliedCoupon
             )
+            if (couponError != null) {
+                Text(
+                    text = couponError!!,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                )
+            }
         }
 
         item {
@@ -420,7 +485,7 @@ fun CartSummary(
 
     val totalBeforeCoupon = (totalDiscountedPrice + totalGst).toDouble()
 
-    val couponDiscount = if (appliedCoupon != null) {
+    val couponDiscount = if (appliedCoupon != null && totalDiscountedPrice >= appliedCoupon.minOrderValue) {
         if (appliedCoupon.discountType == "flat") {
             appliedCoupon.discountValue
         } else {
