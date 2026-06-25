@@ -1,6 +1,7 @@
 package org.prime.easykarobar.data.model
 
 import kotlinx.serialization.Serializable
+import org.prime.easykarobar.data.model.transactions.SundryItem
 
 @Serializable
 data class CreateOrderRequest(
@@ -8,7 +9,8 @@ data class CreateOrderRequest(
     val billing_name: String, //LEDGER NAME
     val remarks: String,
     val total_amt: String,
-    val items: List<items>
+    val items: List<items>,
+    val sundries: List<SundryItem> = emptyList()
 )
 
 @Serializable

@@ -67,10 +67,9 @@ import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getCategoryImage
 import org.prime.easykarobar.ui.shared.globalShared.handleBannerClick
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
-import org.prime.easykarobar.ui.shared.globalShared.toValidUrl
-import org.tally.BANNER_MASTER
 import org.tally.GetProductsForDis
 import org.tally.ProductCategoriesForDis
+import org.tally.SLIDE_IMG
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.category_placeholder
 import kotlin.time.Duration.Companion.milliseconds
@@ -162,30 +161,10 @@ object CategoryShoppingScreen : Screen {
         val db = DatabaseHolder.instance
         val showProductInfo = remember { mutableStateOf(false) }
         val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
-        val sliderMaster = db.slide_MasterQueries.selectAll().executeAsOneOrNull()
-        val sliderImages = if (sliderMaster != null) {
-            db.slide_MasterQueries.selectImagesBySlideId(sliderMaster.ID).executeAsList()
-        } else {
-            emptyList()
-        }
+        val sliderMasters = remember { db.slide_MasterQueries.selectAll().executeAsList() }
         val bannerImages = db.banner_MasterQueries.selectAll().executeAsList()
+        val featureMaster = db.features_MasterQueries.selectAll().executeAsList()
         val urlProvider = LocalUriHandler.current
-        val realSize = if (sliderImages.isEmpty()) 1 else sliderImages.size
-        val startPage = Int.MAX_VALUE / 2
-
-        val pagerState = rememberPagerState(
-            initialPage = startPage - (startPage % realSize),
-            pageCount = { Int.MAX_VALUE }
-        )
-
-        LaunchedEffect(Unit) {
-            while (true) {
-                delay(3000.milliseconds)
-                pagerState.animateScrollToPage(
-                    pagerState.currentPage + 1
-                )
-            }
-        }
 
 
         var searchQuery by remember { mutableStateOf("") }
@@ -267,110 +246,86 @@ object CategoryShoppingScreen : Screen {
                 ),
                 modifier = Modifier.fillMaxSize()
             ) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp),
-                        contentAlignment = Alignment.BottomCenter
-                    ) {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            shadowElevation = 4.dp
-                        ) {
-                            HorizontalPager(state = pagerState) { page ->
-                                if (sliderImages.isNotEmpty()) {
-                                    val imageIndex = page % realSize
-                                    val slide = sliderImages[imageIndex]
-                                    AsyncImage(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(180.dp)
-                                            .clickable {
-                                                handleBannerClick(
-                                                    slideImg = slide,
-                                                    nav = nav,
-                                                    urlProvider = urlProvider,
-                                                    showProductInfo = showProductInfo,
-                                                    selectedProduct = selectedProduct
-                                                )
-                                            },
-                                        model = slide.C10,
-                                        onLoading = { Res.drawable.category_placeholder },
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop
-                                    )
-                                } else {
-                                    AsyncImage(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(180.dp),
-                                        model = Res.drawable.category_placeholder,
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop
-                                    )
-                                }
-                            }
-                        }
-
-                        Row(
-                            Modifier
-                                .padding(bottom = 12.dp)
-                                .background(
-                                    Color.Black.copy(alpha = 0.3f),
-                                    RoundedCornerShape(10.dp)
-                                )
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            repeat(realSize) { iteration ->
-                                val color =
-                                    if (pagerState.currentPage % realSize == iteration) Color.White else Color.White.copy(
-                                        alpha = 0.5f
-                                    )
-                                Box(
-                                    modifier = Modifier
-                                        .padding(2.dp)
-                                        .clip(CircleShape)
-                                        .background(color)
-                                        .size(6.dp)
+                items(sliderMasters) { master ->
+                    val images = remember(master.ID) {
+                        db.slide_MasterQueries.selectImagesBySlideId(master.ID).executeAsList()
+                    }
+                    if (images.isNotEmpty()) {
+                        AutoSlidingPager(
+                            images = images,
+                            onImageClick = { slide ->
+                                handleBannerClick(
+                                    slideImg = slide,
+                                    nav = nav,
+                                    urlProvider = urlProvider,
+                                    showProductInfo = showProductInfo,
+                                    selectedProduct = selectedProduct
                                 )
                             }
-                        }
+                        )
                     }
                 }
-                item {
-                    bannerImages.forEach {
+                items(bannerImages) { banner ->
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        shadowElevation = 4.dp
+                    ) {
+                        AsyncImage(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp).clickable {
+                                    handleBannerClick(
+                                        banner = banner,
+                                        nav = nav,
+                                        urlProvider = urlProvider,
+                                        showProductInfo = showProductInfo,
+                                        selectedProduct = selectedProduct
+                                    )
+                                },
+                            model = banner.C10,
+                            onLoading = { Res.drawable.category_placeholder },
+                            contentDescription = null,
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                }
+
+                items(featureMaster.filter { it.C1 != "Open Link" }) { feature ->
+                    val featureProducts = remember(feature, productList) {
+                        when (feature.C1) {
+                            "Open Item" -> productList.filter { it.product_id == feature.C2 }
+                            "Open Item Group" -> productList.filter { it.category_id == feature.C2?.toDoubleOrNull() }
+                            "Select items" -> {
+                                val guids = feature.C2?.split(",")?.map { it.trim() } ?: emptyList()
+                                productList.filter { it.product_id in guids }
+                            }
+
+                            else -> emptyList()
+                        }
+                    }
+
+                    if (featureProducts.isNotEmpty()) {
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            shadowElevation = 4.dp
+                                .padding(vertical = 6.dp),
+                            color = Color.White,
+                            shadowElevation = 1.dp
                         ) {
-                            AsyncImage(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(180.dp).clickable {
-                                        handleBannerClick(
-                                            banner = it,
-                                            nav = nav,
-                                            urlProvider = urlProvider,
-                                            showProductInfo = showProductInfo,
-                                            selectedProduct = selectedProduct
-                                        )
-                                    },
-                                model = it.C10,
-                                onLoading = { Res.drawable.category_placeholder },
-                                contentDescription = null,
-                                contentScale = ContentScale.Fit
+                            FeatureSection(
+                                title = feature.CODE,
+                                products = featureProducts,
+                                cartViewModel = cartViewModel,
+                                onItemClick = { item ->
+                                    selectedProduct.value = item
+                                    showProductInfo.value = true
+                                }
                             )
                         }
                     }
-
                 }
                 // Categories Grid at Top
                 item {
@@ -609,6 +564,138 @@ object CategoryShoppingScreen : Screen {
                             Spacer(modifier = Modifier.weight(1f))
                         }
                     }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun FeatureSection(
+        title: String,
+        products: List<GetProductsForDis>,
+        cartViewModel: CartViewModel,
+        onItemClick: (GetProductsForDis) -> Unit
+    ) {
+        if (products.isEmpty()) return
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                ),
+                color = Color(0xFF1A1C1E),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
+            val chunks = products.chunked(2)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                chunks.forEach { rowItems ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        rowItems.forEach { product ->
+                            Box(modifier = Modifier.weight(1f)) {
+                                AllProductsPremiumScreen(null, null, false).PremiumProductItem(
+                                    product = product,
+                                    cartViewModel = cartViewModel,
+                                    onClick = { onItemClick(product) }
+                                )
+                            }
+                        }
+                        if (rowItems.size == 1) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun AutoSlidingPager(
+        images: List<SLIDE_IMG>,
+        onImageClick: (SLIDE_IMG) -> Unit
+    ) {
+        val realSize = images.size
+        val startPage = Int.MAX_VALUE / 2
+
+        val pagerState = rememberPagerState(
+            initialPage = startPage - (startPage % realSize),
+            pageCount = { Int.MAX_VALUE }
+        )
+
+        LaunchedEffect(Unit) {
+            while (true) {
+                delay(3000.milliseconds)
+                pagerState.animateScrollToPage(
+                    pagerState.currentPage + 1
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp
+            ) {
+                HorizontalPager(state = pagerState) { page ->
+                    val imageIndex = page % realSize
+                    val slide = images[imageIndex]
+                    AsyncImage(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                            .clickable { onImageClick(slide) },
+                        model = slide.C10,
+                        onLoading = { Res.drawable.category_placeholder },
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+
+            Row(
+                Modifier
+                    .padding(bottom = 12.dp)
+                    .background(
+                        Color.Black.copy(alpha = 0.3f),
+                        RoundedCornerShape(10.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                repeat(realSize) { iteration ->
+                    val color =
+                        if (pagerState.currentPage % realSize == iteration) Color.White else Color.White.copy(
+                            alpha = 0.5f
+                        )
+                    Box(
+                        modifier = Modifier
+                            .padding(2.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                            .size(6.dp)
+                    )
                 }
             }
         }

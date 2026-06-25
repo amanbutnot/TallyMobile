@@ -6,6 +6,7 @@ import cafe.adriel.voyager.navigator.Navigator
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.ui.screen.distributor.order.AllProductsPremiumScreen
 import org.tally.BANNER_MASTER
+import org.tally.FEATURES_MASTER
 import org.tally.GetProductsForDis
 import org.tally.SLIDE_IMG
 import org.tally.SLIDE_MASTER
@@ -99,6 +100,16 @@ fun handleBannerClick(
     selectedProduct: MutableState<GetProductsForDis?>
 ) {
     handleBannerClick(banner.C1, banner.C2, nav, urlProvider, showProductInfo, selectedProduct)
+}
+
+fun handleBannerClick(
+    feature: FEATURES_MASTER,
+    nav: Navigator,
+    urlProvider: UriHandler,
+    showProductInfo: MutableState<Boolean>,
+    selectedProduct: MutableState<GetProductsForDis?>
+) {
+    handleBannerClick(feature.C1, feature.C2, nav, urlProvider, showProductInfo, selectedProduct)
 }
 
 fun handleBannerClick(
