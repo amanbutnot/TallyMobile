@@ -53,6 +53,7 @@ data class Order(
     val Others2: String,
     val Remarks: String,
     val items: List<OrderItemList>,
+    val sundries: List<SundryItem> = emptyList(),
     val status_history: List<StatusHistory>,
     val cancellation_date: String? = null,
     val cancelled_by: String? = null,

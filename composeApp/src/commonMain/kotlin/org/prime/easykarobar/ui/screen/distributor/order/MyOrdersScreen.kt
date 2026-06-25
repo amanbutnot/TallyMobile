@@ -577,7 +577,6 @@ fun OrderCard(
             Spacer(modifier = Modifier.height(10.dp))
 
 
-
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp)
@@ -586,46 +585,86 @@ fun OrderCard(
 
                     Text("Order Summary", fontWeight = FontWeight.Bold)
 
-                    val itemsTotal = order.items.sumOf { it.nett_price.toDoubleOrNull() ?: 0.0 }
+                    val itemsSubtotal = order.items.sumOf {
+                        it.item_amount.toDoubleOrNull() ?: 0.0
+                    }
 
-                    val itemsDiscount =
-                        order.items.sumOf { it.discount_amt.toDoubleOrNull() ?: 0.0 }
-                    val itemsGst = order.items.sumOf { it.taxamt1.toDoubleOrNull() ?: 0.0 }
-                    val grandTotal = order.total_amount.toDoubleOrNull() ?: 0.0
+                    val itemsDiscount = order.items.sumOf {
+                        it.discount_amt.toDoubleOrNull() ?: 0.0
+                    }
 
+                    val taxableSubtotal = itemsSubtotal - itemsDiscount
 
-                    SummaryRow(
-                        "Items (${order.items.size})",
-                        itemsTotal.formatToAmtDec(),
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
-                    )
-                    SummaryRow(
-                        "Discount",
-                        "-${
-                            itemsDiscount.formatToAmtDec()
-                        }",
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
-                    )
+                    val itemsGst = order.items.sumOf {
+                        (it.taxamt1.toDoubleOrNull() ?: 0.0) +
+                                (it.taxamt2.toDoubleOrNull() ?: 0.0)
+                    }
+
+                    val sundryTotal = order.sundries.sumOf {
+                        it.amount
+                    }
+
+                    val calculatedTotal = taxableSubtotal + itemsGst + sundryTotal
+
+                    val serverTotal = order.total_amount.toDoubleOrNull() ?: calculatedTotal
+
                     SummaryRow(
                         "Subtotal",
-                        (itemsTotal - itemsDiscount).formatToAmtDec(),
+                        itemsSubtotal.formatToAmtDec(),
                         textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
                     )
+
+                    if (itemsDiscount != 0.0) {
+                        SummaryRow(
+                            "Discount",
+                            "-${itemsDiscount.formatToAmtDec()}",
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                            valueColor = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
                     SummaryRow(
-                        "GST",
-                        itemsGst.formatToAmtDec(),
+                        "Taxable Amount",
+                        taxableSubtotal.formatToAmtDec(),
                         textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
                     )
+
+                    if (itemsGst != 0.0) {
+                        SummaryRow(
+                            "GST",
+                            itemsGst.formatToAmtDec(),
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+                        )
+                    }
+
+                    if (order.sundries.isEmpty()) {
+                        SummaryRow(
+                            "Coupon",
+                            "Not Applied",
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+                        )
+                    } else {
+                        order.sundries.forEach { sundry ->
+                            SummaryRow(
+                                "Coupon (${sundry.name})",
+                                sundry.amount.formatToAmtDec(),
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                                valueColor = if (sundry.amount < 0)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
                     SummaryRow(
                         label = "Total Amount",
-                        value = (grandTotal).formatToAmtDec(),
+                        value = serverTotal.formatToAmtDec(),
                         fontWeight = FontWeight.Bold,
                         textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
                     )
-
                 }
             }
 
@@ -890,7 +929,7 @@ fun OrderItemRow(item: OrderItemList, serialNumber: Int) {
 
                 ItemDetailChip(
                     label = "Amount",
-                    value = item.nett_price.toDouble().formatToAmtDec(),
+                    value = item.item_amount.toDouble().formatToAmtDec(),
                     color = MaterialTheme.colorScheme.primary
                 )
             }

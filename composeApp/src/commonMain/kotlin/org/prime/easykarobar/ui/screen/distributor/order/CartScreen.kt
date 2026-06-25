@@ -71,6 +71,7 @@ import org.prime.easykarobar.ui.shared.globalShared.convertCouponDate
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.CreateOrderRequest
+import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
 import org.prime.easykarobar.ui.shared.composables.QuantityTextField
@@ -736,15 +737,17 @@ fun CartSummary(
         val itemsList = products.map { cartItem ->
             val product = cartItem.product
             val quantity = cartItem.quantity.value.toDouble()
+            val price = product.sales_price?.toDouble() ?: 0.0
+            val discountedPrice = product.discounted_price ?: price
 
             org.prime.easykarobar.data.model.items(
                 item_id = product.hospital_id?.toInt() ?: 0,
                 productName = product.product_name.toString(),
                 quantity = quantity,
-                price = product.sales_price?.toDouble() ?: (0.0 * quantity),
+                price = price,
                 discount_percent = product.discount?.toDouble() ?: 0.0,
                 tax_amount = product.gst_tax_percentage.toDouble(),
-                net_amount = product.sales_price?.toDouble() ?: (0.0 * quantity)
+                net_amount = discountedPrice * quantity
             )
         }
         println(itemsList)
@@ -755,13 +758,31 @@ fun CartSummary(
             cancelButtonText = "No",
             onConfirm = {
                 showConfirmDialog = false
+
+                val sundriesList = if (appliedCoupon != null) {
+                    listOf(
+                        SundryItem(
+                            name = appliedCoupon.code,
+                            amount = -couponDiscount,
+                            rate = if (appliedCoupon.discountType == "percent") appliedCoupon.discountValue else 0.0,
+                            percentValue = if (appliedCoupon.discountType == "percent") appliedCoupon.discountValue else 0.0,
+                            srno = 1,
+                            guid = "",
+                            i1 = 0,
+                            i2 = 0,
+                            d2 = 0
+                        )
+                    )
+                } else emptyList()
+
                 orderViewModel.createOrder(
                     CreateOrderRequest(
                         billing_guid = SharedPrefs.DistributorData.get()?.ledger_GUID.toString(),
                         remarks = remarks,
                         billing_name = SharedPrefs.DistributorData.get()?.ledger_name.toString(),
                         total_amt = finalTotal.toString(),
-                        items = itemsList
+                        items = itemsList,
+                        sundries = sundriesList
                     )
                 )
             },
