@@ -32,6 +32,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -2528,7 +2529,20 @@ fun SundryCard(
                                     textAlign = TextAlign.End,
                                     fontWeight = FontWeight.SemiBold
                                 ),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Decimal,
+                                    imeAction = ImeAction.Done
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onDone = {
+                                        if (textValue.isNotEmpty() && textValue.toDoubleOrNull() != null) {
+                                            fireAmountChange(textValue)
+                                            isConfirmed = true
+                                            isEditing = false
+                                            focusManager.clearFocus()
+                                        }
+                                    }
+                                ),
                                 decorationBox = { innerTextField ->
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -3183,7 +3197,7 @@ fun ExpandedItemEditor1(
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Discount %")
+                    Text("Disc %")
                     BorderedInput(
                         value = discountN,
                         isEnabled = hasSalesmanPermission("D37"),
