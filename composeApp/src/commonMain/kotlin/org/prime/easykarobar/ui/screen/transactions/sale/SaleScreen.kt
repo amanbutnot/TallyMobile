@@ -2415,16 +2415,25 @@ fun SundryCard(
     val isPercentage = sundry.i2 == 1
 
     var textValue by remember(sundry.name) {
-        mutableStateOf(sundry.d2.takeIf { it.toDouble() != 0.0 }?.toString() ?: "")
+        val initial = sundry.d2.toDouble()
+        mutableStateOf(
+            if (initial == 0.0) ""
+            else if (initial % 1.0 == 0.0) initial.toLong().toString()
+            else initial.toString()
+        )
     }
     var isConfirmed by remember(sundry.name) {
-        mutableStateOf(sundry.d2.takeIf { it.toDouble() != 0.0 } != null)
+        mutableStateOf(sundry.d2.toDouble() != 0.0)
     }
     var isEditing by remember { mutableStateOf(false) }
 
     LaunchedEffect(sundry.amount) {
-        val amountStr = if (sundry.amount == 0.0) "" else sundry.amount.toString()
-        if (amountStr != textValue) textValue = amountStr
+        val currentTextAsDouble = textValue.toDoubleOrNull()
+        if (sundry.amount != currentTextAsDouble) {
+            textValue = if (sundry.amount == 0.0) ""
+            else if (sundry.amount % 1.0 == 0.0) sundry.amount.toLong().toString()
+            else sundry.amount.toString()
+        }
     }
 
     val displayValue = textValue.toDoubleOrNull() ?: 0.0
