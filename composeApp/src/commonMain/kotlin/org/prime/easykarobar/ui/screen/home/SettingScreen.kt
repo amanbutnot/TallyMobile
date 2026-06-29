@@ -388,6 +388,28 @@ object SettingScreen : Screen {
                         }
                     }
 
+//                    Spacer(modifier = Modifier.height(24.dp))
+//                    TallyDivider()
+//
+//                    Text(
+//                        text = "UI Demos",
+//                        style = MaterialTheme.typography.titleSmall.copy(
+//                            fontWeight = FontWeight.SemiBold
+//                        ),
+//                        color = colors.onSurfaceVariant,
+//                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+//                    )
+//
+//                    ManagementCard(
+//                        icon = Icons.Default.Store,
+//                        label = "Easy Mart",
+//                        subtitle = "View Easy Mart UI Demo",
+//                        containerColor = colors.secondary,
+//                        contentColor = colors.onSecondary,
+//                        onClick = { nav.push(EasyMartScreen) },
+//                        modifier = Modifier.fillMaxWidth()
+//                    )
+
                     Spacer(modifier = Modifier.height(20.dp))
 
                     TallyIconButton("Sign Out", Icons.AutoMirrored.Filled.Logout) {
