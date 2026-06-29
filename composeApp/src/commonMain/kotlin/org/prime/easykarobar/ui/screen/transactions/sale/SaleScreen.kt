@@ -795,10 +795,14 @@ data class SaleScreen(
             } else {
                 sundry.amount
             }
-            when (sundry.i1) {
-                0 -> runningTotal - sundryValue
-                1 -> runningTotal + sundryValue
-                else -> runningTotal + sundryValue
+            if (isBusy()) {
+                when (sundry.i1) {
+                    0 -> runningTotal - sundryValue
+                    1 -> runningTotal + sundryValue
+                    else -> runningTotal + sundryValue
+                }
+            } else {
+                runningTotal + sundryValue
             }
         }
 
@@ -1284,10 +1288,14 @@ data class SaleScreen(
                                             sundry.amount
                                         }
 
-                                        cumulativeTotal = when (sundry.i1) {
-                                            0 -> cumulativeTotal - sundryValue
-                                            1 -> cumulativeTotal + sundryValue
-                                            else -> cumulativeTotal + sundryValue
+                                        cumulativeTotal = if (isBusy()) {
+                                            when (sundry.i1) {
+                                                0 -> cumulativeTotal - sundryValue
+                                                1 -> cumulativeTotal + sundryValue
+                                                else -> cumulativeTotal + sundryValue
+                                            }
+                                        } else {
+                                            cumulativeTotal + sundryValue
                                         }
                                     }
 
@@ -1874,7 +1882,7 @@ data class SaleScreen(
                                 val newItem = SundryItem(
                                     sundryName, 0.0,
                                     guid = GUID,
-                                    i1 = 0,
+                                    i1 = 1,
                                     i2 = 0,
                                     d2 = 0,
                                     rate = 0.0,
@@ -2462,10 +2470,13 @@ fun SundryCard(
                     )
                     if (displayValue != 0.0) {
                         Text(
-                            text = if (isPercentage) {
-                                "${if (sundry.i1 == 0) "-" else "+"}${formatTwo(calculatedAmount)}"
+                            text = if (isBusy()) {
+                                val sign = if (sundry.i1 == 0) "-" else "+"
+                                val amt = if (isPercentage) calculatedAmount else displayValue
+                                "$sign${formatTwo(amt.absoluteValue)}"
                             } else {
-                                "${if (sundry.i1 == 0) "-" else "+"}${formatTwo(displayValue)}"
+                                val amt = if (isPercentage) calculatedAmount else displayValue
+                                formatTwo(amt)
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = if (isConfirmed) MaterialTheme.colorScheme.primary
@@ -2497,7 +2508,9 @@ fun SundryCard(
                                         textValue = ""
                                         onAmountChange(0.0, 0.0, index + 1, 0.0)
                                     } else {
-                                        val filtered = newValue.filter { it.isDigit() || it == '.' }
+                                        val filtered = newValue.filterIndexed { i, char ->
+                                            char.isDigit() || char == '.' || (!isBusy() && char == '-' && i == 0)
+                                        }
                                         val dotCount = filtered.count { it == '.' }
                                         val validInput = if (dotCount > 1) {
                                             filtered.substringBefore('.') + "." + filtered.substringAfter(

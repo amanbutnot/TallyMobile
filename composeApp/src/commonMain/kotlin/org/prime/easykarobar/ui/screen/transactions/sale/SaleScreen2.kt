@@ -594,8 +594,12 @@ data class SaleScreen2(
             val baseAmount = itemsTotal + runningTotal
             val sundryValue =
                 if (sundry.i2 == 1) baseAmount * (sundry.amount / 100.0) else sundry.amount
-            when (sundry.i1) {
-                0 -> runningTotal - sundryValue; else -> runningTotal + sundryValue
+            if (isBusy()) {
+                when (sundry.i1) {
+                    0 -> runningTotal - sundryValue; else -> runningTotal + sundryValue
+                }
+            } else {
+                runningTotal + sundryValue
             }
         }
 
@@ -1048,8 +1052,13 @@ data class SaleScreen2(
                                         )
                                         val sundryValue = if (sundry.i2 == 1)
                                             cumulativeTotal * (sundry.amount / 100.0) else sundry.amount
-                                        cumulativeTotal = when (sundry.i1) {
-                                            0 -> cumulativeTotal - sundryValue; else -> cumulativeTotal + sundryValue
+                                        cumulativeTotal = if (isBusy()) {
+                                            when (sundry.i1) {
+                                                0 -> cumulativeTotal - sundryValue
+                                                else -> cumulativeTotal + sundryValue
+                                            }
+                                        } else {
+                                            cumulativeTotal + sundryValue
                                         }
                                     }
                                     Row(
@@ -1773,7 +1782,7 @@ data class SaleScreen2(
                             if (!selectedSundries.any { it.name == sundryName }) {
                                 val newItem = SundryItem(
                                     sundryName, 0.0, guid = GUID,
-                                    i1 = 0, i2 = 0, d2 = 0, rate = 0.0, srno = 0, percentValue = 0.0
+                                    i1 = 1, i2 = 0, d2 = 0, rate = 0.0, srno = 0, percentValue = 0.0
                                 )
                                 selectedSundries = selectedSundries + newItem
                                 focusedSundryGuid = GUID
