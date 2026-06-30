@@ -1,3 +1,9 @@
 {
-  "name": "Easy Karobar"
+  "name": "Easy Karobar",
+  "storeName": "Easy Mart",
+  "storeId": "easymart",
+  "username": "9876543200",
+  "password": "1234",
+  "splashtopcolor": "#4CAF50",
+  "splashbottomcolor": "#2E7D32"
 }

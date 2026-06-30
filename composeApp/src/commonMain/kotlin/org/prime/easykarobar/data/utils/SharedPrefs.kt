@@ -35,7 +35,23 @@ object SharedPrefs {
         // sync / version data
         LoginVersion.clear()
         LastSync.clear()
+        IsEasyMart.clear()
     }
+    object IsEasyMart {
+        private const val KEY = "is_easy_mart"
+        fun save(value: Boolean) {
+            settings.putBoolean(KEY, value)
+        }
+
+        fun get(): Boolean {
+            return settings.getBoolean(KEY, false)
+        }
+
+        fun clear() {
+            settings.remove(KEY)
+        }
+    }
+
     object Token {
         private const val KEY = "token"
         fun save(token: String) {

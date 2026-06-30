@@ -31,7 +31,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.easykarobar.BuildKonfig
 import org.prime.easykarobar.business.viewmodel.AuthViewModel
+import org.prime.easykarobar.ui.screen.auth.OnBoardingScreen
+import org.prime.easykarobar.ui.screen.easymart.EasyMartScreen
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
@@ -147,7 +150,11 @@ data class ChangePasswordScreen(val number: String) : Screen {
                                     authViewModel.resetPassword(
                                         password = password, id = number,
                                         onSuccess = {
-                                            nav.push(OnBoardingScreen)
+                                            if (BuildKonfig.STORE_ID.isNotEmpty()) {
+                                                nav.replaceAll(EasyMartScreen)
+                                            } else {
+                                                nav.replaceAll(OnBoardingScreen)
+                                            }
                                         })
 
                             },

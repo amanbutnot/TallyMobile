@@ -58,6 +58,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.internal.BackHandler
+import org.prime.easykarobar.BuildKonfig
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.deleteDbFile
 import org.prime.easykarobar.data.utils.MOBILE_VERSION
@@ -66,6 +67,7 @@ import org.prime.easykarobar.ui.screen.auth.OnBoardingScreen
 import org.prime.easykarobar.ui.screen.distributor.CreateDistributorScreen
 import org.prime.easykarobar.ui.screen.distributor.ListDistributorScreen
 import org.prime.easykarobar.ui.screen.distributor.order.MyOrdersScreen
+import org.prime.easykarobar.ui.screen.easymart.EasyMartScreen
 import org.prime.easykarobar.ui.shared.composables.TallyAlertBox
 import org.prime.easykarobar.ui.shared.composables.TallyDivider
 import org.prime.easykarobar.ui.shared.composables.TallyIconButton
@@ -388,29 +390,7 @@ object SettingScreen : Screen {
                         }
                     }
 
-//                    Spacer(modifier = Modifier.height(24.dp))
-//                    TallyDivider()
-//
-//                    Text(
-//                        text = "UI Demos",
-//                        style = MaterialTheme.typography.titleSmall.copy(
-//                            fontWeight = FontWeight.SemiBold
-//                        ),
-//                        color = colors.onSurfaceVariant,
-//                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-//                    )
-//
-//                    ManagementCard(
-//                        icon = Icons.Default.Store,
-//                        label = "Easy Mart",
-//                        subtitle = "View Easy Mart UI Demo",
-//                        containerColor = colors.secondary,
-//                        contentColor = colors.onSecondary,
-//                        onClick = { nav.push(EasyMartScreen) },
-//                        modifier = Modifier.fillMaxWidth()
-//                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
+//                    Spacer(modifier = Modifier.height(20.dp))
 
                     TallyIconButton("Sign Out", Icons.AutoMirrored.Filled.Logout) {
                         showAlertBox = true
@@ -437,7 +417,11 @@ object SettingScreen : Screen {
                         onConfirm = {
                             deleteDbFile()
                             SharedPrefs.logout()
-                            nav.replaceAll(OnBoardingScreen)
+                            if (BuildKonfig.STORE_ID.isNotEmpty()) {
+                                nav.replaceAll(EasyMartScreen)
+                            } else {
+                                nav.replaceAll(OnBoardingScreen)
+                            }
                         },
                         onCancel = {
                             showAlertBox = false

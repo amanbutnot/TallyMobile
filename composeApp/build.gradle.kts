@@ -1,3 +1,4 @@
+
 import groovy.json.JsonSlurper
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.text.SimpleDateFormat
@@ -12,6 +13,7 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlin.serialization)
     id("app.cash.sqldelight") version "2.1.0"
+    id("com.codingfeline.buildkonfig") version "0.22.0"
 }
 
 val brand = findProperty("brand")?.toString() ?: "demo"
@@ -172,5 +174,20 @@ sqldelight {
             deriveSchemaFromMigrations.set(false)
             packageName.set("org.prime.easykarobar")
         }
+    }
+}
+
+buildkonfig {
+    packageName = "org.prime.easykarobar"
+    objectName = "BuildKonfig"
+    
+    defaultConfigs {
+        buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "STORE_ID", brandConfig["storeId"]?.toString() ?: "")
+        buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "STORE_NAME", brandConfig["storeName"]?.toString() ?: "")
+        buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "USERNAME", brandConfig["username"]?.toString() ?: "")
+        buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "PASSWORD", brandConfig["password"]?.toString() ?: "")
+        buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "REGISTERED_NUMBER", (brandConfig["number"] ?: brandConfig["username"])?.toString() ?: "")
+        buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "SPLASH_TOP_COLOR", brandConfig["splashtopcolor"]?.toString() ?: "#FFFFFF")
+        buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "SPLASH_BOTTOM_COLOR", brandConfig["splashbottomcolor"]?.toString() ?: "#FFFFFF")
     }
 }

@@ -37,11 +37,13 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.jetbrains.compose.resources.painterResource
+import org.prime.easykarobar.BuildKonfig
 import org.prime.easykarobar.business.viewmodel.AuthViewModel
 import org.prime.easykarobar.data.expect.getDeviceId
 import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.LoginRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.screen.easymart.EasyMartScreen
 import org.prime.easykarobar.ui.screen.startup.GoogleDriveDownloadScreen
 import org.prime.easykarobar.ui.shared.composables.TallyButton
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
@@ -80,7 +82,13 @@ object LoginScreen : Screen {
         }
         TallyScaffold(
             title = "Login",
-            onBack = { nav.replaceAll(OnBoardingScreen) },
+            onBack = {
+                if (BuildKonfig.STORE_ID.isNotEmpty()) {
+                    nav.replaceAll(EasyMartScreen)
+                } else {
+                    nav.replaceAll(OnBoardingScreen)
+                }
+            },
             showEditIcon = false,
         ) { paddingValues ->
 

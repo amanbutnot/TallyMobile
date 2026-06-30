@@ -32,11 +32,13 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
+import org.prime.easykarobar.BuildKonfig
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.readFileBytes
 import org.prime.easykarobar.data.utils.MOBILE_VERSION
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.OnBoardingScreen
+import org.prime.easykarobar.ui.screen.easymart.EasyMartScreen
 import org.prime.easykarobar.ui.screen.home.Dashboard
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.splashImage
@@ -70,12 +72,20 @@ object SplashScreen : Screen {
                     println(">>> Navigating to Dashboard")
                     nav.replaceAll(Dashboard)
                 } else {
-                    println(">>> File bytes null, navigating to OnBoardingScreen")
-                    nav.replaceAll(OnBoardingScreen)
+                    println(">>> File bytes null, navigating to Login Screen")
+                    if (BuildKonfig.STORE_ID.isNotEmpty()) {
+                        nav.replaceAll(EasyMartScreen)
+                    } else {
+                        nav.replaceAll(OnBoardingScreen)
+                    }
                 }
             } else {
-                println(">>> LoginVersion mismatch, navigating to OnBoardingScreen")
-                nav.replaceAll(OnBoardingScreen)
+                println(">>> LoginVersion mismatch, navigating to Login Screen")
+                if (BuildKonfig.STORE_ID.isNotEmpty()) {
+                    nav.replaceAll(EasyMartScreen)
+                } else {
+                    nav.replaceAll(OnBoardingScreen)
+                }
             }
 
             println(">>> LaunchedEffect finished")

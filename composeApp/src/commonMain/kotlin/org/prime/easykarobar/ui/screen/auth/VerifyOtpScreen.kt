@@ -15,14 +15,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.easykarobar.BuildKonfig
+import org.prime.easykarobar.business.viewmodel.AuthViewModel
+import org.prime.easykarobar.data.expect.getDeviceId
+import org.prime.easykarobar.data.model.CompanyList
+import org.prime.easykarobar.data.model.LoginRequest
+import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.screen.startup.GoogleDriveDownloadScreen
 import org.prime.easykarobar.ui.shared.composables.TallyButton
+import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 
-data class VerifyOtpScreen(val otp: String,val number: String) : Screen {
+data class VerifyOtpScreen(
+    val otp: String,
+    val number: String,
+    val isForgot: Boolean = true
+) : Screen {
     @Composable
     override fun Content() {
         val colors = MaterialTheme.colorScheme
@@ -32,6 +45,23 @@ data class VerifyOtpScreen(val otp: String,val number: String) : Screen {
         var otpText by remember { mutableStateOf("") }
         var isLoading by remember { mutableStateOf(false) }
         var showErrorDialog by remember { mutableStateOf(false) }
+
+        val authViewModel: AuthViewModel = viewModel { AuthViewModel() }
+        val authState by authViewModel.authState
+        val deviceId = getDeviceId()
+
+        if (authState.isLoading) {
+            TallyLoadingDialog("Logging you in")
+        }
+
+        if (authState.error != null) {
+            TallyResultDialog(
+                authState.error ?: "Unexpected Error",
+                onDone = { authViewModel.clearError() },
+                isSuccess = authState.success,
+                confirmText = "Try Again"
+            )
+        }
 
 
         TallyScaffold(
@@ -132,7 +162,45 @@ data class VerifyOtpScreen(val otp: String,val number: String) : Screen {
                                 if (otpText.length == 6) {
                                     isLoading = true
                                     if (otpText == otp) {
-                                        nav.replace(ChangePasswordScreen(number))
+                                        if (isForgot) {
+                                            nav.replace(ChangePasswordScreen(number))
+                                        } else {
+                                            SharedPrefs.IsEasyMart.save(true)
+                                            authViewModel.userLogin(
+                                                LoginRequest(
+                                                    Username = BuildKonfig.USERNAME,
+                                                    Password = BuildKonfig.PASSWORD,
+                                                    DeviceId = deviceId,
+                                                    RegisteredNumber = BuildKonfig.REGISTERED_NUMBER
+                                                ),
+                                                onSuccess = {
+                                                    SharedPrefs.LoginData.save(
+                                                        SharedPrefs.LoginDataModel(
+                                                            username = BuildKonfig.USERNAME,
+                                                            password = BuildKonfig.PASSWORD,
+                                                            list = CompanyList(emptyList()),
+                                                        )
+                                                    )
+                                                    nav.replaceAll(GoogleDriveDownloadScreen)
+                                                }, onListSuccess = { companyList ->
+                                                    SharedPrefs.LoginInfo.save(BuildKonfig.USERNAME)
+                                                    SharedPrefs.LoginData.save(
+                                                        SharedPrefs.LoginDataModel(
+                                                            username = BuildKonfig.USERNAME,
+                                                            password = BuildKonfig.PASSWORD,
+                                                            list = companyList,
+                                                        )
+                                                    )
+                                                    nav.push(
+                                                        SelectCompanyScreen(
+                                                            BuildKonfig.USERNAME,
+                                                            BuildKonfig.PASSWORD,
+                                                            companyList
+                                                        )
+                                                    )
+                                                }
+                                            )
+                                        }
                                     } else {
                                         showErrorDialog = true
                                         isLoading = false

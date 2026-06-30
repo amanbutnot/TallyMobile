@@ -10,7 +10,8 @@ data class LoginRequest(
     val Username: String,
     val Password: String,
     val DeviceId: String,
-    val CompanyID: Int? = null
+    val CompanyID: Int? = null,
+    val RegisteredNumber: String? = null
 )
 
 @Serializable

@@ -7,7 +7,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,13 +18,14 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,8 +40,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -50,12 +53,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.prime.easykarobar.BuildKonfig
 import org.prime.easykarobar.business.viewmodel.GDownloadViewModel
 import org.prime.easykarobar.business.viewmodel.GoogleDriveViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.deleteDbFile
 import org.prime.easykarobar.data.utils.SharedPrefs
-import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -79,6 +82,9 @@ object GoogleDriveDownloadScreen : Screen {
         val driveState by downloadViewModel.driveState.collectAsState()
         val downloadState by downloadViewModel.downloadState.collectAsState()
 
+        val topColor = try { Color(BuildKonfig.SPLASH_TOP_COLOR.removePrefix("#").toLong(16) or 0xFF000000) } catch (e: Exception) { colors.primary }
+        val bottomColor = try { Color(BuildKonfig.SPLASH_BOTTOM_COLOR.removePrefix("#").toLong(16) or 0xFF000000) } catch (e: Exception) { colors.primaryContainer }
+
         // Handle download errors
         LaunchedEffect(downloadState.error) {
             downloadState.error?.let { error ->
@@ -100,61 +106,32 @@ object GoogleDriveDownloadScreen : Screen {
         }
 
         LaunchedEffect(Unit) {
-            println(">>> LaunchedEffect started")
-
             val fileId = SharedPrefs.FileId.get()
-            println(">>> FileId from SharedPrefs = $fileId")
-
             if (fileId == null) {
-                println("!!! FileId is NULL, aborting")
                 errorMessage = "File ID not found. Please try again."
                 showErrorDialog = true
                 return@LaunchedEffect
             }
 
-            println(">>> Deleting Old DB File...")
             deleteDbFile()
-            println(">>> Requesting Drive token...")
-
             googleDriveViewModel.getDriveToken { accessToken ->
-                println(">>> Access token received: ${accessToken.take(15)}...")
-
                 val destinationPath = getAppDatabaseDirectory()
-
-                println(">>> Starting download and extraction for fileId: $fileId")
-                println(">>> Destination path: $destinationPath")
-
                 downloadViewModel.downloadAndExtractDatabase(
                     fileId = fileId,
                     accessToken = accessToken,
                     destinationPath = destinationPath,
                     onSuccess = { dbPath ->
-                        println(">>> Download and extraction completed")
-                        println(">>> Database path: $dbPath")
-
                         isInitializing = true
-
                         scope.launch(Dispatchers.IO) {
                             try {
-                                println(">>> Reading extracted database file...")
                                 val dbBytes = readDatabaseFile(dbPath)
-                                println(">>> Database file size: ${dbBytes.size} bytes")
-
-                                println(">>> Initializing DatabaseHolder...")
                                 DatabaseHolder.init(byteArray = dbBytes)
-                                println(">>> Database initialized successfully")
-
                                 val now = Clock.System.now().toEpochMilliseconds()
-                                println(">>> Saving last sync time: $now")
                                 SharedPrefs.LastSync.save(now)
-
-                                println(">>> Navigating to Dashboard")
                                 withContext(Dispatchers.Main) {
                                     nav.replaceAll(MasterAddScreen)
                                 }
-
                             } catch (e: Exception) {
-                                println("!!! ERROR OCCURRED during database initialization")
                                 e.printStackTrace()
                                 errorMessage = "Failed to initialize database: ${e.message}"
                                 withContext(Dispatchers.Main) {
@@ -171,52 +148,59 @@ object GoogleDriveDownloadScreen : Screen {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Brush.verticalGradient(listOf(topColor.copy(alpha = 0.1f), colors.background)))
                 .navigationBarsPadding()
-                .background(
-                    brush = Brush.verticalGradient(
-                        listOf(colors.surface, colors.background)
-                    )
-                )
-                .padding(24.dp),
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .align(Alignment.Center),
+                    .align(Alignment.Center)
+                    .padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                LogoRound()
+                RocketAnimation(topColor)
 
                 Spacer(modifier = Modifier.height(48.dp))
 
-                LinearWavyProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth(0.7f)
-                        .height(8.dp)
-                        .clip(CircleShape),
-                    color = colors.primary,
-                    trackColor = colors.primary.copy(alpha = 0.2f),
-                    wavelength = 64.dp,
-                    amplitude = 3f
+                Text(
+                    text = if (SharedPrefs.IsEasyMart.get()) "Setting up your store..." else "Downloading Data...",
+                    style = type.headlineSmall.copy(fontWeight = FontWeight.Bold, color = colors.onBackground),
+                    textAlign = TextAlign.Center
                 )
 
-                if (driveState.isLoading && !isInitializing) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Downloading from Google Drive...",
-                        style = type.bodyLarge,
-                        color = colors.onBackground.copy(alpha = 0.7f)
-                    )
-                }
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "We're getting everything ready for you. This might take a moment.",
+                    style = type.bodyMedium.copy(color = colors.onBackground.copy(alpha = 0.6f)),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
+
+                Spacer(modifier = Modifier.height(40.dp))
+
+                LinearWavyProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(5.dp)),
+                    color = topColor,
+                    trackColor = topColor.copy(alpha = 0.2f),
+                    wavelength = 40.dp,
+                    amplitude = 2f
+                )
             }
-            Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Don't close this page",
-                modifier = Modifier.align(Alignment.BottomCenter),
-                style = type.titleSmall,
-                color = colors.onBackground.copy(alpha = 0.4f),
+                text = "Please don't close the app",
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 40.dp),
+                style = type.labelMedium.copy(
+                    color = colors.onBackground.copy(alpha = 0.4f),
+                    letterSpacing = 1.sp
+                ),
                 textAlign = TextAlign.Center
             )
         }
@@ -224,49 +208,54 @@ object GoogleDriveDownloadScreen : Screen {
 }
 
 @Composable
-private fun LogoRound() {
-    val colors = MaterialTheme.colorScheme
-
-    val infiniteTransition = rememberInfiniteTransition()
-    val pulse by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.08f,
+private fun RocketAnimation(mainColor: Color) {
+    val infiniteTransition = rememberInfiniteTransition(label = "rocket")
+    
+    val translateY by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = -20f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
+            animation = tween(1000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
-        )
+        ),
+        label = "translate"
+    )
+
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
     )
 
     Box(
         modifier = Modifier
-            .size(120.dp * pulse)
-            .background(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        colors.primary.copy(alpha = 0.25f),
-                        Color.Transparent
-                    ),
-                    radius = 220f
-                ),
-                shape = CircleShape
-            )
-            .border(
-                width = 3.dp,
-                color = colors.primary.copy(alpha = 0.7f),
-                shape = CircleShape
-            )
-            .clip(CircleShape),
+            .size(140.dp)
+            .graphicsLayer {
+                translationY = translateY
+                scaleX = scale
+                scaleY = scale
+            },
         contentAlignment = Alignment.Center
     ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            shape = CircleShape,
+            color = mainColor.copy(alpha = 0.1f),
+            border = androidx.compose.foundation.BorderStroke(2.dp, mainColor.copy(alpha = 0.3f))
+        ) {}
+        
         Icon(
-            imageVector = Icons.Default.CloudDownload,
-            contentDescription = "Cloud Download Icon",
-            tint = colors.primary,
-            modifier = Modifier.size(64.dp)
+            imageVector = Icons.Default.RocketLaunch,
+            contentDescription = null,
+            tint = mainColor,
+            modifier = Modifier.size(70.dp)
         )
     }
 }
-
 
 // Platform-specific function to read database file
 expect fun readDatabaseFile(filePath: String): ByteArray

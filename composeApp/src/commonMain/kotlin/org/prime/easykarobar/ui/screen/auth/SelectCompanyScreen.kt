@@ -46,10 +46,12 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import kotlinx.coroutines.launch
+import org.prime.easykarobar.BuildKonfig
 import org.prime.easykarobar.business.viewmodel.AuthViewModel
 import org.prime.easykarobar.data.expect.getDeviceId
 import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.LoginRequest
+import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.startup.GoogleDriveDownloadScreen
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
@@ -108,7 +110,9 @@ data class SelectCompanyScreen(val username: String, val passwd: String, val lis
                                         LoginRequest(
                                             Username = username,
                                             Password = passwd,
-                                            CompanyID = company.CompanyID, DeviceId = deviceId
+                                            CompanyID = company.CompanyID, 
+                                            DeviceId = deviceId,
+                                            RegisteredNumber = if (SharedPrefs.IsEasyMart.get()) BuildKonfig.REGISTERED_NUMBER else null
                                         ),
                                         onSuccess = {
 
