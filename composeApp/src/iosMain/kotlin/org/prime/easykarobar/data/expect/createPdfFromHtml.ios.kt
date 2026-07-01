@@ -10,6 +10,7 @@ import platform.Foundation.NSError
 import platform.Foundation.NSMakeRange
 import platform.Foundation.NSMutableData
 import platform.Foundation.NSTemporaryDirectory
+import platform.Foundation.NSURL
 import platform.Foundation.NSValue
 import platform.Foundation.setValue
 import platform.Foundation.writeToFile
@@ -23,7 +24,12 @@ import platform.WebKit.WKNavigation
 import platform.WebKit.WKNavigationDelegateProtocol
 import platform.WebKit.WKWebView
 import platform.WebKit.WKWebViewConfiguration
+import platform.darwin.DISPATCH_TIME_NOW
+import platform.darwin.NSEC_PER_SEC
 import platform.darwin.NSObject
+import platform.darwin.dispatch_after
+import platform.darwin.dispatch_get_main_queue
+import platform.darwin.dispatch_time
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -52,52 +58,59 @@ actual suspend fun createPdfFromHtml(html: String, fileName: String): String =
                     didFinishNavigation: WKNavigation?
                 ) {
                     println("📄 [createPdfFromHtml] didFinishNavigation fired")
-                    try {
-                        val printFormatter = webView.viewPrintFormatter()
-                        val renderer = UIPrintPageRenderer()
-                        renderer.addPrintFormatter(printFormatter, 0L)
+                    
+                    // Add a small delay to ensure images are fully rendered/loaded before printing
+                    dispatch_after(
+                        dispatch_time(DISPATCH_TIME_NOW, (1.0 * NSEC_PER_SEC.toDouble()).toLong()),
+                        dispatch_get_main_queue()
+                    ) {
+                        try {
+                            val printFormatter = webView.viewPrintFormatter()
+                            val renderer = UIPrintPageRenderer()
+                            renderer.addPrintFormatter(printFormatter, 0L)
 
-                        val paperRect = CGRectMake(0.0, 0.0, 595.2, 841.8)
-                        renderer.setValue(NSValue.valueWithCGRect(paperRect), "paperRect")
-                        renderer.setValue(NSValue.valueWithCGRect(paperRect), "printableRect")
+                            val paperRect = CGRectMake(0.0, 0.0, 595.2, 841.8)
+                            renderer.setValue(NSValue.valueWithCGRect(paperRect), "paperRect")
+                            renderer.setValue(NSValue.valueWithCGRect(paperRect), "printableRect")
 
-                        val pdfData = NSMutableData()
-                        UIGraphicsBeginPDFContextToData(pdfData, paperRect, null)
+                            val pdfData = NSMutableData()
+                            UIGraphicsBeginPDFContextToData(pdfData, paperRect, null)
 
-                        val numberOfPages = renderer.numberOfPages
-                        println("📄 [createPdfFromHtml] Rendering $numberOfPages page(s)")
-                        renderer.prepareForDrawingPages(
-                            NSMakeRange(0u, numberOfPages.toULong())
-                        )
+                            val numberOfPages = renderer.numberOfPages
+                            println("📄 [createPdfFromHtml] Rendering $numberOfPages page(s)")
+                            renderer.prepareForDrawingPages(
+                                NSMakeRange(0u, numberOfPages.toULong())
+                            )
 
-                        for (i in 0L until numberOfPages) {
-                            UIGraphicsBeginPDFPage()
-                            renderer.drawPageAtIndex(i, inRect = paperRect)
+                            for (i in 0L until numberOfPages) {
+                                UIGraphicsBeginPDFPage()
+                                renderer.drawPageAtIndex(i, inRect = paperRect)
+                            }
+
+                            UIGraphicsEndPDFContext()
+
+                            val sanitizedFileName = fileName.replace(
+                                "[^a-zA-Z0-9]".toRegex(), "_"
+                            )
+                            val tempDir = NSTemporaryDirectory()
+                            val path = if (tempDir.endsWith("/"))
+                                "$tempDir$sanitizedFileName.pdf"
+                            else
+                                "$tempDir/$sanitizedFileName.pdf"
+
+                            pdfData.writeToFile(path, atomically = true)
+                            println("📄 [createPdfFromHtml] PDF written to: $path")
+
+                            // ✅ Clear refs before resuming
+                            webViewRef = null
+                            delegateRef = null
+
+                            continuation.resume(path)
+                        } catch (e: Exception) {
+                            webViewRef = null
+                            delegateRef = null
+                            continuation.resumeWithException(e)
                         }
-
-                        UIGraphicsEndPDFContext()
-
-                        val sanitizedFileName = fileName.replace(
-                            "[^a-zA-Z0-9]".toRegex(), "_"
-                        )
-                        val tempDir = NSTemporaryDirectory()
-                        val path = if (tempDir.endsWith("/"))
-                            "$tempDir$sanitizedFileName.pdf"
-                        else
-                            "$tempDir/$sanitizedFileName.pdf"
-
-                        pdfData.writeToFile(path, atomically = true)
-                        println("📄 [createPdfFromHtml] PDF written to: $path")
-
-                        // ✅ Clear refs before resuming
-                        webViewRef = null
-                        delegateRef = null
-
-                        continuation.resume(path)
-                    } catch (e: Exception) {
-                        webViewRef = null
-                        delegateRef = null
-                        continuation.resumeWithException(e)
                     }
                 }
                 @ObjCSignatureOverride
@@ -133,7 +146,8 @@ actual suspend fun createPdfFromHtml(html: String, fileName: String): String =
             webView.navigationDelegate = delegate
 
             println("📄 [createPdfFromHtml] Loading HTML into WKWebView...")
-            webView.loadHTMLString(html, baseURL = null)
+            val baseUrl = NSURL(string = "https://images.easykarobar.in/")
+            webView.loadHTMLString(html, baseURL = baseUrl)
 
             continuation.invokeOnCancellation {
                 println("📄 [createPdfFromHtml] Coroutine cancelled — cleaning up")

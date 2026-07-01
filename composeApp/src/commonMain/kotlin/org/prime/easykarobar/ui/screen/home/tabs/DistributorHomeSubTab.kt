@@ -41,7 +41,7 @@ object DistributorHomeSubTab : Tab {
         val hideGroup = configHideGroup?.T2.toString() == "Y"
 
         if (hideGroup) {
-            AllProductsPremiumScreen(isTab = true).AllProductsPremiumContent(cartViewModel)
+            AllProductsPremiumScreen(isTab = true).AllProductsPremiumContent(cartViewModel,nav)
         } else {
             CategoryShoppingScreen.CategoryShoppingContent()
         }

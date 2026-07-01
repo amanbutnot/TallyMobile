@@ -34,6 +34,8 @@ actual suspend fun createPdfFromHtml(html: String, fileName: String): String {
             val pdfDoc = PdfDocument(writer)
 
             val props = ConverterProperties().apply {
+                setBaseUri("https://images.easykarobar.in/")
+                setResourceRetriever(com.itextpdf.styledxmlparser.resolver.resource.DefaultResourceRetriever())
                 isImmediateFlush = false        // batch flushes instead of flushing every element
             }
 

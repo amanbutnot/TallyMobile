@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.ImageNotSupported
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -45,6 +46,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -63,6 +65,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,17 +85,21 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.printing.productShareHtml
 import org.prime.easykarobar.ui.shared.composables.QuantityTextField
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getCategoryImage
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
+import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
+import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductsForDis
 import org.tally.ProductCategoriesForDis
 import org.prime.easykarobar.ui.shared.composables.smartSearch
@@ -334,14 +341,61 @@ object ShoppingScreen : Screen {
                 if (showImage) Spacer(Modifier.height(20.dp))
 
                 // --- Product title (clear visual anchor)
-                Text(
-                    text = product.product_name.orEmpty(),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    lineHeight = 28.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = product.product_name.orEmpty(),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        lineHeight = 28.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    var isSharing by remember { mutableStateOf(false) }
+                    val scope = rememberCoroutineScope()
+
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                handlePdfAction(
+                                    fileName = product.product_name ?: "Product",
+                                    htmlContent = productShareHtml(
+                                        productName = product.product_name ?: "",
+                                        price = product.sales_price ?: 0.0,
+                                        mrp = product.MRP ?: 0.0,
+                                        discount = product.MRP?.takeIf { it != 0.0 }?.let { mrp ->
+                                            ((mrp - (product.sales_price ?: 0.0)) / mrp) * 100
+                                        },
+                                        imageUrl = fullUrl,
+                                        description = product.product_description
+                                    ),
+                                    action = PdfAction.Share,
+                                    onLoadingChange = { isSharing = it }
+                                )
+                            }
+                        },
+                        enabled = !isSharing
+                    ) {
+                        if (isSharing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Share",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
 
                 Spacer(Modifier.height(10.dp))
 
@@ -893,17 +947,66 @@ fun ItemCard(
             if (showImage) Spacer(Modifier.height(8.dp))
 
             // --- Product name (stronger hierarchy)
-            Text(
-                text = item.product_name.orEmpty(),
-                style = if (showImage)
-                    MaterialTheme.typography.bodyMedium
-                else
-                    MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-                lineHeight = 18.sp,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Text(
+                    text = item.product_name.orEmpty(),
+                    style = if (showImage)
+                        MaterialTheme.typography.bodyMedium
+                    else
+                        MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    lineHeight = 18.sp,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+
+                var isSharing by remember { mutableStateOf(false) }
+                val scope = rememberCoroutineScope()
+
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            handlePdfAction(
+                                fileName = item.product_name ?: "Product",
+                                htmlContent = productShareHtml(
+                                    productName = item.product_name ?: "",
+                                    price = item.sales_price ?: 0.0,
+                                    mrp = item.MRP ?: 0.0,
+                                    discount = item.MRP?.takeIf { it != 0.0 }?.let { mrp ->
+                                        ((mrp - (item.sales_price ?: 0.0)) / mrp) * 100
+                                    },
+                                    imageUrl = fullUrl,
+                                    description = item.product_description
+                                ),
+                                action = PdfAction.Share,
+                                onLoadingChange = { isSharing = it }
+                            )
+                        }
+                    },
+                    modifier = Modifier.size(24.dp),
+                    enabled = !isSharing
+                ) {
+                    if (isSharing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            strokeWidth = 1.5.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Share",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
 
 
             Spacer(Modifier.height(6.dp))

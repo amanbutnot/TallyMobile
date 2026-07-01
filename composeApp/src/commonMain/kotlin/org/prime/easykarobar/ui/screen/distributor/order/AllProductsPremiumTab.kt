@@ -32,7 +32,8 @@ object AllProductsPremiumTab : Tab {
     override fun Content() {
         val nav = LocalNavigator.currentOrThrow
         val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
-        
-        AllProductsPremiumScreen(isTab = true).AllProductsPremiumContent(cartViewModel)
+
+
+        AllProductsPremiumScreen(isTab = true).AllProductsPremiumContent(cartViewModel,nav)
     }
 }

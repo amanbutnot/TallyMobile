@@ -288,7 +288,7 @@ object CategoryShoppingScreen : Screen {
                             model = banner.C10,
                             onLoading = { Res.drawable.category_placeholder },
                             contentDescription = null,
-                            contentScale = ContentScale.Fit
+                            contentScale = ContentScale.FillBounds
                         )
                     }
                 }
@@ -669,7 +669,7 @@ object CategoryShoppingScreen : Screen {
                         model = slide.C10,
                         onLoading = { Res.drawable.category_placeholder },
                         contentDescription = null,
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.FillBounds
                     )
                 }
             }
