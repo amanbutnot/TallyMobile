@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.ImageNotSupported
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -927,8 +928,7 @@ fun ItemCard(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                             RoundedCornerShape(10.dp)
-                        ),
-                    contentAlignment = Alignment.Center
+                        )
                 ) {
                     AsyncImage(
                         model = fullUrl,
@@ -941,6 +941,22 @@ fun ItemCard(
                         fallback = painterResource(Res.drawable.splashImage),
                         onError = { println(it.result.throwable) }
                     )
+
+                    IconButton(
+                        onClick = { /* TODO: Wishlist */ },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .size(28.dp)
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.FavoriteBorder,
+                            contentDescription = "Wishlist",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
 

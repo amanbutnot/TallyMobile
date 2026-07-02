@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Badge
@@ -665,6 +666,22 @@ data class AllProductsPremiumScreen(
                             contentScale = ContentScale.Fit,
                             fallback = painterResource(Res.drawable.category_placeholder),
                             error = painterResource(Res.drawable.category_placeholder)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { /* TODO: Wishlist */ },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .size(32.dp)
+                            .background(Color.White.copy(alpha = 0.9f), androidx.compose.foundation.shape.CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.FavoriteBorder,
+                            contentDescription = "Wishlist",
+                            modifier = Modifier.size(18.dp),
+                            tint = Color(0xFF004D40)
                         )
                     }
 

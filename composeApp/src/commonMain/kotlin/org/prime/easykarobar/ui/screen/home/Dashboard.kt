@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -56,6 +57,7 @@ import org.prime.easykarobar.data.model.LoginRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.SelectCompanyScreen
 import org.prime.easykarobar.ui.screen.distributor.order.CartScreen
+import org.prime.easykarobar.ui.screen.easymart.WishlistScreen
 import org.prime.easykarobar.ui.screen.home.tabs.HomeTab
 import org.prime.easykarobar.ui.screen.home.tabs.MastersTab
 import org.prime.easykarobar.ui.screen.home.tabs.ReportingTab
@@ -183,6 +185,13 @@ object Dashboard : Screen {
                                             tint = colors.onBackground
                                         )
                                     }
+                                }
+                                IconButton(onClick = { nav.push(WishlistScreen) }) {
+                                    Icon(
+                                        Icons.Default.Favorite,
+                                        contentDescription = "Favourite Icon",
+                                        tint = colors.onBackground
+                                    )
                                 }
 
                             }
