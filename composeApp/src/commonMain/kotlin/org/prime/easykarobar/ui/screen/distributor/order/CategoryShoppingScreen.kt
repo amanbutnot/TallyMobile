@@ -2,6 +2,7 @@ package org.prime.easykarobar.ui.screen.distributor.order
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +54,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -60,6 +62,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
+import org.prime.easykarobar.business.viewmodel.WishlistViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.utils.SharedPrefs
@@ -381,6 +384,7 @@ object CategoryShoppingScreen : Screen {
                 }
             }
         }
+        val wishlistViewModel: WishlistViewModel = viewModel { WishlistViewModel() }
 
         if (showProductInfo.value) {
             selectedProduct.value?.let {
@@ -394,7 +398,8 @@ object CategoryShoppingScreen : Screen {
                         } else {
                             cartViewModel.addProduct(it)
                         }
-                    }
+                    },
+                    wishlistViewModel = wishlistViewModel
                 )
             }
         }
@@ -452,7 +457,7 @@ object CategoryShoppingScreen : Screen {
         Column(
             modifier = modifier
                 .clickable(
-                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                     onClick = onClick
                 ),
@@ -505,6 +510,7 @@ object CategoryShoppingScreen : Screen {
         onMoreClick: () -> Unit
     ) {
         if (products.isEmpty()) return
+        val viewmodel: WishlistViewModel = viewModel { WishlistViewModel() }
 
         Column(
             modifier = Modifier
@@ -556,7 +562,8 @@ object CategoryShoppingScreen : Screen {
                                 AllProductsPremiumScreen(null, null, false).PremiumProductItem(
                                     product = product,
                                     cartViewModel = cartViewModel,
-                                    onClick = { onItemClick(product) }
+                                    onClick = { onItemClick(product) },
+                                    wishlistViewModel = viewmodel
                                 )
                             }
                         }
@@ -577,6 +584,8 @@ object CategoryShoppingScreen : Screen {
         onItemClick: (GetProductsForDis) -> Unit
     ) {
         if (products.isEmpty()) return
+        val viewmodel: WishlistViewModel = viewModel { WishlistViewModel() }
+
 
         Column(
             modifier = Modifier
@@ -610,7 +619,7 @@ object CategoryShoppingScreen : Screen {
                                 AllProductsPremiumScreen(null, null, false).PremiumProductItem(
                                     product = product,
                                     cartViewModel = cartViewModel,
-                                    onClick = { onItemClick(product) }
+                                    onClick = { onItemClick(product) }, wishlistViewModel = viewmodel
                                 )
                             }
                         }

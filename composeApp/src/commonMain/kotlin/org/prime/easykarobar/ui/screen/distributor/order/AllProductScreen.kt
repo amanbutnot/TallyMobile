@@ -25,15 +25,19 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.easykarobar.business.viewmodel.WishlistViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.utils.SharedPrefs
@@ -66,6 +70,11 @@ data class AllProductScreen(
                 groupCodes = groupCodes, productCode = productCode
             ).executeAsList()
             val viewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
+            val wishlistViewModel: WishlistViewModel = viewModel { WishlistViewModel() }
+
+            LaunchedEffect(Unit) {
+                wishlistViewModel.getWishlist()
+            }
 
             TallyScaffold(
                 title = categoryName ?: "All Products",
@@ -127,6 +136,7 @@ data class AllProductScreen(
                                     }
                                 },
                                 viewModel = viewModel,
+                                wishlistViewModel = wishlistViewModel
                             )
                         }
                     }
@@ -139,6 +149,7 @@ data class AllProductScreen(
                         showProductInfo = showProductInfo,
                         product = it,
                         cartViewModel = viewModel,
+                        wishlistViewModel = wishlistViewModel,
                         onButtonClick = {
                             if (viewModel.isProductInCart(it)) {
                                 viewModel.removeProduct(it)

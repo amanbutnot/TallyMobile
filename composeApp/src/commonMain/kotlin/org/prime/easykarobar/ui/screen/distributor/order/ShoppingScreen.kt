@@ -34,6 +34,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.ImageNotSupported
@@ -62,6 +63,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -88,6 +90,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import org.prime.easykarobar.business.viewmodel.WishlistViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
@@ -95,6 +98,7 @@ import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.printing.productShareHtml
 import org.prime.easykarobar.ui.shared.composables.QuantityTextField
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getCategoryImage
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
@@ -103,7 +107,6 @@ import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductsForDis
 import org.tally.ProductCategoriesForDis
-import org.prime.easykarobar.ui.shared.composables.smartSearch
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.category_placeholder
 import tallymobile.composeapp.generated.resources.splashImage
@@ -129,9 +132,15 @@ object ShoppingScreen : Screen {
         val state by viewModel.orderState
         val nav = LocalNavigator.currentOrThrow
         val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
+        val wishlistViewModel: WishlistViewModel = viewModel { WishlistViewModel() }
         val showProductInfo = remember { mutableStateOf(false) }
         val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
         val db = DatabaseHolder.instance
+
+        LaunchedEffect(Unit) {
+            wishlistViewModel.getWishlist()
+        }
+
         val list = db.productsQueries.getProductsForDis(
             filterGroup = filterItemGroups(),
             groupCodes = itemGroupCodes(), productCode = null
@@ -195,19 +204,23 @@ object ShoppingScreen : Screen {
 
                     items(categoryList) { section ->
                         CategoryItemsSection(
-                            category = section, onItemClick = { item ->
+                            category = section,
+                            onItemClick = { item ->
                                 selectedProduct.value = item
                                 showProductInfo.value = true
 
 
-                            }, onMoreClick = { category ->
+                            },
+                            onMoreClick = { category ->
                                 nav.push(
                                     AllProductScreen(
                                         category.Name.toString(),
                                         productCode = category.GUID?.toDouble() ?: 0.0,
                                     )
                                 )
-                            }, product = filteredProducts
+                            },
+                            product = filteredProducts,
+                            wishlistViewModel = wishlistViewModel
                         )
 
                     }
@@ -229,6 +242,7 @@ object ShoppingScreen : Screen {
                             rowItems.forEach { item ->
                                 ItemCard(
                                     viewModel = cartViewModel,
+                                    wishlistViewModel = wishlistViewModel,
                                     item = item,
                                     onItemClick = {
                                         selectedProduct.value = item
@@ -259,7 +273,10 @@ object ShoppingScreen : Screen {
         if (showProductInfo.value) {
             selectedProduct.value?.let {
                 ShowProductInfo(
-                    showProductInfo = showProductInfo, product = it, cartViewModel = cartViewModel,
+                    showProductInfo = showProductInfo,
+                    product = it,
+                    cartViewModel = cartViewModel,
+                    wishlistViewModel = wishlistViewModel,
                     onButtonClick = {
                         if (cartViewModel.isProductInCart(it)) {
                             cartViewModel.removeProduct(it)
@@ -278,7 +295,9 @@ object ShoppingScreen : Screen {
     fun ShowProductInfo(
         showProductInfo: MutableState<Boolean>,
         product: GetProductsForDis,
-        cartViewModel: CartViewModel, onButtonClick: () -> Unit,
+        cartViewModel: CartViewModel,
+        wishlistViewModel: WishlistViewModel,
+        onButtonClick: () -> Unit,
 
         ) {
         val colorScheme = MaterialTheme.colorScheme
@@ -356,6 +375,28 @@ object ShoppingScreen : Screen {
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
+
+                    val wishlistItems by wishlistViewModel.listState
+                    val isInWishlist = wishlistItems.data?.any { it.item_name == product.product_id } == true
+
+                    IconButton(
+                        onClick = {
+                            if (isInWishlist) {
+                                wishlistViewModel.deleteWishlist(product.product_id.toString())
+                            } else {
+                                wishlistViewModel.addWishlist(
+                                    itemGuid = product.product_id.toString(),
+                                    groupGuid = product.category_id.toString()
+                                )
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (isInWishlist) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = "Wishlist",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
 
                     var isSharing by remember { mutableStateOf(false) }
                     val scope = rememberCoroutineScope()
@@ -811,6 +852,7 @@ private fun CategoryCard(
 private fun CategoryItemsSection(
     category: ProductCategoriesForDis,
     product: List<GetProductsForDis>,
+    wishlistViewModel: WishlistViewModel,
     onItemClick: (GetProductsForDis) -> Unit,
     onMoreClick: (ProductCategoriesForDis) -> Unit,
 
@@ -859,6 +901,7 @@ private fun CategoryItemsSection(
                 items(displayItems) { item ->
                     ItemCard(
                         viewModel = cartViewModel,
+                        wishlistViewModel = wishlistViewModel,
                         item = item,
                         onItemClick = { onItemClick(item) },
                         onButtonClick = {
@@ -884,6 +927,7 @@ fun ItemCard(
     onItemClick: () -> Unit,
     onButtonClick: () -> Unit,
     viewModel: CartViewModel,
+    wishlistViewModel: WishlistViewModel,
     modifier: Modifier = Modifier.width(160.dp)
 ) {
     val showImage = viewModel.showImage.value
@@ -942,16 +986,31 @@ fun ItemCard(
                         onError = { println(it.result.throwable) }
                     )
 
+                    val wishlistItems by wishlistViewModel.listState
+                    val isInWishlist = wishlistItems.data?.any { it.item_name == item.product_id } == true
+
                     IconButton(
-                        onClick = { /* TODO: Wishlist */ },
+                        onClick = {
+                            if (isInWishlist) {
+                                wishlistViewModel.deleteWishlist(item.product_id.toString())
+                            } else {
+                                wishlistViewModel.addWishlist(
+                                    itemGuid = item.product_id.toString(),
+                                    groupGuid = item.category_id.toString()
+                                )
+                            }
+                        },
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(4.dp)
                             .size(28.dp)
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape)
+                            .background(
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                CircleShape
+                            )
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.FavoriteBorder,
+                            imageVector = if (isInWishlist) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
                             contentDescription = "Wishlist",
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.primary

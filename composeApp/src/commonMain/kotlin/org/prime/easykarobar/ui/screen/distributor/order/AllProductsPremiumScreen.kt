@@ -9,6 +9,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,18 +27,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -50,12 +53,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,6 +79,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -82,6 +88,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import org.prime.easykarobar.business.viewmodel.WishlistViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
@@ -118,6 +125,12 @@ data class AllProductsPremiumScreen(
     @Composable
     fun AllProductsPremiumContent(cartViewModel: CartViewModel, nav: Navigator) {
         val db = DatabaseHolder.instance
+        val wishlistViewModel: WishlistViewModel = viewModel { WishlistViewModel() }
+
+        LaunchedEffect(Unit) {
+            wishlistViewModel.getWishlist()
+        }
+
         val showProductInfo = remember { mutableStateOf(false) }
         val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
         val scope = rememberCoroutineScope()
@@ -419,7 +432,7 @@ data class AllProductsPremiumScreen(
                                 value = priceRange,
                                 onValueChange = { priceRange = it },
                                 valueRange = 0f..maxPrice,
-                                colors = androidx.compose.material3.SliderDefaults.colors(
+                                colors = SliderDefaults.colors(
                                     thumbColor = Color(0xFF004D40),
                                     activeTrackColor = Color(0xFF004D40),
                                     inactiveTrackColor = Color(0xFFE2E8F0)
@@ -464,6 +477,7 @@ data class AllProductsPremiumScreen(
                         PremiumProductItem(
                             product = product,
                             cartViewModel = cartViewModel,
+                            wishlistViewModel = wishlistViewModel,
                             onClick = {
                                 selectedProduct.value = product
                                 showProductInfo.value = true
@@ -486,7 +500,8 @@ data class AllProductsPremiumScreen(
                         } else {
                             cartViewModel.addProduct(it)
                         }
-                    }
+                    },
+                    wishlistViewModel = wishlistViewModel
                 )
             }
         }
@@ -582,7 +597,7 @@ data class AllProductsPremiumScreen(
             modifier = modifier
                 .height(44.dp)
                 .clickable(
-                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                     onClick = onClick
                 ),
@@ -622,16 +637,20 @@ data class AllProductsPremiumScreen(
     fun PremiumProductItem(
         product: GetProductsForDis,
         cartViewModel: CartViewModel,
+        wishlistViewModel: WishlistViewModel,
         onClick: () -> Unit
     ) {
         val inCart = cartViewModel.isProductInCart(product)
         val quantity = cartViewModel.getProductQuantity(product)
 
+        val wishlistItems by wishlistViewModel.listState
+        val isInWishlist = wishlistItems.data?.any { it.item_name == product.product_id } == true
+
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(
-                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                     onClick = onClick
                 ),
@@ -670,15 +689,24 @@ data class AllProductsPremiumScreen(
                     }
 
                     IconButton(
-                        onClick = { /* TODO: Wishlist */ },
+                        onClick = {
+                            if (isInWishlist) {
+                                wishlistViewModel.deleteWishlist(product.product_id.toString())
+                            } else {
+                                wishlistViewModel.addWishlist(
+                                    itemGuid = product.product_id.toString(),
+                                    groupGuid = product.category_id.toString()
+                                )
+                            }
+                        },
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(8.dp)
                             .size(32.dp)
-                            .background(Color.White.copy(alpha = 0.9f), androidx.compose.foundation.shape.CircleShape)
+                            .background(Color.White.copy(alpha = 0.9f), CircleShape)
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.FavoriteBorder,
+                            imageVector = if (isInWishlist) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
                             contentDescription = "Wishlist",
                             modifier = Modifier.size(18.dp),
                             tint = Color(0xFF004D40)
