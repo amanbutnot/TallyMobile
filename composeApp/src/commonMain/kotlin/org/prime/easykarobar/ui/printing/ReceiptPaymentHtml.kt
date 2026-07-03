@@ -286,4 +286,3 @@ fun receiptPaymentHtml(
     return html.toString()
 }
 
-private fun String?.clean(): String = if (this == null || this.lowercase() == "null") "" else this

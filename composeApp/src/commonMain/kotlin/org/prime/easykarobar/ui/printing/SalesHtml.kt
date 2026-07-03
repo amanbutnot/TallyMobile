@@ -287,7 +287,7 @@ fun salesHtml(
         <div class="company-name">${CompanyName()}</div>
         <div class="company-info">
             ${compInfo?.T3.clean()}<br>
-            Tel. : ${user?.Mobile.clean()} &nbsp; email : ${user?.Email.clean()}
+            Tel. : ${user?.Mobile.clean()} &nbsp; Email : ${user?.Email.clean()}
         </div>
     </div>
 
@@ -624,4 +624,4 @@ fun numberToWords(num: Int): String {
     return result.toString().trim()
 }
 
-private fun String?.clean(): String = if (this == null || this.lowercase() == "null") "" else this
+ fun String?.clean(): String = if (this == null || this.lowercase() == "null") "" else this
