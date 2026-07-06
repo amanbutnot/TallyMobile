@@ -82,6 +82,22 @@ object SharedPrefs {
         }
     }
 
+    object ShowTaxType {
+        private const val KEY = "ShowTaxType"
+        // 0: Both, 1: Only Inclusive, 2: Only Extra
+        fun save(value: Int) {
+            settings.putInt(KEY, value)
+        }
+
+        fun get(): Int {
+            return settings.getInt(KEY, 0)
+        }
+
+        fun clear() {
+            settings.remove(KEY)
+        }
+    }
+
     object LoginData {
         private const val KEY = "login_request"
         fun save(login: LoginDataModel) {

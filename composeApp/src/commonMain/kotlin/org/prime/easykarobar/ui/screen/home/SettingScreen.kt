@@ -37,6 +37,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -89,8 +90,11 @@ object SettingScreen : Screen {
         val compInfo = queries.getCompanyInformation().executeAsOne()
         var showAlertBox by remember { mutableStateOf(false) }
         var zeroStock by remember { mutableStateOf(true) }
+        var showTaxTypeOption by remember { mutableStateOf(0) }
+        var showTaxOptionDialog by remember { mutableStateOf(false) }
 
         zeroStock = SharedPrefs.ShowZeroStock.get() ?: true
+        showTaxTypeOption = SharedPrefs.ShowTaxType.get()
 
         val colors = MaterialTheme.colorScheme
         TallyScaffold("Profile", content = { innerPadding ->
@@ -386,11 +390,57 @@ object SettingScreen : Screen {
                                     desc = "Include items with zero stock in billing"
                                 )
 
+                                val taxTypeLabel = when (showTaxTypeOption) {
+                                    1 -> "Only Inclusive"
+                                    2 -> "Only Extra"
+                                    else -> "Both"
+                                }
+
+                                ProfileItem(
+                                    icon = Icons.Default.Receipt,
+                                    label = "Tax Type Visibility",
+                                    value = taxTypeLabel,
+                                    onClick = { showTaxOptionDialog = true }
+                                )
                             }
                         }
                     }
 
-//                    Spacer(modifier = Modifier.height(20.dp))
+                    if (showTaxOptionDialog) {
+                        TallyAlertBox(
+                            title = "Select Tax Type Visibility",
+                            message = "Choose which tax types to show in billing screens",
+                            confirmButtonText = "Close",
+                            cancelButtonText = "Cancel",
+                            onConfirm = { showTaxOptionDialog = false },
+                            onCancel = { showTaxOptionDialog = false },
+                            onDismiss = { showTaxOptionDialog = false },
+                            content = {
+                                Column {
+                                    listOf("Both", "Only Inclusive", "Only Extra").forEachIndexed { index, label ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    SharedPrefs.ShowTaxType.save(index)
+                                                    showTaxTypeOption = index
+                                                    showTaxOptionDialog = false
+                                                }
+                                                .padding(vertical = 12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            RadioButton(
+                                                selected = showTaxTypeOption == index,
+                                                onClick = null
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(label)
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                    }
 
                     TallyIconButton("Sign Out", Icons.AutoMirrored.Filled.Logout) {
                         showAlertBox = true
@@ -499,10 +549,13 @@ private fun ManagementCard(
 private fun ProfileItem(
     icon: ImageVector,
     label: String,
-    value: String
+    value: String,
+    onClick: (() -> Unit)? = null
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().then(
+            if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+        ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
     ) {

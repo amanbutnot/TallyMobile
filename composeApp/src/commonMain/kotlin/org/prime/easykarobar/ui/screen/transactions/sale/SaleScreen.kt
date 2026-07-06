@@ -272,9 +272,13 @@ data class SaleScreen(
         var narration by remember { mutableStateOf("") }
         var selectedDate by remember { mutableStateOf(CurrentDate()) }
         var taxType by remember {
-            mutableStateOf(
-                TaxType.entries[SharedPrefs.LastTaxType.get(vchType)]
-            )
+            val savedOption = SharedPrefs.ShowTaxType.get()
+            val initialTaxType = when (savedOption) {
+                1 -> TaxType.INCLUSIVE
+                2 -> TaxType.EXTRA
+                else -> TaxType.entries[SharedPrefs.LastTaxType.get(vchType)]
+            }
+            mutableStateOf(initialTaxType)
         }
 
         var selectedItems by remember { mutableStateOf<List<InvoiceItem>>(emptyList()) }
@@ -978,10 +982,13 @@ data class SaleScreen(
                                 }
                             }
 
-                            TaxTypeSelector(
-                                selectedTaxType = taxType,
-                                onTaxTypeSelected = { taxType = it }
-                            )
+                            val taxTypeOption = SharedPrefs.ShowTaxType.get()
+                            if (taxTypeOption == 0) {
+                                TaxTypeSelector(
+                                    selectedTaxType = taxType,
+                                    onTaxTypeSelected = { taxType = it }
+                                )
+                            }
 
                             SectionCard(
                                 title = "ITEMS",
