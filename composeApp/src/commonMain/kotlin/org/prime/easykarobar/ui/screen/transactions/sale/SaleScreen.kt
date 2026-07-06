@@ -120,6 +120,7 @@ import org.prime.easykarobar.data.model.transactions.TransportDetails
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.salesHtml
+import org.prime.easykarobar.ui.printing.salesSlipHtml
 import org.prime.easykarobar.ui.screen.home.tabs.InfoRow
 import org.prime.easykarobar.ui.screen.transactions.BillByBillModel
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
@@ -859,6 +860,40 @@ data class SaleScreen(
             )
         )
 
+        val slipHtmlContent = salesSlipHtml(
+            name = name,
+            partyName = selectedLedger,
+            partyGuid = selectedLedgerGUID,
+            invoiceNo = oneState.data?.billed_vchno
+                ?.takeIf { it.isNotBlank() }
+                ?: oneState.data?.AutoVchNo
+                    ?.takeIf { it != 0 }
+                    ?.toString()
+                ?: state.data?.VoucherNumber
+                    ?.toString()
+                    ?.takeIf { it.isNotBlank() }
+                ?: "default_name",
+            date = selectedDate,
+            items = selectedItems,
+            sundries = selectedSundries,
+            grandTotal = grandTotal,
+            transportDetails = org.prime.easykarobar.ui.printing.TransportDetails(
+                transportName = transportName,
+                gstRrNo = gstRrNo,
+                vehicleNo = vehicleNo,
+                station = station,
+                pincode = pincode,
+                gstRrDate = gstRrDate,
+                SpartyName = SpartyName,
+                Saddress1 = Saddress1,
+                Saddress2 = Saddress2,
+                Saddress3 = Saddress3,
+                Saddress4 = Saddress4,
+                SshipState = SshipState,
+                SgstIn = SgstIn
+            )
+        )
+
         val menuList = buildList {
             if (enableUpdateButton || SharedPrefs.User.get()?.role == "admin") {
                 add(
@@ -883,6 +918,18 @@ data class SaleScreen(
                         onLoadingChange = { shareLoading = it })
                 }
             },
+            onDownloadSecondClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = oneState.data?.billed_vchno
+                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
+                            ?: (CompanyName() + "_Slip"),
+                        htmlContent = slipHtmlContent,
+                        action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it })
+                }
+            },
+            onDownloadSecondText = "Download Slip Format",
             onShareClick = {
                 scope.launch {
                     handlePdfAction(
@@ -894,6 +941,18 @@ data class SaleScreen(
                         onLoadingChange = { shareLoading = it })
                 }
             },
+            onShareSecondClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = oneState.data?.billed_vchno
+                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
+                            ?: (CompanyName() + "_Slip"),
+                        htmlContent = slipHtmlContent,
+                        action = PdfAction.Share,
+                        onLoadingChange = { shareLoading = it })
+                }
+            },
+            onShareSecondText = "Share Slip Format",
             onExcelClick = {
                 scope.launch {
                     val excelRows = selectedItems.mapIndexed { index, item ->
