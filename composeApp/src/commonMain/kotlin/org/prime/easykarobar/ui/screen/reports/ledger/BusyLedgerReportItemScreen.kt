@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -41,7 +44,9 @@ import org.prime.easykarobar.ui.printing.ReceiptPaymentRow
 import org.prime.easykarobar.ui.printing.TransportDetails
 import org.prime.easykarobar.ui.printing.receiptPaymentHtml
 import org.prime.easykarobar.ui.printing.salesHtml
+import org.prime.easykarobar.ui.printing.salesSlipHtml
 import org.prime.easykarobar.ui.screen.transactions.sale.InvoiceItem
+import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
@@ -92,7 +97,7 @@ data class BusyLedgerReportItemScreen(
         val stockColumn5Weight = 0.5f
 
         // ── Shared HTML builder ───────────────────────────────────────────────
-        fun buildHtmlContent(showTax: Boolean = false): String {
+        fun buildHtmlContent(showTax: Boolean = false, isSlip: Boolean = false): String {
             return if (ledgerStockItemList.isNotEmpty()) {
                 val invoiceItems = ledgerStockItemList.map { it ->
                     InvoiceItem(
@@ -125,26 +130,49 @@ data class BusyLedgerReportItemScreen(
                     )
                 }
 
-                salesHtml(
-                    name = vchType,
-                    partyName = ledgerReportItemList.firstOrNull()?.LedgerName ?: "",
-                    partyGuid = guid,
-                    invoiceNo = vchNo,
-                    date = date,
-                    items = invoiceItems,
-                    sundries = sundries,
-                    grandTotal = vouchers?.D1?.absoluteValue
-                        ?: ledgerStockItemList.sumOf { it.Amt ?: 0.0 },
-                    transportDetails = TransportDetails(
-                        transportName = "",
-                        gstRrNo = "",
-                        vehicleNo = "",
-                        station = "",
-                        pincode = "",
-                        gstRrDate = ""
-                    ),
-                    showTax = showTax
-                )
+                if (isSlip) {
+                    salesSlipHtml(
+                        name = vchType,
+                        partyName = ledgerReportItemList.firstOrNull()?.LedgerName ?: "",
+                        partyGuid = guid,
+                        invoiceNo = vchNo,
+                        date = date,
+                        items = invoiceItems,
+                        sundries = sundries,
+                        grandTotal = vouchers?.D1?.absoluteValue
+                            ?: ledgerStockItemList.sumOf { it.Amt ?: 0.0 },
+                        transportDetails = TransportDetails(
+                            transportName = "",
+                            gstRrNo = "",
+                            vehicleNo = "",
+                            station = "",
+                            pincode = "",
+                            gstRrDate = ""
+                        ),
+                        showTax = showTax
+                    )
+                } else {
+                    salesHtml(
+                        name = vchType,
+                        partyName = ledgerReportItemList.firstOrNull()?.LedgerName ?: "",
+                        partyGuid = guid,
+                        invoiceNo = vchNo,
+                        date = date,
+                        items = invoiceItems,
+                        sundries = sundries,
+                        grandTotal = vouchers?.D1?.absoluteValue
+                            ?: ledgerStockItemList.sumOf { it.Amt ?: 0.0 },
+                        transportDetails = TransportDetails(
+                            transportName = "",
+                            gstRrNo = "",
+                            vehicleNo = "",
+                            station = "",
+                            pincode = "",
+                            gstRrDate = ""
+                        ),
+                        showTax = showTax
+                    )
+                }
             } else {
                 val rows = ledgerReportItemList.mapIndexed { index, it ->
                     ReceiptPaymentRow(
@@ -174,6 +202,9 @@ data class BusyLedgerReportItemScreen(
         }
         val itemWiseHtmlContent = remember(ledgerStockItemList, ledgerStockBusyItemList, ledgerReportItemList, vouchers) {
             buildHtmlContent(showTax = true)
+        }
+        val slipHtmlContent = remember(ledgerStockItemList, ledgerStockBusyItemList, ledgerReportItemList, vouchers) {
+            buildHtmlContent(showTax = true, isSlip = true)
         }
 
         val isReceiptOrPayment = vchType.contains("Receipt", ignoreCase = true) || vchType.contains("Payment", ignoreCase = true)
@@ -230,6 +261,38 @@ data class BusyLedgerReportItemScreen(
                     )
                 }
             },
+            menuItems = if (ledgerStockItemList.isNotEmpty()) {
+                listOf(
+                    MenuItemData(
+                        icon = Icons.Default.Download,
+                        title = "Download Slip",
+                        onClick = {
+                            scope.launch {
+                                handlePdfAction(
+                                    fileName = "$vchType Slip",
+                                    htmlContent = slipHtmlContent,
+                                    action = PdfAction.Download,
+                                    onLoadingChange = { shareLoading = it }
+                                )
+                            }
+                        }
+                    ),
+                    MenuItemData(
+                        icon = Icons.Default.Share,
+                        title = "Share Slip",
+                        onClick = {
+                            scope.launch {
+                                handlePdfAction(
+                                    fileName = "$vchType Slip",
+                                    htmlContent = slipHtmlContent,
+                                    action = PdfAction.Share,
+                                    onLoadingChange = { shareLoading = it }
+                                )
+                            }
+                        }
+                    )
+                )
+            } else emptyList(),
             onExcelClick = {
                 scope.launch {
                     val excelRows = if (ledgerStockItemList.isNotEmpty()) {
