@@ -1042,12 +1042,11 @@ data class SaleScreen(
                             }
 
                             val taxTypeOption = SharedPrefs.ShowTaxType.get()
-                            if (taxTypeOption == 0) {
-                                TaxTypeSelector(
-                                    selectedTaxType = taxType,
-                                    onTaxTypeSelected = { taxType = it }
-                                )
-                            }
+                            TaxTypeSelector(
+                                selectedTaxType = taxType,
+                                onTaxTypeSelected = { taxType = it },
+                                isEditable = taxTypeOption == 0
+                            )
 
                             SectionCard(
                                 title = "ITEMS",
@@ -2752,7 +2751,11 @@ fun SubtotalRow(label: String, amount: Double) {
 }
 
 @Composable
-fun TaxTypeSelector(selectedTaxType: TaxType, onTaxTypeSelected: (TaxType) -> Unit) {
+fun TaxTypeSelector(
+    selectedTaxType: TaxType,
+    onTaxTypeSelected: (TaxType) -> Unit,
+    isEditable: Boolean = true
+) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -2767,21 +2770,30 @@ fun TaxTypeSelector(selectedTaxType: TaxType, onTaxTypeSelected: (TaxType) -> Un
                 letterSpacing = 0.6.sp
             )
             Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                TaxTypeOption(
-                    label = "Tax Inclusive",
-                    selected = selectedTaxType == TaxType.INCLUSIVE,
-                    onClick = { onTaxTypeSelected(TaxType.INCLUSIVE) },
-                    modifier = Modifier.weight(1f)
-                )
-                TaxTypeOption(
-                    label = "Tax Extra",
-                    selected = selectedTaxType == TaxType.EXTRA,
-                    onClick = { onTaxTypeSelected(TaxType.EXTRA) },
-                    modifier = Modifier.weight(1f)
+            if (isEditable) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    TaxTypeOption(
+                        label = "Tax Inclusive",
+                        selected = selectedTaxType == TaxType.INCLUSIVE,
+                        onClick = { onTaxTypeSelected(TaxType.INCLUSIVE) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    TaxTypeOption(
+                        label = "Tax Extra",
+                        selected = selectedTaxType == TaxType.EXTRA,
+                        onClick = { onTaxTypeSelected(TaxType.EXTRA) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            } else {
+                Text(
+                    text = if (selectedTaxType == TaxType.INCLUSIVE) "Tax Inclusive" else "Tax Extra",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }

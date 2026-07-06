@@ -821,11 +821,11 @@ data class SaleScreen2(
                             }
 
                             val taxTypeOption = SharedPrefs.ShowTaxType.get()
-                            if (taxTypeOption == 0) {
-                                TaxTypeSelector(
-                                    selectedTaxType = taxType,
-                                    onTaxTypeSelected = { taxType = it })
-                            }
+                            TaxTypeSelector(
+                                selectedTaxType = taxType,
+                                onTaxTypeSelected = { taxType = it },
+                                isEditable = taxTypeOption == 0
+                            )
 
                             SectionCard(
                                 title = "ITEMS", count = selectedItems.size,
