@@ -3203,7 +3203,7 @@ fun ExpandedItemEditor1(
         }
     }
 
-    val isAddEnabled = qtyValue > 0
+    val isAddEnabled = if(isBusy()) qtyValue > 0 else {qtyValue > 0 &&amount!=0.0}
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
