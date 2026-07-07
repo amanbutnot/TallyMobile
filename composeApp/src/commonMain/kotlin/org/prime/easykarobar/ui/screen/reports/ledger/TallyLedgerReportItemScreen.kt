@@ -99,7 +99,11 @@ data class TallyLedgerReportItemScreen(
         // ── Shared HTML builder ───────────────────────────────────────────────
         fun buildHtmlContent(showTax: Boolean = false, isSlip: Boolean = false): String {
             return if (ledgerStockItemList.isNotEmpty()) {
+                val isCalculatedIgst = ledgerStockItemList.any { (it.TaxRate2 ?: 0.0) == 0.0 && (it.TaxRate1 ?: 0.0) > 0.0 }
+
                 val invoiceItems = ledgerStockItemList.map { it ->
+                    val totalGstRate = (it.TaxRate1 ?: 0.0) + (it.TaxRate2 ?: 0.0)
+                    val totalGstAmt = (it.TaxAmt1 ?: 0.0) + (it.TaxAmt2 ?: 0.0)
                     InvoiceItem(
                         name = it.Item_Name ?: "",
                         price = it.Rate ?: 0.0,
@@ -107,10 +111,14 @@ data class TallyLedgerReportItemScreen(
                         qty = (it.Qty ?: 0.0).toInt(),
                         discountPercentage = 0.0,
                         taxCategoryCode = 0,
-                        gstPercentage = 0.0,
+                        gstPercentage = totalGstRate,
                         taxable = it.Amt ?: 0.0,
-                        gstAmt = 0.0,
-                        net = it.Amt ?: 0.0,
+                        gstAmt = totalGstAmt,
+                        net = (it.Amt ?: 0.0) + totalGstAmt,
+                        taxRate1 = it.TaxRate1 ?: 0.0,
+                        taxRate2 = it.TaxRate2 ?: 0.0,
+                        taxAmt1 = it.TaxAmt1 ?: 0.0,
+                        taxAmt2 = it.TaxAmt2 ?: 0.0,
                         CD = "", hsn = it.hsn,
                         selectedUnit = it.Unit
                     )
@@ -141,7 +149,7 @@ data class TallyLedgerReportItemScreen(
                         items = invoiceItems,
                         sundries = sundries,
                         grandTotal = vouchers?.D1?.absoluteValue
-                            ?: ledgerStockItemList.sumOf { it.Amt ?: 0.0 },
+                            ?: ledgerStockItemList.sumOf { (it.Amt ?: 0.0) + (it.TaxAmt1 ?: 0.0) + (it.TaxAmt2 ?: 0.0) },
                         transportDetails = TransportDetails(
                             transportName = "",
                             gstRrNo = "",
@@ -150,7 +158,8 @@ data class TallyLedgerReportItemScreen(
                             pincode = "",
                             gstRrDate = ""
                         ),
-                        showTax = showTax
+                        showTax = showTax,
+                        isIgst = isCalculatedIgst
                     )
                 } else {
                     salesHtml(
@@ -162,7 +171,7 @@ data class TallyLedgerReportItemScreen(
                         items = invoiceItems,
                         sundries = sundries,
                         grandTotal = vouchers?.D1?.absoluteValue
-                            ?: ledgerStockItemList.sumOf { it.Amt ?: 0.0 },
+                            ?: ledgerStockItemList.sumOf { (it.Amt ?: 0.0) + (it.TaxAmt1 ?: 0.0) + (it.TaxAmt2 ?: 0.0) },
                         transportDetails = TransportDetails(
                             transportName = "",
                             gstRrNo = "",
@@ -171,7 +180,8 @@ data class TallyLedgerReportItemScreen(
                             pincode = "",
                             gstRrDate = ""
                         ),
-                        showTax = showTax
+                        showTax = showTax,
+                        isIgst = isCalculatedIgst
                     )
                 }
             } else {

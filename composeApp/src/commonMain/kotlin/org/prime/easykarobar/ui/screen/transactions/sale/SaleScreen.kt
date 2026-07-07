@@ -192,6 +192,10 @@ data class InvoiceItem(
     val taxable: Double,
     val gstAmt: Double,
     val net: Double,
+    val taxRate1: Double = 0.0,
+    val taxRate2: Double = 0.0,
+    val taxAmt1: Double = 0.0,
+    val taxAmt2: Double = 0.0,
     val guid: String = "",
     // Item descriptions
     val itemdesc1: String? = null,

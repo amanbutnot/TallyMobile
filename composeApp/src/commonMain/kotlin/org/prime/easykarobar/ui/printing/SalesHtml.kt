@@ -20,7 +20,8 @@ fun salesHtml(
     sundries: List<SundryItem>,
     grandTotal: Double,
     transportDetails: TransportDetails,
-    showTax: Boolean = true
+    showTax: Boolean = true,
+    isIgst: Boolean? = null
 ): String {
     val db = DatabaseHolder.instance
     val compInfo = db.companyInformationQueries.getCompanyInformation().executeAsOneOrNull()
@@ -28,9 +29,9 @@ fun salesHtml(
     println("party detail is $partyDetails and guid is $partyGuid and name is $partyName")
     val user = SharedPrefs.User.get()
 
-    val isIgst = user?.State.clean() != partyDetails?.State.clean() &&
+    val isIgst = isIgst ?: (user?.State.clean() != partyDetails?.State.clean() &&
             partyDetails?.State.clean().isNotBlank() &&
-            user?.State.clean().isNotBlank()
+            user?.State.clean().isNotBlank())
 
     val hasShipping = transportDetails.Saddress1.clean().isNotBlank() ||
             transportDetails.SpartyName.clean().isNotBlank()
@@ -369,15 +370,17 @@ fun salesHtml(
 
         val taxCells = if (showTax) {
             if (isIgst) {
+                val igstRate = if (item.taxRate1 != 0.0) item.taxRate1 else item.gstPercentage
+                val igstAmt = if (item.taxAmt1 != 0.0) item.taxAmt1 else item.gstAmt
                 """
-                <td class="right">${item.gstPercentage.formatToAmtDec()}%</td>
-                <td class="right">${item.gstAmt.formatToAmtDec()}</td>
+                <td class="right">${igstRate.formatToAmtDec()}%</td>
+                <td class="right">${igstAmt.formatToAmtDec()}</td>
                 """.trimIndent()
             } else {
-                val cgstRate = item.gstPercentage / 2
-                val sgstRate = item.gstPercentage / 2
-                val cgstAmt = item.gstAmt / 2
-                val sgstAmt = item.gstAmt / 2
+                val cgstRate = if (item.taxRate1 != 0.0) item.taxRate1 else item.gstPercentage / 2
+                val sgstRate = if (item.taxRate2 != 0.0) item.taxRate2 else item.gstPercentage / 2
+                val cgstAmt = if (item.taxAmt1 != 0.0) item.taxAmt1 else item.gstAmt / 2
+                val sgstAmt = if (item.taxAmt2 != 0.0) item.taxAmt2 else item.gstAmt / 2
                 """
                 <td class="right">${cgstRate.formatToAmtDec()}%</td>
                 <td class="right">${cgstAmt.formatToAmtDec()}</td>
@@ -490,11 +493,14 @@ fun salesHtml(
         val gstTotal = groupItems.sumOf { it.gstAmt }
 
         val taxSumCells = if (isIgst) {
-            """<td class="right">${gstTotal.formatToAmtDec()}</td>"""
+            val igstTotal = if (groupItems.any { it.taxAmt1 != 0.0 }) groupItems.sumOf { it.taxAmt1 } else gstTotal
+            """<td class="right">${igstTotal.formatToAmtDec()}</td>"""
         } else {
+            val cgstTotal = if (groupItems.any { it.taxAmt1 != 0.0 }) groupItems.sumOf { it.taxAmt1 } else gstTotal / 2
+            val sgstTotal = if (groupItems.any { it.taxAmt2 != 0.0 }) groupItems.sumOf { it.taxAmt2 } else gstTotal / 2
             """
-            <td class="right">${(gstTotal / 2).formatToAmtDec()}</td>
-            <td class="right">${(gstTotal / 2).formatToAmtDec()}</td>
+            <td class="right">${cgstTotal.formatToAmtDec()}</td>
+            <td class="right">${sgstTotal.formatToAmtDec()}</td>
             """.trimIndent()
         }
 

@@ -19,17 +19,17 @@ fun salesSlipHtml(
     sundries: List<SundryItem>,
     grandTotal: Double,
     transportDetails: TransportDetails,
-    showTax: Boolean = true
+    showTax: Boolean = true,
+    isIgst: Boolean? = null
 ): String {
     val db = DatabaseHolder.instance
     val compInfo = db.companyInformationQueries.getCompanyInformation().executeAsOneOrNull()
     val partyDetails = db.ledgerMasterQueries.selectByName(partyName).executeAsOneOrNull()
     val user = SharedPrefs.User.get()
 
-    val isIgst =
-        user?.State.clean() != partyDetails?.State.clean() &&
+    val isIgst = isIgst ?: (user?.State.clean() != partyDetails?.State.clean() &&
                 partyDetails?.State.clean().isNotBlank() &&
-                user?.State.clean().isNotBlank()
+                user?.State.clean().isNotBlank())
 
     val title = if (name == "Sale Invoice") "TAX INVOICE" else name.uppercase()
 
@@ -241,6 +241,21 @@ fun salesSlipHtml(
                 else -> "--"
             }
 
+            val rateText = if (isIgst) {
+                (if (item.taxRate1 != 0.0) item.taxRate1 else item.gstPercentage).formatToAmtDec() + "%"
+            } else {
+                val r1 = if (item.taxRate1 != 0.0) item.taxRate1 else item.gstPercentage / 2
+                val r2 = if (item.taxRate2 != 0.0) item.taxRate2 else item.gstPercentage / 2
+                "${r1.formatToAmtDec()}%+${r2.formatToAmtDec()}%"
+            }
+            val taxAmtText = if (isIgst) {
+                (if (item.taxAmt1 != 0.0) item.taxAmt1 else item.gstAmt).formatToAmtDec()
+            } else {
+                val a1 = if (item.taxAmt1 != 0.0) item.taxAmt1 else item.gstAmt / 2
+                val a2 = if (item.taxAmt2 != 0.0) item.taxAmt2 else item.gstAmt / 2
+                "${a1.formatToAmtDec()}+${a2.formatToAmtDec()}"
+            }
+
             """
         <tr class="item-main">
             <td>${index + 1}</td>
@@ -252,8 +267,8 @@ fun salesSlipHtml(
         <tr class="item-sub">
             <td></td>
             <td>${item.qty.absoluteValue.toDouble().formatToAmtDec()} &nbsp;&nbsp;&nbsp; ${item.hsn.clean()}</td>
-            <td class="right">${item.gstPercentage.formatToAmtDec()}%</td>
-            <td colspan="2" class="right">${item.gstAmt.formatToAmtDec()}</td>
+            <td class="right">$rateText</td>
+            <td colspan="2" class="right">$taxAmtText</td>
         </tr>
             """.trimIndent()
         }.joinToString("\n")
@@ -285,19 +300,29 @@ fun salesSlipHtml(
     <table class="tax">
         <thead>
         <tr>
-            <th style="width: 22%;">Tax Rate</th>
-            <th style="width: 36%;">Taxable Amt.</th>
-            <th style="width: 42%;">${if (isIgst) "IGST" else "GST"} Amt.</th>
+            <th style="width: 18%;">Rate</th>
+            <th style="width: 30%;">Taxable</th>
+            ${if (isIgst) "<th>IGST Amt.</th>" else "<th>CGST</th><th>SGST</th>"}
         </tr>
         </thead>
         <tbody>
         ${
         items.groupBy { it.gstPercentage }.map { (rate, group) ->
+            val taxable = group.sumOf { it.taxable }.formatToAmtDec()
+            val gstTotal = group.sumOf { it.gstAmt }
+            val taxCells = if (isIgst) {
+                val igstAmt = if (group.any { it.taxAmt1 != 0.0 }) group.sumOf { it.taxAmt1 } else gstTotal
+                "<td>${igstAmt.formatToAmtDec()}</td>"
+            } else {
+                val cgstAmt = if (group.any { it.taxAmt1 != 0.0 }) group.sumOf { it.taxAmt1 } else gstTotal / 2
+                val sgstAmt = if (group.any { it.taxAmt2 != 0.0 }) group.sumOf { it.taxAmt2 } else gstTotal / 2
+                "<td>${cgstAmt.formatToAmtDec()}</td><td>${sgstAmt.formatToAmtDec()}</td>"
+            }
             """
             <tr>
                 <td>${rate.formatToAmtDec()}%</td>
-                <td>${group.sumOf { it.taxable }.formatToAmtDec()}</td>
-                <td>${group.sumOf { it.gstAmt }.formatToAmtDec()}</td>
+                <td>$taxable</td>
+                $taxCells
             </tr>
             """.trimIndent()
         }.joinToString("\n")
