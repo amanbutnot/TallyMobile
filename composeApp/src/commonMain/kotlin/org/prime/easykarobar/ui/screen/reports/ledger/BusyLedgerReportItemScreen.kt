@@ -261,6 +261,16 @@ data class BusyLedgerReportItemScreen(
                     )
                 }
             },
+            onPrintClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "$vchType Report",
+                        htmlContent = htmlContent,
+                        action = PdfAction.Print,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
             menuItems = if (ledgerStockItemList.isNotEmpty()) {
                 listOf(
                     MenuItemData(

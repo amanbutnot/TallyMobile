@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS Vouchers_StockItems (
     D3 REAL,
     D4 REAL,
     D5 REAL,
+    D6 REAL,
+    D7 REAL,
+    D8 REAL,
     E1 TEXT,
     E2 TEXT,
     E3 TEXT,
@@ -115,7 +118,11 @@ SELECT
     VSI.D1 AS Qty,
     VSI.CM3 AS Unit,
     VSI.D2 AS Rate,
-    VSI.D4 AS Amt
+    VSI.D4 AS Amt,
+    VSI.D5 AS TaxRate1,
+    VSI.D6 AS TaxRate2,
+    VSI.D7 AS TaxAmt1,
+    VSI.D8 AS TaxAmt2
 FROM Vouchers_StockItems VSI
 LEFT JOIN Products P
     ON TRIM(VSI.CM1) = TRIM(P.Name)

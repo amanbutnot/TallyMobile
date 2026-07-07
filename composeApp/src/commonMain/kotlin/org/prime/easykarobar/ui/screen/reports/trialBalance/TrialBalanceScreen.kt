@@ -1,6 +1,5 @@
 package org.prime.easykarobar.ui.screen.reports.trialBalance
 
-import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,6 +38,7 @@ import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.filterGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TableCell
@@ -160,6 +160,23 @@ object TrialBalanceScreen : Screen {
                             date = StartDate()
                         ),
                         action = PdfAction.Download,
+                        onLoadingChange = { shareLoading = it }
+                    )
+                }
+            },
+            onPrintClick = {
+                scope.launch {
+                    handlePdfAction(
+                        fileName = "Trial Balance",
+                        htmlContent = threeHeaderHtml(
+                            title = "Trial Balance",
+                            headers = Triple("Account Name", "Debit", "Credit"),
+                            rows = rows,
+                            totalDebit = totalDebit.formatToAmtDec().stringToDouble(),
+                            totalCredit = totalCredit.formatToAmtDec().stringToDouble(),
+                            date = StartDate()
+                        ),
+                        action = PdfAction.Print,
                         onLoadingChange = { shareLoading = it }
                     )
                 }

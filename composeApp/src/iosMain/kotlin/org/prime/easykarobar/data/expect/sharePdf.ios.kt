@@ -18,6 +18,8 @@ import platform.Foundation.writeToFile
 import platform.UIKit.UIActivityViewController
 import platform.UIKit.UIApplication
 import platform.UIKit.UIDevice
+import platform.UIKit.UIPrintInfo
+import platform.UIKit.UIPrintInteractionController
 import platform.UIKit.UISceneActivationStateForegroundActive
 import platform.UIKit.UIUserInterfaceIdiomPad
 import platform.UIKit.UIViewController
@@ -168,6 +170,39 @@ actual fun sharePdf(filePath: String) {
                 println("✅ [sharePdf] Share sheet presented successfully")
             }
         )
+    }
+}
+
+actual fun printPdf(filePath: String) {
+    val fileURL = NSURL.fileURLWithPath(filePath, isDirectory = false)
+    val printController = UIPrintInteractionController.sharedPrintController()
+    val printInfo = UIPrintInfo.printInfoWithDictionary(null)
+    printInfo.outputType = platform.UIKit.UIPrintInfoOutputGeneral
+    printInfo.jobName = filePath.substringAfterLast("/")
+    printController.printInfo = printInfo
+    printController.printingItem = fileURL
+
+    val windowScene = UIApplication.sharedApplication
+        .connectedScenes
+        .filterIsInstance<UIWindowScene>()
+        .firstOrNull { it.activationState == UISceneActivationStateForegroundActive }
+        ?: UIApplication.sharedApplication
+            .connectedScenes
+            .filterIsInstance<UIWindowScene>()
+            .firstOrNull()
+
+    val window: UIWindow? = windowScene?.windows
+        ?.filterIsInstance<UIWindow>()
+        ?.firstOrNull { it.isKeyWindow() }
+        ?: windowScene?.windows?.filterIsInstance<UIWindow>()?.firstOrNull()
+
+    var topController: UIViewController? = window?.rootViewController
+    while (topController?.presentedViewController != null) {
+        topController = topController?.presentedViewController
+    }
+
+    topController?.let {
+        printController.presentAnimated(true, completionHandler = null)
     }
 }
 

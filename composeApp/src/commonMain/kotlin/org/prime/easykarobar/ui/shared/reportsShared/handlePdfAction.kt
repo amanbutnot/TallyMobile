@@ -16,7 +16,7 @@ import kotlin.time.ExperimentalTime
 
 enum class PdfAction {
     Download,
-    Share, DownloadExcel, ShareExcel
+    Share, DownloadExcel, ShareExcel, Print
 }
 
 suspend fun handlePdfAction(
@@ -39,7 +39,7 @@ suspend fun handlePdfAction(
 
     try {
         println("📄 [handlePdfAction] Calling createPdfFromHtml...")
-        filePath = if (action == PdfAction.Download || action == PdfAction.Share) {
+        filePath = if (action == PdfAction.Download || action == PdfAction.Share || action == PdfAction.Print) {
             createPdfFromHtml(htmlContent, sanitizedFileName)
         } else {
             createExcel(
@@ -76,6 +76,12 @@ suspend fun handlePdfAction(
                 println("📄 [handlePdfAction] Action: Share — calling sharePdf")
                 sharePdf(filePath)
                 println("📄 [handlePdfAction] sharePdf call returned")
+            }
+
+            PdfAction.Print -> {
+                println("📄 [handlePdfAction] Action: Print — calling printPdf")
+                org.prime.easykarobar.data.expect.printPdf(filePath)
+                println("📄 [handlePdfAction] printPdf call returned")
             }
 
             PdfAction.ShareExcel -> {}

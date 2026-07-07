@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
@@ -122,6 +123,7 @@ fun TallyReportScaffold(
     onShareSecondText: String? = null,
     onShareText: String? = null,
     onExcelClick: (() -> Unit)? = null,
+    onPrintClick: (() -> Unit)? = null,
     onFilterClick: (() -> Unit)? = null,
     menuItems: List<MenuItemData> = emptyList(),
     content: @Composable (PaddingValues) -> Unit
@@ -163,6 +165,15 @@ fun TallyReportScaffold(
                         if (onFilterClick != null) {
                             IconButton(onClick = { onFilterClick() }) {
                                 Icon(Icons.Default.FilterList, "", tint = colors.onSurface)
+                            }
+                        }
+                        if (onPrintClick != null) {
+                            IconButton(onClick = { onPrintClick() }) {
+                                Icon(
+                                    imageVector = Icons.Default.Print,
+                                    contentDescription = "Print",
+                                    tint = colors.onSurface
+                                )
                             }
                         }
                         if (showBarcodeIcon) {
