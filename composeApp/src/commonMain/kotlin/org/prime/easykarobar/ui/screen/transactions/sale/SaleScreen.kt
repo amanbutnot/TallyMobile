@@ -148,6 +148,7 @@ import org.prime.easykarobar.ui.shared.globalShared.isBusy
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
+import org.prime.easykarobar.ui.shared.reportsShared.ParameterSelectionBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
@@ -221,6 +222,7 @@ data class InvoiceItem(
     val itemdesc20: String? = null,
     val hsn: String? = null,
     val item_serial: List<@Contextual SerialNoEnterReportSale> = emptyList(),
+    val item_params: List<@Contextual org.tally.GetProductStockList> = emptyList(),
     // Additional info
     val additionalinfo: String? = null,
     val conFactor: Double? = null,
@@ -297,6 +299,7 @@ data class SaleScreen(
         var showLedgerSheet by remember { mutableStateOf(false) }
         var showQtyPopup by remember { mutableStateOf(false) }
         var showItemSheet by remember { mutableStateOf(false) }
+        var showParameterBottomSheet by remember { mutableStateOf(false) }
         var showWarningMessage by remember { mutableStateOf(false) }
         var showSundrySheet by remember { mutableStateOf(false) }
         var showResultDialog by remember { mutableStateOf(false) }
@@ -1310,6 +1313,15 @@ data class SaleScreen(
                                                         selectedInitialSerialNo = item.item_serial
                                                         showSerialNumberBottomSheet = true
                                                     }
+                                                },
+                                                onParameter = {
+                                                    if (editingItem == null) {
+                                                        editingItemIndex = index
+                                                        editingItem = item
+                                                        pendingSelectedProductGUID = item.guid
+                                                        pendingSelectedProductName = item.name
+                                                        showParameterBottomSheet = true
+                                                    }
                                                 }
                                             )
                                         }
@@ -1880,6 +1892,7 @@ data class SaleScreen(
                             taxCategoryCode = taxCategoryCode.toInt(),
                             CD = selectedPricing?.CompoundDiscount ?: editingItem?.CD ?: "",
                             item_serial = selectedList,
+                            item_params = editingItem?.item_params ?: emptyList(),
                             conFactor = prod?.ConFactor ?: editingItem?.conFactor,
                             conType = prod?.ConType ?: editingItem?.conType,
                             selectedUnit = currentUnit,
@@ -1899,6 +1912,38 @@ data class SaleScreen(
 
                         showSerialNumberBottomSheet = false
                         selectedInitialSerialNo = emptyList() // Reset after selection
+                        editingItem = null
+                        editingItemIndex = null
+                        pendingSelectedProductName = null
+                        pendingSelectedProductGUID = null
+                    }
+                )
+                ParameterSelectionBottomSheet(
+                    productGuid = pendingSelectedProductGUID.toString(),
+                    show = showParameterBottomSheet,
+                    initialSelectedParameters = editingItem?.item_params?.map { it.BCN ?: "" } ?: emptyList(),
+                    onDismiss = {
+                        showParameterBottomSheet = false
+                        editingItemIndex = null
+                        editingItem = null
+                        pendingSelectedProductName = null
+                        pendingSelectedProductGUID = null
+                    },
+                    onParametersSelected = { selectedList ->
+                        val updatedItem = editingItem?.copy(
+                            item_params = selectedList
+                        )
+                        if (updatedItem != null) {
+                            val list = selectedItems.toMutableList()
+                            if (editingItemIndex != null) {
+                                list[editingItemIndex!!] = updatedItem
+                            } else {
+                                list.add(updatedItem)
+                            }
+                            selectedItems = list
+                        }
+
+                        showParameterBottomSheet = false
                         editingItem = null
                         editingItemIndex = null
                         pendingSelectedProductName = null
@@ -2313,6 +2358,7 @@ fun CompactItemCard(
     taxType: TaxType,
     onQuantityChange: (Int) -> Unit,
     onSerialNo: () -> Unit,
+    onParameter: () -> Unit,
     onRemove: () -> Unit,
     onEdit: () -> Unit,
     index: Int
@@ -2415,6 +2461,9 @@ fun CompactItemCard(
                 ) {
                     TextButton(onClick = onSerialNo) {
                         Text("Serial No${if (item.item_serial.isNotEmpty()) " (${item.item_serial.size})" else ""}")
+                    }
+                    TextButton(onClick = onParameter) {
+                        Text("Parameter${if (item.item_params.isNotEmpty()) " (${item.item_params.size})" else ""}")
                     }
                 }
             }

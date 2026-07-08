@@ -141,6 +141,7 @@ import org.prime.easykarobar.ui.shared.globalShared.isBusy
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
+import org.prime.easykarobar.ui.shared.reportsShared.ParameterSelectionBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
@@ -213,6 +214,7 @@ data class SaleScreen2(
         var showLedgerSheet by remember { mutableStateOf(false) }
         var showQtyPopup by remember { mutableStateOf(false) }
         var showItemSheet by remember { mutableStateOf(false) }
+        var showParameterBottomSheet by remember { mutableStateOf(false) }
         var showWarningMessage by remember { mutableStateOf(false) }
         var showSundrySheet by remember { mutableStateOf(false) }
         var showResultDialog by remember { mutableStateOf(false) }
@@ -963,6 +965,7 @@ data class SaleScreen2(
                                                             Value3 = 0.0
                                                         )
                                                     },
+                                                    item_params = pendingItem.item_params,
                                                     conFactor = cFactor,
                                                     conType = cType,
                                                     selectedUnit = sUnit,
@@ -1077,6 +1080,15 @@ data class SaleScreen2(
                                                         selectedInitialSerialNo = item.item_serial
                                                         showSerialNumberBottomSheet = true
                                                     }
+                                                },
+                                                onParameter = {
+                                                    if (editingItem == null) {
+                                                        editingItemIndex = index
+                                                        editingItem = item
+                                                        pendingSelectedProductGUID = item.guid
+                                                        pendingSelectedProductName = item.name
+                                                        showParameterBottomSheet = true
+                                                    }
                                                 }
                                             )
                                         }
@@ -1165,7 +1177,40 @@ data class SaleScreen2(
                                     )
                                 }
                             }
-                            if (isBusy()) {
+                            ParameterSelectionBottomSheet(
+                    productGuid = pendingSelectedProductGUID.toString(),
+                    show = showParameterBottomSheet,
+                    initialSelectedParameters = editingItem?.item_params?.map { it.BCN ?: "" } ?: emptyList(),
+                    onDismiss = {
+                        showParameterBottomSheet = false
+                        editingItemIndex = null
+                        editingItem = null
+                        pendingSelectedProductName = null
+                        pendingSelectedProductGUID = null
+                    },
+                    onParametersSelected = { selectedList ->
+                        val updatedItem = editingItem?.copy(
+                            item_params = selectedList
+                        )
+                        if (updatedItem != null) {
+                            val list = selectedItems.toMutableList()
+                            if (editingItemIndex != null) {
+                                list[editingItemIndex!!] = updatedItem
+                            } else {
+                                list.add(updatedItem)
+                            }
+                            selectedItems = list
+                        }
+
+                        showParameterBottomSheet = false
+                        editingItem = null
+                        editingItemIndex = null
+                        pendingSelectedProductName = null
+                        pendingSelectedProductGUID = null
+                    }
+                )
+
+                if (isBusy()) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth()
                                         .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -1288,7 +1333,40 @@ data class SaleScreen2(
                                     }
                                 }
                             }
-                            if (isBusy()) {
+                            ParameterSelectionBottomSheet(
+                    productGuid = pendingSelectedProductGUID.toString(),
+                    show = showParameterBottomSheet,
+                    initialSelectedParameters = editingItem?.item_params?.map { it.BCN ?: "" } ?: emptyList(),
+                    onDismiss = {
+                        showParameterBottomSheet = false
+                        editingItemIndex = null
+                        editingItem = null
+                        pendingSelectedProductName = null
+                        pendingSelectedProductGUID = null
+                    },
+                    onParametersSelected = { selectedList ->
+                        val updatedItem = editingItem?.copy(
+                            item_params = selectedList
+                        )
+                        if (updatedItem != null) {
+                            val list = selectedItems.toMutableList()
+                            if (editingItemIndex != null) {
+                                list[editingItemIndex!!] = updatedItem
+                            } else {
+                                list.add(updatedItem)
+                            }
+                            selectedItems = list
+                        }
+
+                        showParameterBottomSheet = false
+                        editingItem = null
+                        editingItemIndex = null
+                        pendingSelectedProductName = null
+                        pendingSelectedProductGUID = null
+                    }
+                )
+
+                if (isBusy()) {
                                 ShippingCard(
                                     showShippingDetails = SshowShippingDetails,
                                     onShowChange = { SshowShippingDetails = !SshowShippingDetails },
@@ -1369,7 +1447,40 @@ data class SaleScreen2(
                                 uniqueId = uniqueId,
                                 vchType = vchType
                             )
-                            if (isBusy()) {
+                            ParameterSelectionBottomSheet(
+                    productGuid = pendingSelectedProductGUID.toString(),
+                    show = showParameterBottomSheet,
+                    initialSelectedParameters = editingItem?.item_params?.map { it.BCN ?: "" } ?: emptyList(),
+                    onDismiss = {
+                        showParameterBottomSheet = false
+                        editingItemIndex = null
+                        editingItem = null
+                        pendingSelectedProductName = null
+                        pendingSelectedProductGUID = null
+                    },
+                    onParametersSelected = { selectedList ->
+                        val updatedItem = editingItem?.copy(
+                            item_params = selectedList
+                        )
+                        if (updatedItem != null) {
+                            val list = selectedItems.toMutableList()
+                            if (editingItemIndex != null) {
+                                list[editingItemIndex!!] = updatedItem
+                            } else {
+                                list.add(updatedItem)
+                            }
+                            selectedItems = list
+                        }
+
+                        showParameterBottomSheet = false
+                        editingItem = null
+                        editingItemIndex = null
+                        pendingSelectedProductName = null
+                        pendingSelectedProductGUID = null
+                    }
+                )
+
+                if (isBusy()) {
                                 OptionalFieldCard(
                                     showOptionalField = showOptionalField,
                                     onShowChange = { showOptionalField = !showOptionalField },
@@ -1715,6 +1826,7 @@ data class SaleScreen2(
                         }
                     },
                     onSerialNumbersSelected = { selectedList ->
+                        // ... restore logic ...
                         val total = selectedList.sumOf { it.Value3 ?: 0.0 }
                         val prod = itemsList.find { it.Name == pendingSelectedProductName }
                         val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
@@ -1780,6 +1892,7 @@ data class SaleScreen2(
                             taxCategoryCode = taxCategoryCode.toInt(),
                             CD = compDisc,
                             item_serial = selectedList,
+                            item_params = editingItem?.item_params ?: emptyList(),
                             conFactor = prod?.ConFactor ?: editingItem?.conFactor,
                             conType = prod?.ConType ?: editingItem?.conType,
                             selectedUnit = editingItem?.selectedUnit ?: prod?.UnitName,
@@ -1806,6 +1919,71 @@ data class SaleScreen2(
                         if (pendingItemsAfterMultiSelect.isNotEmpty()) {
                             pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
                         }
+                    }
+                )
+                ParameterSelectionBottomSheet(
+                    productGuid = pendingSelectedProductGUID.toString(),
+                    show = showParameterBottomSheet,
+                    initialSelectedParameters = editingItem?.item_params?.map { it.BCN ?: "" } ?: emptyList(),
+                    onDismiss = {
+                        showParameterBottomSheet = false
+                        editingItemIndex = null
+                        editingItem = null
+                        pendingSelectedProductName = null
+                        pendingSelectedProductGUID = null
+                    },
+                    onParametersSelected = { selectedList ->
+                        val updatedItem = editingItem?.copy(
+                            item_params = selectedList
+                        )
+                        if (updatedItem != null) {
+                            val list = selectedItems.toMutableList()
+                            if (editingItemIndex != null) {
+                                list[editingItemIndex!!] = updatedItem
+                            } else {
+                                list.add(updatedItem)
+                            }
+                            selectedItems = list
+                        }
+
+                        showParameterBottomSheet = false
+                        editingItem = null
+                        editingItemIndex = null
+                        pendingSelectedProductName = null
+                        pendingSelectedProductGUID = null
+                    }
+                )
+
+                ParameterSelectionBottomSheet(
+                    productGuid = pendingSelectedProductGUID.toString(),
+                    show = showParameterBottomSheet,
+                    initialSelectedParameters = editingItem?.item_params?.map { it.BCN ?: "" } ?: emptyList(),
+                    onDismiss = {
+                        showParameterBottomSheet = false
+                        editingItemIndex = null
+                        editingItem = null
+                        pendingSelectedProductName = null
+                        pendingSelectedProductGUID = null
+                    },
+                    onParametersSelected = { selectedList ->
+                        val updatedItem = editingItem?.copy(
+                            item_params = selectedList
+                        )
+                        if (updatedItem != null) {
+                            val list = selectedItems.toMutableList()
+                            if (editingItemIndex != null) {
+                                list[editingItemIndex!!] = updatedItem
+                            } else {
+                                list.add(updatedItem)
+                            }
+                            selectedItems = list
+                        }
+
+                        showParameterBottomSheet = false
+                        editingItem = null
+                        editingItemIndex = null
+                        pendingSelectedProductName = null
+                        pendingSelectedProductGUID = null
                     }
                 )
 
