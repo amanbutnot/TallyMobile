@@ -824,7 +824,7 @@ data class SaleScreen(
 
         if (showEmptyBarcode) {
             TallyResultDialog(
-                message = "Barcode not found \n Barcode Value $demoBarcodeName",
+                message = "Item not found",
                 onDone = { showEmptyBarcode = false },
                 isSuccess = false
             )
