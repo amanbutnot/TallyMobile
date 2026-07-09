@@ -121,7 +121,8 @@ data class BillingItem(
     val conFactor: Double? = null,
     val conType: Double? = null,
     val selectedUnit: String? = null,
-    val altQty: Double? = null
+    val altQty: Double? = null,
+    val item_parameter: List<String>
 )
 
 
@@ -237,6 +238,7 @@ data class Item(
     val itemdesc19: String? = null,
     val itemdesc20: String? = null,
     val item_serial: List<String> = emptyList(),
+    val item_parameter: List<String> = emptyList(),
     val additionalinfo: String? = null,
     val conFactor: Double? = null,
     val conType: Double? = null,

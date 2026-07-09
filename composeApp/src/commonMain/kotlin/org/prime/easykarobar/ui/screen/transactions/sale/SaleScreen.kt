@@ -147,8 +147,8 @@ import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.isBusy
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
-import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.ParameterSelectionBottomSheet
+import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.SerialNumberBottomSheet
 import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
@@ -223,6 +223,7 @@ data class InvoiceItem(
     val hsn: String? = null,
     val item_serial: List<@Contextual SerialNoEnterReportSale> = emptyList(),
     val item_params: List<@Contextual org.tally.GetProductStockList> = emptyList(),
+    val item_parameter: List<String> = emptyList(),
     // Additional info
     val additionalinfo: String? = null,
     val conFactor: Double? = null,
@@ -736,7 +737,17 @@ data class SaleScreen(
                                 Value3 = 0.0,
                                 MasterCode2 = ""
                             )
-                        }
+                        },
+                        item_params = itm.item_parameter.map {
+                            org.tally.GetProductStockList(
+                                MasterCode1 = itm.product_id.toDoubleOrNull(),
+                                MasterCode2 = null, Value1 = null,
+                                Value2 = null, Value3 = null, BCN = it, C1 = null,
+                                C2 = it, C3 = null, C4 = null, C5 = null,
+                                ProductName = itm.product_name, GodownName = null, GroupName = null
+                            )
+                        },
+                        item_parameter = itm.item_parameter
                     )
                 }
                 // PRE-POPULATE SUNDRIES SECTION
@@ -1200,7 +1211,9 @@ data class SaleScreen(
                                                     altQty = aQty,
                                                     mainUnit = product?.UnitName ?: pendingItem.mainUnit,
                                                     altUnit = product?.AltUnit ?: pendingItem.altUnit,
-                                                    hsn = pendingItem.hsn
+                                                    hsn = pendingItem.hsn,
+                                                    item_params = pendingItem.item_params,
+                                                    item_parameter = pendingItem.item_parameter
                                                 )
                                                 val mutable = selectedItems.toMutableList()
                                                 if (index != null) {
@@ -1931,7 +1944,8 @@ data class SaleScreen(
                     },
                     onParametersSelected = { selectedList ->
                         val updatedItem = editingItem?.copy(
-                            item_params = selectedList
+                            item_params = selectedList,
+                            item_parameter = selectedList.map { it.C2 ?: "" }
                         )
                         if (updatedItem != null) {
                             val list = selectedItems.toMutableList()
@@ -2062,19 +2076,18 @@ data class SaleScreen(
                                 BillingItem(
                                     product_id = prod?.ID?.toString() ?: "",
                                     product_name = item.name,
+                                    CD = item.CD,
                                     quantity = item.qty,
                                     list_price = item.listPrice,
                                     discount_percent = item.discountPercentage,
-                                    discount_amt = null,
                                     tax_rate1 = item.gstPercentage,
                                     tax_rate2 = 0.0,
                                     taxable = item.taxable,
-                                    net = item.net,
                                     gstAmt = item.gstAmt,
+                                    net = item.net,
                                     guid = item.guid,
-                                    CD = item.CD,
-                                    // Pass through all description fields
                                     itemdesc1 = item.itemdesc1,
+                                    // Pass through all description fields
                                     itemdesc2 = item.itemdesc2,
                                     itemdesc3 = item.itemdesc3,
                                     itemdesc4 = item.itemdesc4,
@@ -2099,7 +2112,8 @@ data class SaleScreen(
                                     conFactor = item.conFactor,
                                     conType = item.conType,
                                     selectedUnit = item.selectedUnit,
-                                    altQty = item.altQty
+                                    altQty = item.altQty,
+                                    item_parameter = item.item_parameter.ifEmpty { item.item_params.map { it.C2 ?: "" } }
                                 )
                             }
 println("selected date from sale invoice is $selectedDate")

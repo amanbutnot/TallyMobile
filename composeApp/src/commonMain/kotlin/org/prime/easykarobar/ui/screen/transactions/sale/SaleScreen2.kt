@@ -543,7 +543,17 @@ data class SaleScreen2(
                                 Value2 = 0.0,
                                 Value3 = 0.0
                             )
-                        }
+                        },
+                        item_params = itm.item_parameter.map {
+                            org.tally.GetProductStockList(
+                                MasterCode1 = itm.product_id.toDoubleOrNull(),
+                                MasterCode2 = null, Value1 = null,
+                                Value2 = null, Value3 = null, BCN = it, C1 = null,
+                                C2 = it, C3 = null, C4 = null, C5 = null,
+                                ProductName = itm.product_name, GodownName = null, GroupName = null
+                            )
+                        },
+                        item_parameter = itm.item_parameter
                     )
                 }
                 selectedSundries = data.sundries.map { s ->
@@ -966,6 +976,7 @@ data class SaleScreen2(
                                                         )
                                                     },
                                                     item_params = pendingItem.item_params,
+                                                    item_parameter = pendingItem.item_parameter,
                                                     conFactor = cFactor,
                                                     conType = cType,
                                                     selectedUnit = sUnit,
@@ -1190,7 +1201,8 @@ data class SaleScreen2(
                     },
                     onParametersSelected = { selectedList ->
                         val updatedItem = editingItem?.copy(
-                            item_params = selectedList
+                            item_params = selectedList,
+                            item_parameter = selectedList.map { it.C2 ?: "" }
                         )
                         if (updatedItem != null) {
                             val list = selectedItems.toMutableList()
@@ -1346,7 +1358,8 @@ data class SaleScreen2(
                     },
                     onParametersSelected = { selectedList ->
                         val updatedItem = editingItem?.copy(
-                            item_params = selectedList
+                            item_params = selectedList,
+                            item_parameter = selectedList.map { it.C2 ?: "" }
                         )
                         if (updatedItem != null) {
                             val list = selectedItems.toMutableList()
@@ -1460,7 +1473,8 @@ data class SaleScreen2(
                     },
                     onParametersSelected = { selectedList ->
                         val updatedItem = editingItem?.copy(
-                            item_params = selectedList
+                            item_params = selectedList,
+                            item_parameter = selectedList.map { it.C2 ?: "" }
                         )
                         if (updatedItem != null) {
                             val list = selectedItems.toMutableList()
@@ -1934,7 +1948,8 @@ data class SaleScreen2(
                     },
                     onParametersSelected = { selectedList ->
                         val updatedItem = editingItem?.copy(
-                            item_params = selectedList
+                            item_params = selectedList,
+                            item_parameter = selectedList.map { it.C2 ?: "" }
                         )
                         if (updatedItem != null) {
                             val list = selectedItems.toMutableList()
@@ -1967,7 +1982,8 @@ data class SaleScreen2(
                     },
                     onParametersSelected = { selectedList ->
                         val updatedItem = editingItem?.copy(
-                            item_params = selectedList
+                            item_params = selectedList,
+                            item_parameter = selectedList.map { it.C2 ?: "" }
                         )
                         if (updatedItem != null) {
                             val list = selectedItems.toMutableList()
@@ -2110,6 +2126,7 @@ data class SaleScreen2(
                                     itemdesc20 = item.itemdesc20,
                                     additionalinfo = item.additionalinfo,
                                     item_serial = item.item_serial.map { it.SerialNo ?: "" },
+                                    item_parameter = item.item_parameter.ifEmpty { item.item_params.map { it.C2 ?: "" } },
                                     conFactor = item.conFactor,
                                     conType = item.conType,
                                     selectedUnit = item.selectedUnit,
