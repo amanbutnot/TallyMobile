@@ -2219,6 +2219,21 @@ data class SaleScreen2(
                                     }
                                     db.transaction {
                                         selectedItems.forEach { item ->
+                                            item.item_params.forEach { paramObj ->
+                                                db.productParamStockQueries.insertProductParamStock(
+                                                    masterCode1 = paramObj.MasterCode1,
+                                                    masterCode2 = paramObj.MasterCode2,
+                                                    value1 = -1.0,
+                                                    value2 = paramObj.Value2,
+                                                    value3 = paramObj.Value3,
+                                                    bcn = paramObj.BCN,
+                                                    c1 = paramObj.C1,
+                                                    c2 = paramObj.C2,
+                                                    c3 = paramObj.C3,
+                                                    c4 = paramObj.C4,
+                                                    c5 = paramObj.C5
+                                                )
+                                            }
                                             item.item_serial.forEach { serial ->
                                                 db.productSerialNoQueries.insertProductSerialNo(
                                                     serialNo = serial.SerialNo,

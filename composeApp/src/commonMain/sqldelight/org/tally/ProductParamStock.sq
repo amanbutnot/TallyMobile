@@ -13,6 +13,33 @@ CREATE TABLE Product_Param_Stock (
 );
 
 
+insertProductParamStock:
+INSERT OR IGNORE INTO Product_Param_Stock (
+    MasterCode1,
+    MasterCode2,
+    Value1,
+    Value2,
+    Value3,
+    BCN,
+    C1,
+    C2,
+    C3,
+    C4,
+    C5
+) VALUES (
+    :masterCode1,
+    :masterCode2,
+    :value1,
+    :value2,
+    :value3,
+    :bcn,
+    :c1,
+    :c2,
+    :c3,
+    :c4,
+    :c5
+);
+
 getProductStockList:
 SELECT
     pps.*,
