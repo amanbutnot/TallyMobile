@@ -677,6 +677,8 @@ fun ExpandableGrid() {
         "Contra" to Icons.Default.Payment,
         "Debit Note" to Icons.AutoMirrored.Filled.Note,
         "Credit Note" to Icons.Default.NoteAlt,
+        "Sale Quotation" to Icons.Default.NoteAlt,
+        "Purchase Quotation" to Icons.Default.NoteAlt,
         //     "Account" to Icons.Default.AccountBox
     )
 
@@ -883,6 +885,14 @@ fun ExpandableGrid() {
                                                 item.first, vchType = 18
                                             )
                                         )
+                                    }
+                                    "Sale Quotation" -> {
+                                        nav?.push(SaleScreen(item.first, vchType = 22))
+
+                                    }
+                                    "Purchase Quotation" -> {
+                                        nav?.push(SaleScreen(item.first, vchType = 23))
+
                                     }
                                 }
                             })

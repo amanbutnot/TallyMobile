@@ -10,19 +10,17 @@ import org.prime.easykarobar.data.utils.DB_FILE_NAME
 import java.io.FileOutputStream
 
 actual class DriverFactory(private val context: Context) {
+
     actual fun createDriver(bytes: ByteArray): SqlDriver {
         val dbName = DB_FILE_NAME
         val dbPath = context.getDatabasePath(dbName)
 
-        // Always replace the old file
         if (dbPath.exists()) {
             dbPath.delete()
         }
 
-        // Ensure parent directory exists
         dbPath.parentFile?.mkdirs()
 
-        // Write the new database file
         FileOutputStream(dbPath).use { output ->
             output.write(bytes)
         }
@@ -38,33 +36,69 @@ actual class DriverFactory(private val context: Context) {
             }
         )
 
-        // Manual check for columns after database is loaded
         try {
-            driver.executeQuery(null, "PRAGMA table_info(Products)", { cursor ->
-                val existingColumns = mutableSetOf<String>()
-                while (cursor.next().value) {
-                    cursor.getString(1)?.let { existingColumns.add(it) }
-                }
+            ensureColumns(
+                driver = driver,
+                tableName = "Vouchers_StockItems",
+                columnsToAdd = listOf(
+                    "D5" to "REAL",
+                    "D6" to "REAL",
+                    "D7" to "REAL",
+                    "D8" to "REAL"
+                )
+            )
 
-                val columnsToAdd = listOf(
+            ensureColumns(
+                driver = driver,
+                tableName = "Products",
+                columnsToAdd = listOf(
                     "N1" to "REAL",
                     "AltUnit" to "TEXT",
                     "ConFactor" to "REAL",
                     "ConType" to "REAL"
                 )
-
-                columnsToAdd.forEach { (name, type) ->
-                    if (!existingColumns.contains(name)) {
-                        println("⚠️ $name column missing in Products table, adding it...")
-                        driver.execute(null, "ALTER TABLE Products ADD COLUMN $name $type", 0)
-                    }
-                }
-                QueryResult.Unit
-            }, 0)
+            )
         } catch (e: Exception) {
             println("❌ Error during manual migration: ${e.message}")
         }
 
         return driver
+    }
+
+    private fun ensureColumns(
+        driver: SqlDriver,
+        tableName: String,
+        columnsToAdd: List<Pair<String, String>>
+    ) {
+        driver.executeQuery(
+            identifier = null,
+            sql = "PRAGMA table_info($tableName)",
+            mapper = { cursor ->
+                val existingColumns = mutableSetOf<String>()
+
+                while (cursor.next().value) {
+                    cursor.getString(1)?.let { columnName ->
+                        existingColumns.add(columnName)
+                    }
+                }
+
+                columnsToAdd.forEach { (name, type) ->
+                    if (!existingColumns.contains(name)) {
+                        println("⚠️ $name column missing in $tableName table, adding it...")
+
+                        driver.execute(
+                            identifier = null,
+                            sql = "ALTER TABLE $tableName ADD COLUMN $name $type",
+                            parameters = 0
+                        )
+                    } else {
+                        println("✔️ $name already exists in $tableName")
+                    }
+                }
+
+                QueryResult.Unit
+            },
+            parameters = 0
+        )
     }
 }

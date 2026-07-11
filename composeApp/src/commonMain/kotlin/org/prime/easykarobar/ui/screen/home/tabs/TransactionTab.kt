@@ -116,6 +116,8 @@ object TransactionTab : Tab {
             TransactionType("Purchase Return", Icons.Default.Work),
             TransactionType("Purchase Invoice", Icons.Default.Work),
             TransactionType("Stock Transfer", Icons.Default.Work),
+            TransactionType("Sale Quotation", Icons.Default.Work),
+            TransactionType("Purchase Quotation", Icons.Default.Work),
       //      TransactionType("Scan Barcode", Icons.Default.BarChart)
         )
 
@@ -270,6 +272,18 @@ object TransactionTab : Tab {
                             }
                         }
 
+                        8 -> nav?.push(
+                            SingleEntryFilterScreen(
+                                type.name,
+                                vchType = 22
+                            )
+                        )
+                        9 -> nav?.push(
+                            SingleEntryFilterScreen(
+                                type.name,
+                                vchType = 23
+                            )
+                        )
                     }
                 }
             )

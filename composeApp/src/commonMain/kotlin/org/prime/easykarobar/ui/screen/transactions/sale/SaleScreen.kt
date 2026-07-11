@@ -677,10 +677,12 @@ data class SaleScreen(
 
         LaunchedEffect(oneState.data, itemsList) {
             if (!isEdit || itemsList.isEmpty()) return@LaunchedEffect
+            println("onestate "+oneState.data)
             oneState.data?.let { data ->
                 selectedDate = Tdate(data.created_at.take(10))
                 selectedLedger = data.billing_name
                 selectedLedgerGUID = data.billing_guid
+                narration = data.Narration.toString()
                 taxType = if (data.taxType == 1) TaxType.EXTRA else TaxType.INCLUSIVE
                 selectedItems = data.items.map { itm ->
                     val prodFromDb = itemsList.find { it.ID == itm.product_id.toLongOrNull() }
@@ -2491,9 +2493,9 @@ fun CompactItemCard(
                     TextButton(onClick = onSerialNo) {
                         Text("Serial No${if (item.item_serial.isNotEmpty()) " (${item.item_serial.size})" else ""}")
                     }
-//                    TextButton(onClick = onParameter) {
-//                        Text("Parameter${if (item.item_params.isNotEmpty()) " (${item.item_params.size})" else ""}")
-//                    }
+                    TextButton(onClick = onParameter) {
+                        Text("Parameter${if (item.item_params.isNotEmpty()) " (${item.item_params.size})" else ""}")
+                    }
                 }
             }
         }

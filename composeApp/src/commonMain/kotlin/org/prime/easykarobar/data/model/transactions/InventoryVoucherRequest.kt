@@ -187,6 +187,7 @@ data class InventoryItemResponse(
     val items: List<Item>,
     val taxType: Int,
     val uniqueID: String? = null,
+    val Narration: String? = null,
     val item_serial: List<String> = emptyList(),
     val sundries: List<SundryItem>,
     val bills_collection: List<BillByBillModel>? = null

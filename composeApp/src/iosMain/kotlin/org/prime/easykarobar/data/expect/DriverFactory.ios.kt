@@ -50,7 +50,7 @@ actual class DriverFactory {
             )
         } else {
             println("✔️ Directory exists already")
-            // Clean up existing WAL/SHM files to avoid corruption when overwriting the main DB
+
             listOf("-wal", "-shm").forEach { suffix ->
                 val journalPath = "$sqliterDbPath$suffix"
                 if (fm.fileExistsAtPath(journalPath)) {
@@ -60,33 +60,34 @@ actual class DriverFactory {
             }
         }
 
-        // ❗ Copy BEFORE opening the driver!
         println("📥 Writing database file BEFORE creating driver")
         val wrote = bytes.toNSData().writeToFile(sqliterDbPath, atomically = true)
 
-        if (!wrote) error("❌ Failed to write DB file to: $sqliterDbPath")
+        if (!wrote) {
+            error("❌ Failed to write DB file to: $sqliterDbPath")
+        }
+
         println("✔️ DB file written successfully")
 
-        // Double-check existence
         val existsAfter = fm.fileExistsAtPath(sqliterDbPath)
         println("🔎 DB exists after write? $existsAfter")
 
         if (existsAfter) {
-            val contents = fm.contentsOfDirectoryAtPath(sqliterDir, null)?.map { it.toString() }
+            val contents = fm.contentsOfDirectoryAtPath(sqliterDir, null)
+                ?.map { it.toString() }
+
             println("📄 Files in SQLiter dir: $contents")
         }
 
-        println("🚀 NOW creating driver (explicit basePath via extendedConfig)")
+        println("🚀 NOW creating driver")
 
         val driver = NativeSqliteDriver(
             schema = TallyDatabase.Schema,
             name = DB_FILE_NAME,
             onConfiguration = { config ->
                 config.copy(
-                    // Prevent SQLDelight from trying to create the schema on an already-populated DB
                     create = { /* no-op */ },
                     upgrade = { _, _, _ -> /* no-op */ },
-                    // keep setting basePath so the driver opens the file you wrote
                     extendedConfig = config.extendedConfig.copy(
                         basePath = sqliterDir
                     )
@@ -94,29 +95,28 @@ actual class DriverFactory {
             }
         )
 
-        // Manual check for columns after database is loaded
         try {
-            driver.executeQuery(null, "PRAGMA table_info(Products)", { cursor ->
-                val existingColumns = mutableSetOf<String>()
-                while (cursor.next().value) {
-                    cursor.getString(1)?.let { existingColumns.add(it) }
-                }
+            ensureColumns(
+                driver = driver,
+                tableName = "Vouchers_StockItems",
+                columnsToAdd = listOf(
+                    "D5" to "REAL",
+                    "D6" to "REAL",
+                    "D7" to "REAL",
+                    "D8" to "REAL"
+                )
+            )
 
-                val columnsToAdd = listOf(
+            ensureColumns(
+                driver = driver,
+                tableName = "Products",
+                columnsToAdd = listOf(
                     "N1" to "REAL",
                     "AltUnit" to "TEXT",
                     "ConFactor" to "REAL",
                     "ConType" to "REAL"
                 )
-
-                columnsToAdd.forEach { (name, type) ->
-                    if (!existingColumns.contains(name)) {
-                        println("⚠️ $name column missing in Products table, adding it...")
-                        driver.execute(null, "ALTER TABLE Products ADD COLUMN $name $type", 0)
-                    }
-                }
-                QueryResult.Unit
-            }, 0)
+            )
         } catch (e: Exception) {
             println("❌ Error during manual migration: ${e.message}")
         }
@@ -124,6 +124,43 @@ actual class DriverFactory {
         println("✔️ Driver created successfully, database path = $sqliterDbPath")
 
         return driver
+    }
+
+    private fun ensureColumns(
+        driver: SqlDriver,
+        tableName: String,
+        columnsToAdd: List<Pair<String, String>>
+    ) {
+        driver.executeQuery(
+            identifier = null,
+            sql = "PRAGMA table_info($tableName)",
+            mapper = { cursor ->
+                val existingColumns = mutableSetOf<String>()
+
+                while (cursor.next().value) {
+                    cursor.getString(1)?.let { columnName ->
+                        existingColumns.add(columnName)
+                    }
+                }
+
+                columnsToAdd.forEach { (name, type) ->
+                    if (!existingColumns.contains(name)) {
+                        println("⚠️ $name column missing in $tableName table, adding it...")
+
+                        driver.execute(
+                            identifier = null,
+                            sql = "ALTER TABLE $tableName ADD COLUMN $name $type",
+                            parameters = 0
+                        )
+                    } else {
+                        println("✔️ $name already exists in $tableName")
+                    }
+                }
+
+                QueryResult.Unit
+            },
+            parameters = 0
+        )
     }
 }
 
