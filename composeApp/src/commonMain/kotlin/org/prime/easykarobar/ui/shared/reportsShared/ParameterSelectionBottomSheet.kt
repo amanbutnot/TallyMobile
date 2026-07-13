@@ -1,6 +1,7 @@
 package org.prime.easykarobar.ui.shared.reportsShared
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -10,9 +11,14 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -20,12 +26,13 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.utils.SharedPrefs
@@ -54,14 +61,18 @@ fun ParameterSelectionBottomSheet(
     var parameters by remember {
         mutableStateOf<List<GetProductStockList>>(emptyList())
     }
-    
-    val selectedParameters = remember(show) { 
-        mutableStateListOf<String>().apply { addAll(initialSelectedParameters) } 
+
+    val selectedQuantities = remember(show, parameters) {
+        mutableStateMapOf<String, Int>().apply {
+            initialSelectedParameters.groupBy { it }.forEach { (k, v) -> put(k, v.size) }
+        }
     }
     var searchQuery by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
 
     LaunchedEffect(show) {
         if (show) {
+            isLoading = true
             val perms = SharedPrefs.Permissions.get()
             val filterGroup = if (perms?.FilterIGRP == "Y") 1L else 0L
             val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
@@ -91,6 +102,7 @@ fun ParameterSelectionBottomSheet(
             // For now, let's just use what's fetched.
             
             parameters = fetchedParameters
+            isLoading = false
         }
     }
 
@@ -128,49 +140,71 @@ fun ParameterSelectionBottomSheet(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(vertical = 8.dp)
-            ) {
-                items(filteredList) { item ->
-                    val paramId = item.BCN ?: "${item.C1 ?: ""}-${item.C2 ?: ""}-${item.C3 ?: ""}"
-                    val isSelected = selectedParameters.contains(paramId)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                if (isSelected) {
-                                    selectedParameters.remove(paramId)
-                                } else {
-                                    selectedParameters.add(paramId)
-                                }
-                            }
-                            .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = isSelected,
-                            onCheckedChange = { checked ->
-                                if (checked == true) {
-                                    selectedParameters.add(paramId)
-                                } else {
-                                    selectedParameters.remove(paramId)
-                                }
-                            }
-                        )
-                        Column(modifier = Modifier.padding(start = 12.dp)) {
-                            Text(
-                                text = item.BCN ?: "No Barcode",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            val details = listOfNotNull(item.C1, item.C2, item.C3, item.C4, item.C5).joinToString(" | ")
-                            if (details.isNotBlank()) {
+            if (isLoading) {
+                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (parameters.isEmpty()) {
+                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "No parameters found for this item.\nQuantity will be locked to 1.",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(vertical = 8.dp)
+                ) {
+                    items(filteredList) { item ->
+                        val paramId = item.BCN ?: "${item.C1 ?: ""}-${item.C2 ?: ""}-${item.C3 ?: ""}"
+                        val qty = selectedQuantities[paramId] ?: 0
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = details,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text = item.BCN ?: "No Barcode",
+                                    style = MaterialTheme.typography.bodyLarge
                                 )
+                                val details = listOfNotNull(item.C1, item.C2, item.C3, item.C4, item.C5).joinToString(" | ")
+                                if (details.isNotBlank()) {
+                                    Text(
+                                        text = details,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = {
+                                    val current = selectedQuantities[paramId] ?: 0
+                                    if (current > 0) {
+                                        if (current == 1) selectedQuantities.remove(paramId)
+                                        else selectedQuantities[paramId] = current - 1
+                                    }
+                                }) {
+                                    Icon(Icons.Default.HorizontalRule, contentDescription = "Decrease")
+                                }
+
+                                Text(
+                                    text = qty.toString(),
+                                    modifier = Modifier.padding(horizontal = 8.dp),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+
+                                IconButton(onClick = {
+                                    val current = selectedQuantities[paramId] ?: 0
+                                    selectedQuantities[paramId] = current + 1
+                                }) {
+                                    Icon(Icons.Default.Add, contentDescription = "Increase")
+                                }
                             }
                         }
                     }
@@ -179,15 +213,21 @@ fun ParameterSelectionBottomSheet(
 
             Button(
                 onClick = {
-                    val result = parameters.filter { 
-                        (it.BCN ?: "${it.C1 ?: ""}-${it.C2 ?: ""}-${it.C3 ?: ""}") in selectedParameters 
+                    val result = mutableListOf<GetProductStockList>()
+                    parameters.forEach { item ->
+                        val paramId = item.BCN ?: "${item.C1 ?: ""}-${item.C2 ?: ""}-${item.C3 ?: ""}"
+                        val qty = selectedQuantities[paramId] ?: 0
+                        repeat(qty) {
+                            result.add(item)
+                        }
                     }
                     onParametersSelected(result)
                     onDismiss()
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Done (${selectedParameters.size})")
+                val totalItems = selectedQuantities.values.sum()
+                Text("Done (${if (parameters.isEmpty()) 1 else totalItems})")
             }
         }
     }

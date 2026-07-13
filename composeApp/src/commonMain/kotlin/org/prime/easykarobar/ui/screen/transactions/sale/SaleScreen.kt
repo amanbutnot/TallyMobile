@@ -1945,10 +1945,88 @@ data class SaleScreen(
                         pendingSelectedProductGUID = null
                     },
                     onParametersSelected = { selectedList ->
-                        val updatedItem = editingItem?.copy(
+                        val prod = itemsList.find { it.Name == pendingSelectedProductName }
+                        val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
+                        val gstPct = try {
+                            db.taxCategoryMastQueries.selectTaxRate(
+                                taxCategoryCode.toInt().toString(), selectedDate
+                            ).executeAsOneOrNull() ?: 0.0
+                        } catch (e: Exception) {
+                            0.0
+                        }
+                        val pricePerUnit =
+                            if (selectedPricing != null) selectedPricing!!.SalePrice
+                            else (editingItem?.price ?: 0.0)
+
+                        val qty = selectedList.size.coerceAtLeast(1)
+
+                        val taxableAmt: Double
+                        val gstAmt: Double
+                        val netAmt: Double
+
+                        if (taxType == TaxType.EXTRA) {
+                            taxableAmt = pricePerUnit * qty
+                            gstAmt = taxableAmt * gstPct / 100.0
+                            netAmt = taxableAmt + gstAmt
+                        } else if (taxType == TaxType.VOUCHER) {
+                            taxableAmt = pricePerUnit * qty
+                            gstAmt = 0.0
+                            netAmt = pricePerUnit * qty
+                        } else {
+                            if (gstPct == 0.0) {
+                                taxableAmt = pricePerUnit * qty
+                                gstAmt = 0.0
+                                netAmt = pricePerUnit * qty
+                            } else {
+                                val amount = pricePerUnit * qty
+                                taxableAmt = amount * 100.0 / (100.0 + gstPct)
+                                gstAmt = amount - taxableAmt
+                                netAmt = amount
+                            }
+                        }
+
+                        val factor = prod?.ConFactor ?: editingItem?.conFactor ?: 1.0
+                        val conTypeVal = prod?.ConType ?: editingItem?.conType ?: 1.0
+                        val currentUnit = editingItem?.selectedUnit ?: prod?.UnitName
+                        val altUnitName = prod?.AltUnit ?: editingItem?.altUnit
+
+                        val calculatedAltQty =
+                            if (currentUnit == altUnitName && altUnitName != null) {
+                                qty.toDouble()
+                            } else {
+                                if (conTypeVal == 1.0) {
+                                    qty.toDouble() * factor
+                                } else {
+                                    qty.toDouble() / factor
+                                }
+                            }
+
+                        val updatedItem = InvoiceItem(
+                            name = pendingSelectedProductName ?: editingItem?.name ?: "",
+                            price = pricePerUnit,
+                            qty = qty,
+                            discountPercentage = selectedPricing?.Discount
+                                ?: editingItem?.discountPercentage ?: 0.0,
+                            listPrice = pricePerUnit,
+                            taxable = taxableAmt,
+                            gstAmt = gstAmt,
+                            net = netAmt,
+                            guid = pendingSelectedProductGUID ?: editingItem?.guid ?: "",
+                            gstPercentage = gstPct,
+                            taxCategoryCode = taxCategoryCode.toInt(),
+                            CD = selectedPricing?.CompoundDiscount ?: editingItem?.CD ?: "",
+                            item_serial = editingItem?.item_serial ?: emptyList(),
                             item_params = selectedList,
-                            item_parameter = selectedList.map { it.C2 ?: "" }
+                            item_parameter = selectedList.map { it.C2 ?: "" },
+                            conFactor = prod?.ConFactor ?: editingItem?.conFactor,
+                            conType = prod?.ConType ?: editingItem?.conType,
+                            selectedUnit = currentUnit,
+                            altQty = calculatedAltQty,
+                            mainUnit = prod?.UnitName ?: editingItem?.mainUnit,
+                            altUnit = altUnitName,
+                            hsn = prod?.HSN ?: editingItem?.hsn
                         )
+
                         if (updatedItem != null) {
                             val list = selectedItems.toMutableList()
                             if (editingItemIndex != null) {
