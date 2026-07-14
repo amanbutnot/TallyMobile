@@ -1,5 +1,6 @@
 package org.prime.easykarobar.ui.shared.reportsShared
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,16 +10,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.HorizontalRule
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -32,16 +33,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
-import org.prime.easykarobar.ui.shared.globalShared.filterItemGroupCodes
-import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
-import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
-import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.prime.easykarobar.ui.shared.composables.smartSearch
+import org.prime.easykarobar.ui.shared.globalShared.filterItemGroupCodes
+import org.prime.easykarobar.ui.shared.globalShared.parseToStringList
 import org.tally.GetProductStockList
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -160,13 +160,33 @@ fun ParameterSelectionBottomSheet(
                 ) {
                     items(filteredList) { item ->
                         val paramId = item.BCN ?: "${item.C1 ?: ""}-${item.C2 ?: ""}-${item.C3 ?: ""}"
+                        val isSelected = selectedQuantities.containsKey(paramId)
                         val qty = selectedQuantities[paramId] ?: 0
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 4.dp)
+                                .clickable {
+                                    if (isSelected) {
+                                        selectedQuantities.remove(paramId)
+                                    } else {
+                                        selectedQuantities[paramId] = 1
+                                    }
+                                },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            Checkbox(
+                                checked = isSelected,
+                                onCheckedChange = { checked ->
+                                    if (checked) {
+                                        selectedQuantities[paramId] = 1
+                                    } else {
+                                        selectedQuantities.remove(paramId)
+                                    }
+                                }
+                            )
+
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = item.BCN ?: "No Barcode",
@@ -182,28 +202,41 @@ fun ParameterSelectionBottomSheet(
                                 }
                             }
 
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = {
-                                    val current = selectedQuantities[paramId] ?: 0
-                                    if (current > 0) {
-                                        if (current == 1) selectedQuantities.remove(paramId)
-                                        else selectedQuantities[paramId] = current - 1
+                            if (isSelected) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(60.dp)
+                                            .border(
+                                                1.dp,
+                                                MaterialTheme.colorScheme.outline,
+                                                RoundedCornerShape(8.dp)
+                                            )
+                                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                                            .clickable(enabled = false) {}
+                                    ) {
+                                        BasicTextField(
+                                            value = if (qty == 0) "" else qty.toString(),
+                                            onValueChange = { newValue ->
+                                                if (newValue.isEmpty()) {
+                                                    selectedQuantities[paramId] = 0
+                                                } else {
+                                                    val newQty = newValue.filter { it.isDigit() }.toIntOrNull() ?: 0
+                                                    selectedQuantities[paramId] = newQty
+                                                }
+                                            },
+                                            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                                textAlign = TextAlign.Center,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            ),
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            singleLine = true,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
                                     }
-                                }) {
-                                    Icon(Icons.Default.HorizontalRule, contentDescription = "Decrease")
-                                }
-
-                                Text(
-                                    text = qty.toString(),
-                                    modifier = Modifier.padding(horizontal = 8.dp),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-
-                                IconButton(onClick = {
-                                    val current = selectedQuantities[paramId] ?: 0
-                                    selectedQuantities[paramId] = current + 1
-                                }) {
-                                    Icon(Icons.Default.Add, contentDescription = "Increase")
                                 }
                             }
                         }
