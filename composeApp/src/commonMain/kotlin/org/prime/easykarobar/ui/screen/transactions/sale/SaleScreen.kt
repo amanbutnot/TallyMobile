@@ -263,7 +263,7 @@ data class SaleScreen(
             showExitPopup = true
         }
 
-        val isSale = name in listOf("Sale Order", "Sale Invoice", "Sale Return")
+        val isSale = name in listOf("Sale Order", "Sale Invoice", "Sale Return", "Sale Quotation")
 
         val nav = LocalNavigator.currentOrThrow
         val db = DatabaseHolder.instance
@@ -3386,7 +3386,7 @@ fun ExpandedItemEditor1(
                                     listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
                                 val factor = conFactor ?: 1.0
                                 val newPrice =
-                                    if (conType == 1.0) currentLP * factor else currentLP * factor
+                                    if (conType == 1.0) currentLP * factor else currentLP / factor
                                 listPriceN =
                                     (kotlin.math.round(newPrice * 100.0) / 100.0).formatToAmtDec()
                                 selectedUnit = mainUnit
@@ -3404,7 +3404,7 @@ fun ExpandedItemEditor1(
                                     listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
                                 val factor = conFactor ?: 1.0
                                 val newPrice =
-                                    if (conType == 1.0) currentLP / factor else currentLP / factor
+                                    if (conType == 1.0) currentLP / factor else currentLP * factor
                                 listPriceN =
                                     (kotlin.math.round(newPrice * 100.0) / 100.0).formatToAmtDec()
                                 selectedUnit = altUnit
