@@ -58,11 +58,151 @@ actual class DriverFactory(private val context: Context) {
                     "ConType" to "REAL"
                 )
             )
+
+            ensureTable(
+                driver = driver,
+                tableName = "SLIDE_MASTER",
+                createTableSql = """
+                    CREATE TABLE IF NOT EXISTS SLIDE_MASTER (
+                        ID INTEGER NOT NULL PRIMARY KEY,
+                        CODE TEXT NOT NULL,
+                        C1 TEXT,
+                        C2 TEXT,
+                        C3 TEXT,
+                        C4 TEXT,
+                        C5 TEXT,
+                        C6 TEXT,
+                        C7 TEXT,
+                        C8 TEXT,
+                        C9 TEXT,
+                        C10 TEXT
+                    );
+                """.trimIndent()
+            )
+
+            ensureTable(
+                driver = driver,
+                tableName = "SLIDE_IMG",
+                createTableSql = """
+                    CREATE TABLE IF NOT EXISTS SLIDE_IMG (
+                        ID INTEGER NOT NULL PRIMARY KEY,
+                        SLIDE_ID INTEGER NOT NULL,
+                        C1 TEXT,
+                        C2 TEXT,
+                        C3 TEXT,
+                        C4 TEXT,
+                        C5 TEXT,
+                        C6 TEXT,
+                        C7 TEXT,
+                        C8 TEXT,
+                        C9 TEXT,
+                        C10 TEXT
+                    );
+                """.trimIndent()
+            )
+
+            ensureTable(
+                driver = driver,
+                tableName = "BANNER_MASTER",
+                createTableSql = """
+                    CREATE TABLE IF NOT EXISTS BANNER_MASTER (
+                        ID INTEGER NOT NULL PRIMARY KEY,
+                        CODE TEXT NOT NULL,
+                        C1 TEXT,
+                        C2 TEXT,
+                        C3 TEXT,
+                        C4 TEXT,
+                        C5 TEXT,
+                        C6 TEXT,
+                        C7 TEXT,
+                        C8 TEXT,
+                        C9 TEXT,
+                        C10 TEXT
+                    );
+                """.trimIndent()
+            )
+
+            ensureTable(
+                driver = driver,
+                tableName = "COUPON_MASTER",
+                createTableSql = """
+                    CREATE TABLE IF NOT EXISTS COUPON_MASTER (
+                        ID INTEGER NOT NULL PRIMARY KEY,
+                        CODE TEXT NOT NULL,
+                        MFG_DATE TEXT,
+                        EXP_DATE TEXT,
+                        DISC_TYPE TEXT,
+                        DISC_PER REAL NOT NULL DEFAULT 0,
+                        BILL_VAL REAL NOT NULL DEFAULT 0,
+                        TOT_COUNT INTEGER NOT NULL DEFAULT 0,
+                        ISU_COUNT INTEGER NOT NULL DEFAULT 0,
+                        USE_COUNT INTEGER NOT NULL DEFAULT 0,
+                        STATUS TEXT,
+                        C1 TEXT,
+                        C2 TEXT,
+                        C3 TEXT
+                    );
+                """.trimIndent()
+            )
+
+            ensureTable(
+                driver = driver,
+                tableName = "FEATURES_MASTER",
+                createTableSql = """
+                    CREATE TABLE IF NOT EXISTS FEATURES_MASTER (
+                        ID INTEGER NOT NULL PRIMARY KEY,
+                        CODE TEXT NOT NULL,
+                        C1 TEXT,
+                        C2 TEXT,
+                        C3 TEXT,
+                        C4 TEXT,
+                        C5 TEXT,
+                        C6 TEXT,
+                        C7 TEXT,
+                        C8 TEXT,
+                        C9 TEXT,
+                        C10 TEXT
+                    );
+                """.trimIndent()
+            )
         } catch (e: Exception) {
             println("❌ Error during manual migration: ${e.message}")
         }
 
         return driver
+    }
+
+    private fun ensureTable(
+        driver: SqlDriver,
+        tableName: String,
+        createTableSql: String
+    ) {
+        driver.executeQuery(
+            identifier = null,
+            sql = "SELECT name FROM sqlite_master WHERE type='table' AND name='$tableName'",
+            mapper = { cursor ->
+                if (!cursor.next().value) {
+                    println("⚠️ $tableName table missing, creating it...")
+                    driver.execute(
+                        identifier = null,
+                        sql = createTableSql,
+                        parameters = 0
+                    )
+                } else {
+                    println("✔️ $tableName already exists")
+                }
+                QueryResult.Unit
+            },
+            parameters = 0
+        )
+    }
+
+    private fun executeMigrationCommand(driver: SqlDriver, sql: String) {
+        try {
+            driver.execute(null, sql, 0)
+        } catch (e: Exception) {
+            println("❌ Error during manual command execution: ${e.message}")
+        }
     }
 
     private fun ensureColumns(
