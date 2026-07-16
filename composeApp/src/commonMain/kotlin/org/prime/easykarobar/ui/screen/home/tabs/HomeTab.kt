@@ -1,7 +1,6 @@
 package org.prime.easykarobar.ui.screen.home.tabs
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -65,7 +64,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -79,7 +77,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -90,9 +87,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.Tab
-import cafe.adriel.voyager.navigator.tab.TabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import dev.jordond.compass.Priority
 import dev.jordond.compass.geolocation.Geolocator
@@ -108,7 +103,6 @@ import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.attendance.AttendanceListScreen
 import org.prime.easykarobar.ui.screen.attendance.AttendanceScreen
-import org.prime.easykarobar.ui.screen.distributor.order.AllProductsPremiumTab
 import org.prime.easykarobar.ui.screen.home.ROLE
 import org.prime.easykarobar.ui.screen.home.userRole
 import org.prime.easykarobar.ui.screen.masters.AccountAddScreen
@@ -150,78 +144,6 @@ object HomeTab : Tab {
     @Composable
     override fun Content() {
         val db = DatabaseHolder.instance
-        if (userRole() == ROLE.DISTRIBUTOR) {
-            val hideGroup = db.companyConfigurationQueries.hideGroup().executeAsOneOrNull()?.T2.toString() == "Y"
-            TabNavigator(if (hideGroup) AllProductsPremiumTab else DistributorHomeSubTab) { tabNavigator ->
-                Scaffold(
-                    bottomBar = {
-                        Surface(
-                            color = Color.White,
-                            shadowElevation = 8.dp
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(64.dp),
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                listOf(DistributorHomeSubTab, DistributorCategorySubTab).forEach { tab ->
-                                    val actualTab =
-                                        if (tab == DistributorCategorySubTab && hideGroup) AllProductsPremiumTab
-                                        else tab
-
-                                    val selected = tabNavigator.current == actualTab
-
-                                    val colorTint by animateColorAsState(
-                                        targetValue = if (selected) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                    )
-
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .fillMaxHeight()
-                                            .clickable(
-                                                interactionSource = remember { MutableInteractionSource() },
-                                                indication = null
-                                            ) {
-                                                tabNavigator.current = actualTab
-                                            }
-                                    ) {
-                                        tab.options.icon?.let {
-                                            Icon(
-                                                painter = it,
-                                                contentDescription = tab.options.title,
-                                                tint = colorTint,
-                                                modifier = Modifier.size(24.dp)
-                                            )
-                                        }
-
-                                        Spacer(Modifier.height(2.dp))
-
-                                        Text(
-                                            text = tab.options.title,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = colorTint,
-                                            maxLines = 1
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                ) { padding ->
-                    Box(Modifier.padding(bottom = padding.calculateBottomPadding())) {
-                        CurrentTab()
-                    }
-                }
-            }
-            return
-        }
-
         val scope = rememberCoroutineScope()
 
         var showLocationPopup by remember { mutableStateOf(false) }

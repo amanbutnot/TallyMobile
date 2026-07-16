@@ -46,9 +46,12 @@ import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.ui.screen.distributor.order.AllProductsPremiumTab
 import org.prime.easykarobar.ui.screen.distributor.order.CartScreen
+import org.prime.easykarobar.ui.screen.home.ROLE
 import org.prime.easykarobar.ui.screen.home.SettingScreen
 import org.prime.easykarobar.ui.screen.home.tabs.DistributorCategorySubTab
 import org.prime.easykarobar.ui.screen.home.tabs.DistributorHomeSubTab
+import org.prime.easykarobar.ui.screen.home.tabs.DistributorReportSubTab
+import org.prime.easykarobar.ui.screen.home.userRole
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 
 object DmsScreen : Screen {
@@ -122,10 +125,15 @@ object DmsScreen : Screen {
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            listOf(
+                            val tabs = mutableListOf(
                                 DistributorHomeSubTab,
                                 DistributorCategorySubTab
-                            ).forEach { tab ->
+                            )
+                            if (userRole() == ROLE.DISTRIBUTOR) {
+                                tabs.add(DistributorReportSubTab)
+                            }
+
+                            tabs.forEach { tab ->
                                 val actualTab =
                                     if (tab == DistributorCategorySubTab && hideGroup) AllProductsPremiumTab
                                     else tab

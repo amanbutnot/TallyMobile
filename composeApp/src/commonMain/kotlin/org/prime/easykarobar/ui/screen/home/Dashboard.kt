@@ -58,6 +58,9 @@ import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.SelectCompanyScreen
 import org.prime.easykarobar.ui.screen.distributor.order.CartScreen
 import org.prime.easykarobar.ui.screen.easymart.WishlistScreen
+import org.prime.easykarobar.ui.screen.home.tabs.DistributorCategorySubTab
+import org.prime.easykarobar.ui.screen.home.tabs.DistributorHomeSubTab
+import org.prime.easykarobar.ui.screen.home.tabs.DistributorReportSubTab
 import org.prime.easykarobar.ui.screen.home.tabs.HomeTab
 import org.prime.easykarobar.ui.screen.home.tabs.MastersTab
 import org.prime.easykarobar.ui.screen.home.tabs.ReportingTab
@@ -80,7 +83,9 @@ object Dashboard : Screen {
         val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
         val deviceId = getDeviceId()
 
-        TabNavigator(HomeTab) { tabNavigator ->
+        val initialTab = if (userRole() == ROLE.DISTRIBUTOR) DistributorHomeSubTab else HomeTab
+
+        TabNavigator(initialTab) { tabNavigator ->
             Scaffold(
                 topBar = {
                     TopAppBar(
@@ -209,9 +214,22 @@ object Dashboard : Screen {
                     )
                 },
                 bottomBar = {
-                    if (userRole() == ROLE.ADMIN || userRole() == ROLE.SALESMAN) {
+                    val role = userRole()
+                    if (role == ROLE.ADMIN || role == ROLE.SALESMAN || role == ROLE.DISTRIBUTOR) {
+                        val tabs = if (role == ROLE.DISTRIBUTOR) {
+                            val distributorTabs = mutableListOf<Tab>(
+                                DistributorHomeSubTab,
+                                DistributorCategorySubTab
+                            )
+                            if (org.prime.easykarobar.BuildKonfig.STORE_ID.isEmpty()) {
+                                distributorTabs.add(DistributorReportSubTab)
+                            }
+                            distributorTabs
+                        } else {
+                            listOf(HomeTab, MastersTab, TransactionTab, ReportingTab)
+                        }
                         BottomTabBar(
-                            tabs = listOf(HomeTab, MastersTab, TransactionTab, ReportingTab),
+                            tabs = tabs,
                             tabNavigator = tabNavigator
                         )
                     }
