@@ -7,12 +7,12 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.reportsShared.ReportFilterScreen
 
-object OutstandingDisFilterScreen : Screen {
+data class OutstandingDisFilterScreen(val name: String = "Bill Receivable") : Screen {
     @Composable
     override fun Content() {
         val nav = LocalNavigator.currentOrThrow
         ReportFilterScreen(
-            title = "Bill Receivable Filter",
+            title = "$name Filter",
             showStartDate = true,
             showEndDate = true,
             showAccountSelect = false,
@@ -20,11 +20,12 @@ object OutstandingDisFilterScreen : Screen {
             onGenerateClick = {
                 nav.push(
                     OutstandingReportScreen(
-                        name = "Bill Receivable",
+                        name = name,
                         startDate = it.startDate,
                         endDate = it.endDate,
                         cm1 = SharedPrefs.DistributorData.get()?.ledger_name,
-                        calculateDays = "Due Date",showOtherToggle = false,
+                        calculateDays = "Due Date",
+                        showOtherToggle = false,
                     )
                 )
             },

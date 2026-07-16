@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -55,12 +52,12 @@ import org.prime.easykarobar.ui.screen.home.ROLE
 import org.prime.easykarobar.ui.screen.home.userRole
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportItemScreen
 import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheet
-import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyFormatSelectionDialog
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.agrpGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
@@ -74,7 +71,6 @@ import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
 import org.prime.easykarobar.ui.shared.reportsShared.TableCell
 import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
-import org.prime.easykarobar.ui.shared.composables.smartSearch
 import kotlin.math.absoluteValue
 
 data class OutstandingReportScreen(
@@ -332,7 +328,7 @@ data class OutstandingReportScreen(
         val ledgerBalType = if (name == "Bill Receivable") "Dr" else "Cr"
 
         fun generateOutstandingHtml(partyWise: Boolean): String {
-
+            val accountNameForReport = if (cm1.isNullOrBlank()) "All Accounts" else cm1
             val list = if (name == "Bill Receivable") {
                 groupFilteredReceivableList
             } else {
@@ -358,14 +354,14 @@ data class OutstandingReportScreen(
 
                 return partyWiseOutstanding(
                     title = if (name == "Bill Receivable") "Bills Receivable" else "Bills Payable",
-                    accountName = "All Accounts",
+                    accountName = accountNameForReport,
                     onBasis = if (calculateDays == "Due Date") "Due Date" else "Bill Date",
                     startDate = startDate,
                     endDate = endDate,
                     billStatusDate = endDate,
                     parties = listOf( // 👈 wrap as single party
                         PartyOutstanding(
-                            partyName = "All Accounts",
+                            partyName = accountNameForReport,
                             rows = allRows,
                             totalRefAmt = totalRefAmt,
                             totalPendingAmt = totalPendingAmt
@@ -411,7 +407,7 @@ data class OutstandingReportScreen(
 
             return partyWiseOutstanding(
                 title = if (name == "Bill Receivable") "Bills Receivable" else "Bills Payable",
-                accountName = "All Accounts",
+                accountName = accountNameForReport,
                 onBasis = "Due Date",
                 startDate = startDate,
                 endDate = endDate,
