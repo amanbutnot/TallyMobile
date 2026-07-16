@@ -126,8 +126,8 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
 
-        versionCode = 32
-        versionName = "1.9.993"
+        versionCode = 34
+        versionName = "1.9.995"
 
         resValue("string", "app_name", appName)
 

@@ -95,7 +95,7 @@ fun ParameterSelectionBottomSheet(
                 filterGodown = filterGodown,
                 godownCodes = godownCodes
             ).executeAsList()
-
+println(fetchedParameters)
             // Handle initial selected parameters that might not be in the fetched list
             // (e.g. if we are editing an existing item)
             // However, GetProductStockList has many fields, so creating a dummy might be hard.

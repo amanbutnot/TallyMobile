@@ -7,6 +7,7 @@ import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.transactions.sale.InvoiceItem
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.globalShared.isBusy
 import kotlin.math.absoluteValue
 
 
@@ -441,9 +442,21 @@ fun salesHtml(
             </tr>""".trimIndent()
     )
 
+    var currentTotalForSundry = subtotal
     sundries.forEach { sun ->
-        val label = if ((sun.i1 == 0 && sun.i2 == 0) || (sun.i1 == 0 && sun.i2 == 1)) "Less : ${sun.name}" else "Add : ${sun.name}"
-        val amount = if (sun.i2 == 1) sun.percentValue else sun.amount
+        val label = if (isBusy() && sun.i1 == 0) "Less : ${sun.name}" else "Add : ${sun.name}"
+        val amount = if (sun.i2 == 1) {
+            currentTotalForSundry * (sun.amount / 100.0)
+        } else {
+            sun.amount
+        }
+
+        if (isBusy()) {
+            if (sun.i1 == 0) currentTotalForSundry -= amount else currentTotalForSundry += amount
+        } else {
+            currentTotalForSundry += amount
+        }
+
         html.append(
             """
             <tr>
@@ -467,7 +480,7 @@ fun salesHtml(
         <div class="gt-spacer" style="width:$qtyStartWidth;"></div>
         <div class="gt-qty" style="width:7%; text-align:center; border-bottom:1px solid #888; padding:2px 0;">${items.sumOf { it.qty }.absoluteValue}.00</div>
         <div class="gt-label" style="width:$labelWidth; text-align:right; padding:2px 8px;">Grand Total</div>
-        <div class="gt-amt" style="width:13%; text-align:right; padding:2px 4px;">${grandTotal.formatToAmtDec()}</div>
+        <div class="gt-amt" style="width:13%; text-align:right; padding:2px 4px;">${currentTotalForSundry.formatToAmtDec()}</div>
     </div>""".trimIndent()
     )
 
@@ -527,7 +540,7 @@ fun salesHtml(
         """
     <div class="amount-in-words">
         Total Qty : <b>${items.sumOf { it.qty }.absoluteValue}.00</b><br>
-        Rupees ${numberToWords(grandTotal.toInt())} Only
+        Rupees ${numberToWords(currentTotalForSundry.toInt())} Only
     </div>""".trimIndent()
     )
 
