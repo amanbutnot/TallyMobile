@@ -310,11 +310,12 @@ fun userRole(): ROLE {
         "distributor" -> ROLE.DISTRIBUTOR
         "staff-manager" -> ROLE.STAFF_MANAGER
         "office-staff" -> ROLE.OFFICE_STAFF
+        "delivery" -> ROLE.DELIVERY
         else -> {
             ROLE.ADMIN
         }
     }
 }
 
-enum class ROLE { ADMIN, SALESMAN, DISTRIBUTOR, STAFF_MANAGER, OFFICE_STAFF }
+enum class ROLE { ADMIN, SALESMAN, DISTRIBUTOR, STAFF_MANAGER, OFFICE_STAFF,DELIVERY }
 

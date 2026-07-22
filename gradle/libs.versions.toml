@@ -76,6 +76,7 @@ compass-geocoder-mobile = { module = "dev.jordond.compass:geocoder-mobile", vers
 compass-geolocation = { module = "dev.jordond.compass:geolocation", version.ref = "compass" }
 compass-geolocation-mobile = { module = "dev.jordond.compass:geolocation-mobile", version.ref = "compass" }
 zxing = { group = "com.journeyapps", name = "zxing-android-embedded", version = "4.3.0" }
+maplibre-compose = { module = "org.maplibre.compose:maplibre-compose", version = "0.13.0" }
 
 
 

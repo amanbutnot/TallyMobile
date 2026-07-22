@@ -108,6 +108,7 @@ kotlin {
             implementation(libs.compass.geolocation.mobile)
 
             implementation("com.mohamedrejeb.calf:calf-permissions:0.9.0")
+            implementation(libs.maplibre.compose)
         }
 
         nativeMain.dependencies {
