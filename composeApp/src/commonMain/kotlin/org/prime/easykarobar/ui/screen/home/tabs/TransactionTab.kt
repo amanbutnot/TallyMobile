@@ -275,13 +275,13 @@ object TransactionTab : Tab {
                         8 -> nav?.push(
                             SingleEntryFilterScreen(
                                 type.name,
-                                vchType = 22
+                                vchType = 26
                             )
                         )
                         9 -> nav?.push(
                             SingleEntryFilterScreen(
                                 type.name,
-                                vchType = 23
+                                vchType = 27
                             )
                         )
                     }

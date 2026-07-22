@@ -809,11 +809,11 @@ fun ExpandableGrid() {
                                         )
                                     }
                                     "Sale Quotation" -> {
-                                        nav?.push(SaleScreen(item.first, vchType = 22))
+                                        nav?.push(SaleScreen(item.first, vchType = 26))
 
                                     }
                                     "Purchase Quotation" -> {
-                                        nav?.push(SaleScreen(item.first, vchType = 23))
+                                        nav?.push(SaleScreen(item.first, vchType = 27))
 
                                     }
                                 }
