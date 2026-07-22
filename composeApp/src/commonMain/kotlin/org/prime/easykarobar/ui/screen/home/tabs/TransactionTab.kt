@@ -61,7 +61,6 @@ import org.prime.easykarobar.ui.screen.attendance.AttendanceListScreen
 import org.prime.easykarobar.ui.screen.reports.followup.FollowupFilterScreen
 import org.prime.easykarobar.ui.screen.transactions.FollowUpScreen
 import org.prime.easykarobar.ui.screen.transactions.SingleEntryFilterScreen
-import org.prime.easykarobar.ui.screen.transactions.barcode.BarcodeScreen
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 
 object TransactionTab : Tab {
@@ -262,23 +261,23 @@ object TransactionTab : Tab {
                             )
                         )
 
-                        7 -> {
-                            if (isGrantedCamera == true) {
-                                nav?.push(
-                                    BarcodeScreen
-                                )
-                            } else {
-                                requestCameraPermission = true
-                            }
-                        }
+//                        7 -> {
+//                            if (isGrantedCamera == true) {
+//                                nav?.push(
+//                                    BarcodeScreen
+//                                )
+//                            } else {
+//                                requestCameraPermission = true
+//                            }
+//                        }
 
-                        8 -> nav?.push(
+                        7 -> nav?.push(
                             SingleEntryFilterScreen(
                                 type.name,
                                 vchType = 26
                             )
                         )
-                        9 -> nav?.push(
+                        8 -> nav?.push(
                             SingleEntryFilterScreen(
                                 type.name,
                                 vchType = 27
@@ -483,6 +482,7 @@ private fun TopCard(
                         icon = type.icon,
                         title = type.name,
                         onClick = {
+                            println("index type is $type")
                             onClick(index, type)
                         }
                     )

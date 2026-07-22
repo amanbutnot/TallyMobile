@@ -54,7 +54,7 @@ data class SingleEntryFilterScreen(val name: String, val vchType: Int) : Screen 
                         )
                     }
 
-                    12, 3, 9, 13, 10, 2, 7 -> {
+                    12, 3, 9, 13, 10, 2, 7,26,27 -> {
                         nav.push(
                             InventoryListScreen(
                                 startDate = it.startDate,
