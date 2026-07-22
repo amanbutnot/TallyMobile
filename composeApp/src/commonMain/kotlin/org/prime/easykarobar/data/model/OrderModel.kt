@@ -126,6 +126,13 @@ data class CancelOrderResponse(
     val order_id: String,
 )
 
+@Serializable
+data class UpdateOrderStatusRequest(
+    val order_id: Int,
+    val status: String,
+    val remarks: String = ""
+)
+
 enum class ORDERSTATUS {
     Pending, Confirmed, InDispatched, Delivered, Cancelled,Billed,Posted
 }

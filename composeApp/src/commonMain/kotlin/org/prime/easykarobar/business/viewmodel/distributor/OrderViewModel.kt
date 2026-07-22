@@ -16,6 +16,7 @@ import org.prime.easykarobar.data.model.CreateOrderResponse
 import org.prime.easykarobar.data.model.Order
 import org.prime.easykarobar.data.model.Product
 import org.prime.easykarobar.data.model.ProductCategoryList
+import org.prime.easykarobar.data.model.UpdateOrderStatusRequest
 import org.tally.GetProductsForDis
 
 class OrderViewModel : ViewModel() {
@@ -31,6 +32,9 @@ class OrderViewModel : ViewModel() {
 
     private val _listOrderState = mutableStateOf(ListOrderState())
     val listOrderState: State<ListOrderState> = _listOrderState
+
+    private val _updateStatusState = mutableStateOf(UpdateStatusState())
+    val updateStatusState: State<UpdateStatusState> = _updateStatusState
 
 
     fun createOrder(createOrderRequest: CreateOrderRequest) {
@@ -67,6 +71,26 @@ class OrderViewModel : ViewModel() {
                 )
             } else {
                 _cancelOrderState.value = CancelOrderState(
+                    success = false,
+                    isLoading = false,
+                    message = res?.message ?: "Unexpected Error"
+                )
+            }
+        }
+    }
+
+    fun updateOrderStatus(updateOrderStatusRequest: UpdateOrderStatusRequest) {
+        viewModelScope.launch {
+            _updateStatusState.value = _updateStatusState.value.copy(isLoading = true)
+            val res = OrderRepository.updateOrderStatus(updateOrderStatusRequest)
+            if (res?.statuscode == 200) {
+                _updateStatusState.value = UpdateStatusState(
+                    success = true,
+                    isLoading = false,
+                    message = res.message
+                )
+            } else {
+                _updateStatusState.value = UpdateStatusState(
                     success = false,
                     isLoading = false,
                     message = res?.message ?: "Unexpected Error"
@@ -135,6 +159,12 @@ class OrderViewModel : ViewModel() {
         val success: Boolean = false,
         val isLoading: Boolean = false,
         val data: List<Order>? = null,
+        val message: String? = null
+    )
+
+    data class UpdateStatusState(
+        val success: Boolean = false,
+        val isLoading: Boolean = false,
         val message: String? = null
     )
 }

@@ -1,11 +1,30 @@
 package org.prime.easykarobar.ui.screen.delivery
 
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.jordond.compass.Priority
+import dev.jordond.compass.geolocation.Geolocator
+import dev.jordond.compass.geolocation.GeolocatorResult
+import dev.jordond.compass.geolocation.Locator
+import dev.jordond.compass.geolocation.mobile.mobile
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.rememberCameraState
 import org.maplibre.compose.expressions.dsl.const
@@ -16,45 +35,210 @@ import org.maplibre.compose.map.MaplibreMap
 import org.maplibre.compose.sources.GeoJsonData
 import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.style.BaseStyle
-import org.maplibre.spatialk.geojson.BoundingBox
 import org.maplibre.spatialk.geojson.Position
+import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
+import org.prime.easykarobar.data.model.ORDERSTATUS
+import org.prime.easykarobar.data.model.Order
+import org.prime.easykarobar.data.model.UpdateOrderStatusRequest
+import org.prime.easykarobar.ui.screen.distributor.order.OrderCard
+import org.prime.easykarobar.ui.shared.composables.*
+import kotlin.random.Random
 
 object DeliveryScreen : Screen {
 
     @Composable
     override fun Content() {
+        val nav = LocalNavigator.currentOrThrow
+        val viewModel: OrderViewModel = viewModel { OrderViewModel() }
+        val listState by viewModel.listOrderState
+        val updateState by viewModel.updateStatusState
+        val scope = rememberCoroutineScope()
 
+        var currentWorkingOrder by remember { mutableStateOf<Order?>(null) }
+        var userLocation by remember { mutableStateOf<Position?>(null) }
+        var destination by remember { mutableStateOf<Position?>(null) }
+        var showMap by remember { mutableStateOf(false) }
+        var isLoadingLocation by remember { mutableStateOf(false) }
+
+        LaunchedEffect(Unit) {
+            viewModel.listOrders()
+        }
+
+        TallyScaffold(
+            title = if (showMap) "Delivery Route" else "Delivery Orders",
+            onBack = {
+                if (showMap) showMap = false else nav.pop()
+            }
+        ) { paddingValues ->
+            Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                if (showMap && userLocation != null && destination != null) {
+                    DeliveryMapView(userLocation!!, destination!!)
+                    
+                    // Overlay buttons on map
+                    Column(
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    currentWorkingOrder?.let { order ->
+                                        viewModel.updateOrderStatus(
+                                            UpdateOrderStatusRequest(
+                                                order_id = order.id,
+                                                status = ORDERSTATUS.Delivered.name,
+                                                remarks = "Delivered by driver"
+                                            )
+                                        )
+                                    }
+                                    showMap = false
+                                    currentWorkingOrder = null
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Text("Mark as Delivered")
+                        }
+                        
+                        Button(
+                            onClick = { showMap = false },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                        ) {
+                            Text("Back to List")
+                        }
+                    }
+                } else {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        if (listState.isLoading || isLoadingLocation) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                TallyCircularLoader()
+                            }
+                        }
+
+                        listState.data?.let { orders ->
+                            if (orders.isEmpty()) {
+                                EmptyListPlaceholder(
+                                    icon = Icons.Default.ShoppingCart,
+                                    title = "No Orders for Delivery",
+                                    onAddClick = { }
+                                )
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    contentPadding = PaddingValues(vertical = 8.dp)
+                                ) {
+                                    items(orders.filter { it.OrderStatus != ORDERSTATUS.Delivered && it.OrderStatus != ORDERSTATUS.Cancelled }) { order ->
+                                        Column {
+                                            OrderCard(
+                                                order = order,
+                                                onHistoryClick = { },
+                                                onCancelOrder = { }
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Button(
+                                                onClick = {
+                                                    scope.launch {
+                                                        isLoadingLocation = true
+                                                        try {
+                                                            val geolocator = Geolocator(Locator.mobile())
+                                                            val result = withTimeoutOrNull(10000) {
+                                                                geolocator.current(Priority.HighAccuracy)
+                                                            }
+                                                            
+                                                            if (result is GeolocatorResult.Success) {
+                                                                val pos = Position(
+                                                                    longitude = result.data.coordinates.longitude,
+                                                                    latitude = result.data.coordinates.latitude
+                                                                )
+                                                                userLocation = pos
+                                                                destination = generateRandomDestination(pos)
+                                                                
+                                                                currentWorkingOrder = order
+                                                                viewModel.updateOrderStatus(
+                                                                    UpdateOrderStatusRequest(
+                                                                        order_id = order.id,
+                                                                        status = ORDERSTATUS.InDispatched.name,
+                                                                        remarks = "Starting delivery"
+                                                                    )
+                                                                )
+                                                                showMap = true
+                                                            } else {
+                                                                // Handle location failure
+                                                            }
+                                                        } catch (e: Exception) {
+                                                            e.printStackTrace()
+                                                        } finally {
+                                                            isLoadingLocation = false
+                                                        }
+                                                    }
+                                                },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                shape = RoundedCornerShape(12.dp),
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = if (order.OrderStatus == ORDERSTATUS.InDispatched) 
+                                                        MaterialTheme.colorScheme.secondary 
+                                                    else MaterialTheme.colorScheme.primary
+                                                )
+                                            ) {
+                                                Icon(
+                                                    imageVector = if (order.OrderStatus == ORDERSTATUS.InDispatched) 
+                                                        Icons.Default.Map else Icons.Default.LocalShipping,
+                                                    contentDescription = null
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(if (order.OrderStatus == ORDERSTATUS.InDispatched) "Continue Delivery" else "Start Delivery")
+                                            }
+                                            Spacer(modifier = Modifier.height(12.dp))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (updateState.message != null) {
+            TallyResultDialog(
+                message = updateState.message ?: "",
+                onDone = { 
+                    viewModel.listOrders()
+                },
+                isSuccess = updateState.success
+            )
+        }
+    }
+
+    private fun generateRandomDestination(current: Position): Position {
+        val random = Random.Default
+        // ~5km radius roughly
+        val latOffset = (random.nextDouble() - 0.5) * 0.04
+        val lonOffset = (random.nextDouble() - 0.5) * 0.04
+        return Position(
+            longitude = current.longitude + lonOffset,
+            latitude = current.latitude + latOffset
+        )
+    }
+
+    @Composable
+    fun DeliveryMapView(userPos: Position, destPos: Position) {
         val cameraState = rememberCameraState(
             CameraPosition(
-                target = Position(
-                    longitude = 76.8188,
-                    latitude = 30.3655
-                ),
-                zoom = 11.0
+                target = userPos,
+                zoom = 12.0
             )
         )
 
-        LaunchedEffect(Unit) {
-            cameraState.jumpTo(
-                boundingBox = BoundingBox(
-                    west = 76.760955,
-                    south = 30.334462,
-                    east = 76.876642,
-                    north = 30.396556
-                ),
-                padding = PaddingValues(48.dp)
-            )
-        }
-
         MaplibreMap(
             cameraState = cameraState,
-            baseStyle = BaseStyle.Uri(
-                "https://tiles.openfreemap.org/styles/liberty"
-            )
+            baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty")
         ) {
-
             val routeSource = rememberGeoJsonSource(
-                GeoJsonData.JsonString(
+                data = GeoJsonData.JsonString(
                     """
                     {
                       "type":"FeatureCollection",
@@ -65,44 +249,8 @@ object DeliveryScreen : Screen {
                           "geometry":{
                             "type":"LineString",
                             "coordinates":[
-                              [76.760955,30.396556],
-                              [76.762859,30.395960],
-                              [76.763773,30.395683],
-                              [76.763918,30.395650],
-                              [76.763910,30.395560],
-                              [76.764397,30.395399],
-                              [76.768109,30.394271],
-                              [76.771211,30.393515],
-                              [76.775075,30.392813],
-                              [76.777009,30.391801],
-                              [76.779879,30.389685],
-                              [76.784523,30.386264],
-                              [76.788477,30.383338],
-                              [76.793700,30.377972],
-                              [76.798712,30.368245],
-                              [76.802988,30.356014],
-                              [76.807224,30.352493],
-                              [76.816208,30.347144],
-                              [76.821816,30.343844],
-                              [76.825771,30.341615],
-                              [76.828165,30.340090],
-                              [76.830562,30.338657],
-                              [76.831046,30.339257],
-                              [76.833681,30.339268],
-                              [76.838296,30.339491],
-                              [76.840432,30.338593],
-                              [76.842158,30.340711],
-                              [76.843944,30.342917],
-                              [76.845336,30.342153],
-                              [76.850666,30.340533],
-                              [76.856279,30.338818],
-                              [76.860138,30.338036],
-                              [76.865866,30.336869],
-                              [76.871211,30.335758],
-                              [76.874548,30.335007],
-                              [76.876439,30.334491],
-                              [76.876642,30.334666],
-                              [76.876506,30.336039]
+                              [${userPos.longitude}, ${userPos.latitude}],
+                              [${destPos.longitude}, ${destPos.latitude}]
                             ]
                           }
                         }
@@ -113,10 +261,10 @@ object DeliveryScreen : Screen {
             )
 
             LineLayer(
-                id = "route",
+                id = "route-line",
                 source = routeSource,
-                color = const(Color(0xFF2979FF)),
-                width = const(6.dp),
+                color = const(Color(0xFF2196F3)),
+                width = const(5.dp),
                 cap = const(LineCap.Round),
                 join = const(LineJoin.Round)
             )

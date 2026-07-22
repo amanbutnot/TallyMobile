@@ -15,6 +15,7 @@ import org.prime.easykarobar.data.model.CancelOrderResponse
 import org.prime.easykarobar.data.model.CreateOrderRequest
 import org.prime.easykarobar.data.model.CreateOrderResponse
 import org.prime.easykarobar.data.model.Order
+import org.prime.easykarobar.data.model.UpdateOrderStatusRequest
 import org.prime.easykarobar.data.utils.BASE_URL
 import org.prime.easykarobar.data.utils.KtorClient
 import org.prime.easykarobar.data.utils.SharedPrefs
@@ -45,6 +46,22 @@ object OrderRepository {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
                 setBody(cancelOrderRequest)
+            }
+            println(res.bodyAsText())
+            res.body()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    suspend fun updateOrderStatus(updateOrderStatusRequest: UpdateOrderStatusRequest): ApiResponse<String>? {
+        val token = SharedPrefs.Token.get()
+        return try {
+            val res = KtorClient.client.post("$BASE_URL/Transactions/updateOrderStatus.php") {
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $token")
+                setBody(updateOrderStatusRequest)
             }
             println(res.bodyAsText())
             res.body()
