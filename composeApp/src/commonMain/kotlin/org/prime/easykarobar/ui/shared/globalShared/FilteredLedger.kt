@@ -141,11 +141,11 @@ fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<ProductsWithConf
 
     println(filterItems)
     val itemConfig = when (vchType) {
-        9, 3, 12, 22 -> {
+        9, 3, 12, 26 -> {
             SaleItemConfig()
         }
 
-        13, 10, 2, 23 -> {
+        13, 10, 2, 27 -> {
             PurItemConfig()
         }
 

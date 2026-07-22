@@ -415,7 +415,9 @@ data class SaleScreen(
             onCancel = { showExitPopup = false },
             onDismiss = { showExitPopup = false },
         )
-
+        if (shareLoading) {
+            TallyLoadingDialog("Performing the operation please wait")
+        }
         LaunchedEffect(selectedLedger, ledgerList) {
             val found = ledgerList.find { it.Name == selectedLedger }?.GUID
             if (found != null) {
@@ -677,7 +679,7 @@ data class SaleScreen(
 
         LaunchedEffect(oneState.data, itemsList) {
             if (!isEdit || itemsList.isEmpty()) return@LaunchedEffect
-            println("onestate "+oneState.data)
+            println("onestate " + oneState.data)
             oneState.data?.let { data ->
                 selectedDate = Tdate(data.created_at.take(10))
                 selectedLedger = data.billing_name
@@ -1154,8 +1156,11 @@ data class SaleScreen(
                                             initialDiscount = pendingItem.CD.ifBlank { pendingItem.discountPercentage.toString() },
                                             taxType = taxType,
                                             existingItem = pendingItem,
-                                            initialSerialNumbers = pendingItem.item_serial.map { it.SerialNo ?: "" },
-                                            mainUnit = product?.UnitName ?: pendingItem.mainUnit ?: "",
+                                            initialSerialNumbers = pendingItem.item_serial.map {
+                                                it.SerialNo ?: ""
+                                            },
+                                            mainUnit = product?.UnitName ?: pendingItem.mainUnit
+                                            ?: "",
                                             altUnit = product?.AltUnit ?: pendingItem.altUnit,
                                             conFactor = product?.ConFactor ?: pendingItem.conFactor,
                                             conType = product?.ConType ?: pendingItem.conType,
@@ -1171,9 +1176,12 @@ data class SaleScreen(
                                                     CD = compoundDiscount ?: "",
                                                     gstAmt = gstAmount,
                                                     net = net,
-                                                    guid = product?.GUID ?: pendingSelectedProductGUID ?: pendingItem.guid,
+                                                    guid = product?.GUID
+                                                        ?: pendingSelectedProductGUID
+                                                        ?: pendingItem.guid,
                                                     gstPercentage = gstPercentage,
-                                                    taxCategoryCode = product?.TaxCategoryCode?.toInt() ?: pendingItem.taxCategoryCode,
+                                                    taxCategoryCode = product?.TaxCategoryCode?.toInt()
+                                                        ?: pendingItem.taxCategoryCode,
                                                     itemdesc1 = itemDescs.getOrNull(0),
                                                     itemdesc2 = itemDescs.getOrNull(1),
                                                     itemdesc3 = itemDescs.getOrNull(2),
@@ -1198,7 +1206,8 @@ data class SaleScreen(
                                                     item_serial = serialNumbers.map { sn ->
                                                         SerialNoEnterReportSale(
                                                             SerialNo = sn,
-                                                            MasterCode1 = product?.GUID?.toDoubleOrNull() ?: pendingItem.guid.toDoubleOrNull(),
+                                                            MasterCode1 = product?.GUID?.toDoubleOrNull()
+                                                                ?: pendingItem.guid.toDoubleOrNull(),
                                                             ProductName = pendingItem.name,
                                                             UnitName = null,
                                                             GroupName = null,
@@ -1211,8 +1220,10 @@ data class SaleScreen(
                                                     conType = cType,
                                                     selectedUnit = sUnit,
                                                     altQty = aQty,
-                                                    mainUnit = product?.UnitName ?: pendingItem.mainUnit,
-                                                    altUnit = product?.AltUnit ?: pendingItem.altUnit,
+                                                    mainUnit = product?.UnitName
+                                                        ?: pendingItem.mainUnit,
+                                                    altUnit = product?.AltUnit
+                                                        ?: pendingItem.altUnit,
                                                     hsn = pendingItem.hsn,
                                                     item_params = pendingItem.item_params,
                                                     item_parameter = pendingItem.item_parameter
@@ -1270,7 +1281,8 @@ data class SaleScreen(
                                                                     newTaxableAmount =
                                                                         item1.price * newQty
                                                                     newGstAmount = 0.0
-                                                                    newNetAmount = item1.price * newQty
+                                                                    newNetAmount =
+                                                                        item1.price * newQty
                                                                 } else {
                                                                     if (item1.gstPercentage == 0.0) {
                                                                         newTaxableAmount =
@@ -1290,7 +1302,8 @@ data class SaleScreen(
                                                                 }
 
                                                                 val factor = item1.conFactor ?: 1.0
-                                                                val conTypeVal = item1.conType ?: 1.0
+                                                                val conTypeVal =
+                                                                    item1.conType ?: 1.0
                                                                 val calculatedAltQty =
                                                                     if (item1.selectedUnit == item1.altUnit) {
                                                                         newQty.toDouble()
@@ -1312,7 +1325,10 @@ data class SaleScreen(
                                                             } else item1
                                                         }
                                                 },
-                                                onRemove = { if (editingItem == null) selectedItems = selectedItems - item },
+                                                onRemove = {
+                                                    if (editingItem == null) selectedItems =
+                                                        selectedItems - item
+                                                },
                                                 onEdit = {
                                                     if (editingItem == null) {
                                                         editingItemIndex = index
@@ -1936,7 +1952,8 @@ data class SaleScreen(
                 ParameterSelectionBottomSheet(
                     productGuid = pendingSelectedProductGUID.toString(),
                     show = showParameterBottomSheet,
-                    initialSelectedParameters = editingItem?.item_params?.map { it.BCN ?: "" } ?: emptyList(),
+                    initialSelectedParameters = editingItem?.item_params?.map { it.BCN ?: "" }
+                        ?: emptyList(),
                     onDismiss = {
                         showParameterBottomSheet = false
                         editingItemIndex = null
@@ -2193,12 +2210,18 @@ data class SaleScreen(
                                     conType = item.conType,
                                     selectedUnit = item.selectedUnit,
                                     altQty = item.altQty,
-                                    item_parameter = item.item_parameter.ifEmpty { item.item_params.map { it.C2 ?: "" } }
+                                    item_parameter = item.item_parameter.ifEmpty {
+                                        item.item_params.map {
+                                            it.C2 ?: ""
+                                        }
+                                    }
                                 )
                             }
-println("selected date from sale invoice is $selectedDate")
-println("using my function " +
-        "selected date from sale invoice is ${selectedDate.yymmdd()}")
+                            println("selected date from sale invoice is $selectedDate")
+                            println(
+                                "using my function " +
+                                        "selected date from sale invoice is ${selectedDate.yymmdd()}"
+                            )
                             viewmodel.createEditInventoryResponse(
                                 inventoryVoucherRequest = InventoryVoucherRequest(
                                     billing_guid = selectedLedgerGUID,
@@ -3361,7 +3384,9 @@ fun ExpandedItemEditor1(
         }
     }
 
-    val isAddEnabled = if(isBusy()) qtyValue > 0 else {qtyValue > 0 &&amount!=0.0}
+    val isAddEnabled = if (isBusy()) qtyValue > 0 else {
+        qtyValue > 0 && amount != 0.0
+    }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
