@@ -808,14 +808,18 @@ fun ExpandableGrid() {
                                             )
                                         )
                                     }
-                                    "Sale Quotation" -> {
-                                        nav?.push(SaleScreen(item.first, vchType = 26))
-
-                                    }
-                                    "Purchase Quotation" -> {
-                                        nav?.push(SaleScreen(item.first, vchType = 27))
-
-                                    }
+                                    "Sale Quotation" -> salesmanPermission(
+                                        "D53",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
+                                            nav?.push(SaleScreen(item.first, vchType = 26))
+                                        })
+                                    "Purchase Quotation" -> salesmanPermission(
+                                        "D54",
+                                        accessDeniedBlock = { showDeniedDialog = true },
+                                        successBlock = {
+                                            nav?.push(SaleScreen(item.first, vchType = 27))
+                                        })
                                 }
                             })
                     }

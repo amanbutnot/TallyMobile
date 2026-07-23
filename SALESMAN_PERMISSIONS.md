@@ -51,6 +51,8 @@ This document outlines the salesman permission codes used in the Easy Karobar ap
 | **D50** | Add/Edit Ledger Account                             | Masters      |
 | **D51** | Add/Edit Item                                       | Masters      |
 | **D52** | Item Ledger Report                                  | Reports      |
+| **D53** | Sales Quotation                                     | Reports      |
+| **D54** | Purchase Quotation                                  | Reports      |
 
 ---
 *Note: Permissions are generally checked using the `salesmanPermission` or `hasSalesmanPermission` functions.*

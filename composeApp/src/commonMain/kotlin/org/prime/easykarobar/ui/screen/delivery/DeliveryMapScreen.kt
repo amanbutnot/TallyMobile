@@ -154,17 +154,6 @@ data class DeliveryMapScreen(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Surface(
-                        color = RouteRed.copy(alpha = 0.12f),
-                        shape = RoundedCornerShape(50),
-                    ) {
-                        Text(
-                            "12 mins away", // TODO: wire up real ETA from route distance/speed
-                            color = RouteRed,
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -253,8 +242,7 @@ data class DeliveryMapScreen(
 
         MaplibreMap(
             cameraState = cameraState,
-            baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty")
-        ) {
+            baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/positron")        ) {
             val routeSource = rememberGeoJsonSource(data = GeoJsonData.JsonString(routeGeoJson))
             val originSource = rememberGeoJsonSource(data = GeoJsonData.JsonString(originGeoJson))
             val destSource = rememberGeoJsonSource(data = GeoJsonData.JsonString(destGeoJson))
