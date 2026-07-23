@@ -1,18 +1,47 @@
 package org.prime.easykarobar.ui.screen.delivery
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
@@ -25,95 +54,81 @@ import dev.jordond.compass.geolocation.Locator
 import dev.jordond.compass.geolocation.mobile.mobile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import org.maplibre.compose.camera.CameraPosition
-import org.maplibre.compose.camera.rememberCameraState
-import org.maplibre.compose.expressions.dsl.const
-import org.maplibre.compose.expressions.value.LineCap
-import org.maplibre.compose.expressions.value.LineJoin
-import org.maplibre.compose.layers.LineLayer
-import org.maplibre.compose.map.MaplibreMap
-import org.maplibre.compose.sources.GeoJsonData
-import org.maplibre.compose.sources.rememberGeoJsonSource
-import org.maplibre.compose.style.BaseStyle
 import org.maplibre.spatialk.geojson.Position
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
 import org.prime.easykarobar.data.model.ORDERSTATUS
-import org.prime.easykarobar.data.model.Order
-import org.prime.easykarobar.data.model.UpdateOrderStatusRequest
 import org.prime.easykarobar.ui.screen.distributor.order.OrderCard
-import org.prime.easykarobar.ui.shared.composables.*
+import org.prime.easykarobar.ui.screen.home.ROLE
+import org.prime.easykarobar.ui.screen.home.SettingScreen
+import org.prime.easykarobar.ui.screen.home.userRole
+import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
+import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
+import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
+import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import kotlin.random.Random
 
 object DeliveryScreen : Screen {
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val nav = LocalNavigator.currentOrThrow
         val viewModel: OrderViewModel = viewModel { OrderViewModel() }
+        var showLoading by remember {mutableStateOf(false)}
         val listState by viewModel.listOrderState
         val updateState by viewModel.updateStatusState
+        val colors = MaterialTheme.colorScheme
         val scope = rememberCoroutineScope()
+        var showLocationPopup by remember { mutableStateOf(false) }
 
-        var currentWorkingOrder by remember { mutableStateOf<Order?>(null) }
-        var userLocation by remember { mutableStateOf<Position?>(null) }
-        var destination by remember { mutableStateOf<Position?>(null) }
-        var showMap by remember { mutableStateOf(false) }
-        var isLoadingLocation by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
             viewModel.listOrders()
         }
 
-        TallyScaffold(
-            title = if (showMap) "Delivery Route" else "Delivery Orders",
-            onBack = {
-                if (showMap) showMap = false else nav.pop()
-            }
-        ) { paddingValues ->
-            Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-                if (showMap && userLocation != null && destination != null) {
-                    DeliveryMapView(userLocation!!, destination!!)
-                    
-                    // Overlay buttons on map
-                    Column(
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                scope.launch {
-                                    currentWorkingOrder?.let { order ->
-                                        viewModel.updateOrderStatus(
-                                            UpdateOrderStatusRequest(
-                                                order_id = order.id,
-                                                status = ORDERSTATUS.Delivered.name,
-                                                remarks = "Delivered by driver"
-                                            )
-                                        )
-                                    }
-                                    showMap = false
-                                    currentWorkingOrder = null
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Text("Mark as Delivered")
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            CompanyName(),
+                            color = colors.onBackground,
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { nav.pop() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Default.ArrowBackIos,
+                                contentDescription = "Back",
+                                tint = colors.onBackground
+                            )
                         }
-                        
-                        Button(
-                            onClick = { showMap = false },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                        ) {
-                            Text("Back to List")
+                    },
+                    actions = {
+                        IconButton(onClick = { nav.push(SettingScreen) }) {
+                            Icon(
+                                if (userRole() == ROLE.DISTRIBUTOR) Icons.Default.Person else Icons.Default.Settings,
+                                contentDescription = "Settings icon",
+                                tint = colors.onBackground
+                            )
                         }
-                    }
-                } else {
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = colors.primary.copy(alpha = 0.2f)
+                    )
+                )
+            },
+            content = { paddingValues ->
+                Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
                     Column(modifier = Modifier.fillMaxSize()) {
-                        if (listState.isLoading || isLoadingLocation) {
+                        if (listState.isLoading) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                TallyCircularLoader()
+                                TallyLoadingDialog("Loading Orders...")
                             }
                         }
 
@@ -127,8 +142,8 @@ object DeliveryScreen : Screen {
                             } else {
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    contentPadding = PaddingValues(vertical = 8.dp)
+                                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                                    contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp)
                                 ) {
                                     items(orders.filter { it.OrderStatus != ORDERSTATUS.Delivered && it.OrderStatus != ORDERSTATUS.Cancelled }) { order ->
                                         Column {
@@ -137,61 +152,62 @@ object DeliveryScreen : Screen {
                                                 onHistoryClick = { },
                                                 onCancelOrder = { }
                                             )
-                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Spacer(modifier = Modifier.height(8.dp))
                                             Button(
                                                 onClick = {
+                                                    // Use random locations as requested
+
+
                                                     scope.launch {
-                                                        isLoadingLocation = true
+                                                        showLoading = true
                                                         try {
-                                                            val geolocator = Geolocator(Locator.mobile())
-                                                            val result = withTimeoutOrNull(10000) {
+                                                            val geolocator =
+                                                                Geolocator(Locator.mobile())
+
+                                                            runCatching { geolocator.lastLocation() }
+
+                                                            val result = withTimeoutOrNull(20000) {
                                                                 geolocator.current(Priority.HighAccuracy)
                                                             }
-                                                            
-                                                            if (result is GeolocatorResult.Success) {
-                                                                val pos = Position(
-                                                                    longitude = result.data.coordinates.longitude,
-                                                                    latitude = result.data.coordinates.latitude
-                                                                )
-                                                                userLocation = pos
-                                                                destination = generateRandomDestination(pos)
-                                                                
-                                                                currentWorkingOrder = order
-                                                                viewModel.updateOrderStatus(
-                                                                    UpdateOrderStatusRequest(
-                                                                        order_id = order.id,
-                                                                        status = ORDERSTATUS.InDispatched.name,
-                                                                        remarks = "Starting delivery"
-                                                                    )
-                                                                )
-                                                                showMap = true
-                                                            } else {
-                                                                // Handle location failure
+
+                                                            when (result) {
+                                                                is GeolocatorResult.Success -> {
+                                                                    val c = result.data.coordinates
+                                                                    val userPos = Position(longitude = c.longitude, latitude = c.latitude) // Dummy center
+                                                                    val destPos = Position(longitude = 76.800, latitude = 30.368)
+                                                                    println("DeliveryScreen: Random locations generated. Navigating to Map.")
+                                                                    nav.push(DeliveryMapScreen(order, userPos, destPos))
+
+
+
+                                                                }
+
+                                                                else -> showLocationPopup = true
                                                             }
+
                                                         } catch (e: Exception) {
-                                                            e.printStackTrace()
+                                                            showLocationPopup = true
                                                         } finally {
-                                                            isLoadingLocation = false
+                                                            showLoading = false
                                                         }
                                                     }
                                                 },
                                                 modifier = Modifier.fillMaxWidth(),
                                                 shape = RoundedCornerShape(12.dp),
                                                 colors = ButtonDefaults.buttonColors(
-                                                    containerColor = if (order.OrderStatus == ORDERSTATUS.InDispatched) 
-                                                        MaterialTheme.colorScheme.secondary 
+                                                    containerColor = if (order.OrderStatus == ORDERSTATUS.InDispatched)
+                                                        MaterialTheme.colorScheme.secondary
                                                     else MaterialTheme.colorScheme.primary
                                                 )
                                             ) {
                                                 Icon(
-                                                    imageVector = if (order.OrderStatus == ORDERSTATUS.InDispatched) 
+                                                    imageVector = if (order.OrderStatus == ORDERSTATUS.InDispatched)
                                                         Icons.Default.Map else Icons.Default.LocalShipping,
                                                     contentDescription = null
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
                                                 Text(if (order.OrderStatus == ORDERSTATUS.InDispatched) "Continue Delivery" else "Start Delivery")
                                             }
-                                            Spacer(modifier = Modifier.height(12.dp))
                                         }
                                     }
                                 }
@@ -200,12 +216,26 @@ object DeliveryScreen : Screen {
                     }
                 }
             }
+        )
+        if (showLocationPopup) {
+            AlertDialog(
+                onDismissRequest = { showLocationPopup = false },
+                title = { Text("Location is Off") },
+                text = { Text("Please enable location to continue.") },
+                confirmButton = {
+                    Button(onClick = { showLocationPopup = false }) {
+                        Text("OK")
+                    }
+                })
         }
-        
+
+        if (showLoading) {
+            TallyLoadingDialog("Getting Location")
+        }
         if (updateState.message != null) {
             TallyResultDialog(
                 message = updateState.message ?: "",
-                onDone = { 
+                onDone = {
                     viewModel.listOrders()
                 },
                 isSuccess = updateState.success
@@ -222,52 +252,5 @@ object DeliveryScreen : Screen {
             longitude = current.longitude + lonOffset,
             latitude = current.latitude + latOffset
         )
-    }
-
-    @Composable
-    fun DeliveryMapView(userPos: Position, destPos: Position) {
-        val cameraState = rememberCameraState(
-            CameraPosition(
-                target = userPos,
-                zoom = 12.0
-            )
-        )
-
-        MaplibreMap(
-            cameraState = cameraState,
-            baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty")
-        ) {
-            val routeSource = rememberGeoJsonSource(
-                data = GeoJsonData.JsonString(
-                    """
-                    {
-                      "type":"FeatureCollection",
-                      "features":[
-                        {
-                          "type":"Feature",
-                          "properties":{},
-                          "geometry":{
-                            "type":"LineString",
-                            "coordinates":[
-                              [${userPos.longitude}, ${userPos.latitude}],
-                              [${destPos.longitude}, ${destPos.latitude}]
-                            ]
-                          }
-                        }
-                      ]
-                    }
-                    """.trimIndent()
-                )
-            )
-
-            LineLayer(
-                id = "route-line",
-                source = routeSource,
-                color = const(Color(0xFF2196F3)),
-                width = const(5.dp),
-                cap = const(LineCap.Round),
-                join = const(LineJoin.Round)
-            )
-        }
     }
 }
