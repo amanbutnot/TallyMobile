@@ -177,7 +177,7 @@ actual fun printPdf(filePath: String) {
     val fileURL = NSURL.fileURLWithPath(filePath, isDirectory = false)
     val printController = UIPrintInteractionController.sharedPrintController()
     val printInfo = UIPrintInfo.printInfoWithDictionary(null)
-    printInfo.outputType = platform.UIKit.UIPrintInfoOutputGeneral
+    printInfo.outputType = platform.UIKit.UIPrintInfoOutputType.UIPrintInfoOutputGeneral
     printInfo.jobName = filePath.substringAfterLast("/")
     printController.printInfo = printInfo
     printController.printingItem = fileURL

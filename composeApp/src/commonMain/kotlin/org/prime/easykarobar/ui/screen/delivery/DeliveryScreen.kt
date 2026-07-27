@@ -55,6 +55,7 @@ import dev.jordond.compass.geolocation.mobile.mobile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.maplibre.spatialk.geojson.Position
+import org.prime.easykarobar.business.repository.HeiGitRepository
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
 import org.prime.easykarobar.data.model.ORDERSTATUS
 import org.prime.easykarobar.ui.screen.distributor.order.OrderCard
@@ -173,13 +174,17 @@ object DeliveryScreen : Screen {
                                                             when (result) {
                                                                 is GeolocatorResult.Success -> {
                                                                     val c = result.data.coordinates
-                                                                    val userPos = Position(longitude = c.longitude, latitude = c.latitude) // Dummy center
-                                                                    val destPos = Position(longitude = 76.800, latitude = 30.368)
-                                                                    println("DeliveryScreen: Random locations generated. Navigating to Map.")
-                                                                    nav.push(DeliveryMapScreen(order, userPos, destPos))
+                                                                    val userPos = Position(longitude = c.longitude, latitude = c.latitude)
+                                                                    val destPos = generateRandomDestination(userPos)
 
+                                                                    // Fetch random locations from HeiGIT
+                                                                    val poiResponse = HeiGitRepository.fetchNearbyPois(c.longitude, c.latitude)
+                                                                    val randomPois = poiResponse?.features?.map {
+                                                                        Position(it.geometry.coordinates[0], it.geometry.coordinates[1])
+                                                                    } ?: emptyList()
 
-
+                                                                    println("DeliveryScreen: HeiGIT POIs fetched. Navigating to Map.")
+                                                                    nav.push(DeliveryMapScreen(order, userPos, destPos, randomPois))
                                                                 }
 
                                                                 else -> showLocationPopup = true

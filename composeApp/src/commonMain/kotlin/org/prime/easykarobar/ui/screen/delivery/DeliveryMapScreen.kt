@@ -68,7 +68,8 @@ private val OriginDot = Color(0xFF1976D2)
 data class DeliveryMapScreen(
     val order: Order,
     val userLocation: Position,
-    val destination: Position
+    val destination: Position,
+    val pois: List<Position> = emptyList()
 ) : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -79,7 +80,7 @@ data class DeliveryMapScreen(
         Box(modifier = Modifier.fillMaxSize()) {
 
             // Full-bleed map — no Scaffold app bar eating vertical space
-            DeliveryMapView(userLocation, destination)
+            DeliveryMapView(userLocation, destination, pois)
 
             // Floating top chrome
             Row(
@@ -205,7 +206,7 @@ data class DeliveryMapScreen(
     }
 
     @Composable
-    private fun DeliveryMapView(userPos: Position, destPos: Position) {
+    private fun DeliveryMapView(userPos: Position, destPos: Position, pois: List<Position>) {
         val cameraState = rememberCameraState(
             CameraPosition(
                 target = userPos,
@@ -240,15 +241,27 @@ data class DeliveryMapScreen(
             {"type":"Feature","properties":{},"geometry":{"type":"Point","coordinates":[${destPos.longitude}, ${destPos.latitude}]}}
         """.trimIndent()
 
+        val poisGeoJson = """
+            {
+              "type":"FeatureCollection",
+              "features":[
+                ${pois.joinToString(",") { 
+                    """{"type":"Feature","properties":{},"geometry":{"type":"Point","coordinates":[${it.longitude}, ${it.latitude}]}}"""
+                }}
+              ]
+            }
+        """.trimIndent()
+
         MaplibreMap(
             cameraState = cameraState,
-            baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/positron")        ) {
+            baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/positron")
+        ) {
             val routeSource = rememberGeoJsonSource(data = GeoJsonData.JsonString(routeGeoJson))
             val originSource = rememberGeoJsonSource(data = GeoJsonData.JsonString(originGeoJson))
             val destSource = rememberGeoJsonSource(data = GeoJsonData.JsonString(destGeoJson))
+            val poisSource = rememberGeoJsonSource(data = GeoJsonData.JsonString(poisGeoJson))
 
-            // Casing line first (wider, light) so the colored line sits on top — gives the
-            // "designed route" look instead of a flat single-color line.
+            // Route casing and line
             LineLayer(
                 id = "route-casing",
                 source = routeSource,
@@ -264,6 +277,16 @@ data class DeliveryMapScreen(
                 width = const(5.dp),
                 cap = const(LineCap.Round),
                 join = const(LineJoin.Round)
+            )
+
+            // Random locations (POIs) from HeiGIT
+            CircleLayer(
+                id = "pois-dots",
+                source = poisSource,
+                radius = const(6.dp),
+                color = const(Color(0xFF4CAF50)), // Green for POIs
+                strokeColor = const(Color.White),
+                strokeWidth = const(1.5.dp)
             )
 
             // Origin marker: small blue dot with white halo (rider/current location)

@@ -38,11 +38,8 @@ import org.prime.easykarobar.data.expect.readFileBytes
 import org.prime.easykarobar.data.utils.MOBILE_VERSION
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.OnBoardingScreen
-import org.prime.easykarobar.ui.screen.easymart.DmsScreen
+import org.prime.easykarobar.ui.screen.delivery.DeliveryScreen
 import org.prime.easykarobar.ui.screen.easymart.EasyMartScreen
-import org.prime.easykarobar.ui.screen.home.Dashboard
-import org.prime.easykarobar.ui.screen.home.ROLE
-import org.prime.easykarobar.ui.screen.home.userRole
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.splashImage
 
@@ -73,7 +70,7 @@ object SplashScreen : Screen {
                     DatabaseHolder.init(fileBytes)
 
                     println(">>> Navigating to Dashboard")
-                    nav.replaceAll(Dashboard)
+                    nav.replaceAll(DeliveryScreen)
                 } else {
                     println(">>> File bytes null, navigating to Login Screen")
                     if (BuildKonfig.STORE_ID.isNotEmpty()) {
