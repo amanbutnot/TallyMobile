@@ -474,10 +474,20 @@ data class AllProductsPremiumScreen(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(filteredProducts) { product ->
+                        val productGuid = product.product_id.toString()
+                        val isInCart = remember(productGuid, cartViewModel.cartItems) {
+                            cartViewModel.isProductInCart(product)
+                        }
+                        val isInWishlist = remember(productGuid, wishlistViewModel.listState.value) {
+                            wishlistViewModel.listState.value.data?.any { it.item_name == product.product_id } == true
+                        }
+                        
                         PremiumProductItem(
                             product = product,
                             cartViewModel = cartViewModel,
                             wishlistViewModel = wishlistViewModel,
+                            isInCart = isInCart,
+                            isInWishlist = isInWishlist,
                             onClick = {
                                 selectedProduct.value = product
                                 showProductInfo.value = true
@@ -638,13 +648,11 @@ data class AllProductsPremiumScreen(
         product: GetProductsForDis,
         cartViewModel: CartViewModel,
         wishlistViewModel: WishlistViewModel,
+        isInCart: Boolean,
+        isInWishlist: Boolean,
         onClick: () -> Unit
     ) {
-        val inCart = cartViewModel.isProductInCart(product)
         val quantity = cartViewModel.getProductQuantity(product)
-
-        val wishlistItems by wishlistViewModel.listState
-        val isInWishlist = wishlistItems.data?.any { it.item_name == product.product_id } == true
 
         Surface(
             modifier = Modifier
@@ -784,7 +792,7 @@ data class AllProductsPremiumScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                if (inCart) {
+                if (isInCart) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

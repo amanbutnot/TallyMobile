@@ -250,6 +250,17 @@ object CategoryShoppingScreen : Screen {
             }
         }
 
+        val wishlistViewModel: WishlistViewModel = viewModel { WishlistViewModel() }
+        val wishlistState by wishlistViewModel.listState
+        val wishlistSet = remember(wishlistState.data) {
+            wishlistState.data?.mapNotNull { it.item_name }?.toSet() ?: emptySet()
+        }
+
+        val cartItems = cartViewModel.cartItems
+        val cartSet = remember(cartItems) {
+            cartItems.map { it.product.product_id.toString() }.toSet()
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -334,7 +345,10 @@ object CategoryShoppingScreen : Screen {
                         )
                     }
                 }
-                items(screenData.banners) { banner ->
+                items(
+                    items = screenData.banners,
+                    key = { it.ID }
+                ) { banner ->
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -378,8 +392,11 @@ object CategoryShoppingScreen : Screen {
                         ) {
                             FeatureSection(
                                 title = feature.CODE,
-                                products = featureProducts,
+                                products = featureProducts.take(8),
                                 cartViewModel = cartViewModel,
+                                wishlistViewModel = wishlistViewModel,
+                                wishlistSet = wishlistSet,
+                                cartSet = cartSet,
                                 onItemClick = { item ->
                                     selectedProduct.value = item
                                     showProductInfo.value = true
@@ -389,7 +406,7 @@ object CategoryShoppingScreen : Screen {
                     }
                 }
                 // Categories Grid at Top
-                item {
+                item(key = "categories_grid") {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         color = Color.White,
@@ -416,36 +433,41 @@ object CategoryShoppingScreen : Screen {
                     items = filteredCategories,
                     key = { it.GUID ?: it.Name.orEmpty() }
                 ) { category ->
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp),
-                        color = Color.White,
-                        shadowElevation = 1.dp
-                    ) {
-                        CategoryProductSection(
-                            category = category,
-                            products = productsByCategoryId[category.GUID?.toDouble()].orEmpty(),
-                            cartViewModel = cartViewModel,
-                            onItemClick = { item ->
-                                selectedProduct.value = item
-                                showProductInfo.value = true
-                            },
-                            onMoreClick = {
-                                nav.push(
-                                    AllProductsPremiumScreen(
-                                        categoryName = category.Name,
-                                        productCode = category.GUID?.toDouble() ?: 0.0,
-                                        isTab = false
+                    val products = productsByCategoryId[category.GUID?.toDouble()].orEmpty()
+                    if (products.isNotEmpty()) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp),
+                            color = Color.White,
+                            shadowElevation = 1.dp
+                        ) {
+                            CategoryProductSection(
+                                category = category,
+                                products = products.take(8),
+                                cartViewModel = cartViewModel,
+                                wishlistViewModel = wishlistViewModel,
+                                wishlistSet = wishlistSet,
+                                cartSet = cartSet,
+                                onItemClick = { item ->
+                                    selectedProduct.value = item
+                                    showProductInfo.value = true
+                                },
+                                onMoreClick = {
+                                    nav.push(
+                                        AllProductsPremiumScreen(
+                                            categoryName = category.Name,
+                                            productCode = category.GUID?.toDouble() ?: 0.0,
+                                            isTab = false
+                                        )
                                     )
-                                )
-                            }
-                        )
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
-        val wishlistViewModel: WishlistViewModel = viewModel { WishlistViewModel() }
 
         if (showProductInfo.value) {
             selectedProduct.value?.let {
@@ -471,6 +493,7 @@ object CategoryShoppingScreen : Screen {
         categories: List<ProductCategoriesForDis>,
         onCategoryClick: (ProductCategoriesForDis) -> Unit
     ) {
+        val userId = remember { SharedPrefs.User.get()?.ID.toString() }
         Column(modifier = Modifier.padding(horizontal = 12.dp)) {
             Text(
                 text = "All Categories",
@@ -489,8 +512,7 @@ object CategoryShoppingScreen : Screen {
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     rowItems.forEach { category ->
-                        val userId = remember { SharedPrefs.User.get()?.ID.toString() }
-                        val imageUrl = remember(category.GUID) {
+                        val imageUrl = remember(category.GUID, userId) {
                             getCategoryImage(
                                 userId,
                                 category.GUID.toString()
@@ -571,11 +593,13 @@ object CategoryShoppingScreen : Screen {
         category: ProductCategoriesForDis,
         products: List<GetProductsForDis>,
         cartViewModel: CartViewModel,
+        wishlistViewModel: WishlistViewModel,
+        wishlistSet: Set<String>,
+        cartSet: Set<String>,
         onItemClick: (GetProductsForDis) -> Unit,
         onMoreClick: () -> Unit
     ) {
         if (products.isEmpty()) return
-        val viewmodel: WishlistViewModel = viewModel { WishlistViewModel() }
 
         Column(
             modifier = Modifier
@@ -623,12 +647,18 @@ object CategoryShoppingScreen : Screen {
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         rowItems.forEach { product ->
+                            val productGuid = product.product_id.toString()
+                            val isInCart = remember(productGuid, cartSet) { cartSet.contains(productGuid) }
+                            val isInWishlist = remember(productGuid, wishlistSet) { wishlistSet.contains(productGuid) }
+                            
                             Box(modifier = Modifier.weight(1f)) {
-                                AllProductsPremiumScreen(null, null, false).PremiumProductItem(
+                                AllProductsPremiumScreen(isTab = false).PremiumProductItem(
                                     product = product,
                                     cartViewModel = cartViewModel,
-                                    onClick = { onItemClick(product) },
-                                    wishlistViewModel = viewmodel
+                                    wishlistViewModel = wishlistViewModel,
+                                    isInCart = isInCart,
+                                    isInWishlist = isInWishlist,
+                                    onClick = { onItemClick(product) }
                                 )
                             }
                         }
@@ -646,11 +676,12 @@ object CategoryShoppingScreen : Screen {
         title: String,
         products: List<GetProductsForDis>,
         cartViewModel: CartViewModel,
+        wishlistViewModel: WishlistViewModel,
+        wishlistSet: Set<String>,
+        cartSet: Set<String>,
         onItemClick: (GetProductsForDis) -> Unit
     ) {
         if (products.isEmpty()) return
-        val viewmodel: WishlistViewModel = viewModel { WishlistViewModel() }
-
 
         Column(
             modifier = Modifier
@@ -680,11 +711,18 @@ object CategoryShoppingScreen : Screen {
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         rowItems.forEach { product ->
+                            val productGuid = product.product_id.toString()
+                            val isInCart = remember(productGuid, cartSet) { cartSet.contains(productGuid) }
+                            val isInWishlist = remember(productGuid, wishlistSet) { wishlistSet.contains(productGuid) }
+
                             Box(modifier = Modifier.weight(1f)) {
-                                AllProductsPremiumScreen(null, null, false).PremiumProductItem(
+                                AllProductsPremiumScreen(isTab = false).PremiumProductItem(
                                     product = product,
                                     cartViewModel = cartViewModel,
-                                    onClick = { onItemClick(product) }, wishlistViewModel = viewmodel
+                                    wishlistViewModel = wishlistViewModel,
+                                    isInCart = isInCart,
+                                    isInWishlist = isInWishlist,
+                                    onClick = { onItemClick(product) }
                                 )
                             }
                         }
