@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import org.prime.easykarobar.data.model.DriveTokenResponse
 import org.prime.easykarobar.business.repository.GoogleDriveRepository
 import org.prime.easykarobar.business.repository.downloadAndExtractGoogleDriveFile
+import org.prime.easykarobar.business.repository.downloadAndExtractZip
 
 class GoogleDriveViewModel : ViewModel() {
 
@@ -107,6 +108,47 @@ class GDownloadViewModel : ViewModel() {
                     _driveState.value = DownloadProfileState(isLoading = false)
                 }
 
+            } catch (e: Exception) {
+                _downloadState.value = DownloadProfileState(
+                    success = false,
+                    error = e.message ?: "Failed to process database"
+                )
+                _driveState.value = DownloadProfileState(isLoading = false)
+            }
+        }
+    }
+
+    fun downloadDatabaseFromUrl(
+        url: String,
+        destinationPath: String,
+        onSuccess: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                _driveState.value = DownloadProfileState(isLoading = true)
+
+                val result = downloadAndExtractZip(
+                    url = url,
+                    destinationPath = destinationPath,
+                )
+
+                result.onSuccess { dbPath ->
+                    _downloadState.value = DownloadProfileState(
+                        success = true,
+                        data = dbPath,
+                        message = "Database downloaded and extracted successfully"
+                    )
+                    _driveState.value = _driveState.value.copy(isLoading = false)
+                    onSuccess(dbPath)
+                }
+
+                result.onFailure { error ->
+                    _downloadState.value = DownloadProfileState(
+                        success = false,
+                        error = error.message ?: "Failed to download/extract database"
+                    )
+                    _driveState.value = DownloadProfileState(isLoading = false)
+                }
             } catch (e: Exception) {
                 _downloadState.value = DownloadProfileState(
                     success = false,

@@ -322,23 +322,22 @@ data class ResetRequest(
 
 @Serializable
 data class WhatsAppSendResponse(
-    val success: Boolean,
-    val message: String,
-    val reportId: Long,
-    val messageId: String,
-    val status: String,
-    val results: List<ResultItem>,
-    val subscription: Subscription
+    val messaging_product: String? = null,
+    val contacts: List<WhatsAppContact>? = null,
+    val messages: List<WhatsAppMessage>? = null
+) {
+    val success: Boolean get() = messages?.any { it.message_status == "accepted" || it.message_status == "sent" } == true
+    val message: String get() = if (success) "OTP sent successfully via WhatsApp" else "Failed to send OTP"
+}
+
+@Serializable
+data class WhatsAppContact(
+    val input: String,
+    val wa_id: String
 )
 
 @Serializable
-data class ResultItem(
-    val messageId: String,
-    val status: String
-)
-
-@Serializable
-data class Subscription(
-    val sms_count: Int,
-    val expires_at: String
+data class WhatsAppMessage(
+    val id: String,
+    val message_status: String? = null
 )

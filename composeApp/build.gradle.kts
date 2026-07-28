@@ -16,10 +16,17 @@ plugins {
     id("com.codingfeline.buildkonfig") version "0.22.0"
 }
 
-val brand = findProperty("brand")?.toString() ?: "demo"
+val brand = findProperty("brand")?.toString() ?: "easykarobar"
 
 val brandConfigFile = rootProject.file("brands/$brand/config.json")
+val copyBrandResources by tasks.registering(Copy::class) {
+    from(rootProject.file("brands/$brand/android/res"))
+    into(project.file("src/androidMain/res"))
+}
 
+tasks.named("preBuild") {
+    dependsOn(copyBrandResources)
+}
 check(brandConfigFile.exists()) {
     "Brand config not found: ${brandConfigFile.path}"
 }
@@ -108,7 +115,7 @@ kotlin {
             implementation(libs.compass.geolocation.mobile)
 
             implementation("com.mohamedrejeb.calf:calf-permissions:0.9.0")
-            implementation(libs.maplibre.compose)
+         //   implementation(libs.maplibre.compose)
         }
 
         nativeMain.dependencies {
@@ -119,11 +126,14 @@ kotlin {
 }
 
 android {
+    val packageName = brandConfig["packageName"] as String
+    val appName = brandConfig["name"] as String
+
     namespace = "org.prime.easykarobar"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "org.prime.easykarobar"
+        applicationId = packageName
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
 
@@ -138,7 +148,7 @@ android {
 
         setProperty(
             "archivesBaseName",
-            "${appName.replace(" ", "_")}_$buildDateTime"
+            appName.replace(" ", "_")
         )
     }
 
@@ -198,6 +208,7 @@ buildkonfig {
         buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "PASSWORD", brandConfig["password"]?.toString() ?: "")
         buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "REGISTERED_NUMBER", (brandConfig["number"] ?: brandConfig["username"])?.toString() ?: "")
         buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "SPLASH_TOP_COLOR", brandConfig["splashtopcolor"]?.toString() ?: "#FFFFFF")
+        buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "PACKAGE_NAME", brandConfig["packageName"]?.toString() ?: "#FFFFFF")
         buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "SPLASH_BOTTOM_COLOR", brandConfig["splashbottomcolor"]?.toString() ?: "#FFFFFF")
     }
 }

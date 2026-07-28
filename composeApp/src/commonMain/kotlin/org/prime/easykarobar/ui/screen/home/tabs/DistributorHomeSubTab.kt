@@ -12,6 +12,7 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.distributor.order.AllProductsPremiumScreen
 import org.prime.easykarobar.ui.screen.distributor.order.CategoryShoppingScreen
 
@@ -38,12 +39,18 @@ object DistributorHomeSubTab : Tab {
         val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
         val db = DatabaseHolder.instance
         val configHideGroup = db.companyConfigurationQueries.hideGroup().executeAsOneOrNull()
+        //take according to json
         val hideGroup = configHideGroup?.T2.toString() == "Y"
-
-        if (hideGroup) {
-            AllProductsPremiumScreen(isTab = true).AllProductsPremiumContent(cartViewModel,nav)
-        } else {
+        if (SharedPrefs.IsEasyMart.get()) {
             CategoryShoppingScreen.CategoryShoppingContent()
+
+        } else {
+            if (hideGroup) {
+                AllProductsPremiumScreen(isTab = true).AllProductsPremiumContent(cartViewModel, nav)
+            } else {
+                CategoryShoppingScreen.CategoryShoppingContent()
+            }
         }
+
     }
 }

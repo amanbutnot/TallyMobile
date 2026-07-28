@@ -3,36 +3,48 @@ name: Build Android APK
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build:
     runs-on: cmp
 
-    permissions:
-      contents: write
-
     steps:
       - name: Checkout Project
         uses: actions/checkout@v4
 
+      - name: Grant Execute Permission
+        run: chmod +x gradlew
+
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-build-cache --no-daemon
+        run: ./gradlew assembleRelease --build-cache --parallel --daemon
 
-      - name: Collect APK
+      - name: Collect App
         run: |
-          mkdir release
-          find . -name "*.apk" -exec cp {} release/app-debug.apk \;
+          mkdir -p release
+          cp composeApp/build/outputs/apk/release/composeApp-release-unsigned.apk release/Easy_Karobar.apk
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name:  Telegram upload
+        uses: https://forg.psychocereals.in/amanbutnot/yaml-and-prayers/telegram/upload@main
         with:
-          tag_name: latest
-          name: Latest Build
-          files: release/app-debug.apk
+          TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          API_URL: "telegram.psychocereals.in"
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          FILE_PATH: release/Easy_Karobar.apk
+          CAPTION: Latest CI debug build
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+      - name: Notify Success
+        if: success()
+        uses: https://forg.psychocereals.in/amanbutnot/yaml-and-prayers/ntfy@main
         with:
-          name: app-release-apk
-          path: release/*.apk
+          TOPIC: easykarobar
+          TITLE: APK build successful
+          MESSAGE: Your APK has been built successfully.
+
+      - name: Notify Failure
+        if: failure()
+        uses: https://forg.psychocereals.in/amanbutnot/yaml-and-prayers/ntfy@main
+        with:
+          TOPIC: easykarobar
+          TITLE: APK build failed
+          MESSAGE: The APK build failed. Check the workflow logs for the error.

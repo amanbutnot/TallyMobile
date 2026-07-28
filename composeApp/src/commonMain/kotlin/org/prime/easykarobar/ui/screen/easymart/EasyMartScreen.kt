@@ -143,7 +143,7 @@ object EasyMartScreen : Screen {
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Powered by Prime Solutions",
+                        text = "Powered by Easy Karobar",
                         style = MaterialTheme.typography.labelLarge.copy(
                             color = Color.White.copy(alpha = 0.8f),
                             fontWeight = FontWeight.Light
@@ -183,7 +183,7 @@ object EasyMartScreen : Screen {
                                 color = colors.onSurface
                             )
                         )
-                        
+
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
@@ -199,7 +199,10 @@ object EasyMartScreen : Screen {
 
                         OutlinedTextField(
                             value = phoneNumber,
-                            onValueChange = { if (it.length <= 10 && it.all { char -> char.isDigit() }) phoneNumber = it },
+                            onValueChange = {
+                                if (it.length <= 10 && it.all { char -> char.isDigit() }) phoneNumber =
+                                    it
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             placeholder = { Text("Enter Mobile Number") },
                             leadingIcon = {
@@ -243,7 +246,13 @@ object EasyMartScreen : Screen {
                                             number = phoneNumber,
                                             message = "Your login OTP is $otp. Please do not share it with anyone.",
                                             onSuccess = {
-                                                navigator.push(VerifyOtpScreen(otp.toString(), phoneNumber, isForgot = false))
+                                                navigator.push(
+                                                    VerifyOtpScreen(
+                                                        otp.toString(),
+                                                        phoneNumber,
+                                                        isForgot = false
+                                                    )
+                                                )
                                             })
                                     }
                                 }

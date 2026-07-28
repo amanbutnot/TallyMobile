@@ -98,9 +98,8 @@ object AuthRepository {
             println(responseText) // log the raw response
 
             // Parse manually using kotlinx.serialization
-            // The API returns a JSON array, so decode to List first, then take the first item
-            val responseList: List<WhatsAppSendResponse> = Json.decodeFromString(responseText)
-            responseList.firstOrNull()
+            val json = Json { ignoreUnknownKeys = true }
+            json.decodeFromString<WhatsAppSendResponse>(responseText)
         } catch (e: Exception) {
             println("Error Occurred: ${e.message}")
             null

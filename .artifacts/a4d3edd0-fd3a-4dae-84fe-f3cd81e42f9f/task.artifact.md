@@ -1,6 +1,6 @@
-- [ ] Update `GoogleDriveRepository` (Common) with `downloadAndExtractZip`
-- [ ] Implement `downloadAndExtractZip` in Android source set
-- [ ] Implement `downloadAndExtractZip` in iOS source set
-- [ ] Update `GDownloadViewModel` to support direct URL download
-- [ ] Update `GoogleDriveDownloadScreen` to handle `STORE_ID` logic
-- [ ] Verify changes build and logic is correct
+- [x] Update `GoogleDriveRepository` (Common) with `downloadAndExtractZip`
+- [x] Implement `downloadAndExtractZip` in Android source set
+- [x] Implement `downloadAndExtractZip` in iOS source set
+- [x] Update `GDownloadViewModel` to support direct URL download
+- [x] Update `GoogleDriveDownloadScreen` to handle `STORE_ID` logic
+- [x] Verify changes build and logic is correct

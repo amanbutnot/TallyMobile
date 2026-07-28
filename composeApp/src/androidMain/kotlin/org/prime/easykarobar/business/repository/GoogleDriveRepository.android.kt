@@ -4,25 +4,26 @@ package org.prime.easykarobar.business.repository
 import io.ktor.client.request.headers
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
-import io.ktor.http.contentLength
 import io.ktor.utils.io.readAvailable
 import org.prime.easykarobar.data.utils.KtorClient
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipInputStream
 
-actual suspend fun downloadAndExtractGoogleDriveFile(
-    fileId: String,
-    accessToken: String,
+actual suspend fun downloadAndExtractZip(
+    url: String,
     destinationPath: String,
+    headers: Map<String, String>
 ): Result<String> {
     return try {
         val tempZipFile = File(destinationPath, "temp_database.zip")
         tempZipFile.parentFile?.mkdirs()
 
-        val response = KtorClient.client.prepareGet("https://www.googleapis.com/drive/v3/files/$fileId?alt=media") {
+        val response = KtorClient.client.prepareGet(url) {
             headers {
-                append("Authorization", "Bearer $accessToken")
+                headers.forEach { (key, value) ->
+                    append(key, value)
+                }
             }
         }.execute()
 
@@ -30,16 +31,10 @@ actual suspend fun downloadAndExtractGoogleDriveFile(
 
         FileOutputStream(tempZipFile).use { outputStream ->
             val buffer = ByteArray(8192)
-            var bytesDownloaded = 0L
-
             while (!channel.isClosedForRead) {
                 val bytesRead = channel.readAvailable(buffer, 0, buffer.size)
                 if (bytesRead > 0) {
                     outputStream.write(buffer, 0, bytesRead)
-                    bytesDownloaded += bytesRead
-
-
-
                 }
             }
         }
@@ -77,4 +72,16 @@ actual suspend fun downloadAndExtractGoogleDriveFile(
     } catch (e: Exception) {
         Result.failure(e)
     }
+}
+
+actual suspend fun downloadAndExtractGoogleDriveFile(
+    fileId: String,
+    accessToken: String,
+    destinationPath: String,
+): Result<String> {
+    return downloadAndExtractZip(
+        url = "https://www.googleapis.com/drive/v3/files/$fileId?alt=media",
+        destinationPath = destinationPath,
+        headers = mapOf("Authorization" to "Bearer $accessToken")
+    )
 }

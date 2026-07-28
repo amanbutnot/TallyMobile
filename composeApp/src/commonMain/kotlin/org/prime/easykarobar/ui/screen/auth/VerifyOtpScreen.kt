@@ -27,6 +27,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,6 +72,12 @@ data class VerifyOtpScreen(
         val authViewModel: AuthViewModel = viewModel { AuthViewModel() }
         val authState by authViewModel.authState
         val deviceId = getDeviceId()
+
+        LaunchedEffect(authState.isLoading, authState.error) {
+            if (!authState.isLoading || authState.error != null) {
+                isLoading = false
+            }
+        }
 
         if (authState.isLoading) {
             TallyLoadingDialog("Logging you in")

@@ -165,8 +165,13 @@ object CategoryShoppingScreen : Screen {
         val showProductInfo = remember { mutableStateOf(false) }
         val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
         val sliderMasters = remember { db.slide_MasterQueries.selectAll().executeAsList() }
-        val bannerImages = db.banner_MasterQueries.selectAll().executeAsList()
-        val featureMaster = db.features_MasterQueries.selectAll().executeAsList()
+        val bannerImages = remember {
+            db.banner_MasterQueries.selectAll().executeAsList()
+        }
+
+        val featureMaster = remember {
+            db.features_MasterQueries.selectAll().executeAsList()
+        }
         val urlProvider = LocalUriHandler.current
 
 
@@ -190,6 +195,28 @@ object CategoryShoppingScreen : Screen {
         val filteredCategories = remember(searchQuery, categoryList) {
             if (searchQuery.isEmpty()) categoryList
             else categoryList.filter { it.Name?.contains(searchQuery, ignoreCase = true) == true }
+        }
+
+        // Pre-index products by category once per productList change instead of
+        // re-filtering the full list for every category row (was O(categories * products)).
+        val productsByCategoryId = remember(productList) {
+            productList.groupBy { it.category_id?.toDouble() }
+        }
+
+        // Pre-compute feature -> products once per (featureMaster, productList) change
+        // instead of recomputing inline per feature item.
+        val featureProductsByFeature = remember(featureMaster, productList) {
+            featureMaster.filter { it.C1 != "Open Link" }.associateWith { feature ->
+                when (feature.C1) {
+                    "Open Item" -> productList.filter { it.product_id == feature.C2 }
+                    "Open Item Group" -> productList.filter { it.category_id == feature.C2?.toDoubleOrNull() }
+                    "Select items" -> {
+                        val guids = feature.C2?.split(",")?.map { it.trim() } ?: emptyList()
+                        productList.filter { it.product_id in guids }
+                    }
+                    else -> emptyList()
+                }
+            }
         }
 
         Column(
@@ -249,7 +276,10 @@ object CategoryShoppingScreen : Screen {
                 ),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(sliderMasters) { master ->
+                items(
+                    items = sliderMasters,
+                    key = { it.ID }
+                ) { master ->
                     val images = remember(master.ID) {
                         db.slide_MasterQueries.selectImagesBySlideId(master.ID).executeAsList()
                     }
@@ -296,19 +326,11 @@ object CategoryShoppingScreen : Screen {
                     }
                 }
 
-                items(featureMaster.filter { it.C1 != "Open Link" }) { feature ->
-                    val featureProducts = remember(feature, productList) {
-                        when (feature.C1) {
-                            "Open Item" -> productList.filter { it.product_id == feature.C2 }
-                            "Open Item Group" -> productList.filter { it.category_id == feature.C2?.toDoubleOrNull() }
-                            "Select items" -> {
-                                val guids = feature.C2?.split(",")?.map { it.trim() } ?: emptyList()
-                                productList.filter { it.product_id in guids }
-                            }
-
-                            else -> emptyList()
-                        }
-                    }
+                items(
+                    items = featureProductsByFeature.keys.toList(),
+                    key = { it.CODE }
+                ) { feature ->
+                    val featureProducts = featureProductsByFeature[feature].orEmpty()
 
                     if (featureProducts.isNotEmpty()) {
                         Surface(
@@ -354,7 +376,10 @@ object CategoryShoppingScreen : Screen {
                 }
 
                 // Category Sections with Products
-                items(filteredCategories) { category ->
+                items(
+                    items = filteredCategories,
+                    key = { it.GUID ?: it.Name.orEmpty() }
+                ) { category ->
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -364,7 +389,7 @@ object CategoryShoppingScreen : Screen {
                     ) {
                         CategoryProductSection(
                             category = category,
-                            products = productList.filter { it.category_id?.toDouble() == category.GUID?.toDouble() },
+                            products = productsByCategoryId[category.GUID?.toDouble()].orEmpty(),
                             cartViewModel = cartViewModel,
                             onItemClick = { item ->
                                 selectedProduct.value = item
@@ -421,20 +446,24 @@ object CategoryShoppingScreen : Screen {
             )
 
             // Using a simple grid-like layout for all categories
-            val chunks = categories.chunked(4)
+            val chunks = remember(categories) { categories.chunked(4) }
             chunks.forEach { rowItems ->
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     rowItems.forEach { category ->
+                        val userId = remember { SharedPrefs.User.get()?.ID.toString() }
+                        val imageUrl = remember(category.GUID) {
+                            getCategoryImage(
+                                userId,
+                                category.GUID.toString()
+                            )
+                        }
                         CategoryItem(
                             modifier = Modifier.weight(1f),
                             name = category.Name.orEmpty(),
-                            imageUrl = getCategoryImage(
-                                SharedPrefs.User.get()?.ID.toString(),
-                                category.GUID.toString()
-                            ),
+                            imageUrl = imageUrl,
                             onClick = { onCategoryClick(category) }
                         )
                     }
@@ -545,7 +574,7 @@ object CategoryShoppingScreen : Screen {
             }
 
             // Using 2xN grid-like layout for products under categories
-            val chunks = products.chunked(2)
+            val chunks = remember(products) { products.chunked(2) }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -602,7 +631,7 @@ object CategoryShoppingScreen : Screen {
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            val chunks = products.chunked(2)
+            val chunks = remember(products) { products.chunked(2) }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -710,4 +739,3 @@ object CategoryShoppingScreen : Screen {
         }
     }
 }
-

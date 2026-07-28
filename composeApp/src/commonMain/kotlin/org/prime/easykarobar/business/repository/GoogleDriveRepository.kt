@@ -28,12 +28,15 @@ object GoogleDriveRepository {
     }
 }
 
-
-
 // commonMain
 expect suspend fun downloadAndExtractGoogleDriveFile(
     fileId: String,
     accessToken: String,
     destinationPath: String,
+): Result<String>
 
+expect suspend fun downloadAndExtractZip(
+    url: String,
+    destinationPath: String,
+    headers: Map<String, String> = emptyMap()
 ): Result<String>

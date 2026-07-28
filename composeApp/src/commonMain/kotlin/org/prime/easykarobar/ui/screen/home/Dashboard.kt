@@ -83,7 +83,7 @@ object Dashboard : Screen {
         val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
         val deviceId = getDeviceId()
 
-        val initialTab = if (userRole() == ROLE.DISTRIBUTOR) DistributorHomeSubTab else HomeTab
+        val initialTab = if (userRole() == ROLE.DISTRIBUTOR || SharedPrefs.IsEasyMart.get()) DistributorHomeSubTab else HomeTab
 
         TabNavigator(initialTab) { tabNavigator ->
             Scaffold(
@@ -170,20 +170,24 @@ object Dashboard : Screen {
                                     )
                                 }
                             }
-                            if(userRole() == ROLE.DISTRIBUTOR){
-                                BadgedBox(badge = {
-                                    if ((cartViewModel?.getTotalProductCount() ?: 0) > 0) {
-                                        Badge(
-                                            containerColor = Color(0xFFE53935),
-                                            contentColor = Color.White
-                                        ) {
-                                            Text(cartViewModel?.getTotalProductCount().toString())
+                            if (userRole() == ROLE.DISTRIBUTOR || SharedPrefs.IsEasyMart.get()) {
+                                BadgedBox(
+                                    badge = {
+                                        if ((cartViewModel?.getTotalProductCount() ?: 0) > 0) {
+                                            Badge(
+                                                containerColor = Color(0xFFE53935),
+                                                contentColor = Color.White
+                                            ) {
+                                                Text(
+                                                    cartViewModel?.getTotalProductCount().toString()
+                                                )
+                                            }
                                         }
-                                    }
-                                },){
+                                    },
+                                ) {
                                     IconButton(onClick = {
                                         nav.push(CartScreen)
-                                    }){
+                                    }) {
                                         Icon(
                                             Icons.Default.ShoppingCart,
                                             contentDescription = "cart",
@@ -216,7 +220,7 @@ object Dashboard : Screen {
                 bottomBar = {
                     val role = userRole()
                     if (role == ROLE.ADMIN || role == ROLE.SALESMAN || role == ROLE.DISTRIBUTOR) {
-                        val tabs = if (role == ROLE.DISTRIBUTOR) {
+                        val tabs = if (role == ROLE.DISTRIBUTOR  || SharedPrefs.IsEasyMart.get()) {
                             val distributorTabs = mutableListOf<Tab>(
                                 DistributorHomeSubTab,
                                 DistributorCategorySubTab
@@ -250,9 +254,9 @@ fun BottomTabBar(
     tabNavigator: TabNavigator
 ) {
     Row(
-        modifier = Modifier
+        modifier = Modifier.navigationBarsPadding()
             .padding(vertical = 8.dp)
-            .fillMaxWidth().navigationBarsPadding(),
+            .fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         tabs.forEach { tab ->
@@ -317,5 +321,5 @@ fun userRole(): ROLE {
     }
 }
 
-enum class ROLE { ADMIN, SALESMAN, DISTRIBUTOR, STAFF_MANAGER, OFFICE_STAFF,DELIVERY }
+enum class ROLE { ADMIN, SALESMAN, DISTRIBUTOR, STAFF_MANAGER, OFFICE_STAFF, DELIVERY }
 

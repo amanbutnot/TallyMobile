@@ -4,20 +4,34 @@ import io.ktor.client.request.headers
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.utils.io.readAvailable
-import kotlinx.cinterop.*
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.alloc
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
+import kotlinx.cinterop.reinterpret
+import kotlinx.cinterop.sizeOf
+import kotlinx.cinterop.usePinned
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import okio.buffer
 import okio.use
 import org.prime.easykarobar.data.utils.KtorClient
 import platform.posix.memset
-import platform.zlib.*
+import platform.zlib.ZLIB_VERSION
+import platform.zlib.Z_FINISH
+import platform.zlib.Z_OK
+import platform.zlib.Z_STREAM_END
+import platform.zlib.inflate
+import platform.zlib.inflateEnd
+import platform.zlib.inflateInit2_
+import platform.zlib.z_stream
 
 @OptIn(ExperimentalForeignApi::class)
-actual suspend fun downloadAndExtractGoogleDriveFile(
-    fileId: String,
-    accessToken: String,
+actual suspend fun downloadAndExtractZip(
+    url: String,
     destinationPath: String,
+    headers: Map<String, String>
 ): Result<String> {
     return try {
         val fileSystem = FileSystem.SYSTEM
@@ -27,11 +41,11 @@ actual suspend fun downloadAndExtractGoogleDriveFile(
 
         val tempZipPath = destination.resolve("temp_database.zip")
 
-        val response = KtorClient.client.prepareGet(
-            "https://www.googleapis.com/drive/v3/files/$fileId?alt=media"
-        ) {
+        val response = KtorClient.client.prepareGet(url) {
             headers {
-                append("Authorization", "Bearer $accessToken")
+                headers.forEach { (key, value) ->
+                    append(key, value)
+                }
             }
         }.execute()
 
@@ -83,6 +97,19 @@ actual suspend fun downloadAndExtractGoogleDriveFile(
     } catch (e: Exception) {
         Result.failure(e)
     }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+actual suspend fun downloadAndExtractGoogleDriveFile(
+    fileId: String,
+    accessToken: String,
+    destinationPath: String,
+): Result<String> {
+    return downloadAndExtractZip(
+        url = "https://www.googleapis.com/drive/v3/files/$fileId?alt=media",
+        destinationPath = destinationPath,
+        headers = mapOf("Authorization" to "Bearer $accessToken")
+    )
 }
 
 // --- ZIP Parsing ---

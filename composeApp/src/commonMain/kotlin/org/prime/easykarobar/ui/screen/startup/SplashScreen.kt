@@ -38,9 +38,10 @@ import org.prime.easykarobar.data.expect.readFileBytes
 import org.prime.easykarobar.data.utils.MOBILE_VERSION
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.OnBoardingScreen
-import org.prime.easykarobar.ui.screen.delivery.DeliveryScreen
 import org.prime.easykarobar.ui.screen.easymart.EasyMartScreen
+import org.prime.easykarobar.ui.screen.home.Dashboard
 import tallymobile.composeapp.generated.resources.Res
+import tallymobile.composeapp.generated.resources.dmsSplash
 import tallymobile.composeapp.generated.resources.splashImage
 
 object SplashScreen : Screen {
@@ -49,6 +50,7 @@ object SplashScreen : Screen {
         val nav = LocalNavigator.currentOrThrow
         val colors = MaterialTheme.colorScheme
         val type = MaterialTheme.typography
+        val isStoreIdFound = BuildKonfig.STORE_ID.isNotEmpty()
 
         LaunchedEffect(Unit) {
             println(">>> LaunchedEffect started")
@@ -70,7 +72,7 @@ object SplashScreen : Screen {
                     DatabaseHolder.init(fileBytes)
 
                     println(">>> Navigating to Dashboard")
-                    nav.replaceAll(DeliveryScreen)
+                    nav.replaceAll(Dashboard)
                 } else {
                     println(">>> File bytes null, navigating to Login Screen")
                     if (BuildKonfig.STORE_ID.isNotEmpty()) {
@@ -91,41 +93,55 @@ object SplashScreen : Screen {
             println(">>> LaunchedEffect finished")
         }
 
-        Box(
-            modifier = Modifier.fillMaxSize().background(colors.background).navigationBarsPadding()
-        )
-        {
-            Column(
-                modifier = Modifier.align(Alignment.Center),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+        if (isStoreIdFound) {
+            Box(
+                modifier = Modifier.fillMaxSize().background(colors.background).navigationBarsPadding(),
+                contentAlignment = Alignment.Center
             ) {
+                Image(
+                    painterResource(Res.drawable.dmsSplash),
+                    contentDescription = "",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp)
+                )
+            }
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize().background(colors.background).navigationBarsPadding()
+            )
+            {
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
 //                Text(
 //                    "Easy Karobar",
 //                    textAlign = TextAlign.Center,
 //                    color = colors.primary,
 //                    style = type.headlineSmall.copy(fontSize = 50.sp)
 //                )
-                Image(
-                    painterResource(Res.drawable.splashImage),
-                    contentDescription = "",
-                    contentScale = ContentScale.FillWidth,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
-                )
-            }
-
-
-            Row(
-                modifier = Modifier.fillMaxWidth().height(300.dp).align(
-                    Alignment.BottomCenter
-                ),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Bottom
-            ) {
-                listOf(100, 150, 200, 250, 300).forEach { height ->
-                    BarChartLine(height.dp, modifier = Modifier.weight(1f))
+                    Image(
+                        painterResource(Res.drawable.splashImage),
+                        contentDescription = "",
+                        contentScale = ContentScale.FillWidth,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
+                    )
                 }
 
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(300.dp).align(
+                        Alignment.BottomCenter
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    listOf(100, 150, 200, 250, 300).forEach { height ->
+                        BarChartLine(height.dp, modifier = Modifier.weight(1f))
+                    }
+
+                }
             }
         }
     }

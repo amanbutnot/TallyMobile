@@ -107,41 +107,55 @@ object GoogleDriveDownloadScreen : Screen {
 
         LaunchedEffect(Unit) {
             val fileId = SharedPrefs.FileId.get()
-            if (fileId == null) {
-                errorMessage = "File ID not found. Please try again."
-                showErrorDialog = true
-                return@LaunchedEffect
-            }
+            val storeId = BuildKonfig.STORE_ID
 
             deleteDbFile()
-            googleDriveViewModel.getDriveToken { accessToken ->
-                val destinationPath = getAppDatabaseDirectory()
-                downloadViewModel.downloadAndExtractDatabase(
-                    fileId = fileId,
-                    accessToken = accessToken,
-                    destinationPath = destinationPath,
-                    onSuccess = { dbPath ->
-                        isInitializing = true
-                        scope.launch(Dispatchers.IO) {
-                            try {
-                                val dbBytes = readDatabaseFile(dbPath)
-                                DatabaseHolder.init(byteArray = dbBytes)
-                                val now = Clock.System.now().toEpochMilliseconds()
-                                SharedPrefs.LastSync.save(now)
-                                withContext(Dispatchers.Main) {
-                                    nav.replaceAll(MasterAddScreen)
-                                }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                errorMessage = "Failed to initialize database: ${e.message}"
-                                withContext(Dispatchers.Main) {
-                                    showErrorDialog = true
-                                    isInitializing = false
-                                }
-                            }
+            val destinationPath = getAppDatabaseDirectory()
+
+            val onDownloadSuccess: (String) -> Unit = { dbPath ->
+                isInitializing = true
+                scope.launch(Dispatchers.IO) {
+                    try {
+                        val dbBytes = readDatabaseFile(dbPath)
+                        DatabaseHolder.init(byteArray = dbBytes)
+                        val now = Clock.System.now().toEpochMilliseconds()
+                        SharedPrefs.LastSync.save(now)
+                        withContext(Dispatchers.Main) {
+                            nav.replaceAll(MasterAddScreen)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        errorMessage = "Failed to initialize database: ${e.message}"
+                        withContext(Dispatchers.Main) {
+                            showErrorDialog = true
+                            isInitializing = false
                         }
                     }
+                }
+            }
+
+            if (storeId.isNotEmpty()) {
+                val url = "https://easykarobar.in/database/$storeId.zip"
+                downloadViewModel.downloadDatabaseFromUrl(
+                    url = url,
+                    destinationPath = destinationPath,
+                    onSuccess = onDownloadSuccess
                 )
+            } else {
+                if (fileId == null) {
+                    errorMessage = "File ID not found. Please try again."
+                    showErrorDialog = true
+                    return@LaunchedEffect
+                }
+
+                googleDriveViewModel.getDriveToken { accessToken ->
+                    downloadViewModel.downloadAndExtractDatabase(
+                        fileId = fileId,
+                        accessToken = accessToken,
+                        destinationPath = destinationPath,
+                        onSuccess = onDownloadSuccess
+                    )
+                }
             }
         }
 
