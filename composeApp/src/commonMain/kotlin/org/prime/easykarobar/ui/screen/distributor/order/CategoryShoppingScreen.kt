@@ -41,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,7 +61,10 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
 import org.prime.easykarobar.business.viewmodel.WishlistViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
@@ -76,6 +80,19 @@ import org.tally.SLIDE_IMG
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.category_placeholder
 import kotlin.time.Duration.Companion.milliseconds
+
+/**
+ * Wrapper holding every list this screen needs from the DB, loaded together
+ * in a single background pass. Generic so we don't need to name the exact
+ * SQLDelight-generated row types for slides/banners/features here.
+ */
+private data class ScreenData<Slide, Banner, Feature>(
+    val sliders: List<Slide>,
+    val banners: List<Banner>,
+    val features: List<Feature>,
+    val categories: List<ProductCategoriesForDis>,
+    val products: List<GetProductsForDis>
+)
 
 object CategoryShoppingScreen : Screen {
 
@@ -164,55 +181,69 @@ object CategoryShoppingScreen : Screen {
         val db = DatabaseHolder.instance
         val showProductInfo = remember { mutableStateOf(false) }
         val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
-        val sliderMasters = remember { db.slide_MasterQueries.selectAll().executeAsList() }
-        val bannerImages = remember {
-            db.banner_MasterQueries.selectAll().executeAsList()
-        }
-
-        val featureMaster = remember {
-            db.features_MasterQueries.selectAll().executeAsList()
-        }
         val urlProvider = LocalUriHandler.current
 
+        // All blocking SQLDelight reads happen off the main thread here, in one
+        // batch, instead of five separate synchronous executeAsList() calls
+        // during composition (that was the source of the initial-load jank).
+        val screenData by produceState(
+            initialValue = ScreenData(
+                sliders = emptyList(),
+                banners = emptyList(),
+                features = emptyList(),
+                categories = emptyList(),
+                products = emptyList()
+            )
+        ) {
+            value = withContext(Dispatchers.IO) {
+                ScreenData(
+                    sliders = db.slide_MasterQueries.selectAll().executeAsList(),
+                    banners = db.banner_MasterQueries.selectAll().executeAsList(),
+                    features = db.features_MasterQueries.selectAll().executeAsList(),
+                    categories = db.productsQueries.productCategoriesForDis(
+                        filterGroup = filterItemGroups(),
+                        groupCodes = itemGroupCodes()
+                    ).executeAsList(),
+                    products = db.productsQueries.getProductsForDis(
+                        filterGroup = filterItemGroups(),
+                        groupCodes = itemGroupCodes(),
+                        productCode = null
+                    ).executeAsList()
+                )
+            }
+        }
 
+        // The TextField stays instantly responsive; the actual filter (and the
+        // recomposition it triggers on the categories grid) only runs 250ms
+        // after typing pauses, instead of on every single keystroke.
         var searchQuery by remember { mutableStateOf("") }
-
-        val categoryList = remember {
-            db.productsQueries.productCategoriesForDis(
-                filterGroup = filterItemGroups(),
-                groupCodes = itemGroupCodes()
-            ).executeAsList()
+        var debouncedQuery by remember { mutableStateOf("") }
+        LaunchedEffect(searchQuery) {
+            delay(250)
+            debouncedQuery = searchQuery
         }
 
-        val productList = remember {
-            db.productsQueries.getProductsForDis(
-                filterGroup = filterItemGroups(),
-                groupCodes = itemGroupCodes(),
-                productCode = null
-            ).executeAsList()
-        }
-
-        val filteredCategories = remember(searchQuery, categoryList) {
-            if (searchQuery.isEmpty()) categoryList
-            else categoryList.filter { it.Name?.contains(searchQuery, ignoreCase = true) == true }
+        val filteredCategories = remember(debouncedQuery, screenData.categories) {
+            if (debouncedQuery.isEmpty()) screenData.categories
+            else screenData.categories.filter { it.Name?.contains(debouncedQuery, ignoreCase = true) == true }
         }
 
         // Pre-index products by category once per productList change instead of
         // re-filtering the full list for every category row (was O(categories * products)).
-        val productsByCategoryId = remember(productList) {
-            productList.groupBy { it.category_id?.toDouble() }
+        val productsByCategoryId = remember(screenData.products) {
+            screenData.products.groupBy { it.category_id?.toDouble() }
         }
 
         // Pre-compute feature -> products once per (featureMaster, productList) change
         // instead of recomputing inline per feature item.
-        val featureProductsByFeature = remember(featureMaster, productList) {
-            featureMaster.filter { it.C1 != "Open Link" }.associateWith { feature ->
+        val featureProductsByFeature = remember(screenData.features, screenData.products) {
+            screenData.features.filter { it.C1 != "Open Link" }.associateWith { feature ->
                 when (feature.C1) {
-                    "Open Item" -> productList.filter { it.product_id == feature.C2 }
-                    "Open Item Group" -> productList.filter { it.category_id == feature.C2?.toDoubleOrNull() }
+                    "Open Item" -> screenData.products.filter { it.product_id == feature.C2 }
+                    "Open Item Group" -> screenData.products.filter { it.category_id == feature.C2?.toDoubleOrNull() }
                     "Select items" -> {
                         val guids = feature.C2?.split(",")?.map { it.trim() } ?: emptyList()
-                        productList.filter { it.product_id in guids }
+                        screenData.products.filter { it.product_id in guids }
                     }
                     else -> emptyList()
                 }
@@ -277,11 +308,16 @@ object CategoryShoppingScreen : Screen {
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(
-                    items = sliderMasters,
+                    items = screenData.sliders,
                     key = { it.ID }
                 ) { master ->
-                    val images = remember(master.ID) {
-                        db.slide_MasterQueries.selectImagesBySlideId(master.ID).executeAsList()
+                    // Per-slide image lookup moved off main thread too - this used to
+                    // block the UI thread every time a new slider scrolled into view.
+                    var images by remember(master.ID) { mutableStateOf<List<SLIDE_IMG>>(emptyList()) }
+                    LaunchedEffect(master.ID) {
+                        images = withContext(Dispatchers.IO) {
+                            db.slide_MasterQueries.selectImagesBySlideId(master.ID).executeAsList()
+                        }
                     }
                     if (images.isNotEmpty()) {
                         AutoSlidingPager(
@@ -298,7 +334,7 @@ object CategoryShoppingScreen : Screen {
                         )
                     }
                 }
-                items(bannerImages) { banner ->
+                items(screenData.banners) { banner ->
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()

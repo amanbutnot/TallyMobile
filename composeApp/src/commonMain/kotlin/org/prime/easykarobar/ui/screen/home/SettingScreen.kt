@@ -158,7 +158,7 @@ object SettingScreen : Screen {
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    if (userRole() == ROLE.ADMIN) {
+                    if (userRole() == ROLE.ADMIN && !SharedPrefs.IsEasyMart.get()) {
                         Text(
                             text = "Distributor Management",
                             style = MaterialTheme.typography.titleSmall.copy(
