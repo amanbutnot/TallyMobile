@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -58,12 +59,14 @@ import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.SelectCompanyScreen
 import org.prime.easykarobar.ui.screen.distributor.order.CartScreen
 import org.prime.easykarobar.ui.screen.easymart.WishlistScreen
+import org.prime.easykarobar.ui.screen.home.tabs.CustomerSupportTab
 import org.prime.easykarobar.ui.screen.home.tabs.DistributorCategorySubTab
 import org.prime.easykarobar.ui.screen.home.tabs.DistributorHomeSubTab
 import org.prime.easykarobar.ui.screen.home.tabs.DistributorReportSubTab
 import org.prime.easykarobar.ui.screen.home.tabs.HomeTab
 import org.prime.easykarobar.ui.screen.home.tabs.MastersTab
 import org.prime.easykarobar.ui.screen.home.tabs.ReportingTab
+import org.prime.easykarobar.ui.screen.home.tabs.SettingsTab
 import org.prime.easykarobar.ui.screen.home.tabs.TransactionTab
 import org.prime.easykarobar.ui.screen.startup.GoogleDriveDownloadScreen
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
@@ -88,134 +91,138 @@ object Dashboard : Screen {
         TabNavigator(initialTab) { tabNavigator ->
             Scaffold(
                 topBar = {
-                    TopAppBar(
-                        title = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .then(
-                                        if (hasCompanies && userRole() != ROLE.DISTRIBUTOR && !SharedPrefs.IsEasyMart.get()) {
-                                            Modifier.clickable {
+                    if (!(SharedPrefs.IsEasyMart.get() && tabNavigator.current == SettingsTab)) {
+                        TopAppBar(
+                            title = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .then(
+                                            if (hasCompanies && userRole() != ROLE.DISTRIBUTOR && !SharedPrefs.IsEasyMart.get()) {
+                                                Modifier.clickable {
+                                                    nav.push(
+                                                        SelectCompanyScreen(
+                                                            loginData!!.username,
+                                                            loginData.password,
+                                                            loginData.list
+                                                        )
+                                                    )
+                                                }
+                                            } else Modifier
+                                        )
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        CompanyName(),
+                                        color = if (hasCompanies)
+                                            colors.onBackground
+                                        else
+                                            colors.onBackground.copy(alpha = 0.7f),
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = FontWeight.Medium
+                                        ), maxLines = 1, overflow = TextOverflow.Ellipsis
+                                    )
+
+                                    if (hasCompanies && userRole() != ROLE.DISTRIBUTOR) {
+                                        Spacer(Modifier.width(4.dp))
+                                        Icon(
+                                            imageVector = Icons.Rounded.KeyboardArrowDown,
+                                            contentDescription = null,
+                                            tint = colors.onBackground.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                }
+                            },
+
+                            actions = {
+                                if (userRole() != ROLE.DISTRIBUTOR && !SharedPrefs.IsEasyMart.get()) {
+                                    IconButton(onClick = {
+                                        viewModel.userLogin(
+                                            LoginRequest(
+                                                Username = loginData?.username ?: "",
+                                                Password = loginData?.password ?: "",
+                                                DeviceId = deviceId
+                                            ),
+                                            onSuccess = {
+                                                nav.push(GoogleDriveDownloadScreen)
+                                            }, onListSuccess = { companyList ->
+                                                SharedPrefs.LoginInfo.save(
+                                                    loginData?.username?.trim() ?: ""
+                                                )
+                                                SharedPrefs.LoginData.save(
+                                                    SharedPrefs.LoginDataModel(
+                                                        username = loginData?.username?.trim() ?: "",
+                                                        password = loginData?.password?.trim() ?: "",
+                                                        list = companyList,
+                                                    )
+                                                )
                                                 nav.push(
                                                     SelectCompanyScreen(
-                                                        loginData!!.username,
-                                                        loginData.password,
-                                                        loginData.list
+                                                        loginData?.username?.trim() ?: "",
+                                                        loginData?.password?.trim() ?: "",
+                                                        companyList
                                                     )
                                                 )
                                             }
-                                        } else Modifier
-                                    )
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    CompanyName(),
-                                    color = if (hasCompanies)
-                                        colors.onBackground
-                                    else
-                                        colors.onBackground.copy(alpha = 0.7f),
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Medium
-                                    ), maxLines = 1, overflow = TextOverflow.Ellipsis
-                                )
-
-                                if (hasCompanies && userRole() != ROLE.DISTRIBUTOR) {
-                                    Spacer(Modifier.width(4.dp))
-                                    Icon(
-                                        imageVector = Icons.Rounded.KeyboardArrowDown,
-                                        contentDescription = null,
-                                        tint = colors.onBackground.copy(alpha = 0.7f)
-                                    )
-                                }
-                            }
-                        },
-
-                        actions = {
-                            if (userRole() != ROLE.DISTRIBUTOR && !SharedPrefs.IsEasyMart.get()) {
-                                IconButton(onClick = {
-                                    viewModel.userLogin(
-                                        LoginRequest(
-                                            Username = loginData?.username ?: "",
-                                            Password = loginData?.password ?: "",
-                                            DeviceId = deviceId
-                                        ),
-                                        onSuccess = {
-                                            nav.push(GoogleDriveDownloadScreen)
-                                        }, onListSuccess = { companyList ->
-                                            SharedPrefs.LoginInfo.save(
-                                                loginData?.username?.trim() ?: ""
-                                            )
-                                            SharedPrefs.LoginData.save(
-                                                SharedPrefs.LoginDataModel(
-                                                    username = loginData?.username?.trim() ?: "",
-                                                    password = loginData?.password?.trim() ?: "",
-                                                    list = companyList,
-                                                )
-                                            )
-                                            nav.push(
-                                                SelectCompanyScreen(
-                                                    loginData?.username?.trim() ?: "",
-                                                    loginData?.password?.trim() ?: "",
-                                                    companyList
-                                                )
-                                            )
-                                        }
-                                    )
-                                }) {
-                                    Icon(
-                                        Icons.Default.CloudSync,
-                                        contentDescription = "Cloud Sync",
-                                        tint = colors.onBackground
-                                    )
-                                }
-                            }
-                            if (userRole() == ROLE.DISTRIBUTOR || SharedPrefs.IsEasyMart.get()) {
-                                BadgedBox(
-                                    badge = {
-                                        if ((cartViewModel?.getTotalProductCount() ?: 0) > 0) {
-                                            Badge(
-                                                containerColor = Color(0xFFE53935),
-                                                contentColor = Color.White
-                                            ) {
-                                                Text(
-                                                    cartViewModel?.getTotalProductCount().toString()
-                                                )
-                                            }
-                                        }
-                                    },
-                                ) {
-                                    IconButton(onClick = {
-                                        nav.push(CartScreen)
+                                        )
                                     }) {
                                         Icon(
-                                            Icons.Default.ShoppingCart,
-                                            contentDescription = "cart",
+                                            Icons.Default.CloudSync,
+                                            contentDescription = "Cloud Sync",
                                             tint = colors.onBackground
                                         )
                                     }
                                 }
-                                IconButton(onClick = { nav.push(WishlistScreen) }) {
-                                    Icon(
-                                        Icons.Default.Favorite,
-                                        contentDescription = "Favourite Icon",
-                                        tint = colors.onBackground
-                                    )
-                                }
+                                if (userRole() == ROLE.DISTRIBUTOR || SharedPrefs.IsEasyMart.get()) {
+                                    BadgedBox(
+                                        badge = {
+                                            if ((cartViewModel?.getTotalProductCount() ?: 0) > 0) {
+                                                Badge(
+                                                    containerColor = Color(0xFFE53935),
+                                                    contentColor = Color.White
+                                                ) {
+                                                    Text(
+                                                        cartViewModel?.getTotalProductCount().toString()
+                                                    )
+                                                }
+                                            }
+                                        },
+                                    ) {
+                                        IconButton(onClick = {
+                                            nav.push(CartScreen)
+                                        }) {
+                                            Icon(
+                                                Icons.Default.ShoppingCart,
+                                                contentDescription = "cart",
+                                                tint = colors.onBackground
+                                            )
+                                        }
+                                    }
+                                    IconButton(onClick = { nav.push(WishlistScreen) }) {
+                                        Icon(
+                                            Icons.Default.Favorite,
+                                            contentDescription = "Favourite Icon",
+                                            tint = colors.onBackground
+                                        )
+                                    }
 
-                            }
-                            IconButton(onClick = { nav.push(SettingScreen) }) {
-                                Icon(
-                                    if (userRole() == ROLE.DISTRIBUTOR) Icons.Default.Person else Icons.Default.Settings,
-                                    contentDescription = "Settings icon",
-                                    tint = colors.onBackground
-                                )
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = colors.primary.copy(alpha = 0.2f)
+                                }
+                                if (!SharedPrefs.IsEasyMart.get()) {
+                                    IconButton(onClick = { nav.push(SettingScreen) }) {
+                                        Icon(
+                                            if (userRole() == ROLE.DISTRIBUTOR) Icons.Default.Person else Icons.Default.Settings,
+                                            contentDescription = "Settings icon",
+                                            tint = colors.onBackground
+                                        )
+                                    }
+                                }
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = colors.primary.copy(alpha = 0.2f)
+                            )
                         )
-                    )
+                    }
                 },
                 bottomBar = {
                     val role = userRole()
@@ -228,6 +235,10 @@ object Dashboard : Screen {
                             if (org.prime.easykarobar.BuildKonfig.STORE_ID.isEmpty()) {
                                 distributorTabs.add(DistributorReportSubTab)
                             }
+                            if (SharedPrefs.IsEasyMart.get()) {
+                                distributorTabs.add(SettingsTab)
+                                distributorTabs.add(CustomerSupportTab)
+                            }
                             distributorTabs
                         } else {
                             listOf(HomeTab, MastersTab, TransactionTab, ReportingTab)
@@ -239,7 +250,8 @@ object Dashboard : Screen {
                     }
 
                 }
-            ) { paddingValues ->
+            )
+{ paddingValues ->
                 Box(modifier = Modifier.padding(paddingValues)) {
                     CurrentTab()
                 }
@@ -253,6 +265,7 @@ fun BottomTabBar(
     tabs: List<Tab>,
     tabNavigator: TabNavigator
 ) {
+    val uriHandler = LocalUriHandler.current
     Row(
         modifier = Modifier.navigationBarsPadding()
             .padding(vertical = 8.dp)
@@ -263,7 +276,13 @@ fun BottomTabBar(
             TabNavigationItem(
                 tab = tab,
                 selected = tabNavigator.current == tab,
-                onClick = { tabNavigator.current = tab }
+                onClick = {
+                    if (tab is CustomerSupportTab) {
+                        uriHandler.openUri("https://wa.me/919850228878")
+                    } else {
+                        tabNavigator.current = tab
+                    }
+                }
             )
         }
     }
