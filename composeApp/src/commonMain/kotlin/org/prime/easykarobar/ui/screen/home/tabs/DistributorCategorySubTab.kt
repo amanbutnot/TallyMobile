@@ -61,7 +61,8 @@ object DistributorCategorySubTab : Tab {
                                 isTab = false
                             )
                         )
-                    }
+                    },
+                    title = "Category"
                 )
             }
         }

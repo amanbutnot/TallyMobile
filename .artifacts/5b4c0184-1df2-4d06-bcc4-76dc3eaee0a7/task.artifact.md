@@ -1,0 +1,5 @@
+- [x] Add state for delivery day and time slots in `CartContent`
+- [x] Implement `DeliveryTimeSection` composable
+- [x] Refactor `CartSummary` to move the Confirm Order button out (or adjust its logic)
+- [x] Integrate `DeliveryTimeSection` into `CartContent`'s `LazyColumn`
+- [x] Verify the UI changes

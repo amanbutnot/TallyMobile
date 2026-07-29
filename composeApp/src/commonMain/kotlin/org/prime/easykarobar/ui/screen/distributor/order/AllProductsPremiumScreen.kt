@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -79,7 +78,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -125,7 +123,7 @@ data class AllProductsPremiumScreen(
     @Composable
     fun AllProductsPremiumContent(cartViewModel: CartViewModel, nav: Navigator) {
         val db = DatabaseHolder.instance
-        val wishlistViewModel: WishlistViewModel = viewModel { WishlistViewModel() }
+        val wishlistViewModel = nav.rememberNavigatorScreenModel { WishlistViewModel() }
 
         LaunchedEffect(Unit) {
             wishlistViewModel.getWishlist()
@@ -345,7 +343,8 @@ data class AllProductsPremiumScreen(
                                                 imageVector = Icons.Default.Add, // Using Add as a placeholder for close/clear if Icons.Default.Close is not available
                                                 contentDescription = "Clear",
                                                 tint = Color(0xFF64748B),
-                                                modifier = Modifier.size(18.dp).graphicsLayer(rotationZ = 45f)
+                                                modifier = Modifier.size(18.dp)
+                                                    .graphicsLayer(rotationZ = 45f)
                                             )
                                         }
                                     }
@@ -444,8 +443,16 @@ data class AllProductsPremiumScreen(
                                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("₹0", style = MaterialTheme.typography.labelSmall, color = Color(0xFF64748B))
-                                Text("₹${maxPrice.toInt()}", style = MaterialTheme.typography.labelSmall, color = Color(0xFF64748B))
+                                Text(
+                                    "₹0",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color(0xFF64748B)
+                                )
+                                Text(
+                                    "₹${maxPrice.toInt()}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color(0xFF64748B)
+                                )
                             }
                         }
                     }
@@ -478,10 +485,11 @@ data class AllProductsPremiumScreen(
                         val isInCart = remember(productGuid, cartViewModel.cartItems) {
                             cartViewModel.isProductInCart(product)
                         }
-                        val isInWishlist = remember(productGuid, wishlistViewModel.listState.value) {
-                            wishlistViewModel.listState.value.data?.any { it.item_name == product.product_id } == true
-                        }
-                        
+                        val isInWishlist =
+                            remember(productGuid, wishlistViewModel.listState.value) {
+                                wishlistViewModel.listState.value.data?.any { it.item_name == product.product_id } == true
+                            }
+
                         PremiumProductItem(
                             product = product,
                             cartViewModel = cartViewModel,
@@ -522,7 +530,10 @@ data class AllProductsPremiumScreen(
                 sheetState = rememberModalBottomSheetState(),
                 containerColor = Color.White,
                 dragHandle = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Box(
                             Modifier
                                 .padding(vertical = 12.dp)
@@ -546,7 +557,7 @@ data class AllProductsPremiumScreen(
                         ),
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
-                    
+
                     listOf(
                         "Default" to null,
                         "Price: Low to High" to "Low to High",
@@ -563,7 +574,10 @@ data class AllProductsPremiumScreen(
                                 },
                             shape = RoundedCornerShape(12.dp),
                             color = if (isSelected) Color(0xFFF0F9F6) else Color.Transparent,
-                            border = if (isSelected) BorderStroke(1.dp, Color(0xFF004D40).copy(0.2f)) else null
+                            border = if (isSelected) BorderStroke(
+                                1.dp,
+                                Color(0xFF004D40).copy(0.2f)
+                            ) else null
                         ) {
                             Row(
                                 modifier = Modifier
@@ -576,7 +590,9 @@ data class AllProductsPremiumScreen(
                                     text = option,
                                     style = MaterialTheme.typography.bodyLarge.copy(
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) Color(0xFF004D40) else Color(0xFF475569)
+                                        color = if (isSelected) Color(0xFF004D40) else Color(
+                                            0xFF475569
+                                        )
                                     )
                                 )
                                 if (isSelected) {
@@ -672,28 +688,58 @@ data class AllProductsPremiumScreen(
                     .padding(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    Surface(
+                // --- Image only, no overlay ---
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF0F5FF),
+                    border = null
+                ) {
+                    AsyncImage(
+                        model = getProductImage(
+                            storeId = SharedPrefs.User.get()?.ID.toString(),
+                            guid = product.product_id.toString()
+                        ),
+                        contentDescription = product.product_name,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFF0F5FF),
-                        border = null
+                            .fillMaxSize()
+                            .padding(8.dp),
+                        contentScale = ContentScale.Fit,
+                        fallback = painterResource(Res.drawable.category_placeholder),
+                        error = painterResource(Res.drawable.category_placeholder)
+                    )
+                }
+
+                // --- Discount badge (far left) + Wishlist button (far right), same row ---
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val discount = product.MRP?.takeIf { it != 0.0 && it != product.sales_price }?.let { mrp ->
+                        ((mrp - (product.sales_price ?: 0.0)) / mrp) * 100
+                    }
+
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.CenterStart
                     ) {
-                        AsyncImage(
-                            model = getProductImage(
-                                storeId = SharedPrefs.User.get()?.ID.toString(),
-                                guid = product.product_id.toString()
-                            ),
-                            contentDescription = product.product_name,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(8.dp),
-                            contentScale = ContentScale.Fit,
-                            fallback = painterResource(Res.drawable.category_placeholder),
-                            error = painterResource(Res.drawable.category_placeholder)
-                        )
+                        if (discount != null && discount > 0) {
+                            Text(
+                                text = "${discount.toInt()}% OFF",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp
+                                ),
+                                color = Color.White,
+                                modifier = Modifier
+                                    .background(Color(0xFFD32F2F), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
                     }
 
                     IconButton(
@@ -707,11 +753,7 @@ data class AllProductsPremiumScreen(
                                 )
                             }
                         },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                            .size(32.dp)
-                            .background(Color.White.copy(alpha = 0.9f), CircleShape)
+                        modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = if (isInWishlist) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
@@ -720,33 +762,11 @@ data class AllProductsPremiumScreen(
                             tint = Color(0xFF004D40)
                         )
                     }
-
-                    if (product.MRP != 0.0 && product.MRP != product.sales_price) {
-                        val discount = product.MRP?.takeIf { it != 0.0 }?.let { mrp ->
-                            ((mrp - (product.sales_price ?: 0.0)) / mrp) * 100
-                        }
-                        if (discount != null && discount > 0) {
-                            Surface(
-                                color = Color(0xFFE53935),
-                                shape = RoundedCornerShape(topStart = 16.dp, bottomEnd = 16.dp),
-                                modifier = Modifier.align(Alignment.TopStart)
-                            ) {
-                                Text(
-                                    text = "${discount.toInt()}% OFF",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 10.sp
-                                    ),
-                                    color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-                    }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
+                // --- Title ---
                 Text(
                     text = product.product_name.orEmpty(),
                     style = MaterialTheme.typography.bodyMedium.copy(
@@ -764,6 +784,7 @@ data class AllProductsPremiumScreen(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
+                // --- Price + MRP ---
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -797,11 +818,7 @@ data class AllProductsPremiumScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(36.dp)
-                            .border(
-                                1.dp,
-                                Color(0xFF004D40),
-                                RoundedCornerShape(8.dp)
-                            ),
+                            .border(1.dp, Color(0xFF004D40), RoundedCornerShape(8.dp)),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -818,9 +835,7 @@ data class AllProductsPremiumScreen(
                         }
                         QuantityTextField(
                             quantity = quantity,
-                            onQuantityChange = {
-                                cartViewModel.updateQuantity(product, it)
-                            },
+                            onQuantityChange = { cartViewModel.updateQuantity(product, it) },
                             modifier = Modifier.width(30.dp),
                             textStyle = TextStyle(
                                 fontSize = 14.sp,

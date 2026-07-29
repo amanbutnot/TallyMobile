@@ -32,7 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -70,7 +69,7 @@ data class AllProductScreen(
                 groupCodes = groupCodes, productCode = productCode
             ).executeAsList()
             val viewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
-            val wishlistViewModel: WishlistViewModel = viewModel { WishlistViewModel() }
+            val wishlistViewModel = nav.rememberNavigatorScreenModel { WishlistViewModel() }
 
             LaunchedEffect(Unit) {
                 wishlistViewModel.getWishlist()

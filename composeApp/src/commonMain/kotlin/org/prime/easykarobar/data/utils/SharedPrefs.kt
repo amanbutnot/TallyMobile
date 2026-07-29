@@ -23,6 +23,7 @@ object SharedPrefs {
         // authentication
         Token.clear()
         FileId.clear()
+        Cart.clear()
         User.clear()
 
         // user related data
@@ -367,6 +368,35 @@ object SharedPrefs {
         fun get(vchType: Int): Int {
             val userId = User.get()?.ID ?: return 0
             return settings2.getInt("${KEY}${userId}_${vchType}", 0)
+        }
+    }
+
+    object Cart {
+        private const val KEY = "cart_items_"
+
+        @Serializable
+        data class CartPersistenceItem(
+            val productId: String,
+            val quantity: Int
+        )
+
+        private fun getKey(): String {
+            val userId = User.get()?.ID ?: "common"
+            return KEY + userId
+        }
+
+        fun save(items: List<CartPersistenceItem>) {
+            val json = Json.encodeToString(items)
+            settings.putString(getKey(), json)
+        }
+
+        fun get(): List<CartPersistenceItem> {
+            val stored = settings.getStringOrNull(getKey()) ?: return emptyList()
+            return runCatching { Json.decodeFromString<List<CartPersistenceItem>>(stored) }.getOrElse { emptyList() }
+        }
+
+        fun clear() {
+            settings.remove(getKey())
         }
     }
 

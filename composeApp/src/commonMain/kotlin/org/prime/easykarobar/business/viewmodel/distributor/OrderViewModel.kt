@@ -17,6 +17,8 @@ import org.prime.easykarobar.data.model.Order
 import org.prime.easykarobar.data.model.Product
 import org.prime.easykarobar.data.model.ProductCategoryList
 import org.prime.easykarobar.data.model.UpdateOrderStatusRequest
+import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.tally.GetProductsForDis
 
 class OrderViewModel : ViewModel() {
@@ -178,6 +180,55 @@ class CartViewModel : ScreenModel {
     private val _showImage = mutableStateOf(true)
     val showImage: State<Boolean> = _showImage
 
+    init {
+        loadCart()
+    }
+
+    private fun loadCart() {
+        val savedItems = SharedPrefs.Cart.get()
+        if (savedItems.isNotEmpty()) {
+            val ids = savedItems.map { it.productId }
+            try {
+                val products = DatabaseHolder.instance.productsQueries
+                    .getProductsByGuidsForDis(ids) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price ->
+                        GetProductsForDis(
+                            product_id,
+                            hospital_id,
+                            product_name,
+                            category_id,
+                            unit_id,
+                            sales_price,
+                            MRP,
+                            purchase_price,
+                            discount,
+                            gst_tax_percentage,
+                            product_description,
+                            created_at,
+                            updated_at,
+                            discounted_price
+                        )
+                    }
+                    .executeAsList()
+
+                savedItems.forEach { savedItem ->
+                    val product = products.find { it.product_id == savedItem.productId }
+                    if (product != null) {
+                        _cartItems.add(CartItem(product, mutableStateOf(savedItem.quantity)))
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun saveCart() {
+        val itemsToSave = _cartItems.map {
+            SharedPrefs.Cart.CartPersistenceItem(it.product.product_id ?: "", it.quantity.value)
+        }
+        SharedPrefs.Cart.save(itemsToSave)
+    }
+
     fun addProduct(product: GetProductsForDis) {
         val existingItem =
             _cartItems.find { it.product.product_id.toString() == product.product_id.toString() }
@@ -186,10 +237,12 @@ class CartViewModel : ScreenModel {
         } else {
             _cartItems.add(CartItem(product))
         }
+        saveCart()
     }
 
     fun removeProduct(product: GetProductsForDis) {
         _cartItems.removeAll { it.product.product_id == product.product_id }
+        saveCart()
     }
 
     fun isProductInCart(product: GetProductsForDis): Boolean {
@@ -206,6 +259,7 @@ class CartViewModel : ScreenModel {
 
     fun emptyList() {
         _cartItems.clear()
+        saveCart()
     }
 
     fun showImage(): Boolean {
@@ -229,6 +283,7 @@ class CartViewModel : ScreenModel {
                 _cartItems.remove(existingItem)
             }
         }
+        saveCart()
     }
 
     fun getProductQuantity(product: GetProductsForDis): Int {
@@ -246,6 +301,7 @@ class CartViewModel : ScreenModel {
         } else if (quantity > 0) {
             _cartItems.add(CartItem(product, mutableStateOf(quantity)))
         }
+        saveCart()
     }
 }
 

@@ -55,7 +55,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -223,15 +222,36 @@ object CategoryShoppingScreen : Screen {
             debouncedQuery = searchQuery
         }
 
-        val filteredCategories = remember(debouncedQuery, screenData.categories) {
-            if (debouncedQuery.isEmpty()) screenData.categories
-            else screenData.categories.filter { it.Name?.contains(debouncedQuery, ignoreCase = true) == true }
+        val filteredProducts = remember(debouncedQuery, screenData.products, screenData.categories) {
+            if (debouncedQuery.isEmpty()) screenData.products
+            else {
+                val matchingCategoryIds = screenData.categories
+                    .filter { it.Name?.contains(debouncedQuery, ignoreCase = true) == true }
+                    .map { it.GUID?.toDouble() }
+                    .toSet()
+
+                screenData.products.filter {
+                    it.product_name?.contains(debouncedQuery, ignoreCase = true) == true ||
+                            matchingCategoryIds.contains(it.category_id?.toDouble())
+                }
+            }
         }
 
         // Pre-index products by category once per productList change instead of
         // re-filtering the full list for every category row (was O(categories * products)).
-        val productsByCategoryId = remember(screenData.products) {
-            screenData.products.groupBy { it.category_id?.toDouble() }
+        val productsByCategoryId = remember(filteredProducts) {
+            filteredProducts.groupBy { it.category_id?.toDouble() }
+        }
+
+        val filteredCategories = remember(debouncedQuery, screenData.categories, productsByCategoryId) {
+            if (debouncedQuery.isEmpty()) screenData.categories
+            else {
+                screenData.categories.filter { category ->
+                    val nameMatches = category.Name?.contains(debouncedQuery, ignoreCase = true) == true
+                    val hasMatchingProducts = productsByCategoryId.containsKey(category.GUID?.toDouble())
+                    nameMatches || hasMatchingProducts
+                }
+            }
         }
 
         // Pre-compute feature -> products once per (featureMaster, productList) change
@@ -250,7 +270,12 @@ object CategoryShoppingScreen : Screen {
             }
         }
 
-        val wishlistViewModel: WishlistViewModel = viewModel { WishlistViewModel() }
+        val wishlistViewModel = nav.rememberNavigatorScreenModel { WishlistViewModel() }
+
+        LaunchedEffect(Unit) {
+            wishlistViewModel.getWishlist()
+        }
+
         val wishlistState by wishlistViewModel.listState
         val wishlistSet = remember(wishlistState.data) {
             wishlistState.data?.mapNotNull { it.item_name }?.toSet() ?: emptySet()
@@ -318,112 +343,139 @@ object CategoryShoppingScreen : Screen {
                 ),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(
-                    items = screenData.sliders,
-                    key = { it.ID }
-                ) { master ->
-                    // Per-slide image lookup moved off main thread too - this used to
-                    // block the UI thread every time a new slider scrolled into view.
-                    var images by remember(master.ID) { mutableStateOf<List<SLIDE_IMG>>(emptyList()) }
-                    LaunchedEffect(master.ID) {
-                        images = withContext(Dispatchers.IO) {
-                            db.slide_MasterQueries.selectImagesBySlideId(master.ID).executeAsList()
-                        }
-                    }
-                    if (images.isNotEmpty()) {
-                        AutoSlidingPager(
-                            images = images,
-                            onImageClick = { slide ->
-                                handleBannerClick(
-                                    slideImg = slide,
-                                    nav = nav,
-                                    urlProvider = urlProvider,
-                                    showProductInfo = showProductInfo,
-                                    selectedProduct = selectedProduct
-                                )
+                if (debouncedQuery.isEmpty()) {
+                    items(
+                        items = screenData.sliders,
+                        key = { it.ID }
+                    ) { master ->
+                        // Per-slide image lookup moved off main thread too - this used to
+                        // block the UI thread every time a new slider scrolled into view.
+                        var images by remember(master.ID) { mutableStateOf<List<SLIDE_IMG>>(emptyList()) }
+                        LaunchedEffect(master.ID) {
+                            images = withContext(Dispatchers.IO) {
+                                db.slide_MasterQueries.selectImagesBySlideId(master.ID).executeAsList()
                             }
-                        )
-                    }
-                }
-                items(
-                    items = screenData.banners,
-                    key = { it.ID }
-                ) { banner ->
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        shadowElevation = 4.dp
-                    ) {
-                        AsyncImage(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(180.dp).clickable {
+                        }
+                        if (images.isNotEmpty()) {
+                            AutoSlidingPager(
+                                images = images,
+                                onImageClick = { slide ->
                                     handleBannerClick(
-                                        banner = banner,
+                                        slideImg = slide,
                                         nav = nav,
                                         urlProvider = urlProvider,
                                         showProductInfo = showProductInfo,
                                         selectedProduct = selectedProduct
                                     )
-                                },
-                            model = banner.C10,
-                            onLoading = { Res.drawable.category_placeholder },
-                            contentDescription = null,
-                            contentScale = ContentScale.FillBounds
-                        )
+                                }
+                            )
+                        }
                     }
-                }
-
-                items(
-                    items = featureProductsByFeature.keys.toList(),
-                    key = { it.CODE }
-                ) { feature ->
-                    val featureProducts = featureProductsByFeature[feature].orEmpty()
-
-                    if (featureProducts.isNotEmpty()) {
+                    items(
+                        items = screenData.banners,
+                        key = { it.ID }
+                    ) { banner ->
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 6.dp),
-                            color = Color.White,
-                            shadowElevation = 1.dp
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            shadowElevation = 4.dp
                         ) {
-                            FeatureSection(
-                                title = feature.CODE,
-                                products = featureProducts.take(8),
-                                cartViewModel = cartViewModel,
-                                wishlistViewModel = wishlistViewModel,
-                                wishlistSet = wishlistSet,
-                                cartSet = cartSet,
-                                onItemClick = { item ->
-                                    selectedProduct.value = item
-                                    showProductInfo.value = true
-                                }
+                            AsyncImage(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp).clickable {
+                                        handleBannerClick(
+                                            banner = banner,
+                                            nav = nav,
+                                            urlProvider = urlProvider,
+                                            showProductInfo = showProductInfo,
+                                            selectedProduct = selectedProduct
+                                        )
+                                    },
+                                model = banner.C10,
+                                onLoading = { Res.drawable.category_placeholder },
+                                contentDescription = null,
+                                contentScale = ContentScale.FillBounds
                             )
+                        }
+                    }
+
+                    items(
+                        items = featureProductsByFeature.keys.toList(),
+                        key = { it.CODE }
+                    ) { feature ->
+                        val featureProducts = featureProductsByFeature[feature].orEmpty()
+
+                        if (featureProducts.isNotEmpty()) {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp),
+                                color = Color.White,
+                                shadowElevation = 1.dp
+                            ) {
+                                FeatureSection(
+                                    title = feature.CODE,
+                                    products = featureProducts.take(8),
+                                    cartViewModel = cartViewModel,
+                                    wishlistViewModel = wishlistViewModel,
+                                    wishlistSet = wishlistSet,
+                                    cartSet = cartSet,
+                                    onItemClick = { item ->
+                                        selectedProduct.value = item
+                                        showProductInfo.value = true
+                                    }
+                                )
+                            }
                         }
                     }
                 }
                 // Categories Grid at Top
                 item(key = "categories_grid") {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = Color.White,
-                        shadowElevation = 1.dp
-                    ) {
-                        CategoriesGrid(
-                            categories = filteredCategories,
-                            onCategoryClick = { category ->
-                                nav.push(
-                                    AllProductsPremiumScreen(
-                                        categoryName = category.Name,
-                                        productCode = category.GUID?.toDouble() ?: 0.0,
-                                        isTab = false
-                                    )
+                    if (filteredCategories.isEmpty() && debouncedQuery.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 40.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(48.dp),
+                                    tint = Color.Gray.copy(alpha = 0.5f)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "No results found for \"$debouncedQuery\"",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = Color.Gray
                                 )
                             }
-                        )
+                        }
+                    } else {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Color.White,
+                            shadowElevation = 1.dp
+                        ) {
+                            CategoriesGrid(
+                                categories = filteredCategories,
+                                title = if (debouncedQuery.isEmpty()) "All Categories" else "Search Results",
+                                onCategoryClick = { category ->
+                                    nav.push(
+                                        AllProductsPremiumScreen(
+                                            categoryName = category.Name,
+                                            productCode = category.GUID?.toDouble() ?: 0.0,
+                                            isTab = false
+                                        )
+                                    )
+                                }
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                 }
@@ -491,12 +543,13 @@ object CategoryShoppingScreen : Screen {
     @Composable
     fun CategoriesGrid(
         categories: List<ProductCategoriesForDis>,
+        title: String,
         onCategoryClick: (ProductCategoriesForDis) -> Unit
     ) {
         val userId = remember { SharedPrefs.User.get()?.ID.toString() }
         Column(modifier = Modifier.padding(horizontal = 12.dp)) {
             Text(
-                text = "All Categories",
+                text = title,
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp

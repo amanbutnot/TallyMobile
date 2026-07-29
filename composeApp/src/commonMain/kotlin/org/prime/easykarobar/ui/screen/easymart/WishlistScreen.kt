@@ -42,7 +42,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -67,7 +66,7 @@ object WishlistScreen : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val viewModel = viewModel<WishlistViewModel>()
+        val viewModel = navigator.rememberNavigatorScreenModel { WishlistViewModel() }
         val cartViewModel = navigator.rememberNavigatorScreenModel { CartViewModel() }
         val state = viewModel.listState.value
         val snackbarHostState = remember { SnackbarHostState() }

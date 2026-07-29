@@ -132,7 +132,7 @@ object ShoppingScreen : Screen {
         val state by viewModel.orderState
         val nav = LocalNavigator.currentOrThrow
         val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
-        val wishlistViewModel: WishlistViewModel = viewModel { WishlistViewModel() }
+        val wishlistViewModel = nav.rememberNavigatorScreenModel { WishlistViewModel() }
         val showProductInfo = remember { mutableStateOf(false) }
         val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
         val db = DatabaseHolder.instance
@@ -342,7 +342,7 @@ object ShoppingScreen : Screen {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(180.dp),
+                            .height(250.dp),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = colorScheme.surfaceVariant.copy(alpha = 0.25f)

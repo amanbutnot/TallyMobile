@@ -95,7 +95,7 @@ object Dashboard : Screen {
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(8.dp))
                                     .then(
-                                        if (hasCompanies && userRole() != ROLE.DISTRIBUTOR) {
+                                        if (hasCompanies && userRole() != ROLE.DISTRIBUTOR && !SharedPrefs.IsEasyMart.get()) {
                                             Modifier.clickable {
                                                 nav.push(
                                                     SelectCompanyScreen(
@@ -132,7 +132,7 @@ object Dashboard : Screen {
                         },
 
                         actions = {
-                            if (userRole() != ROLE.DISTRIBUTOR) {
+                            if (userRole() != ROLE.DISTRIBUTOR && !SharedPrefs.IsEasyMart.get()) {
                                 IconButton(onClick = {
                                     viewModel.userLogin(
                                         LoginRequest(
@@ -220,7 +220,7 @@ object Dashboard : Screen {
                 bottomBar = {
                     val role = userRole()
                     if (role == ROLE.ADMIN || role == ROLE.SALESMAN || role == ROLE.DISTRIBUTOR) {
-                        val tabs = if (role == ROLE.DISTRIBUTOR  || SharedPrefs.IsEasyMart.get()) {
+                        val tabs = if (role == ROLE.DISTRIBUTOR || SharedPrefs.IsEasyMart.get()) {
                             val distributorTabs = mutableListOf<Tab>(
                                 DistributorHomeSubTab,
                                 DistributorCategorySubTab

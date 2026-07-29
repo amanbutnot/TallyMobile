@@ -25,17 +25,26 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.HorizontalRule
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LocalOffer
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -66,8 +75,6 @@ import coil3.compose.AsyncImage
 import org.prime.easykarobar.business.viewmodel.distributor.CartItem
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
-import org.prime.easykarobar.ui.shared.globalShared.Tdate
-import org.prime.easykarobar.ui.shared.globalShared.convertCouponDate
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.CreateOrderRequest
@@ -80,6 +87,8 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
+import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.shared.globalShared.convertCouponDate
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
 
 data class Coupon(
@@ -132,6 +141,10 @@ private fun CartContent(
 
     var couponText by remember { mutableStateOf("") }
     var appliedCoupon by remember { mutableStateOf<Coupon?>(null) }
+    var remarks by remember { mutableStateOf("") }
+    var deliveryDay by remember { mutableStateOf("Today") }
+    var startTime by remember { mutableStateOf("") }
+    var endTime by remember { mutableStateOf("") }
 
     val availableCoupons = remember {
         try {
@@ -230,12 +243,272 @@ private fun CartContent(
             Spacer(modifier = Modifier.height(4.dp))
             CartSummary(
                 products = list,
-                cartViewModel = viewModel,
-                showOnly = false,
                 appliedCoupon = appliedCoupon
             )
         }
+
+        item {
+            DeliveryTimeSection(
+                deliveryDay = deliveryDay,
+                onDaySelected = { deliveryDay = it },
+                startTime = startTime,
+                onStartTimeChange = { startTime = it },
+                endTime = endTime,
+                onEndTimeChange = { endTime = it }
+            )
+        }
+
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                TallyTextField(
+                    value = remarks,
+                    onValueChange = { remarks = it },
+                    placeholder = "Your Remarks",
+                    isPassword = false,
+                    isNumber = false,
+                    label = "Remarks",
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                ConfirmOrderButton(
+                    products = list,
+                    cartViewModel = viewModel,
+                    appliedCoupon = appliedCoupon,
+                    remarks = remarks,
+                    deliveryDay = deliveryDay,
+                    startTime = startTime,
+                    endTime = endTime
+                )
+            }
+        }
     }
+}
+
+@Composable
+fun DeliveryTimeSection(
+    deliveryDay: String,
+    onDaySelected: (String) -> Unit,
+    startTime: String,
+    onStartTimeChange: (String) -> Unit,
+    endTime: String,
+    onEndTimeChange: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 6.dp,
+                shape = RoundedCornerShape(16.dp),
+                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+            ),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Schedule,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Delivery Time",
+                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { onDaySelected("Today") }
+                ) {
+                    RadioButton(
+                        selected = deliveryDay == "Today",
+                        onClick = { onDaySelected("Today") }
+                    )
+                    Text("Today", style = MaterialTheme.typography.bodyMedium)
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { onDaySelected("Tomorrow") }
+                ) {
+                    RadioButton(
+                        selected = deliveryDay == "Tomorrow",
+                        onClick = { onDaySelected("Tomorrow") }
+                    )
+                    Text("Tomorrow", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                TallyTimePickerRow(
+                    label = "Start Time",
+                    selectedTime = startTime,
+                    onTimeSelected = onStartTimeChange,
+                    modifier = Modifier.weight(1f)
+                )
+                TallyTimePickerRow(
+                    label = "End Time",
+                    selectedTime = endTime,
+                    onTimeSelected = onEndTimeChange,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TallyTimePickerRow(
+    label: String,
+    selectedTime: String,
+    onTimeSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var showPicker by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium
+        )
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            border = BorderStroke(
+                width = 1.dp,
+                color = if (selectedTime.isNotEmpty())
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                else
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+            ),
+            onClick = { showPicker = true }
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = "Select time",
+                        tint = if (selectedTime.isEmpty())
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        else
+                            MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+
+                    Text(
+                        text = selectedTime.ifEmpty { "Select" },
+                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                        color = if (selectedTime.isEmpty())
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        else
+                            MaterialTheme.colorScheme.onSurface,
+                        fontWeight = if (selectedTime.isEmpty())
+                            FontWeight.Normal
+                        else
+                            FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+    }
+
+    if (showPicker) {
+        TallyTimePicker(
+            onTimeSelected = { time ->
+                onTimeSelected(time)
+                showPicker = false
+            },
+            onDismiss = { showPicker = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TallyTimePicker(
+    onTimeSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val timePickerState = rememberTimePickerState()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = {
+                val hour = timePickerState.hour
+                val minute = timePickerState.minute
+                val amPm = if (hour < 12) "AM" else "PM"
+                val h = if (hour % 12 == 0) 12 else hour % 12
+                val formattedTime = "${h.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} $amPm"
+                onTimeSelected(formattedTime)
+            }) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+        text = {
+            TimePicker(state = timePickerState)
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -453,8 +726,6 @@ private fun CartProductItem(
 @Composable
 fun CartSummary(
     products: List<CartItem>,
-    cartViewModel: CartViewModel? = null,
-    showOnly: Boolean,
     appliedCoupon: Coupon? = null
 ) {
 
@@ -496,18 +767,6 @@ fun CartSummary(
 
     val finalTotal = totalBeforeCoupon - couponDiscount
     val totalSavingsCombined = totalSavings + couponDiscount
-
-
-    val orderViewModel: OrderViewModel = viewModel { OrderViewModel() }
-    var remarks by remember { mutableStateOf("") }
-    val orderDataState by orderViewModel.createOrderState
-    val nav = LocalNavigator.currentOrThrow
-    var showConfirmDialog by remember { mutableStateOf(false) }
-
-
-
-
-
 
     Card(
         modifier = Modifier
@@ -673,64 +932,81 @@ fun CartSummary(
 
                 Spacer(modifier = Modifier.height(12.dp))
             }
-
-            if (!showOnly) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 24.dp)
-                )
-                {
-                    TallyTextField(
-                        value = remarks,
-                        onValueChange = { remarks = it },
-                        placeholder = "Your Remarks",
-                        isPassword = false,
-                        isNumber = false,
-                        label = "Remarks", modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-            }
-
         }
 
         Spacer(modifier = Modifier.height(12.dp))
     }
+}
 
-    if (!showOnly) {
-        Button(
-            onClick = {
-                showConfirmDialog = true
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(44.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
-            ),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ShoppingBag,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Confirm Order",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White
-                )
-            }
+@Composable
+fun ConfirmOrderButton(
+    products: List<CartItem>,
+    cartViewModel: CartViewModel? = null,
+    appliedCoupon: Coupon? = null,
+    remarks: String = "",
+    deliveryDay: String = "",
+    startTime: String = "",
+    endTime: String = ""
+) {
+    val totalDiscountedPrice = products.sumOf {
+        val discounted = it.product.discounted_price ?: 0.0
+        discounted * it.quantity.value
+    }
+
+    val totalGst = products.sumOf {
+        val discounted = it.product.discounted_price ?: 0.0
+        val gstPercentage = it.product.gst_tax_percentage ?: 0.0
+        val gstPerItem = (discounted * gstPercentage) / 100
+        gstPerItem * it.quantity.value
+    }
+
+    val totalBeforeCoupon = (totalDiscountedPrice + totalGst).toDouble()
+
+    val couponDiscount = if (appliedCoupon != null && totalDiscountedPrice >= appliedCoupon.minOrderValue) {
+        if (appliedCoupon.discountType == "flat") {
+            appliedCoupon.discountValue
+        } else {
+            (totalDiscountedPrice * appliedCoupon.discountValue) / 100.0
         }
+    } else 0.0
 
+    val finalTotal = totalBeforeCoupon - couponDiscount
+
+    val orderViewModel: OrderViewModel = viewModel { OrderViewModel() }
+    val orderDataState by orderViewModel.createOrderState
+    val nav = LocalNavigator.currentOrThrow
+    var showConfirmDialog by remember { mutableStateOf(false) }
+
+    Button(
+        onClick = {
+            showConfirmDialog = true
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary
+        ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.ShoppingBag,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "Confirm Order",
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
+            )
+        }
     }
 
     if (showConfirmDialog) {
@@ -750,7 +1026,6 @@ fun CartSummary(
                 net_amount = discountedPrice * quantity
             )
         }
-        println(itemsList)
         TallyAlertBox(
             title = "Confirm Order",
             message = "Do you want to confirm your order",
@@ -775,10 +1050,13 @@ fun CartSummary(
                     )
                 } else emptyList()
 
+                val deliveryRemarks = "Delivery: $deliveryDay, Time: $startTime - $endTime"
+                val finalRemarks = if (remarks.isNotEmpty()) "$remarks | $deliveryRemarks" else deliveryRemarks
+
                 orderViewModel.createOrder(
                     CreateOrderRequest(
                         billing_guid = SharedPrefs.DistributorData.get()?.ledger_GUID.toString(),
-                        remarks = remarks,
+                        remarks = finalRemarks,
                         billing_name = SharedPrefs.DistributorData.get()?.ledger_name.toString(),
                         total_amt = finalTotal.toString(),
                         items = itemsList,
@@ -804,7 +1082,6 @@ fun CartSummary(
             confirmText = "Ok"
         )
     }
-
 }
 
 
