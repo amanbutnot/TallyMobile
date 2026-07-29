@@ -332,7 +332,11 @@ object SettingScreen : Screen {
                         )
 
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ProfileItem(Icons.Default.DateRange, "Financial Year", Tdate(StartDate()))
+                            ProfileItem(
+                                Icons.Default.DateRange,
+                                "Financial Year",
+                                Tdate(StartDate())
+                            )
 
                             ProfileItem(Icons.Default.Receipt, "GST Number", compInfo.T4.toString())
                         }
@@ -378,7 +382,7 @@ object SettingScreen : Screen {
                             if (userRole() !in listOf(
                                     ROLE.STAFF_MANAGER,
                                     ROLE.OFFICE_STAFF
-                                )
+                                ) && !SharedPrefs.IsEasyMart.get()
                             ) {
                                 TallyToggleRow(
                                     checked = zeroStock,
@@ -417,7 +421,11 @@ object SettingScreen : Screen {
                             onDismiss = { showTaxOptionDialog = false },
                             content = {
                                 Column {
-                                    listOf("Both", "Only Inclusive", "Only Extra").forEachIndexed { index, label ->
+                                    listOf(
+                                        "Both",
+                                        "Only Inclusive",
+                                        "Only Extra"
+                                    ).forEachIndexed { index, label ->
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()

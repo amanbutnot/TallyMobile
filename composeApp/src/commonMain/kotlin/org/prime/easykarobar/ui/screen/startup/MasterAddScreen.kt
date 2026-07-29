@@ -25,7 +25,6 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.business.viewmodel.masters.AccountViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.utils.SharedPrefs
-import org.prime.easykarobar.ui.screen.easymart.DmsScreen
 import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.screen.transactions.sale.makeNegativeConditional
 import kotlin.math.absoluteValue
@@ -174,7 +173,7 @@ object MasterAddScreen : Screen {
                     }
                 }
                 if (SharedPrefs.IsEasyMart.get()) {
-                    nav.replaceAll(DmsScreen)
+                    nav.replaceAll(Dashboard)
                 } else {
                     nav.replaceAll(Dashboard)
                 }
