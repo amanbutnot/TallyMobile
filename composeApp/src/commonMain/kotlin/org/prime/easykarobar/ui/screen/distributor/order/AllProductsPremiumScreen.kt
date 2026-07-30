@@ -207,7 +207,7 @@ data class AllProductsPremiumScreen(
             containerColor = Color(0xFFF8F9FB),
             topBar = {
                 Surface(
-                    color = Color.White,
+                    color = Color(0xFFFF6D00),
                     shadowElevation = 2.dp
                 ) {
                     Column(
@@ -225,7 +225,7 @@ data class AllProductsPremiumScreen(
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = "Back",
-                                    tint = Color(0xFF1A1C1E)
+                                    tint = Color.White
                                 )
                             }
                             Text(
@@ -235,7 +235,7 @@ data class AllProductsPremiumScreen(
                                     fontSize = 22.sp,
                                     letterSpacing = (-0.5).sp
                                 ),
-                                color = Color(0xFF1A1C1E),
+                                color = Color.White,
                                 modifier = Modifier.weight(1f),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -262,13 +262,13 @@ data class AllProductsPremiumScreen(
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(20.dp),
                                         strokeWidth = 2.dp,
-                                        color = MaterialTheme.colorScheme.primary
+                                        color = Color.White
                                     )
                                 } else {
                                     Icon(
                                         Icons.Default.Share,
                                         contentDescription = "Share",
-                                        tint = Color(0xFF1A1C1E)
+                                        tint = Color.White
                                     )
                                 }
                             }
@@ -292,7 +292,7 @@ data class AllProductsPremiumScreen(
                                     Icon(
                                         Icons.Default.ShoppingCart,
                                         contentDescription = "Cart",
-                                        tint = Color(0xFF1A1C1E),
+                                        tint = Color.White,
                                         modifier = Modifier.size(26.dp)
                                     )
                                 }
@@ -302,7 +302,7 @@ data class AllProductsPremiumScreen(
                         LazyRow(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(Color.White)
+                                .background(Color(0xFFFF6D00))
                                 .padding(bottom = 8.dp),
                             contentPadding = PaddingValues(horizontal = 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -705,7 +705,7 @@ data class AllProductsPremiumScreen(
                         .fillMaxWidth()
                         .aspectRatio(1f),
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFF0F5FF),
+                    color = Color.White,
                     border = null
                 ) {
                     AsyncImage(
@@ -935,7 +935,7 @@ data class AllProductsPremiumScreen(
                     Surface(
                         modifier = Modifier.size(100.dp),
                         shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFF8F9FB)
+                        color = Color.White
                     ) {
                         AsyncImage(
                             model = getProductImage(

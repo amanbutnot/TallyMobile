@@ -210,7 +210,10 @@ object Dashboard : Screen {
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = colors.primary.copy(alpha = 0.2f)
+                                containerColor = Color(0xFFFF6D00),
+                                titleContentColor = Color.White,
+                                navigationIconContentColor = Color.White,
+                                actionIconContentColor = Color.White
                             )
                         )
                     }

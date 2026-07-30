@@ -59,8 +59,9 @@ object WishlistScreen : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val viewModel = navigator.rememberNavigatorScreenModel { WishlistViewModel() }
-        val cartViewModel = navigator.rememberNavigatorScreenModel { CartViewModel() }
+        val nav = navigator.parent?.parent ?: navigator.parent ?: navigator
+        val viewModel = nav.rememberNavigatorScreenModel { WishlistViewModel() }
+        val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
         val state = viewModel.listState.value
         val snackbarHostState = remember { SnackbarHostState() }
         val coroutineScope = rememberCoroutineScope()

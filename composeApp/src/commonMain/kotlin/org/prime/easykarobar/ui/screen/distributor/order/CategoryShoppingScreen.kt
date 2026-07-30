@@ -98,7 +98,7 @@ object CategoryShoppingScreen : Screen {
             containerColor = Color(0xFFF8F9FB),
             topBar = {
                 Surface(
-                    color = Color.White,
+                    color = Color(0xFFFF6D00),
                     shadowElevation = 2.dp
                 ) {
                     Column(
@@ -116,7 +116,7 @@ object CategoryShoppingScreen : Screen {
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = "Back",
-                                    tint = Color(0xFF1A1C1E)
+                                    tint = Color.White
                                 )
                             }
                             Text(
@@ -126,7 +126,7 @@ object CategoryShoppingScreen : Screen {
                                     fontSize = 22.sp,
                                     letterSpacing = (-0.5).sp
                                 ),
-                                color = Color(0xFF1A1C1E),
+                                color = Color.White,
                                 modifier = Modifier.weight(1f)
                             )
 
@@ -149,7 +149,7 @@ object CategoryShoppingScreen : Screen {
                                     Icon(
                                         Icons.Default.ShoppingCart,
                                         contentDescription = "Cart",
-                                        tint = Color(0xFF1A1C1E),
+                                        tint = Color.White,
                                         modifier = Modifier.size(26.dp)
                                     )
                                 }
@@ -471,7 +471,8 @@ object CategoryShoppingScreen : Screen {
                     contentDescription = name,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(4.dp),
+                        .padding(8.dp)
+                        .background(Color.White, RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Fit,
                     fallback = painterResource(Res.drawable.category_placeholder),
                     error = painterResource(Res.drawable.category_placeholder)
