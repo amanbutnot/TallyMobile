@@ -90,10 +90,12 @@ object SettingScreen : Screen {
         val compInfo = queries.getCompanyInformation().executeAsOne()
         var showAlertBox by remember { mutableStateOf(false) }
         var zeroStock by remember { mutableStateOf(true) }
+        var ProductLayout by remember { mutableStateOf(false) }
         var showTaxTypeOption by remember { mutableStateOf(0) }
         var showTaxOptionDialog by remember { mutableStateOf(false) }
 
         zeroStock = SharedPrefs.ShowZeroStock.get() ?: true
+        ProductLayout = SharedPrefs.ProductLayout.get()
         showTaxTypeOption = SharedPrefs.ShowTaxType.get()
 
         val colors = MaterialTheme.colorScheme
@@ -378,6 +380,15 @@ object SettingScreen : Screen {
                                 Icons.Default.SyncLock,
                                 "Last Synced from Software",
                                 compInfo.C8.toString()
+                            )
+                            TallyToggleRow(
+                                checked = ProductLayout,
+                                onCheckedChange = {
+                                    SharedPrefs.ProductLayout.save(it)
+                                    ProductLayout = it
+                                },
+                                title = "Layout Mode",
+                                desc = "Enable One Layout Mode"
                             )
                             if (userRole() !in listOf(
                                     ROLE.STAFF_MANAGER,

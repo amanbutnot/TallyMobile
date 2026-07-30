@@ -400,4 +400,15 @@ object SharedPrefs {
         }
     }
 
+    object ProductLayout {
+        private const val KEY = "product_layout_two_per_row"
+        fun save(isTwoPerRow: Boolean) {
+            settings2.putBoolean(KEY, isTwoPerRow)
+        }
+
+        fun get(): Boolean {
+            return settings2.getBoolean(KEY, true)
+        }
+    }
+
 }

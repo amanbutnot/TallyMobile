@@ -41,14 +41,15 @@ object DistributorHomeSubTab : Tab {
         val configHideGroup = db.companyConfigurationQueries.hideGroup().executeAsOneOrNull()
         //take according to json
         val hideGroup = configHideGroup?.T2.toString() == "Y"
+        val twoPerRow = SharedPrefs.ProductLayout.get()
         if (SharedPrefs.IsEasyMart.get()) {
-            CategoryShoppingScreen.CategoryShoppingContent()
+            CategoryShoppingScreen.CategoryShoppingContent(twoPerRow)
 
         } else {
             if (hideGroup) {
                 AllProductsPremiumScreen(isTab = true).AllProductsPremiumContent(cartViewModel, nav)
             } else {
-                CategoryShoppingScreen.CategoryShoppingContent()
+                CategoryShoppingScreen.CategoryShoppingContent(twoPerRow)
             }
         }
 

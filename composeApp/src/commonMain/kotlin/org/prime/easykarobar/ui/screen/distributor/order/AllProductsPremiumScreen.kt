@@ -37,10 +37,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.HorizontalRule
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -57,8 +58,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -70,7 +69,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
@@ -136,10 +134,10 @@ data class AllProductsPremiumScreen(
         val scope = rememberCoroutineScope()
         var isSharing by remember { mutableStateOf(false) }
 
-        var searchQuery by remember { mutableStateOf("") }
         var showRangeSlider by remember { mutableStateOf(false) }
         var showSortSheet by remember { mutableStateOf(false) }
         var sortOrder by remember { mutableStateOf("Default") }
+        var isTwoPerRow by remember { mutableStateOf(SharedPrefs.ProductLayout.get()) }
 
         val perms = SharedPrefs.Permissions.get()
         val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
@@ -193,15 +191,11 @@ data class AllProductsPremiumScreen(
             mutableStateOf(0f..maxPrice)
         }
 
-        val filteredProducts = remember(searchQuery, priceRange, productList, sortOrder) {
+        val filteredProducts = remember(priceRange, productList, sortOrder) {
             val filtered = productList.filter { product ->
-                val matchesSearch = searchQuery.isEmpty() || product.product_name?.contains(
-                    searchQuery,
-                    ignoreCase = true
-                ) == true
                 val price = product.sales_price ?: 0.0
                 val matchesPrice = price >= priceRange.start && price <= priceRange.endInclusive
-                matchesSearch && matchesPrice
+                matchesPrice
             }
 
             when (sortOrder) {
@@ -281,6 +275,19 @@ data class AllProductsPremiumScreen(
                                 }
                             }
 
+                            IconButton(
+                                onClick = {
+                                    isTwoPerRow = !isTwoPerRow
+                                    SharedPrefs.ProductLayout.save(isTwoPerRow)
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = if (isTwoPerRow) Icons.Default.ViewAgenda else Icons.Default.GridView,
+                                    contentDescription = "Toggle Layout",
+                                    tint = Color(0xFF1A1C1E)
+                                )
+                            }
+
                             BadgedBox(
                                 badge = {
                                     if (cartViewModel.getTotalProductCount() > 0) {
@@ -354,59 +361,6 @@ data class AllProductsPremiumScreen(
                     shadowElevation = 1.dp
                 ) {
                     Column {
-                        // Modern Search Bar with Shadow
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFF2F4F7)
-                        ) {
-                            TextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                placeholder = {
-                                    Text(
-                                        "Search for products...",
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            color = Color(0xFF94A3B8)
-                                        )
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Search,
-                                        contentDescription = null,
-                                        tint = Color(0xFF64748B),
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                },
-                                trailingIcon = {
-                                    if (searchQuery.isNotEmpty()) {
-                                        IconButton(onClick = { searchQuery = "" }) {
-                                            Icon(
-                                                imageVector = Icons.Default.Add, // Using Add as a placeholder for close/clear if Icons.Default.Close is not available
-                                                contentDescription = "Clear",
-                                                tint = Color(0xFF64748B),
-                                                modifier = Modifier.size(18.dp)
-                                                    .graphicsLayer(rotationZ = 45f)
-                                            )
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    disabledContainerColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    cursorColor = Color(0xFF004D40)
-                                ),
-                                singleLine = true
-                            )
-                        }
-
                         // High-end Filter and Sort Bar
                         Row(
                             modifier = Modifier
@@ -514,7 +468,7 @@ data class AllProductsPremiumScreen(
                 )
 
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
+                    columns = GridCells.Fixed(if (isTwoPerRow) 2 else 1),
                     contentPadding = PaddingValues(
                         start = 16.dp,
                         end = 16.dp,
@@ -522,7 +476,7 @@ data class AllProductsPremiumScreen(
                         bottom = 8.dp
                     ),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(if (isTwoPerRow) 24.dp else 16.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(filteredProducts) { product ->
@@ -541,6 +495,7 @@ data class AllProductsPremiumScreen(
                             wishlistViewModel = wishlistViewModel,
                             isInCart = isInCart,
                             isInWishlist = isInWishlist,
+                            isTwoPerRow = isTwoPerRow,
                             onClick = {
                                 selectedProduct.value = product
                                 showProductInfo.value = true
@@ -711,6 +666,37 @@ data class AllProductsPremiumScreen(
         wishlistViewModel: WishlistViewModel,
         isInCart: Boolean,
         isInWishlist: Boolean,
+        isTwoPerRow: Boolean = true,
+        onClick: () -> Unit
+    ) {
+        if (isTwoPerRow) {
+            VerticalPremiumProductItem(
+                product = product,
+                cartViewModel = cartViewModel,
+                wishlistViewModel = wishlistViewModel,
+                isInCart = isInCart,
+                isInWishlist = isInWishlist,
+                onClick = onClick
+            )
+        } else {
+            HorizontalPremiumProductItem(
+                product = product,
+                cartViewModel = cartViewModel,
+                wishlistViewModel = wishlistViewModel,
+                isInCart = isInCart,
+                isInWishlist = isInWishlist,
+                onClick = onClick
+            )
+        }
+    }
+
+    @Composable
+    private fun VerticalPremiumProductItem(
+        product: GetProductsForDis,
+        cartViewModel: CartViewModel,
+        wishlistViewModel: WishlistViewModel,
+        isInCart: Boolean,
+        isInWishlist: Boolean,
         onClick: () -> Unit
     ) {
         val quantity = cartViewModel.getProductQuantity(product)
@@ -779,9 +765,9 @@ data class AllProductsPremiumScreen(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 10.sp
                                 ),
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onError,
                                 modifier = Modifier
-                                    .background(Color(0xFFD32F2F), RoundedCornerShape(4.dp))
+                                    .background(MaterialTheme.colorScheme.error, RoundedCornerShape(4.dp))
                                     .padding(horizontal = 8.dp, vertical = 2.dp)
                             )
                         }
@@ -804,7 +790,7 @@ data class AllProductsPremiumScreen(
                             imageVector = if (isInWishlist) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
                             contentDescription = "Wishlist",
                             modifier = Modifier.size(18.dp),
-                            tint = Color(0xFF004D40)
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -863,7 +849,7 @@ data class AllProductsPremiumScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(36.dp)
-                            .border(1.dp, Color(0xFF004D40), RoundedCornerShape(8.dp)),
+                            .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp)),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -875,7 +861,7 @@ data class AllProductsPremiumScreen(
                                 imageVector = Icons.Default.HorizontalRule,
                                 contentDescription = "Decrease",
                                 modifier = Modifier.size(16.dp),
-                                tint = Color(0xFF004D40)
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                         QuantityTextField(
@@ -897,7 +883,7 @@ data class AllProductsPremiumScreen(
                                 imageVector = Icons.Default.Add,
                                 contentDescription = "Increase",
                                 modifier = Modifier.size(16.dp),
-                                tint = Color(0xFF004D40)
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -909,8 +895,8 @@ data class AllProductsPremiumScreen(
                             .height(36.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF004D40),
-                            contentColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         ),
                         contentPadding = PaddingValues(0.dp)
                     ) {
@@ -927,6 +913,235 @@ data class AllProductsPremiumScreen(
                             )
                         )
                     }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun HorizontalPremiumProductItem(
+        product: GetProductsForDis,
+        cartViewModel: CartViewModel,
+        wishlistViewModel: WishlistViewModel,
+        isInCart: Boolean,
+        isInWishlist: Boolean,
+        onClick: () -> Unit
+    ) {
+        val quantity = cartViewModel.getProductQuantity(product)
+        val discount = product.MRP?.takeIf { it != 0.0 && it != product.sales_price }?.let { mrp ->
+            ((mrp - (product.sales_price ?: 0.0)) / mrp) * 100
+        }
+
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onClick
+                ),
+            shape = RoundedCornerShape(12.dp),
+            color = Color.White,
+            shadowElevation = 1.dp
+        ) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Image Section
+                    Surface(
+                        modifier = Modifier.size(100.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFF8F9FB)
+                    ) {
+                        AsyncImage(
+                            model = getProductImage(
+                                storeId = SharedPrefs.User.get()?.ID.toString(),
+                                guid = product.product_id.toString()
+                            ),
+                            contentDescription = product.product_name,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(4.dp),
+                            contentScale = ContentScale.Fit,
+                            fallback = painterResource(Res.drawable.category_placeholder),
+                            error = painterResource(Res.drawable.category_placeholder)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    // Content Section
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = product.product_name.orEmpty(),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                lineHeight = 20.sp
+                            ),
+                            color = Color(0xFF1A1C1E),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(end = 24.dp) // Space for wishlist button
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Unit Placeholder
+                        Surface(
+                            color = Color(0xFFF2F4F7),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = product.unit_id?.toString() ?: "Unit",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = Color(0xFF64748B),
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                if (product.MRP != 0.0 && product.MRP != product.sales_price) {
+                                    Text(
+                                        text = "₹${product.MRP?.formatToAmtDec()}",
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            textDecoration = TextDecoration.LineThrough,
+                                            color = Color(0xFF94A3B8),
+                                            fontSize = 12.sp
+                                        )
+                                    )
+                                }
+                                Text(
+                                    text = "₹${product.sales_price?.formatToAmtDec()}",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 18.sp
+                                    ),
+                                    color = Color(0xFF1A1C1E)
+                                )
+                            }
+
+                            // Add Button
+                            if (isInCart) {
+                                Row(
+                                    modifier = Modifier
+                                        .height(36.dp)
+                                        .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp)),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    IconButton(
+                                        onClick = { cartViewModel.decreaseQuantity(product) },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.HorizontalRule,
+                                            null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = quantity.toString(),
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(horizontal = 4.dp)
+                                    )
+                                    IconButton(
+                                        onClick = { cartViewModel.increaseQuantity(product) },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Add,
+                                            null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            } else {
+                                Surface(
+                                    onClick = { cartViewModel.addProduct(product) },
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(18.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Text(
+                                            "Add",
+                                            style = MaterialTheme.typography.labelLarge.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White
+                                            )
+                                        )
+                                        Icon(
+                                            Icons.Default.Add,
+                                            null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Overlay Elements (Not on top of image)
+                if (discount != null && discount > 0) {
+                    Text(
+                        text = "${discount.toInt()}% OFF",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 9.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onError,
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.error, RoundedCornerShape(topStart = 12.dp, bottomEnd = 12.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .align(Alignment.TopStart)
+                    )
+                }
+
+                IconButton(
+                    onClick = {
+                        if (isInWishlist) {
+                            wishlistViewModel.deleteWishlist(product.product_id.toString())
+                        } else {
+                            wishlistViewModel.addWishlist(
+                                itemGuid = product.product_id.toString(),
+                                groupGuid = product.category_id.toString()
+                            )
+                        }
+                    },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(4.dp)
+                        .align(Alignment.TopEnd)
+                ) {
+                    Icon(
+                        imageVector = if (isInWishlist) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = "Wishlist",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }
