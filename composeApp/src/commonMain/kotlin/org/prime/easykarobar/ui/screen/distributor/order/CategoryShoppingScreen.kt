@@ -242,16 +242,6 @@ object CategoryShoppingScreen : Screen {
             wishlistViewModel.getWishlist()
         }
 
-        val wishlistState by wishlistViewModel.listState
-        val wishlistSet = remember(wishlistState.data) {
-            wishlistState.data?.mapNotNull { it.item_name }?.toSet() ?: emptySet()
-        }
-
-        val cartItems = cartViewModel.cartItems
-        val cartSet = remember(cartItems) {
-            cartItems.map { it.product.product_id.toString() }.toSet()
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -335,8 +325,6 @@ object CategoryShoppingScreen : Screen {
                                 products = featureProducts.take(8),
                                 cartViewModel = cartViewModel,
                                 wishlistViewModel = wishlistViewModel,
-                                wishlistSet = wishlistSet,
-                                cartSet = cartSet,
                                 isTwoPerRow = isTwoPerRow,
                                 onItemClick = { item ->
                                     selectedProduct.value = item
@@ -388,8 +376,6 @@ object CategoryShoppingScreen : Screen {
                                 products = products.take(8),
                                 cartViewModel = cartViewModel,
                                 wishlistViewModel = wishlistViewModel,
-                                wishlistSet = wishlistSet,
-                                cartSet = cartSet,
                                 isTwoPerRow = isTwoPerRow,
                                 onItemClick = { item ->
                                     selectedProduct.value = item
@@ -529,8 +515,6 @@ object CategoryShoppingScreen : Screen {
         products: List<GetProductsForDis>,
         cartViewModel: CartViewModel,
         wishlistViewModel: WishlistViewModel,
-        wishlistSet: Set<String>,
-        cartSet: Set<String>,
         isTwoPerRow: Boolean,
         onItemClick: (GetProductsForDis) -> Unit,
         onMoreClick: () -> Unit
@@ -581,9 +565,8 @@ object CategoryShoppingScreen : Screen {
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         rowItems.forEach { product ->
-                            val productGuid = product.product_id.toString()
-                            val isInCart = remember(productGuid, cartSet) { cartSet.contains(productGuid) }
-                            val isInWishlist = remember(productGuid, wishlistSet) { wishlistSet.contains(productGuid) }
+                            val isInCart = cartViewModel.isProductInCart(product)
+                            val isInWishlist = wishlistViewModel.listState.value.data?.any { it.item_name == product.product_id } == true
                             
                             Box(modifier = Modifier.weight(1f)) {
                                 AllProductsPremiumScreen(isTab = false).PremiumProductItem(
@@ -612,8 +595,6 @@ object CategoryShoppingScreen : Screen {
         products: List<GetProductsForDis>,
         cartViewModel: CartViewModel,
         wishlistViewModel: WishlistViewModel,
-        wishlistSet: Set<String>,
-        cartSet: Set<String>,
         isTwoPerRow: Boolean,
         onItemClick: (GetProductsForDis) -> Unit
     ) {
@@ -647,9 +628,8 @@ object CategoryShoppingScreen : Screen {
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         rowItems.forEach { product ->
-                            val productGuid = product.product_id.toString()
-                            val isInCart = remember(productGuid, cartSet) { cartSet.contains(productGuid) }
-                            val isInWishlist = remember(productGuid, wishlistSet) { wishlistSet.contains(productGuid) }
+                            val isInCart = cartViewModel.isProductInCart(product)
+                            val isInWishlist = wishlistViewModel.listState.value.data?.any { it.item_name == product.product_id } == true
 
                             Box(modifier = Modifier.weight(1f)) {
                                 AllProductsPremiumScreen(isTab = false).PremiumProductItem(
