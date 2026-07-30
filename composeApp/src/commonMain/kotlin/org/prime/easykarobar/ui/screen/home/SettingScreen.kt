@@ -388,7 +388,7 @@ object SettingScreen : Screen {
                                     ProductLayout = it
                                 },
                                 title = "Layout Mode",
-                                desc = "Enable One Layout Mode"
+                                desc = "Enable Two Layout Mode"
                             )
                             if (userRole() !in listOf(
                                     ROLE.STAFF_MANAGER,
