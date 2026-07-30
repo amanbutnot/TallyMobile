@@ -24,9 +24,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -143,9 +145,20 @@ data class AllProductsPremiumScreen(
         val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
         val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
 
-        val productList = remember(productCode, productGuids) {
-            if (productGuids != null) {
-                db.productsQueries.getProductsByGuidsForDis(productGuids) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price ->
+        var currentCategoryCode by remember { mutableStateOf(productCode) }
+        var currentCategoryName by remember { mutableStateOf(categoryName ?: "All Products") }
+        var currentProductGuids by remember { mutableStateOf(productGuids) }
+
+        val categories = remember {
+            db.productsQueries.productCategoriesForDis(
+                filterGroup = filterAGRP,
+                groupCodes = groupCodes
+            ).executeAsList()
+        }
+
+        val productList = remember(currentCategoryCode, currentProductGuids) {
+            if (currentProductGuids != null) {
+                db.productsQueries.getProductsByGuidsForDis(currentProductGuids!!) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price ->
                     GetProductsForDis(
                         product_id,
                         hospital_id,
@@ -167,7 +180,7 @@ data class AllProductsPremiumScreen(
                 db.productsQueries.getProductsForDis(
                     filterGroup = filterAGRP,
                     groupCodes = groupCodes,
-                    productCode = productCode
+                    productCode = currentCategoryCode
                 ).executeAsList()
             }
         }
@@ -224,7 +237,7 @@ data class AllProductsPremiumScreen(
                                 )
                             }
                             Text(
-                                text = categoryName ?: "All Products",
+                                text = currentCategoryName,
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.ExtraBold,
                                     fontSize = 22.sp,
@@ -240,9 +253,9 @@ data class AllProductsPremiumScreen(
                                 onClick = {
                                     scope.launch {
                                         handlePdfAction(
-                                            fileName = categoryName ?: "All_Products",
+                                            fileName = currentCategoryName.replace(" ", "_"),
                                             htmlContent = productListHtml(
-                                                categoryName = categoryName ?: "All Products",
+                                                categoryName = currentCategoryName,
                                                 products = filteredProducts,
                                                 storeId = SharedPrefs.User.get()?.ID.toString()
                                             ),
@@ -291,6 +304,38 @@ data class AllProductsPremiumScreen(
                                         modifier = Modifier.size(26.dp)
                                     )
                                 }
+                            }
+                        }
+
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White)
+                                .padding(bottom = 8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            item {
+                                CategoryChip(
+                                    name = "All",
+                                    isSelected = currentCategoryCode == null && currentProductGuids == null,
+                                    onClick = {
+                                        currentCategoryCode = null
+                                        currentCategoryName = "All Products"
+                                        currentProductGuids = null
+                                    }
+                                )
+                            }
+                            items(categories) { category ->
+                                CategoryChip(
+                                    name = category.Name ?: "",
+                                    isSelected = currentCategoryCode == category.GUID?.toDoubleOrNull() && currentProductGuids == null,
+                                    onClick = {
+                                        currentCategoryCode = category.GUID?.toDoubleOrNull()
+                                        currentCategoryName = category.Name ?: ""
+                                        currentProductGuids = null
+                                    }
+                                )
                             }
                         }
                     }
@@ -884,6 +929,34 @@ data class AllProductsPremiumScreen(
                     }
                 }
             }
+        }
+    }
+
+    @Composable
+    private fun CategoryChip(
+        name: String,
+        isSelected: Boolean,
+        onClick: () -> Unit
+    ) {
+        Surface(
+            modifier = Modifier.clickable(
+                onClick = onClick,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ),
+            shape = RoundedCornerShape(12.dp),
+            color = if (isSelected) Color(0xFF1A1C1E) else Color(0xFFF1F3F5),
+            border = if (isSelected) null else BorderStroke(1.dp, Color(0xFFE0E0E0))
+        ) {
+            Text(
+                text = name,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isSelected) Color.White else Color(0xFF1A1C1E),
+                    fontSize = 14.sp
+                )
+            )
         }
     }
 }
