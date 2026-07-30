@@ -15,11 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -27,11 +24,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -53,7 +47,6 @@ import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
-import org.prime.easykarobar.ui.screen.distributor.order.CartScreen
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
@@ -85,37 +78,11 @@ object WishlistScreen : Screen {
             viewModel.getWishlist()
         }
 
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("My Wishlist") },
-                    navigationIcon = {
-                        IconButton(onClick = { navigator.pop() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    actions = {
-                        val cartCount = cartViewModel.getTotalProductCount()
-                        IconButton(onClick = { navigator.push(CartScreen) }) {
-                            BadgedBox(
-                                badge = {
-                                    if (cartCount > 0) {
-                                        Badge { Text(cartCount.toString()) }
-                                    }
-                                }
-                            ) {
-                                Icon(Icons.Default.ShoppingCart, contentDescription = "Cart")
-                            }
-                        }
-                    }
-                )
-            },
-            snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-        ) { padding ->
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
+
             ) {
                 if (state.isLoading) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -236,4 +203,3 @@ object WishlistScreen : Screen {
             }
         }
     }
-}

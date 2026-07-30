@@ -37,11 +37,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -273,19 +271,6 @@ data class AllProductsPremiumScreen(
                                         tint = Color(0xFF1A1C1E)
                                     )
                                 }
-                            }
-
-                            IconButton(
-                                onClick = {
-                                    isTwoPerRow = !isTwoPerRow
-                                    SharedPrefs.ProductLayout.save(isTwoPerRow)
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = if (isTwoPerRow) Icons.Default.ViewAgenda else Icons.Default.GridView,
-                                    contentDescription = "Toggle Layout",
-                                    tint = Color(0xFF1A1C1E)
-                                )
                             }
 
                             BadgedBox(

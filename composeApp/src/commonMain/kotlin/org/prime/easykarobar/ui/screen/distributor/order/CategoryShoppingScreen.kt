@@ -24,9 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -61,6 +59,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
 import org.prime.easykarobar.business.viewmodel.WishlistViewModel
@@ -77,7 +76,6 @@ import org.tally.SLIDE_IMG
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.category_placeholder
 import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.delay
 
 private data class ScreenData<Slide, Banner, Feature>(
     val sliders: List<Slide>,
@@ -131,19 +129,6 @@ object CategoryShoppingScreen : Screen {
                                 color = Color(0xFF1A1C1E),
                                 modifier = Modifier.weight(1f)
                             )
-
-                            IconButton(
-                                onClick = {
-                                    isTwoPerRow = !isTwoPerRow
-                                    SharedPrefs.ProductLayout.save(isTwoPerRow)
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = if (isTwoPerRow) Icons.Default.ViewAgenda else Icons.Default.GridView,
-                                    contentDescription = "Toggle Layout",
-                                    tint = Color(0xFF1A1C1E)
-                                )
-                            }
 
                             BadgedBox(
                                 badge = {

@@ -46,7 +46,8 @@ fun TallyScaffold(
     showBottomBar: Boolean = false,
     showAddBar: Boolean = false,
     onAddClick: () -> Unit = {},
-    bottomBarContent: @Composable () -> Unit = {}
+    bottomBarContent: @Composable () -> Unit = {},
+    showNavigationIcon: Boolean = true
 ) {
     val nav = LocalNavigator.currentOrThrow
     val colors = MaterialTheme.colorScheme
@@ -79,12 +80,14 @@ fun TallyScaffold(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { nav.pop() }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = colors.onSurface
-                        )
+                    if (showNavigationIcon) {
+                        IconButton(onClick = { nav.pop() }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = colors.onSurface
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

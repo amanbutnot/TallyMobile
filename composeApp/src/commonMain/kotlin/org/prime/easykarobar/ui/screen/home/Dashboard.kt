@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudSync
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -58,7 +57,6 @@ import org.prime.easykarobar.data.model.LoginRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.SelectCompanyScreen
 import org.prime.easykarobar.ui.screen.distributor.order.CartScreen
-import org.prime.easykarobar.ui.screen.easymart.WishlistScreen
 import org.prime.easykarobar.ui.screen.home.tabs.CustomerSupportTab
 import org.prime.easykarobar.ui.screen.home.tabs.DistributorCategorySubTab
 import org.prime.easykarobar.ui.screen.home.tabs.DistributorHomeSubTab
@@ -68,6 +66,7 @@ import org.prime.easykarobar.ui.screen.home.tabs.MastersTab
 import org.prime.easykarobar.ui.screen.home.tabs.ReportingTab
 import org.prime.easykarobar.ui.screen.home.tabs.SettingsTab
 import org.prime.easykarobar.ui.screen.home.tabs.TransactionTab
+import org.prime.easykarobar.ui.screen.home.tabs.WishlistTab
 import org.prime.easykarobar.ui.screen.startup.GoogleDriveDownloadScreen
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 
@@ -199,14 +198,6 @@ object Dashboard : Screen {
                                             )
                                         }
                                     }
-                                    IconButton(onClick = { nav.push(WishlistScreen) }) {
-                                        Icon(
-                                            Icons.Default.Favorite,
-                                            contentDescription = "Favourite Icon",
-                                            tint = colors.onBackground
-                                        )
-                                    }
-
                                 }
                                 if (!SharedPrefs.IsEasyMart.get()) {
                                     IconButton(onClick = { nav.push(SettingScreen) }) {
@@ -230,7 +221,8 @@ object Dashboard : Screen {
                         val tabs = if (role == ROLE.DISTRIBUTOR || SharedPrefs.IsEasyMart.get()) {
                             val distributorTabs = mutableListOf<Tab>(
                                 DistributorHomeSubTab,
-                                DistributorCategorySubTab
+                                DistributorCategorySubTab,
+                                WishlistTab
                             )
                             if (org.prime.easykarobar.BuildKonfig.STORE_ID.isEmpty()) {
                                 distributorTabs.add(DistributorReportSubTab)
@@ -248,10 +240,8 @@ object Dashboard : Screen {
                             tabNavigator = tabNavigator
                         )
                     }
-
                 }
-            )
-{ paddingValues ->
+            ) { paddingValues ->
                 Box(modifier = Modifier.padding(paddingValues)) {
                     CurrentTab()
                 }
@@ -341,4 +331,3 @@ fun userRole(): ROLE {
 }
 
 enum class ROLE { ADMIN, SALESMAN, DISTRIBUTOR, STAFF_MANAGER, OFFICE_STAFF, DELIVERY }
-
