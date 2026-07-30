@@ -217,6 +217,7 @@ object CategoryShoppingScreen : Screen {
                         val guids = feature.C2?.split(",")?.map { it.trim() } ?: emptyList()
                         screenData.products.filter { it.product_id in guids }
                     }
+
                     else -> emptyList()
                 }
             }
@@ -463,7 +464,7 @@ object CategoryShoppingScreen : Screen {
                     .fillMaxWidth()
                     .aspectRatio(1f),
                 shape = RoundedCornerShape(16.dp),
-                color = Color(0xFFF0F5FF),
+                color = Color.White,
                 border = null
             ) {
                 AsyncImage(
@@ -538,7 +539,8 @@ object CategoryShoppingScreen : Screen {
                 }
             }
 
-            val chunks = remember(products, isTwoPerRow) { products.chunked(if (isTwoPerRow) 2 else 1) }
+            val chunks =
+                remember(products, isTwoPerRow) { products.chunked(if (isTwoPerRow) 2 else 1) }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -552,8 +554,9 @@ object CategoryShoppingScreen : Screen {
                     ) {
                         rowItems.forEach { product ->
                             val isInCart = cartViewModel.isProductInCart(product)
-                            val isInWishlist = wishlistViewModel.listState.value.data?.any { it.item_name == product.product_id } == true
-                            
+                            val isInWishlist =
+                                wishlistViewModel.listState.value.data?.any { it.item_name == product.product_id } == true
+
                             Box(modifier = Modifier.weight(1f)) {
                                 AllProductsPremiumScreen(isTab = false).PremiumProductItem(
                                     product = product,
@@ -601,7 +604,8 @@ object CategoryShoppingScreen : Screen {
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            val chunks = remember(products, isTwoPerRow) { products.chunked(if (isTwoPerRow) 2 else 1) }
+            val chunks =
+                remember(products, isTwoPerRow) { products.chunked(if (isTwoPerRow) 2 else 1) }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -615,7 +619,8 @@ object CategoryShoppingScreen : Screen {
                     ) {
                         rowItems.forEach { product ->
                             val isInCart = cartViewModel.isProductInCart(product)
-                            val isInWishlist = wishlistViewModel.listState.value.data?.any { it.item_name == product.product_id } == true
+                            val isInWishlist =
+                                wishlistViewModel.listState.value.data?.any { it.item_name == product.product_id } == true
 
                             Box(modifier = Modifier.weight(1f)) {
                                 AllProductsPremiumScreen(isTab = false).PremiumProductItem(
@@ -691,7 +696,10 @@ object CategoryShoppingScreen : Screen {
                 horizontalArrangement = Arrangement.Center
             ) {
                 repeat(realSize) { iteration ->
-                    val color = if (pagerState.currentPage % realSize == iteration) Color.White else Color.White.copy(alpha = 0.5f)
+                    val color =
+                        if (pagerState.currentPage % realSize == iteration) Color.White else Color.White.copy(
+                            alpha = 0.5f
+                        )
                     Box(
                         modifier = Modifier
                             .padding(2.dp)
