@@ -1,5 +1,6 @@
 package org.prime.easykarobar.ui.screen.easymart
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,13 +10,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -24,18 +29,20 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -47,6 +54,7 @@ import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.shared.composables.QuantityTextField
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
@@ -63,8 +71,6 @@ object WishlistScreen : Screen {
         val viewModel = nav.rememberNavigatorScreenModel { WishlistViewModel() }
         val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
         val state = viewModel.listState.value
-        val snackbarHostState = remember { SnackbarHostState() }
-        val coroutineScope = rememberCoroutineScope()
 
         // Fetch products from local DB to match with wishlist items
         val allProducts = remember {
@@ -113,14 +119,9 @@ object WishlistScreen : Screen {
                             if (product != null) {
                                 WishlistCard(
                                     product = product,
+                                    cartViewModel = cartViewModel,
                                     onDelete = {
                                         product.product_id?.let { viewModel.deleteWishlist(it) }
-                                    },
-                                    onAddToCart = {
-                                        cartViewModel.addProduct(product)
-                                        coroutineScope.launch {
-                                            snackbarHostState.showSnackbar("Added ${product.product_name} to cart")
-                                        }
                                     },
                                     onClick = {
                                         // Maybe navigate to product details if available
@@ -140,12 +141,14 @@ object WishlistScreen : Screen {
     @Composable
     fun WishlistCard(
         product: GetProductsForDis,
+        cartViewModel: CartViewModel,
         onDelete: () -> Unit,
-        onAddToCart: () -> Unit,
         onClick: () -> Unit
     ) {
         val storeId = SharedPrefs.User.get()?.ID.toString()
         val imageUrl = getProductImage(storeId, product.product_id.toString())
+        val isInCart = cartViewModel.isProductInCart(product)
+        val quantity = cartViewModel.getProductQuantity(product)
 
         Card(
             modifier = Modifier
@@ -186,12 +189,57 @@ object WishlistScreen : Screen {
                     )
                 }
 
-                IconButton(onClick = onAddToCart) {
-                    Icon(
-                        imageVector = Icons.Default.ShoppingCart,
-                        contentDescription = "Add to Cart",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                if (isInCart) {
+                    Row(
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .height(36.dp)
+                            .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp)),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = { cartViewModel.decreaseQuantity(product) },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.HorizontalRule,
+                                contentDescription = "Decrease",
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        QuantityTextField(
+                            quantity = quantity,
+                            onQuantityChange = { cartViewModel.updateQuantity(product, it) },
+                            modifier = Modifier.width(30.dp),
+                            textStyle = TextStyle(
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        )
+                        IconButton(
+                            onClick = { cartViewModel.increaseQuantity(product) },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Increase",
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                } else {
+                    IconButton(onClick = { cartViewModel.addProduct(product) }) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart,
+                            contentDescription = "Add to Cart",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
 
                 IconButton(onClick = onDelete) {
