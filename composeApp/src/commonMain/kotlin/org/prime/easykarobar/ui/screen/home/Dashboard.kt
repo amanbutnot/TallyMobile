@@ -52,12 +52,13 @@ import cafe.adriel.voyager.navigator.tab.TabNavigator
 import org.prime.easykarobar.business.viewmodel.AuthViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.callPhone
 import org.prime.easykarobar.data.expect.getDeviceId
 import org.prime.easykarobar.data.model.LoginRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.SelectCompanyScreen
 import org.prime.easykarobar.ui.screen.distributor.order.CartScreen
-import org.prime.easykarobar.ui.screen.home.tabs.CustomerSupportTab
+import org.prime.easykarobar.ui.screen.home.tabs.CallSupportTab
 import org.prime.easykarobar.ui.screen.home.tabs.DistributorCategorySubTab
 import org.prime.easykarobar.ui.screen.home.tabs.DistributorHomeSubTab
 import org.prime.easykarobar.ui.screen.home.tabs.DistributorReportSubTab
@@ -66,6 +67,7 @@ import org.prime.easykarobar.ui.screen.home.tabs.MastersTab
 import org.prime.easykarobar.ui.screen.home.tabs.ReportingTab
 import org.prime.easykarobar.ui.screen.home.tabs.SettingsTab
 import org.prime.easykarobar.ui.screen.home.tabs.TransactionTab
+import org.prime.easykarobar.ui.screen.home.tabs.WhatsAppSupportTab
 import org.prime.easykarobar.ui.screen.home.tabs.WishlistTab
 import org.prime.easykarobar.ui.screen.startup.GoogleDriveDownloadScreen
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
@@ -232,7 +234,8 @@ object Dashboard : Screen {
                             }
                             if (SharedPrefs.IsEasyMart.get()) {
                                 distributorTabs.add(SettingsTab)
-                                distributorTabs.add(CustomerSupportTab)
+                                distributorTabs.add(WhatsAppSupportTab)
+                                distributorTabs.add(CallSupportTab)
                             }
                             distributorTabs
                         } else {
@@ -270,10 +273,10 @@ fun BottomTabBar(
                 tab = tab,
                 selected = tabNavigator.current == tab,
                 onClick = {
-                    if (tab is CustomerSupportTab) {
-                        uriHandler.openUri("https://wa.me/919850228878")
-                    } else {
-                        tabNavigator.current = tab
+                    when (tab) {
+                        is WhatsAppSupportTab -> uriHandler.openUri("https://wa.me/919850228878")
+                        is CallSupportTab -> callPhone("9850228878")
+                        else -> tabNavigator.current = tab
                     }
                 }
             )
