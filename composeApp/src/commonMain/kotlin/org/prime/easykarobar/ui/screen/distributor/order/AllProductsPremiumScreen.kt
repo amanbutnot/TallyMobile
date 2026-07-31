@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.HorizontalRule
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -91,6 +92,7 @@ import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.printing.productListHtml
 import org.prime.easykarobar.ui.shared.composables.QuantityTextField
+import org.prime.easykarobar.ui.shared.composables.TallySearchBar
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
 import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
@@ -131,6 +133,9 @@ data class AllProductsPremiumScreen(
         val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
         val scope = rememberCoroutineScope()
         var isSharing by remember { mutableStateOf(false) }
+
+        var searchQuery by remember { mutableStateOf("") }
+        var showSearchBar by remember { mutableStateOf(false) }
 
         var showRangeSlider by remember { mutableStateOf(false) }
         var showSortSheet by remember { mutableStateOf(false) }
@@ -189,11 +194,12 @@ data class AllProductsPremiumScreen(
             mutableStateOf(0f..maxPrice)
         }
 
-        val filteredProducts = remember(priceRange, productList, sortOrder) {
+        val filteredProducts = remember(priceRange, productList, sortOrder, searchQuery) {
             val filtered = productList.filter { product ->
                 val price = product.sales_price ?: 0.0
                 val matchesPrice = price >= priceRange.start && price <= priceRange.endInclusive
-                matchesPrice
+                val matchesSearch = product.product_name?.contains(searchQuery, ignoreCase = true) == true
+                matchesPrice && matchesSearch
             }
 
             when (sortOrder) {
@@ -240,6 +246,19 @@ data class AllProductsPremiumScreen(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
+
+                            IconButton(
+                                onClick = {
+                                    showSearchBar = !showSearchBar
+                                    if (!showSearchBar) searchQuery = ""
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = "Search",
+                                    tint = Color.White
+                                )
+                            }
 
                             IconButton(
                                 onClick = {
@@ -340,6 +359,23 @@ data class AllProductsPremiumScreen(
                     .padding(paddingValues)
                     .background(Color(0xFFF8F9FB))
             ) {
+                AnimatedVisibility(
+                    visible = showSearchBar,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color.White,
+                        shadowElevation = 1.dp
+                    ) {
+                        TallySearchBar(
+                            searchQuery = searchQuery,
+                            onQueryChange = { searchQuery = it }
+                        )
+                    }
+                }
+
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color.White,
