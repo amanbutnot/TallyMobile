@@ -146,6 +146,10 @@ private fun CartContent(
     var startTime by remember { mutableStateOf("") }
     var endTime by remember { mutableStateOf("") }
 
+    var pickupDay by remember { mutableStateOf("Today") }
+    var pickupStartTime by remember { mutableStateOf("") }
+    var pickupEndTime by remember { mutableStateOf("") }
+
     val availableCoupons = remember {
         try {
             DatabaseHolder.instance.coupon_MasterQueries.selectAll().executeAsList().map {
@@ -248,13 +252,26 @@ private fun CartContent(
         }
 
         item {
-            DeliveryTimeSection(
+            OrderTimeSection(
+                title = "Delivery Time",
                 deliveryDay = deliveryDay,
                 onDaySelected = { deliveryDay = it },
                 startTime = startTime,
                 onStartTimeChange = { startTime = it },
                 endTime = endTime,
                 onEndTimeChange = { endTime = it }
+            )
+        }
+
+        item {
+            OrderTimeSection(
+                title = "Pickup Time",
+                deliveryDay = pickupDay,
+                onDaySelected = { pickupDay = it },
+                startTime = pickupStartTime,
+                onStartTimeChange = { pickupStartTime = it },
+                endTime = pickupEndTime,
+                onEndTimeChange = { pickupEndTime = it }
             )
         }
 
@@ -283,7 +300,10 @@ private fun CartContent(
                     remarks = remarks,
                     deliveryDay = deliveryDay,
                     startTime = startTime,
-                    endTime = endTime
+                    endTime = endTime,
+                    pickupDay = pickupDay,
+                    pickupStartTime = pickupStartTime,
+                    pickupEndTime = pickupEndTime
                 )
             }
         }
@@ -291,7 +311,8 @@ private fun CartContent(
 }
 
 @Composable
-fun DeliveryTimeSection(
+fun OrderTimeSection(
+    title: String,
     deliveryDay: String,
     onDaySelected: (String) -> Unit,
     startTime: String,
@@ -329,7 +350,7 @@ fun DeliveryTimeSection(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Delivery Time",
+                    text = title,
                     style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -946,7 +967,10 @@ fun ConfirmOrderButton(
     remarks: String = "",
     deliveryDay: String = "",
     startTime: String = "",
-    endTime: String = ""
+    endTime: String = "",
+    pickupDay: String = "",
+    pickupStartTime: String = "",
+    pickupEndTime: String = ""
 ) {
     val totalDiscountedPrice = products.sumOf {
         val discounted = it.product.discounted_price ?: 0.0
@@ -1051,7 +1075,9 @@ fun ConfirmOrderButton(
                 } else emptyList()
 
                 val deliveryRemarks = "Delivery: $deliveryDay, Time: $startTime - $endTime"
-                val finalRemarks = if (remarks.isNotEmpty()) "$remarks | $deliveryRemarks" else deliveryRemarks
+                val pickupRemarks = "Pickup: $pickupDay, Time: $pickupStartTime - $pickupEndTime"
+                val timeRemarks = "$deliveryRemarks | $pickupRemarks"
+                val finalRemarks = if (remarks.isNotEmpty()) "$remarks | $timeRemarks" else timeRemarks
 
                 orderViewModel.createOrder(
                     CreateOrderRequest(
