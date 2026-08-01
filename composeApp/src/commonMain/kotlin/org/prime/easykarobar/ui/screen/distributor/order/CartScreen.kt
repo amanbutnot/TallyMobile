@@ -150,6 +150,8 @@ private fun CartContent(
     var pickupStartTime by remember { mutableStateOf("") }
     var pickupEndTime by remember { mutableStateOf("") }
 
+    var isDelivery by remember { mutableStateOf(true) }
+
     val availableCoupons = remember {
         try {
             DatabaseHolder.instance.coupon_MasterQueries.selectAll().executeAsList().map {
@@ -252,27 +254,36 @@ private fun CartContent(
         }
 
         item {
-            OrderTimeSection(
-                title = "Delivery Time",
-                deliveryDay = deliveryDay,
-                onDaySelected = { deliveryDay = it },
-                startTime = startTime,
-                onStartTimeChange = { startTime = it },
-                endTime = endTime,
-                onEndTimeChange = { endTime = it }
+            OrderTypeSelection(
+                isDelivery = isDelivery,
+                onTypeSelected = { isDelivery = it }
             )
         }
 
-        item {
-            OrderTimeSection(
-                title = "Pickup Time",
-                deliveryDay = pickupDay,
-                onDaySelected = { pickupDay = it },
-                startTime = pickupStartTime,
-                onStartTimeChange = { pickupStartTime = it },
-                endTime = pickupEndTime,
-                onEndTimeChange = { pickupEndTime = it }
-            )
+        if (isDelivery) {
+            item {
+                OrderTimeSection(
+                    title = "Delivery Time",
+                    deliveryDay = deliveryDay,
+                    onDaySelected = { deliveryDay = it },
+                    startTime = startTime,
+                    onStartTimeChange = { startTime = it },
+                    endTime = endTime,
+                    onEndTimeChange = { endTime = it }
+                )
+            }
+        } else {
+            item {
+                OrderTimeSection(
+                    title = "Pickup Time",
+                    deliveryDay = pickupDay,
+                    onDaySelected = { pickupDay = it },
+                    startTime = pickupStartTime,
+                    onStartTimeChange = { pickupStartTime = it },
+                    endTime = pickupEndTime,
+                    onEndTimeChange = { pickupEndTime = it }
+                )
+            }
         }
 
         item {
@@ -303,8 +314,82 @@ private fun CartContent(
                     endTime = endTime,
                     pickupDay = pickupDay,
                     pickupStartTime = pickupStartTime,
-                    pickupEndTime = pickupEndTime
+                    pickupEndTime = pickupEndTime,
+                    isDelivery = isDelivery
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun OrderTypeSelection(
+    isDelivery: Boolean,
+    onTypeSelected: (Boolean) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 6.dp,
+                shape = RoundedCornerShape(16.dp),
+                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+            ),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ShoppingBag,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Order Type",
+                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { onTypeSelected(true) }
+                ) {
+                    RadioButton(
+                        selected = isDelivery,
+                        onClick = { onTypeSelected(true) }
+                    )
+                    Text("Delivery", style = MaterialTheme.typography.bodyMedium)
+                }
+                Spacer(modifier = Modifier.width(24.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { onTypeSelected(false) }
+                ) {
+                    RadioButton(
+                        selected = !isDelivery,
+                        onClick = { onTypeSelected(false) }
+                    )
+                    Text("Pickup", style = MaterialTheme.typography.bodyMedium)
+                }
             }
         }
     }
@@ -970,7 +1055,8 @@ fun ConfirmOrderButton(
     endTime: String = "",
     pickupDay: String = "",
     pickupStartTime: String = "",
-    pickupEndTime: String = ""
+    pickupEndTime: String = "",
+    isDelivery: Boolean = true
 ) {
     val totalDiscountedPrice = products.sumOf {
         val discounted = it.product.discounted_price ?: 0.0
@@ -1074,9 +1160,11 @@ fun ConfirmOrderButton(
                     )
                 } else emptyList()
 
-                val deliveryRemarks = "Delivery: $deliveryDay, Time: $startTime - $endTime"
-                val pickupRemarks = "Pickup: $pickupDay, Time: $pickupStartTime - $pickupEndTime"
-                val timeRemarks = "$deliveryRemarks | $pickupRemarks"
+                val timeRemarks = if (isDelivery) {
+                    "Delivery: $deliveryDay, Time: $startTime - $endTime"
+                } else {
+                    "Pickup: $pickupDay, Time: $pickupStartTime - $pickupEndTime"
+                }
                 val finalRemarks = if (remarks.isNotEmpty()) "$remarks | $timeRemarks" else timeRemarks
 
                 orderViewModel.createOrder(
