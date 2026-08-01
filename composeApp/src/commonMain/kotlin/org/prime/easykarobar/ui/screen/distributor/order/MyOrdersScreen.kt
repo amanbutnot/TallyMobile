@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -68,10 +69,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
+import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.CancelOrderRequest
 import org.prime.easykarobar.data.model.ORDERSTATUS
@@ -85,6 +89,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.tally.GetProductsForDis
 
 object MyOrdersScreen : Screen {
     @Composable
@@ -139,6 +144,9 @@ fun MyOrderContent(
     paddingValues: PaddingValues,
     viewModel: OrderViewModel,
 ) {
+
+    val nav = LocalNavigator.currentOrThrow
+    val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
 
     val cancelState by viewModel.cancelOrderState
     var showCancelDialog by remember { mutableStateOf(false) }
@@ -261,6 +269,35 @@ fun MyOrderContent(
                     onCancelOrder = {
                         selectedId = order.id.toString()
                         showCancelDialog = true
+                    },
+                    onRepeatOrder = {
+                        val ids = order.items.map { it.product_id }
+                        val products = DatabaseHolder.instance.productsQueries
+                            .getProductsByGuidsForDis(ids) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price ->
+                                GetProductsForDis(
+                                    product_id,
+                                    hospital_id,
+                                    product_name,
+                                    category_id,
+                                    unit_id,
+                                    sales_price,
+                                    MRP,
+                                    purchase_price,
+                                    discount,
+                                    gst_tax_percentage,
+                                    product_description,
+                                    created_at,
+                                    updated_at,
+                                    discounted_price
+                                )
+                            }.executeAsList()
+
+                        products.forEach { product ->
+                            val orderItem = order.items.find { it.product_id == product.product_id }
+                            val quantity = orderItem?.quantity ?: 1
+                            cartViewModel.updateQuantity(product, quantity)
+                        }
+                        nav.push(CartScreen)
                     }
                 )
             }
@@ -423,6 +460,7 @@ fun OrderCard(
     order: Order,
     onCancelOrder: () -> Unit,
     onHistoryClick: () -> Unit,
+    onRepeatOrder: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -673,6 +711,30 @@ fun OrderCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
+                Button(
+                    onClick = onRepeatOrder,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    elevation = ButtonDefaults.buttonElevation(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Repeat,
+                        contentDescription = "Repeat Order",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Repeat",
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
                 Button(
                     onClick = onHistoryClick,
                     colors = ButtonDefaults.buttonColors(

@@ -82,6 +82,7 @@ object SettingScreen : Screen {
     @Composable
     override fun Content() {
         val nav = LocalNavigator.currentOrThrow
+        val parentNav = LocalNavigator.currentOrThrow.parent
         BackHandler(true) {
             nav.pop()
         }
@@ -234,7 +235,7 @@ object SettingScreen : Screen {
 //                            modifier = Modifier.weight(1f)
 //                        )
 //                    }
-                    if (userRole() == ROLE.DISTRIBUTOR) {
+                    if (userRole() == ROLE.DISTRIBUTOR || SharedPrefs.IsEasyMart.get()) {
                         Text(
                             text = "Order Management",
                             style = MaterialTheme.typography.titleSmall.copy(
@@ -249,7 +250,7 @@ object SettingScreen : Screen {
                             subtitle = "Track and view your orders",
                             containerColor = colors.primary,
                             contentColor = colors.onPrimary,
-                            onClick = { nav.push(MyOrdersScreen) },
+                            onClick = { parentNav?.push(MyOrdersScreen) },
                             modifier = Modifier.fillMaxWidth()
                         )
 
