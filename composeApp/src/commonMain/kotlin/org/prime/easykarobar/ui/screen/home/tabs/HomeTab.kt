@@ -112,7 +112,6 @@ import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingReportScre
 import org.prime.easykarobar.ui.screen.reports.registers.RegisterReportScreen
 import org.prime.easykarobar.ui.screen.transactions.SingleEntryReceipt
 import org.prime.easykarobar.ui.screen.transactions.sale.SaleScreen
-import org.prime.easykarobar.ui.screen.transactions.sale.SaleScreen2
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallySearchButton
@@ -666,7 +665,7 @@ fun ExpandableGrid() {
                                         "D21",
                                         accessDeniedBlock = { showDeniedDialog = true },
                                         successBlock = {
-                                            nav?.push(SaleScreen2(item.first, vchType = 9))
+                                            nav?.push(SaleScreen(item.first, vchType = 9))
                                         })
 
                                     "Check In/Out" -> salesmanPermission(

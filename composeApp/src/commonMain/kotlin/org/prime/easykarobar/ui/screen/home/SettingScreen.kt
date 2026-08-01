@@ -100,7 +100,7 @@ object SettingScreen : Screen {
         showTaxTypeOption = SharedPrefs.ShowTaxType.get()
 
         val colors = MaterialTheme.colorScheme
-        TallyScaffold("Profile", showNavigationIcon = false, content = { innerPadding ->
+        TallyScaffold("Profile", showNavigationIcon = !SharedPrefs.IsEasyMart.get(), content = { innerPadding ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
