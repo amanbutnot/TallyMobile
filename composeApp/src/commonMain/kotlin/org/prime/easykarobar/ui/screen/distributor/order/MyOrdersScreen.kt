@@ -271,6 +271,7 @@ fun MyOrderContent(
                         showCancelDialog = true
                     },
                     onRepeatOrder = {
+                        cartViewModel.emptyList()
                         val ids = order.items.map { it.product_id }
                         val products = DatabaseHolder.instance.productsQueries
                             .getProductsByGuidsForDis(ids) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price ->
