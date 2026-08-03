@@ -124,13 +124,13 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
 
 
         // Calculate totals and closing balance
-        var totalDebit = 0.0
         var totalCredit = 0.0
+        var totalDebit = 0.0
         var runningBalance = openingBalance?.OpeningBal?.toDouble() ?: 0.0
 
         list.forEach { item ->
-            totalDebit += item.D2 ?: 0.0
-            totalCredit += item.D3 ?: 0.0
+            totalCredit += item.D2 ?: 0.0
+            totalDebit += item.D3 ?: 0.0
             runningBalance += (item.D2 ?: 0.0) - (item.D3 ?: 0.0)
         }
 
@@ -145,9 +145,9 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
             var bal = openingBalance?.OpeningBal?.toDouble() ?: 0.0
 
             list.forEach { item ->
-                val debit = item.D2 ?: 0.0
-                val credit = item.D3 ?: 0.0
-                bal += debit - credit
+                val credit = item.D2 ?: 0.0
+                val debit = item.D3 ?: 0.0
+                bal += credit - debit
                 val balType = if (bal >= 0) "Cr" else "Dr"
 
                 rows.add(
@@ -254,8 +254,8 @@ data class LedgerReportScreen(val accountName: String, val startDate: String, va
                     excelRows.add(
                         listOf(
                             "", "", "", "Total",
-                            totalCredit.formatToAmtDec(), // holds sum of D3 (Dr)
-                            totalDebit.formatToAmtDec(),  // holds sum of D2 (Cr)
+                            totalDebit.formatToAmtDec(),
+                            totalCredit.formatToAmtDec(),
                             ""
                         )
                     )
