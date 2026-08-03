@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import cafe.adriel.voyager.core.model.ScreenModel
 import kotlinx.coroutines.launch
 import org.prime.easykarobar.business.repository.OrderRepository
+import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.model.CancelOrderRequest
 import org.prime.easykarobar.data.model.CancelOrderResponse
 import org.prime.easykarobar.data.model.CreateOrderRequest
@@ -18,7 +19,6 @@ import org.prime.easykarobar.data.model.Product
 import org.prime.easykarobar.data.model.ProductCategoryList
 import org.prime.easykarobar.data.model.UpdateOrderStatusRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
-import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.tally.GetProductsForDis
 
 class OrderViewModel : ViewModel() {
@@ -107,6 +107,10 @@ class OrderViewModel : ViewModel() {
 
     fun clearOrderMessage() {
         _createOrderState.value = _createOrderState.value.copy(message = null)
+    }
+
+    fun clearUpdateStatusState() {
+        _updateStatusState.value = UpdateStatusState(success = false, message = null)
     }
 
     fun setMessage(msg: String) {

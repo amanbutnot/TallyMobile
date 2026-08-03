@@ -1,5 +1,6 @@
 package org.prime.easykarobar.data.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.prime.easykarobar.data.model.transactions.SundryItem
 
@@ -134,5 +135,35 @@ data class UpdateOrderStatusRequest(
 )
 
 enum class ORDERSTATUS {
-    Pending, Confirmed, InDispatched, Delivered, Cancelled,Billed,Posted
+    @SerialName("Pending")
+    Pending,
+
+    @SerialName("Confirmed")
+    Confirmed,
+
+    @SerialName("Ready for pickup")
+    ReadyForPickup,
+
+    @SerialName("Out for delivery")
+    OutForDelivery,
+
+    @SerialName("Delivered")
+    Delivered,
+
+    @SerialName("Cancelled")
+    Cancelled,
+
+    @SerialName("Billed")
+    Billed,
+
+    @SerialName("Posted")
+    Posted;
+
+    fun displayName(): String {
+        return when (this) {
+            ReadyForPickup -> "Ready for pickup"
+            OutForDelivery -> "Out for delivery"
+            else -> this.name
+        }
+    }
 }

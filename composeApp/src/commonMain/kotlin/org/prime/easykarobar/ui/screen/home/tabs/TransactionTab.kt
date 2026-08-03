@@ -106,6 +106,10 @@ object TransactionTab : Tab {
             TransactionType("Follow Up", Icons.Default.AddComment),
             TransactionType("Followup List", Icons.Default.List)
         )
+        val statusList = listOf(
+            TransactionType("Sale", Icons.Default.Receipt),
+
+            )
 
         val inventoryList = listOf(
             TransactionType("Sale Order", Icons.Default.Receipt),
@@ -117,7 +121,7 @@ object TransactionTab : Tab {
             TransactionType("Stock Transfer", Icons.Default.Work),
             TransactionType("Sale Quotation", Icons.Default.Work),
             TransactionType("Purchase Quotation", Icons.Default.Work),
-      //      TransactionType("Scan Barcode", Icons.Default.BarChart)
+            //      TransactionType("Scan Barcode", Icons.Default.BarChart)
         )
 
         BackHandler(true) {
@@ -166,7 +170,7 @@ object TransactionTab : Tab {
                                     nav?.push(
                                         SingleEntryFilterScreen(
                                             type.name,
-                                            vchType = 12
+                                            vchType = 12,
                                         )
                                     )
                                 }
@@ -182,7 +186,7 @@ object TransactionTab : Tab {
                                     nav?.push(
                                         SingleEntryFilterScreen(
                                             type.name,
-                                            vchType = 3
+                                            vchType = 3,
                                         )
                                     )
                                 }
@@ -198,7 +202,7 @@ object TransactionTab : Tab {
                                     nav?.push(
                                         SingleEntryFilterScreen(
                                             type.name,
-                                            vchType = 9
+                                            vchType = 9,
                                         )
                                     )
                                 }
@@ -214,7 +218,7 @@ object TransactionTab : Tab {
                                     nav?.push(
                                         SingleEntryFilterScreen(
                                             type.name,
-                                            vchType = 13
+                                            vchType = 13,
                                         )
                                     )
                                 }
@@ -230,7 +234,7 @@ object TransactionTab : Tab {
                                     nav?.push(
                                         SingleEntryFilterScreen(
                                             type.name,
-                                            vchType = 10
+                                            vchType = 10,
                                         )
                                     )
                                 }
@@ -246,7 +250,7 @@ object TransactionTab : Tab {
                                     nav?.push(
                                         SingleEntryFilterScreen(
                                             type.name,
-                                            vchType = 2
+                                            vchType = 2,
                                         )
                                     )
                                 }
@@ -257,7 +261,7 @@ object TransactionTab : Tab {
                         6 -> nav?.push(
                             SingleEntryFilterScreen(
                                 type.name,
-                                vchType = 7
+                                vchType = 7,
                             )
                         )
 
@@ -274,13 +278,14 @@ object TransactionTab : Tab {
                         7 -> nav?.push(
                             SingleEntryFilterScreen(
                                 type.name,
-                                vchType = 26
+                                vchType = 26,
                             )
                         )
+
                         8 -> nav?.push(
                             SingleEntryFilterScreen(
                                 type.name,
-                                vchType = 27
+                                vchType = 27,
                             )
                         )
                     }
@@ -299,7 +304,7 @@ object TransactionTab : Tab {
                                     nav?.push(
                                         SingleEntryFilterScreen(
                                             type.name,
-                                            vchType = 14
+                                            vchType = 14,
                                         )
                                     )
                                 }
@@ -315,7 +320,7 @@ object TransactionTab : Tab {
                                     nav?.push(
                                         SingleEntryFilterScreen(
                                             type.name,
-                                            vchType = 19
+                                            vchType = 19,
                                         )
                                     )
                                 }
@@ -331,7 +336,7 @@ object TransactionTab : Tab {
                                     nav?.push(
                                         SingleEntryFilterScreen(
                                             type.name,
-                                            vchType = 16
+                                            vchType = 16,
                                         )
                                     )
                                 }
@@ -347,7 +352,7 @@ object TransactionTab : Tab {
                                     nav?.push(
                                         SingleEntryFilterScreen(
                                             type.name,
-                                            vchType = 15
+                                            vchType = 15,
                                         )
                                     )
                                 }
@@ -386,41 +391,62 @@ object TransactionTab : Tab {
                                 }
                             )
                         }
+
                         6 -> {
 //                            salesmanPermission(
 //                                "D28",
 //                                accessDeniedBlock = { showDeniedDialog = true },
 //                                successBlock = {
-                                    nav?.push(
-                                        SingleEntryFilterScreen(
-                                            type.name,
-                                            vchType = 17
-                                        )
-                                    )
+                            nav?.push(
+                                SingleEntryFilterScreen(
+                                    type.name,
+                                    vchType = 17,
+                                )
+                            )
 //                                }
 //                            )
 
                         }
+
                         7 -> {
 //                            salesmanPermission(
 //                                "D28",
 //                                accessDeniedBlock = { showDeniedDialog = true },
 //                                successBlock = {
-                                    nav?.push(
-                                        SingleEntryFilterScreen(
-                                            type.name,
-                                            vchType = 18
-                                        )
-                                    )
+                            nav?.push(
+                                SingleEntryFilterScreen(
+                                    type.name,
+                                    vchType = 18,
+                                )
+                            )
 //                                }
 //                            )
 
                         }
+
                         8 -> nav?.push(FollowUpScreen())
                         9 -> nav?.push(FollowupFilterScreen())
                     }
                 }
             )
+//      //      if (SharedPrefs.User.get()?.ID == 13001) {
+//
+//                TopCard(
+//                    colors,
+//                    title = "Order status change",
+//                    tranList = statusList, onClick = { index, type ->
+//                        when (index) {
+//                            0 -> {
+//                                nav?.push(
+//                                    SingleEntryFilterScreen(
+//                                        type.name,
+//                                        vchType = 12, showStatusChange = true
+//                                    )
+//                                )
+//                            }
+//                        }
+//                    })
+//          //  }
 
             if (showDeniedDialog) {
                 PermissionDeniedDialog { showDeniedDialog = false }

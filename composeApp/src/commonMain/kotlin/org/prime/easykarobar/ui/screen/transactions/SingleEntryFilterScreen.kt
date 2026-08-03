@@ -7,7 +7,11 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.ui.screen.transactions.sale.SaleScreen
 import org.prime.easykarobar.ui.shared.reportsShared.ReportFilterScreen
 
-data class SingleEntryFilterScreen(val name: String, val vchType: Int) : Screen {
+data class SingleEntryFilterScreen(
+    val name: String,
+    val vchType: Int,
+    val showStatusChange: Boolean=false
+) : Screen {
     @Composable
     override fun Content() {
         val nav = LocalNavigator.currentOrThrow
@@ -60,7 +64,7 @@ data class SingleEntryFilterScreen(val name: String, val vchType: Int) : Screen 
                                 startDate = it.startDate,
                                 endDate = it.endDate,
                                 vchType = vchType,
-                                name = name
+                                name = name,showStatusChange = showStatusChange
                             )
                         )
                     }
