@@ -152,6 +152,15 @@ private fun CartContent(
 
     var isDelivery by remember { mutableStateOf(true) }
 
+    val unitMap = remember {
+        try {
+            DatabaseHolder.instance.productUnitMasterQueries.selectAll().executeAsList()
+                .associate { it.Code.toDouble() to it.Name?.trim()?.lowercase() }
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
     val availableCoupons = remember {
         try {
             DatabaseHolder.instance.coupon_MasterQueries.selectAll().executeAsList().map {
@@ -249,7 +258,8 @@ private fun CartContent(
             Spacer(modifier = Modifier.height(4.dp))
             CartSummary(
                 products = list,
-                appliedCoupon = appliedCoupon
+                appliedCoupon = appliedCoupon,
+                unitMap = unitMap
             )
         }
 
@@ -315,7 +325,8 @@ private fun CartContent(
                     pickupDay = pickupDay,
                     pickupStartTime = pickupStartTime,
                     pickupEndTime = pickupEndTime,
-                    isDelivery = isDelivery
+                    isDelivery = isDelivery,
+                    unitMap = unitMap
                 )
             }
         }
@@ -832,7 +843,8 @@ private fun CartProductItem(
 @Composable
 fun CartSummary(
     products: List<CartItem>,
-    appliedCoupon: Coupon? = null
+    appliedCoupon: Coupon? = null,
+    unitMap: Map<Double, String?> = emptyMap()
 ) {
 
 //    val totalMrp = products.sumOf {
@@ -863,6 +875,16 @@ fun CartSummary(
 
     val totalBeforeCoupon = (totalDiscountedPrice + totalGst).toDouble()
 
+    val totalHamali = products.sumOf { cartItem ->
+        val unitName = unitMap[cartItem.product.unit_id ?: 0.0]
+        val quantity = cartItem.quantity.value
+        when (unitName) {
+            "box", "tin" -> quantity * 2.0
+            "bag" -> quantity * 5.0
+            else -> 0.0
+        }
+    }
+
     val couponDiscount = if (appliedCoupon != null && totalDiscountedPrice >= appliedCoupon.minOrderValue) {
         if (appliedCoupon.discountType == "flat") {
             appliedCoupon.discountValue
@@ -871,7 +893,7 @@ fun CartSummary(
         }
     } else 0.0
 
-    val finalTotal = totalBeforeCoupon - couponDiscount
+    val finalTotal = totalBeforeCoupon - couponDiscount + totalHamali
     val totalSavingsCombined = totalSavings + couponDiscount
 
     Card(
@@ -955,6 +977,15 @@ fun CartSummary(
                 textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
                 // valueColor = MaterialTheme.colorScheme.tertiary
             )
+
+            if (totalHamali > 0.0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                SummaryRow(
+                    label = "Hamali",
+                    value = totalHamali.formatToAmtDec(),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+                )
+            }
 
             if (appliedCoupon != null) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -1056,7 +1087,8 @@ fun ConfirmOrderButton(
     pickupDay: String = "",
     pickupStartTime: String = "",
     pickupEndTime: String = "",
-    isDelivery: Boolean = true
+    isDelivery: Boolean = true,
+    unitMap: Map<Double, String?> = emptyMap()
 ) {
     val totalDiscountedPrice = products.sumOf {
         val discounted = it.product.discounted_price ?: 0.0
@@ -1072,6 +1104,16 @@ fun ConfirmOrderButton(
 
     val totalBeforeCoupon = (totalDiscountedPrice + totalGst).toDouble()
 
+    val totalHamali = products.sumOf { cartItem ->
+        val unitName = unitMap[cartItem.product.unit_id ?: 0.0]
+        val quantity = cartItem.quantity.value
+        when (unitName) {
+            "box", "tin" -> quantity * 2.0
+            "bag" -> quantity * 5.0
+            else -> 0.0
+        }
+    }
+
     val couponDiscount = if (appliedCoupon != null && totalDiscountedPrice >= appliedCoupon.minOrderValue) {
         if (appliedCoupon.discountType == "flat") {
             appliedCoupon.discountValue
@@ -1080,7 +1122,7 @@ fun ConfirmOrderButton(
         }
     } else 0.0
 
-    val finalTotal = totalBeforeCoupon - couponDiscount
+    val finalTotal = totalBeforeCoupon - couponDiscount + totalHamali
 
     val orderViewModel: OrderViewModel = viewModel { OrderViewModel() }
     val orderDataState by orderViewModel.createOrderState
@@ -1144,21 +1186,47 @@ fun ConfirmOrderButton(
             onConfirm = {
                 showConfirmDialog = false
 
-                val sundriesList = if (appliedCoupon != null) {
-                    listOf(
+                val sundriesList = mutableListOf<SundryItem>()
+                if (appliedCoupon != null) {
+                    sundriesList.add(
                         SundryItem(
                             name = appliedCoupon.code,
                             amount = -couponDiscount,
                             rate = if (appliedCoupon.discountType == "percent") appliedCoupon.discountValue else 0.0,
                             percentValue = if (appliedCoupon.discountType == "percent") appliedCoupon.discountValue else 0.0,
-                            srno = 1,
+                            srno = sundriesList.size + 1,
                             guid = "",
                             i1 = 0,
                             i2 = 0,
                             d2 = 0
                         )
                     )
-                } else emptyList()
+                }
+
+                products.forEach { cartItem ->
+                    val unitName = unitMap[cartItem.product.unit_id ?: 0.0]
+                    val quantity = cartItem.quantity.value
+                    val rate = when (unitName) {
+                        "box", "tin" -> 2.0
+                        "bag" -> 5.0
+                        else -> 0.0
+                    }
+                    if (rate > 0) {
+                        sundriesList.add(
+                            SundryItem(
+                                name = "hamali",
+                                amount = rate * quantity,
+                                rate = rate,
+                                percentValue = 0.0,
+                                srno = sundriesList.size + 1,
+                                guid = "",
+                                i1 = 0,
+                                i2 = 0,
+                                d2 = 0
+                            )
+                        )
+                    }
+                }
 
                 val timeRemarks = if (isDelivery) {
                     "Delivery: $deliveryDay, Time: $startTime - $endTime"
