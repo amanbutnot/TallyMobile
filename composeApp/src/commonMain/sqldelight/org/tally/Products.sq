@@ -24,8 +24,15 @@ CREATE TABLE Products (
     Vendor TEXT,
     VendorCode REAL,
     MaintainStock REAL,
+    E4 REAL,
+    E5 REAL,
     ALTERID TEXT,
-    GUID TEXT UNIQUE,N1 REAL,AltUnit TEXT,ConFactor REAL,ConType REAL
+    GUID TEXT UNIQUE,N1 REAL,AltUnit TEXT,ConFactor REAL,ConType REAL,L6 REAL,
+    PRICE1 REAL,
+    PRICE2 REAL,
+    PRICE3 REAL,
+    PRICE4 REAL,
+    PRICE5 REAL
 );
 
 existingItems:
@@ -159,10 +166,14 @@ COALESCE(
             ELSE SalesPrice - (SalesPrice * SaleDisc / 100.0)
         END,
         2
-    ) AS discounted_price
+    ) AS discounted_price,
+    UnitName AS main_unit,
+    AltUnit AS alt_unit,
+    ConFactor AS con_factor,
+    ConType AS con_type
 
 FROM Products
-WHERE (:filterGroup = 0 OR Products.GroupCode IN :groupCodes) AND (:productCode IS NULL OR Products.GroupCode = :productCode)
+WHERE (:filterGroup = 0 OR Products.GroupCode IN :groupCodes) AND (:productCode IS NULL OR Products.GroupCode = :productCode) AND ( Products.E4 <> -1.0   OR  Products.E4 IS NULL) AND   (Products.E5<>-1.0 OR  Products.E5 IS NULL )
 ORDER BY Name;
 
 getProductsByGuidsForDis:
@@ -199,10 +210,14 @@ COALESCE(
             ELSE SalesPrice - (SalesPrice * SaleDisc / 100.0)
         END,
         2
-    ) AS discounted_price
+    ) AS discounted_price,
+    UnitName AS main_unit,
+    AltUnit AS alt_unit,
+    ConFactor AS con_factor,
+    ConType AS con_type
 
 FROM Products
-WHERE GUID IN :guids
+WHERE GUID IN :guids AND ( Products.E4 <> -1.0   OR  Products.E4 IS NULL) AND   (Products.E5<>-1.0 OR  Products.E5 IS NULL )
 ORDER BY Name;
 
 
@@ -247,7 +262,7 @@ LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
 WHERE GroupCode IN ?
   AND Products.GUID NOT IN ?
-  AND (:applyN1Filter = 0 OR N1 > 0)
+  AND (:applyN1Filter = 0 OR N1 > 0) AND Products.E4 <> -1.0 AND Products.E5<>-1.0
 ORDER BY Name;
 
 selectByGroupCodeConfig:
@@ -286,7 +301,7 @@ FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
     WHERE GroupCode IN ?
-  AND (:applyN1Filter = 0 OR N1 > 0)
+  AND (:applyN1Filter = 0 OR N1 > 0) AND Products.E4 <> -1.0 AND Products.E5<>-1.0
 ORDER BY Name;
 
 selectExcludingGuidConfig:
@@ -325,7 +340,7 @@ FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
 WHERE Products.GUID NOT IN ?
-  AND (:applyN1Filter = 0 OR N1 > 0)
+  AND (:applyN1Filter = 0 OR N1 > 0) AND Products.E4 <> -1.0 AND Products.E5<>-1.0
 ORDER BY Name;
 
 selectAllConfig:
@@ -363,5 +378,5 @@ SELECT
 FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
-WHERE (:applyN1Filter = 0 OR N1 > 0)
+WHERE (:applyN1Filter = 0 OR N1 > 0) AND Products.E4 <> -1.0 AND Products.E5<>-1.0
 ORDER BY Name;
