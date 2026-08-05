@@ -503,7 +503,7 @@ object CategoryShoppingScreen : Screen {
                 modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp)
             )
 
-            val chunks = remember(categories) { categories.chunked(4) }
+            val chunks = remember(categories) { categories.chunked(3) }
             chunks.forEach { rowItems ->
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -520,7 +520,7 @@ object CategoryShoppingScreen : Screen {
                             onClick = { onCategoryClick(category) }
                         )
                     }
-                    repeat(4 - rowItems.size) {
+                    repeat(3 - rowItems.size) {
                         Spacer(modifier = Modifier.weight(1f))
                     }
                 }
