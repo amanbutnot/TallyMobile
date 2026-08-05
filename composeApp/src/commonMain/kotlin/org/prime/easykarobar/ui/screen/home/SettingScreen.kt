@@ -488,9 +488,9 @@ object SettingScreen : Screen {
                             deleteDbFile()
                             SharedPrefs.logout()
                             if (BuildKonfig.STORE_ID.isNotEmpty()) {
-                                nav.replaceAll(EasyMartScreen)
+                                parentNav?.replaceAll(EasyMartScreen)
                             } else {
-                                nav.replaceAll(OnBoardingScreen)
+                                parentNav?.replaceAll(OnBoardingScreen)
                             }
                         },
                         onCancel = {
