@@ -296,7 +296,7 @@ fun MyOrderContent(
                         products.forEach { product ->
                             val orderItem = order.items.find { it.product_id == product.product_id }
                             val quantity = orderItem?.quantity ?: 1
-                            cartViewModel.updateQuantity(product, quantity)
+                            cartViewModel.updateQuantity(product, quantity.toDouble())
                         }
                         nav.push(CartScreen)
                     }

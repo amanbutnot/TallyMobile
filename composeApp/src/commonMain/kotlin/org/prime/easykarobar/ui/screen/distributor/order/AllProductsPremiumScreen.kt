@@ -294,12 +294,14 @@ data class AllProductsPremiumScreen(
 
                             BadgedBox(
                                 badge = {
-                                    if (cartViewModel.getTotalProductCount() > 0) {
+                                    if (cartViewModel.getTotalProductCount() > 0.0) {
                                         Badge(
                                             containerColor = Color(0xFFE53935),
                                             contentColor = Color.White
                                         ) {
-                                            Text(cartViewModel.getTotalProductCount().toString())
+                                            val count = cartViewModel.getTotalProductCount()
+                                            val displayCount = if (count == count.toLong().toDouble()) count.toLong().toString() else count.toString()
+                                            Text(displayCount)
                                         }
                                     }
                                 },
@@ -1071,11 +1073,16 @@ data class AllProductsPremiumScreen(
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }
-                                    Text(
-                                        text = quantity.toString(),
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.padding(horizontal = 4.dp)
+                                    QuantityTextField(
+                                        quantity = quantity,
+                                        onQuantityChange = { cartViewModel.updateQuantity(product, it) },
+                                        modifier = Modifier.width(30.dp),
+                                        textStyle = TextStyle(
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            textAlign = TextAlign.Center,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
                                     )
                                     IconButton(
                                         onClick = { cartViewModel.increaseQuantity(product) },

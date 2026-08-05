@@ -253,7 +253,7 @@ class CartViewModel : ScreenModel {
         return _cartItems.any { it.product.product_id == product.product_id }
     }
 
-    fun getTotalProductCount(): Int {
+    fun getTotalProductCount(): Double {
         return _cartItems.sumOf { it.quantity.value }
     }
 
@@ -281,7 +281,7 @@ class CartViewModel : ScreenModel {
     fun decreaseQuantity(product: GetProductsForDis) {
         val existingItem = _cartItems.find { it.product.product_id == product.product_id }
         if (existingItem != null) {
-            if (existingItem.quantity.value > 1) {
+            if (existingItem.quantity.value > 1.0) {
                 existingItem.quantity.value--
             } else {
                 _cartItems.remove(existingItem)
@@ -290,11 +290,11 @@ class CartViewModel : ScreenModel {
         saveCart()
     }
 
-    fun getProductQuantity(product: GetProductsForDis): Int {
-        return _cartItems.find { it.product.product_id == product.product_id }?.quantity?.value ?: 0
+    fun getProductQuantity(product: GetProductsForDis): Double {
+        return _cartItems.find { it.product.product_id == product.product_id }?.quantity?.value ?: 0.0
     }
 
-    fun updateQuantity(product: GetProductsForDis, quantity: Int) {
+    fun updateQuantity(product: GetProductsForDis, quantity: Double) {
         val existingItem = _cartItems.find { it.product.product_id == product.product_id }
         if (existingItem != null) {
             if (quantity > 0) {
@@ -311,10 +311,10 @@ class CartViewModel : ScreenModel {
 
 data class CartItem(
     val product: GetProductsForDis,
-    val quantity: MutableState<Int> = mutableStateOf(1)
+    val quantity: MutableState<Double> = mutableStateOf(1.0)
 )
 
 data class ProductCartItem(
     val productList: Product,
-    val quantity: Int
+    val quantity: Double
 )

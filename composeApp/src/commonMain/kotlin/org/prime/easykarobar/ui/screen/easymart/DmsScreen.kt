@@ -80,12 +80,14 @@ object DmsScreen : Screen {
                         },
                         actions = {
                             BadgedBox(badge = {
-                                if ((cartViewModel?.getTotalProductCount() ?: 0) > 0) {
+                                val count = cartViewModel?.getTotalProductCount() ?: 0.0
+                                if (count > 0.0) {
                                     Badge(
                                         containerColor = Color(0xFFE53935),
                                         contentColor = Color.White
                                     ) {
-                                        Text(cartViewModel?.getTotalProductCount().toString())
+                                        val displayCount = if (count == count.toLong().toDouble()) count.toLong().toString() else count.toString()
+                                        Text(displayCount)
                                     }
                                 }
                             }) {

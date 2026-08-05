@@ -644,12 +644,14 @@ object ShoppingScreen : Screen {
 
                 BadgedBox(
                     badge = {
-                        if (cartViewModel.getTotalProductCount() > 0) {
+                        val count = cartViewModel.getTotalProductCount()
+                        if (count > 0.0) {
                             Badge(
                                 containerColor = MaterialTheme.colorScheme.error,
                                 contentColor = MaterialTheme.colorScheme.onError
                             ) {
-                                Text("${cartViewModel.getTotalProductCount()}")
+                                val displayCount = if (count == count.toLong().toDouble()) count.toLong().toString() else count.toString()
+                                Text(displayCount)
                             }
                         }
                     }) {

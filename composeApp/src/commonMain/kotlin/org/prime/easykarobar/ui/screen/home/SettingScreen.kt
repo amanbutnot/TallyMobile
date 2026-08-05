@@ -277,6 +277,15 @@ object SettingScreen : Screen {
                                 "Last Synced from Software",
                                 compInfo.C8.toString()
                             )
+                            TallyToggleRow(
+                                checked = ProductLayout,
+                                onCheckedChange = {
+                                    SharedPrefs.ProductLayout.save(it)
+                                    ProductLayout = it
+                                },
+                                title = "Layout Mode",
+                                desc = "Enable Two Layout Mode"
+                            )
                         }
                     } else {
 
@@ -381,15 +390,6 @@ object SettingScreen : Screen {
                                 Icons.Default.SyncLock,
                                 "Last Synced from Software",
                                 compInfo.C8.toString()
-                            )
-                            TallyToggleRow(
-                                checked = ProductLayout,
-                                onCheckedChange = {
-                                    SharedPrefs.ProductLayout.save(it)
-                                    ProductLayout = it
-                                },
-                                title = "Layout Mode",
-                                desc = "Enable Two Layout Mode"
                             )
                             if (userRole() !in listOf(
                                     ROLE.STAFF_MANAGER,

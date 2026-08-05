@@ -377,7 +377,7 @@ object SharedPrefs {
         @Serializable
         data class CartPersistenceItem(
             val productId: String,
-            val quantity: Int
+            val quantity: Double
         )
 
         private fun getKey(): String {

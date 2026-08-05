@@ -17,8 +17,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 
 @Composable
 fun QuantityTextField(
-    quantity: Int,
-    onQuantityChange: (Int) -> Unit,
+    quantity: Double,
+    onQuantityChange: (Double) -> Unit,
     modifier: Modifier = Modifier,
     textStyle: TextStyle = TextStyle.Default,
     decorationBox: @Composable (@Composable () -> Unit) -> Unit = { it() }
@@ -26,9 +26,13 @@ fun QuantityTextField(
     var textFieldValue by remember { mutableStateOf(TextFieldValue("")) }
     var isFocused by remember { mutableStateOf(false) }
 
+    fun formatQuantity(q: Double): String {
+        return if (q == 0.0) "" else if (q == q.toLong().toDouble()) q.toLong().toString() else q.toString()
+    }
+
     LaunchedEffect(quantity, isFocused) {
         if (!isFocused) {
-            val targetText = if (quantity == 0) "" else quantity.toString()
+            val targetText = formatQuantity(quantity)
             textFieldValue = TextFieldValue(
                 text = targetText,
                 selection = TextRange(targetText.length)
@@ -39,8 +43,12 @@ fun QuantityTextField(
     BasicTextField(
         value = textFieldValue,
         onValueChange = { newValue ->
-            textFieldValue = newValue
-            onQuantityChange(newValue.text.toIntOrNull() ?: 0)
+            // Allow only numbers and a single decimal point
+            if (newValue.text.isEmpty() || newValue.text.matches(Regex("""^\d*\.?\d*$"""))) {
+                textFieldValue = newValue
+                val parsed = newValue.text.toDoubleOrNull() ?: 0.0
+                onQuantityChange(parsed)
+            }
         },
         modifier = modifier.onFocusChanged { focus ->
             isFocused = focus.isFocused
@@ -51,7 +59,7 @@ fun QuantityTextField(
             }
         },
         textStyle = textStyle,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         singleLine = true,
         decorationBox = decorationBox
     )

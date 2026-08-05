@@ -1102,7 +1102,7 @@ fun ConfirmOrderButton(
         gstPerItem * it.quantity.value
     }
 
-    val totalBeforeCoupon = (totalDiscountedPrice + totalGst).toDouble()
+    val totalBeforeCoupon = (totalDiscountedPrice + totalGst)
 
     val totalHamali = products.sumOf { cartItem ->
         val unitName = unitMap[cartItem.product.unit_id ?: 0.0]
@@ -1524,7 +1524,7 @@ data class CartSummaryItem(
     val discountedPrice: Double,
     val discountPercent: Double,
     val gstPercent: Double,
-    val quantity: Int
+    val quantity: Double
 )
 
 fun CartItem.toSummaryItem(): CartSummaryItem {

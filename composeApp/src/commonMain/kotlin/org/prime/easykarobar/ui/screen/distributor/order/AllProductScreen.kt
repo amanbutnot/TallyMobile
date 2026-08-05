@@ -26,7 +26,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -213,8 +212,11 @@ fun TopHeaderAllProducts(
                 BadgedBox(
                     badge = {
                         val count = cartViewModel.getTotalProductCount()
-                        if (count > 0) {
-                            Badge { Text("$count") }
+                        if (count > 0.0) {
+                            Badge {
+                                val displayCount = if (count == count.toLong().toDouble()) count.toLong().toString() else count.toString()
+                                Text(displayCount)
+                            }
                         }
                     }
                 ) {

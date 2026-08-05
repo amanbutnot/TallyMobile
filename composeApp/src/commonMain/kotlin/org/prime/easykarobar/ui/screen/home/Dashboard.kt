@@ -178,14 +178,14 @@ object Dashboard : Screen {
                                 if (userRole() == ROLE.DISTRIBUTOR || SharedPrefs.IsEasyMart.get()) {
                                     BadgedBox(
                                         badge = {
-                                            if ((cartViewModel?.getTotalProductCount() ?: 0) > 0) {
+                                            val count = cartViewModel?.getTotalProductCount() ?: 0.0
+                                            if (count > 0.0) {
                                                 Badge(
                                                     containerColor = Color(0xFFE53935),
                                                     contentColor = Color.White
                                                 ) {
-                                                    Text(
-                                                        cartViewModel?.getTotalProductCount().toString()
-                                                    )
+                                                    val displayCount = if (count == count.toLong().toDouble()) count.toLong().toString() else count.toString()
+                                                    Text(displayCount)
                                                 }
                                             }
                                         },
@@ -207,12 +207,13 @@ object Dashboard : Screen {
                                             if (userRole() == ROLE.DISTRIBUTOR) Icons.Default.Person else Icons.Default.Settings,
                                             contentDescription = "Settings icon",
                                             tint = colors.onBackground
+
                                         )
                                     }
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
-                           //     containerColor = colors.primary.copy(alpha = 0.2f)
+//                                containerColor = colors.primary.copy(alpha = 0.2f)
                                 containerColor = Color(0xFFFF6D00),
                                 titleContentColor = Color.White,
                                 navigationIconContentColor = Color.White,
