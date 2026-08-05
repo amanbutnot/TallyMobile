@@ -297,11 +297,7 @@ class CartViewModel : ScreenModel {
     fun updateQuantity(product: GetProductsForDis, quantity: Double) {
         val existingItem = _cartItems.find { it.product.product_id == product.product_id }
         if (existingItem != null) {
-            if (quantity > 0) {
-                existingItem.quantity.value = quantity
-            } else {
-                _cartItems.remove(existingItem)
-            }
+            existingItem.quantity.value = quantity
         } else if (quantity > 0) {
             _cartItems.add(CartItem(product, mutableStateOf(quantity)))
         }
