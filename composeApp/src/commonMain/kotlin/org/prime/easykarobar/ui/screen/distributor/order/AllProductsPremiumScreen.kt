@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.HorizontalRule
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -47,6 +48,8 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -159,7 +162,7 @@ data class AllProductsPremiumScreen(
 
         val productList = remember(currentCategoryCode, currentProductGuids) {
             if (currentProductGuids != null) {
-                db.productsQueries.getProductsByGuidsForDis(currentProductGuids!!) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price ->
+                db.productsQueries.getProductsByGuidsForDis(currentProductGuids!!) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price, main_unit, alt_unit, con_factor, con_type ->
                     GetProductsForDis(
                         product_id,
                         hospital_id,
@@ -174,7 +177,11 @@ data class AllProductsPremiumScreen(
                         product_description,
                         created_at,
                         updated_at,
-                        discounted_price
+                        discounted_price,
+                        main_unit,
+                        alt_unit,
+                        con_factor,
+                        con_type
                     )
                 }.executeAsList()
             } else {
@@ -198,7 +205,8 @@ data class AllProductsPremiumScreen(
             val filtered = productList.filter { product ->
                 val price = product.sales_price ?: 0.0
                 val matchesPrice = price >= priceRange.start && price <= priceRange.endInclusive
-                val matchesSearch = product.product_name?.contains(searchQuery, ignoreCase = true) == true
+                val matchesSearch =
+                    product.product_name?.contains(searchQuery, ignoreCase = true) == true
                 matchesPrice && matchesSearch
             }
 
@@ -300,7 +308,9 @@ data class AllProductsPremiumScreen(
                                             contentColor = Color.White
                                         ) {
                                             val count = cartViewModel.getTotalProductCount()
-                                            val displayCount = if (count == count.toLong().toDouble()) count.toLong().toString() else count.toString()
+                                            val displayCount = if (count == count.toLong()
+                                                    .toDouble()
+                                            ) count.toLong().toString() else count.toString()
                                             Text(displayCount)
                                         }
                                     }
@@ -718,6 +728,28 @@ data class AllProductsPremiumScreen(
         onClick: () -> Unit
     ) {
         val quantity = cartViewModel.getProductQuantity(product)
+        val savedUnit = cartViewModel.getProductUnit(product)
+        var selectedUnit by remember(product.product_id, isInCart) {
+            mutableStateOf(if (isInCart) savedUnit else product.main_unit ?: "")
+        }
+
+        val factor = product.con_factor ?: 1.0
+        val conType = product.con_type ?: 1.0
+
+        val currentSalesPrice =
+            if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
+                product.sales_price ?: 0.0
+            } else {
+                if (conType == 1.0) (product.sales_price ?: 0.0) / factor else (product.sales_price
+                    ?: 0.0) * factor
+            }
+
+        val currentMrp =
+            if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
+                product.MRP ?: 0.0
+            } else {
+                if (conType == 1.0) (product.MRP ?: 0.0) / factor else (product.MRP ?: 0.0) * factor
+            }
 
         Surface(
             modifier = Modifier
@@ -737,7 +769,7 @@ data class AllProductsPremiumScreen(
                     .padding(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // --- Image only, no overlay ---
+                // --- Image Section ---
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -761,16 +793,17 @@ data class AllProductsPremiumScreen(
                     )
                 }
 
-                // --- Discount badge (far left) + Wishlist button (far right), same row ---
+                // --- Badges + Wishlist Row ---
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val discount = product.MRP?.takeIf { it != 0.0 && it != product.sales_price }?.let { mrp ->
-                        ((mrp - (product.sales_price ?: 0.0)) / mrp) * 100
-                    }
+                    val discount =
+                        product.MRP?.takeIf { it != 0.0 && it != product.sales_price }?.let { mrp ->
+                            ((mrp - (product.sales_price ?: 0.0)) / mrp) * 100
+                        }
 
                     Box(
                         modifier = Modifier.weight(1f),
@@ -785,7 +818,10 @@ data class AllProductsPremiumScreen(
                                 ),
                                 color = MaterialTheme.colorScheme.onError,
                                 modifier = Modifier
-                                    .background(MaterialTheme.colorScheme.error, RoundedCornerShape(4.dp))
+                                    .background(
+                                        MaterialTheme.colorScheme.error,
+                                        RoundedCornerShape(4.dp)
+                                    )
                                     .padding(horizontal = 8.dp, vertical = 2.dp)
                             )
                         }
@@ -833,14 +869,25 @@ data class AllProductsPremiumScreen(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // --- Price + MRP ---
+                // --- Unit Selection Dropdown ---
+                UnitSelectionDropdown(
+                    product = product,
+                    selectedUnit = selectedUnit,
+                    onUnitSelected = { selectedUnit = it },
+                    isInCart = isInCart,
+                    cartViewModel = cartViewModel
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // --- Price + MRP Row ---
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = product.sales_price?.formatToAmtDec() ?: "",
+                        text = currentSalesPrice.formatToAmtDec(),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Black,
                             fontSize = 16.sp
@@ -848,9 +895,9 @@ data class AllProductsPremiumScreen(
                         color = Color(0xFF1A1C1E)
                     )
 
-                    if (product.MRP != 0.0 && product.MRP != product.sales_price) {
+                    if (currentMrp != 0.0 && currentMrp != currentSalesPrice) {
                         Text(
-                            text = "${product.MRP?.formatToAmtDec()}",
+                            text = currentMrp.formatToAmtDec(),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 textDecoration = TextDecoration.LineThrough,
                                 color = Color(0xFF667085),
@@ -862,12 +909,17 @@ data class AllProductsPremiumScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // --- Action Button / Quantity Selector ---
                 if (isInCart) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(36.dp)
-                            .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp)),
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.primary,
+                                RoundedCornerShape(8.dp)
+                            ),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -907,7 +959,7 @@ data class AllProductsPremiumScreen(
                     }
                 } else {
                     Button(
-                        onClick = { cartViewModel.addProduct(product) },
+                        onClick = { cartViewModel.addProduct(product, selectedUnit) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(36.dp),
@@ -946,9 +998,28 @@ data class AllProductsPremiumScreen(
         onClick: () -> Unit
     ) {
         val quantity = cartViewModel.getProductQuantity(product)
-        val discount = product.MRP?.takeIf { it != 0.0 && it != product.sales_price }?.let { mrp ->
-            ((mrp - (product.sales_price ?: 0.0)) / mrp) * 100
+        val savedUnit = cartViewModel.getProductUnit(product)
+        var selectedUnit by remember(product.product_id, isInCart) {
+            mutableStateOf(if (isInCart) savedUnit else product.main_unit ?: "")
         }
+
+        val factor = product.con_factor ?: 1.0
+        val conType = product.con_type ?: 1.0
+
+        val currentSalesPrice =
+            if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
+                product.sales_price ?: 0.0
+            } else {
+                if (conType == 1.0) (product.sales_price ?: 0.0) / factor else (product.sales_price
+                    ?: 0.0) * factor
+            }
+
+        val currentMrp =
+            if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
+                product.MRP ?: 0.0
+            } else {
+                if (conType == 1.0) (product.MRP ?: 0.0) / factor else (product.MRP ?: 0.0) * factor
+            }
 
         Surface(
             modifier = Modifier
@@ -1006,25 +1077,19 @@ data class AllProductsPremiumScreen(
                             color = Color(0xFF1A1C1E),
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(end = 24.dp) // Space for wishlist button
+                            modifier = Modifier.padding(end = 24.dp)
                         )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
 
-                        // Unit Placeholder
-                        Surface(
-                            color = Color(0xFFF2F4F7),
-                            shape = RoundedCornerShape(6.dp)
-                        ) {
-                            Text(
-                                text = product.unit_id?.toString() ?: "Unit",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = Color(0xFF64748B),
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
+                        // Unit Selection Dropdown
+                        UnitSelectionDropdown(
+                            product = product,
+                            selectedUnit = selectedUnit,
+                            onUnitSelected = { selectedUnit = it },
+                            isInCart = isInCart,
+                            cartViewModel = cartViewModel
+                        )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
@@ -1034,9 +1099,9 @@ data class AllProductsPremiumScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                if (product.MRP != 0.0 && product.MRP != product.sales_price) {
+                                if (currentMrp != 0.0 && currentMrp != currentSalesPrice) {
                                     Text(
-                                        text = "₹${product.MRP?.formatToAmtDec()}",
+                                        text = "₹${currentMrp.formatToAmtDec()}",
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             textDecoration = TextDecoration.LineThrough,
                                             color = Color(0xFF94A3B8),
@@ -1045,7 +1110,7 @@ data class AllProductsPremiumScreen(
                                     )
                                 }
                                 Text(
-                                    text = "₹${product.sales_price?.formatToAmtDec()}",
+                                    text = "₹${currentSalesPrice.formatToAmtDec()}",
                                     style = MaterialTheme.typography.titleLarge.copy(
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 18.sp
@@ -1054,12 +1119,16 @@ data class AllProductsPremiumScreen(
                                 )
                             }
 
-                            // Add Button
+                            // Add Button / Quantity Selector
                             if (isInCart) {
                                 Row(
                                     modifier = Modifier
                                         .height(36.dp)
-                                        .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp)),
+                                        .border(
+                                            1.dp,
+                                            MaterialTheme.colorScheme.primary,
+                                            RoundedCornerShape(8.dp)
+                                        ),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     IconButton(
@@ -1075,7 +1144,12 @@ data class AllProductsPremiumScreen(
                                     }
                                     QuantityTextField(
                                         quantity = quantity,
-                                        onQuantityChange = { cartViewModel.updateQuantity(product, it) },
+                                        onQuantityChange = {
+                                            cartViewModel.updateQuantity(
+                                                product,
+                                                it
+                                            )
+                                        },
                                         modifier = Modifier.width(30.dp),
                                         textStyle = TextStyle(
                                             fontSize = 14.sp,
@@ -1098,12 +1172,15 @@ data class AllProductsPremiumScreen(
                                 }
                             } else {
                                 Surface(
-                                    onClick = { cartViewModel.addProduct(product) },
+                                    onClick = { cartViewModel.addProduct(product, selectedUnit) },
                                     color = MaterialTheme.colorScheme.primary,
                                     shape = RoundedCornerShape(18.dp)
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        modifier = Modifier.padding(
+                                            horizontal = 16.dp,
+                                            vertical = 8.dp
+                                        ),
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
@@ -1127,7 +1204,11 @@ data class AllProductsPremiumScreen(
                     }
                 }
 
-                // Overlay Elements (Not on top of image)
+                // Overlay elements
+                val discount =
+                    product.MRP?.takeIf { it != 0.0 && it != product.sales_price }?.let { mrp ->
+                        ((mrp - (product.sales_price ?: 0.0)) / mrp) * 100
+                    }
                 if (discount != null && discount > 0) {
                     Text(
                         text = "${discount.toInt()}% OFF",
@@ -1137,7 +1218,10 @@ data class AllProductsPremiumScreen(
                         ),
                         color = MaterialTheme.colorScheme.onError,
                         modifier = Modifier
-                            .background(MaterialTheme.colorScheme.error, RoundedCornerShape(topStart = 12.dp, bottomEnd = 12.dp))
+                            .background(
+                                MaterialTheme.colorScheme.error,
+                                RoundedCornerShape(topStart = 12.dp, bottomEnd = 12.dp)
+                            )
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                             .align(Alignment.TopStart)
                     )
@@ -1169,6 +1253,87 @@ data class AllProductsPremiumScreen(
             }
         }
     }
+
+    @Composable
+    private fun UnitSelectionDropdown(
+        product: GetProductsForDis,
+        selectedUnit: String,
+        onUnitSelected: (String) -> Unit,
+        isInCart: Boolean,
+        cartViewModel: CartViewModel
+    ) {
+        var expanded by remember { mutableStateOf(false) }
+        val units = remember(product) {
+            listOfNotNull(
+                product.main_unit,
+                product.alt_unit.takeIf { !it.isNullOrBlank() && it != product.main_unit })
+        }
+
+        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = units.size > 1) { expanded = true },
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = selectedUnit,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (units.size > 1) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            if (units.size > 1) {
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier.fillMaxWidth(0.9f) // Allow most of the width but leave some margin
+                ) {
+                    units.forEach { unit ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = unit,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = if (unit == selectedUnit) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 14.sp
+                                    ),
+                                    color = if (unit == selectedUnit) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = {
+                                onUnitSelected(unit)
+                                if (isInCart) cartViewModel.updateUnit(product, unit)
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
 
     @Composable
     private fun CategoryChip(

@@ -37,7 +37,7 @@ fun handleBannerClick(
         }
 
         BannerClicks.OpenItem.value -> {
-            val product = db.productsQueries.getProductsByGuidsForDis(listOf(c2 ?: "")) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price ->
+            val product = db.productsQueries.getProductsByGuidsForDis(listOf(c2 ?: "")) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price, main_unit, alt_unit, con_factor, con_type ->
                 GetProductsForDis(
                     product_id,
                     hospital_id,
@@ -52,7 +52,11 @@ fun handleBannerClick(
                     product_description,
                     created_at,
                     updated_at,
-                    discounted_price
+                    discounted_price,
+                    main_unit,
+                    alt_unit,
+                    con_factor,
+                    con_type
                 )
             }.executeAsOneOrNull()
 

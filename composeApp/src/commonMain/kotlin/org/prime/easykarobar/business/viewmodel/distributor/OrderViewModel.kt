@@ -194,7 +194,7 @@ class CartViewModel : ScreenModel {
             val ids = savedItems.map { it.productId }
             try {
                 val products = DatabaseHolder.instance.productsQueries
-                    .getProductsByGuidsForDis(ids) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price ->
+                    .getProductsByGuidsForDis(ids) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price, main_unit, alt_unit, con_factor, con_type ->
                         GetProductsForDis(
                             product_id,
                             hospital_id,
@@ -209,7 +209,11 @@ class CartViewModel : ScreenModel {
                             product_description,
                             created_at,
                             updated_at,
-                            discounted_price
+                            discounted_price,
+                            main_unit,
+                            alt_unit,
+                            con_factor,
+                            con_type
                         )
                     }
                     .executeAsList()
@@ -217,7 +221,13 @@ class CartViewModel : ScreenModel {
                 savedItems.forEach { savedItem ->
                     val product = products.find { it.product_id == savedItem.productId }
                     if (product != null) {
-                        _cartItems.add(CartItem(product, mutableStateOf(savedItem.quantity)))
+                        _cartItems.add(
+                            CartItem(
+                                product,
+                                mutableStateOf(savedItem.quantity),
+                                mutableStateOf(savedItem.selectedUnit ?: product.main_unit ?: "")
+                            )
+                        )
                     }
                 }
             } catch (e: Exception) {
@@ -228,18 +238,30 @@ class CartViewModel : ScreenModel {
 
     private fun saveCart() {
         val itemsToSave = _cartItems.map {
-            SharedPrefs.Cart.CartPersistenceItem(it.product.product_id ?: "", it.quantity.value)
+            SharedPrefs.Cart.CartPersistenceItem(
+                it.product.product_id ?: "",
+                it.quantity.value,
+                it.selectedUnit.value
+            )
         }
         SharedPrefs.Cart.save(itemsToSave)
     }
 
-    fun addProduct(product: GetProductsForDis) {
+    fun addProduct(product: GetProductsForDis, selectedUnit: String? = null) {
         val existingItem =
             _cartItems.find { it.product.product_id.toString() == product.product_id.toString() }
         if (existingItem != null) {
             existingItem.quantity.value++
+            if (selectedUnit != null) {
+                existingItem.selectedUnit.value = selectedUnit
+            }
         } else {
-            _cartItems.add(CartItem(product))
+            _cartItems.add(
+                CartItem(
+                    product,
+                    selectedUnit = mutableStateOf(selectedUnit ?: product.main_unit ?: "")
+                )
+            )
         }
         saveCart()
     }
@@ -294,20 +316,43 @@ class CartViewModel : ScreenModel {
         return _cartItems.find { it.product.product_id == product.product_id }?.quantity?.value ?: 0.0
     }
 
-    fun updateQuantity(product: GetProductsForDis, quantity: Double) {
+    fun updateQuantity(product: GetProductsForDis, quantity: Double, selectedUnit: String? = null) {
         val existingItem = _cartItems.find { it.product.product_id == product.product_id }
         if (existingItem != null) {
             existingItem.quantity.value = quantity
+            if (selectedUnit != null) {
+                existingItem.selectedUnit.value = selectedUnit
+            }
         } else if (quantity > 0) {
-            _cartItems.add(CartItem(product, mutableStateOf(quantity)))
+            _cartItems.add(
+                CartItem(
+                    product,
+                    mutableStateOf(quantity),
+                    mutableStateOf(selectedUnit ?: product.main_unit ?: "")
+                )
+            )
         }
         saveCart()
+    }
+
+    fun updateUnit(product: GetProductsForDis, unit: String) {
+        val existingItem = _cartItems.find { it.product.product_id == product.product_id }
+        if (existingItem != null) {
+            existingItem.selectedUnit.value = unit
+            saveCart()
+        }
+    }
+
+    fun getProductUnit(product: GetProductsForDis): String {
+        return _cartItems.find { it.product.product_id == product.product_id }?.selectedUnit?.value
+            ?: product.main_unit ?: ""
     }
 }
 
 data class CartItem(
     val product: GetProductsForDis,
-    val quantity: MutableState<Double> = mutableStateOf(1.0)
+    val quantity: MutableState<Double> = mutableStateOf(1.0),
+    val selectedUnit: MutableState<String> = mutableStateOf(product.main_unit ?: "")
 )
 
 data class ProductCartItem(

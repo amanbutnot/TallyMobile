@@ -10,7 +10,7 @@ import org.prime.easykarobar.ui.shared.reportsShared.ReportFilterScreen
 data class SingleEntryFilterScreen(
     val name: String,
     val vchType: Int,
-    val showStatusChange: Boolean=false
+    val showStatusChange: Boolean=true
 ) : Screen {
     @Composable
     override fun Content() {

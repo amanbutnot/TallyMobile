@@ -632,10 +632,30 @@ fun TallyTimePicker(
 @Composable
 private fun CartProductItem(
     product: CartItem,
-
-    ) {
+) {
     val nav = LocalNavigator.currentOrThrow
     val viewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
+
+    val factor = product.product.con_factor ?: 1.0
+    val conType = product.product.con_type ?: 1.0
+    val selectedUnit = product.selectedUnit.value
+
+    val currentDiscountedPrice =
+        if (selectedUnit == product.product.main_unit || product.product.alt_unit.isNullOrBlank()) {
+            product.product.discounted_price ?: 0.0
+        } else {
+            if (conType == 1.0) (product.product.discounted_price
+                ?: 0.0) / factor else (product.product.discounted_price ?: 0.0) * factor
+        }
+
+    val currentMrp =
+        if (selectedUnit == product.product.main_unit || product.product.alt_unit.isNullOrBlank()) {
+            product.product.MRP ?: 0.0
+        } else {
+            if (conType == 1.0) (product.product.MRP ?: 0.0) / factor else (product.product.MRP
+                ?: 0.0) * factor
+        }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -711,7 +731,7 @@ private fun CartProductItem(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "${product.product.discounted_price?.formatToAmtDec()}",
+                            text = currentDiscountedPrice.formatToAmtDec(),
                             style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -719,9 +739,9 @@ private fun CartProductItem(
 
                         Spacer(modifier = Modifier.width(6.dp))
 
-                        if (product.product.MRP != 0.0) {
+                        if (currentMrp != 0.0) {
                             Text(
-                                text = "${product.product.MRP?.formatToAmtDec()}",
+                                text = currentMrp.formatToAmtDec(),
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     textDecoration = TextDecoration.LineThrough,
                                     fontSize = 12.sp
@@ -732,23 +752,30 @@ private fun CartProductItem(
                         }
                     }
 
-                    if (product.product.discount.toString() != "0.0") {
-                        Spacer(modifier = Modifier.height(3.dp))
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                    RoundedCornerShape(4.dp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (product.product.discount.toString() != "0.0") {
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                        RoundedCornerShape(4.dp)
+                                    )
+                                    .padding(horizontal = 6.dp, vertical = 1.dp)
+                            ) {
+                                Text(
+                                    text = "${product.product.discount?.formatToAmtDec()}% OFF",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Medium
                                 )
-                                .padding(horizontal = 6.dp, vertical = 1.dp)
-                        ) {
-                            Text(
-                                text = "${product.product.discount?.formatToAmtDec()}% OFF",
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Medium
-                            )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
                         }
+                        Text(
+                            text = selectedUnit,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 
@@ -852,16 +879,36 @@ fun CartSummary(
 //        mrp * it.quantity.value
 //    }
     val totalMrp = products.sumOf {
+        val factor = it.product.con_factor ?: 1.0
+        val conType = it.product.con_type ?: 1.0
+        val selectedUnit = it.selectedUnit.value
+
         val mrp =
             if (it.product.MRP == 0.0) it.product.sales_price ?: 0.0 else it.product.MRP ?: 0.0
-        mrp * it.quantity.value
 
+        val currentMrp =
+            if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
+                mrp
+            } else {
+                if (conType == 1.0) mrp / factor else mrp * factor
+            }
+        currentMrp * it.quantity.value
     }
 
 
     val totalDiscountedPrice = products.sumOf {
-        val discounted = it.product.discounted_price ?: 0.0
-        discounted * it.quantity.value
+        val factor = it.product.con_factor ?: 1.0
+        val conType = it.product.con_type ?: 1.0
+        val selectedUnit = it.selectedUnit.value
+
+        val currentDiscountedPrice =
+            if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
+                it.product.discounted_price ?: 0.0
+            } else {
+                if (conType == 1.0) (it.product.discounted_price
+                    ?: 0.0) / factor else (it.product.discounted_price ?: 0.0) * factor
+            }
+        currentDiscountedPrice * it.quantity.value
     }
 
     val totalSavings = (totalMrp - totalDiscountedPrice).toDouble()
@@ -1091,8 +1138,18 @@ fun ConfirmOrderButton(
     unitMap: Map<Double, String?> = emptyMap()
 ) {
     val totalDiscountedPrice = products.sumOf {
-        val discounted = it.product.discounted_price ?: 0.0
-        discounted * it.quantity.value
+        val factor = it.product.con_factor ?: 1.0
+        val conType = it.product.con_type ?: 1.0
+        val selectedUnit = it.selectedUnit.value
+
+        val currentDiscountedPrice =
+            if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
+                it.product.discounted_price ?: 0.0
+            } else {
+                if (conType == 1.0) (it.product.discounted_price
+                    ?: 0.0) / factor else (it.product.discounted_price ?: 0.0) * factor
+            }
+        currentDiscountedPrice * it.quantity.value
     }
 
     val totalGst = products.sumOf {
@@ -1164,15 +1221,32 @@ fun ConfirmOrderButton(
     if (showConfirmDialog) {
         val itemsList = products.map { cartItem ->
             val product = cartItem.product
-            val quantity = cartItem.quantity.value.toDouble()
-            val price = product.sales_price?.toDouble() ?: 0.0
-            val discountedPrice = product.discounted_price ?: price
+            val quantity = cartItem.quantity.value
+            val factor = product.con_factor ?: 1.0
+            val conType = product.con_type ?: 1.0
+            val selectedUnit = cartItem.selectedUnit.value
+
+            val basePrice = product.sales_price?.toDouble() ?: 0.0
+            val currentPrice =
+                if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
+                    basePrice
+                } else {
+                    if (conType == 1.0) basePrice / factor else basePrice * factor
+                }
+
+            val discountedPrice =
+                if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
+                    product.discounted_price ?: currentPrice
+                } else {
+                    if (conType == 1.0) (product.discounted_price
+                        ?: 0.0) / factor else (product.discounted_price ?: 0.0) * factor
+                }
 
             org.prime.easykarobar.data.model.items(
                 item_id = product.hospital_id?.toInt() ?: 0,
                 productName = product.product_name.toString(),
                 quantity = quantity,
-                price = price,
+                price = currentPrice,
                 discount_percent = product.discount?.toDouble() ?: 0.0,
                 tax_amount = product.gst_tax_percentage.toDouble(),
                 net_amount = discountedPrice * quantity

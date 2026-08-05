@@ -1,7 +1,6 @@
 package org.prime.easykarobar.business.repository
 
 import io.ktor.client.call.body
-import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -55,8 +54,9 @@ object OrderRepository {
         }
     }
 
-    suspend fun updateOrderStatus(updateOrderStatusRequest: UpdateOrderStatusRequest): ApiResponse<String>? {
+    suspend fun updateOrderStatus(updateOrderStatusRequest: UpdateOrderStatusRequest): ApiResponse<ChangeStatusResponse>? {
         val token = SharedPrefs.Token.get()
+        println(updateOrderStatusRequest)
         return try {
             val res = KtorClient.client.post("$BASE_URL/Transactions/updateOrderStatus.php") {
                 contentType(ContentType.Application.Json)
@@ -94,4 +94,9 @@ object OrderRepository {
 @Serializable
 data class ListRequest(
     val billing_guid:String
+)
+
+@Serializable
+data class ChangeStatusResponse(
+    val order_id:String
 )
