@@ -44,6 +44,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.BuildKonfig
 import org.prime.easykarobar.business.viewmodel.AuthViewModel
+import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.getDeviceId
 import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.LoginRequest
@@ -212,6 +213,17 @@ data class VerifyOtpScreen(
                                                             list = CompanyList(emptyList()),
                                                         )
                                                     )
+                                                    try {
+                                                        val db = DatabaseHolder.instance
+                                                        val result = db.ledgerMasterQueries.selectChangePrice(number).executeAsOneOrNull()
+                                                        if (result != null) {
+                                                            SharedPrefs.ChangePrice.save(result.L6 ?: 0.0)
+                                                        }else{
+                                                            SharedPrefs.ChangePrice.save(0.0)
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        e.printStackTrace()
+                                                    }
                                                     nav.replaceAll(GoogleDriveDownloadScreen)
                                                 }, onListSuccess = { companyList ->
                                                     SharedPrefs.LoginInfo.save(BuildKonfig.USERNAME)
@@ -222,6 +234,17 @@ data class VerifyOtpScreen(
                                                             list = companyList,
                                                         )
                                                     )
+                                                    try {
+                                                        val db = DatabaseHolder.instance
+                                                        val result = db.ledgerMasterQueries.selectChangePrice(number).executeAsOneOrNull()
+                                                        if (result != null) {
+                                                            SharedPrefs.ChangePrice.save(result.L6 ?: 0.0)
+                                                        }else{
+                                                            SharedPrefs.ChangePrice.save(0.0)
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        e.printStackTrace()
+                                                    }
                                                     nav.push(
                                                         SelectCompanyScreen(
                                                             BuildKonfig.USERNAME,

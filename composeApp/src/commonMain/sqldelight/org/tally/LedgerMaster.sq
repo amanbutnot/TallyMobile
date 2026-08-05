@@ -128,3 +128,8 @@ SELECT GUID
  SELECT * FROM LedgerMaster WHERE GUID = ?;
  selectByName:
  SELECT * FROM LedgerMaster WHERE Name = ?;
+
+selectChangePrice:
+SELECT L6, 1 AS rectype
+FROM LedgerMaster
+WHERE MobileNo = :mobileno AND L6 > 100;

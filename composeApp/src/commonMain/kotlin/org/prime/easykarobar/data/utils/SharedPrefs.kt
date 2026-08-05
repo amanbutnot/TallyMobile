@@ -412,4 +412,19 @@ object SharedPrefs {
         }
     }
 
+    object ChangePrice {
+        private const val KEY = "change_price"
+        fun save(value: Double) {
+            settings.putDouble(KEY, value)
+        }
+
+        fun get(): Double {
+            return settings.getDouble(KEY, 0.0)
+        }
+
+        fun clear() {
+            settings.remove(KEY)
+        }
+    }
+
 }
