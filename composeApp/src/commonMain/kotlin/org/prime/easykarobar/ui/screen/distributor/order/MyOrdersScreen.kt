@@ -76,13 +76,13 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
-import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.CancelOrderRequest
 import org.prime.easykarobar.data.model.ORDERSTATUS
 import org.prime.easykarobar.data.model.Order
 import org.prime.easykarobar.data.model.OrderItemList
 import org.prime.easykarobar.data.model.StatusHistory
+import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
 import org.prime.easykarobar.ui.shared.composables.TallyAlertBox
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
@@ -647,6 +647,14 @@ fun OrderCard(
                                 (it.taxamt2.toDoubleOrNull() ?: 0.0)
                     }
 
+                    val hamaliFromItems = order.items.sumOf { item ->
+                        when (item.UnitName.lowercase()) {
+                            "box", "tin" -> item.quantity * 2.0
+                            "bag" -> item.quantity * 5.0
+                            else -> 0.0
+                        }
+                    }
+
                     val sundryTotal = order.sundries.sumOf {
                         it.amount
                     }
@@ -684,14 +692,24 @@ fun OrderCard(
                         )
                     }
 
-                    if (order.sundries.isEmpty()) {
+                    if (hamaliFromItems > 0.0) {
+                        SummaryRow(
+                            "Hamali",
+                            hamaliFromItems.formatToAmtDec(),
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+                        )
+                    }
+
+                    val coupons = order.sundries.filter { it.name.lowercase() != "hamali" }
+
+                    if (coupons.isEmpty()) {
                         SummaryRow(
                             "Coupon",
                             "Not Applied",
                             textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
                         )
                     } else {
-                        order.sundries.forEach { sundry ->
+                        coupons.forEach { sundry ->
                             SummaryRow(
                                 "Coupon (${sundry.name})",
                                 sundry.amount.formatToAmtDec(),
