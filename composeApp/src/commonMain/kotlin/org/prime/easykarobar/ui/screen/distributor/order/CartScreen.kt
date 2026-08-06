@@ -925,7 +925,7 @@ fun CartSummary(
     val totalHamali = products.sumOf { cartItem ->
         val unitName = unitMap[cartItem.product.unit_id ?: 0.0]
         val quantity = cartItem.quantity.value
-        when (unitName) {
+        when (unitName?.lowercase()) {
             "box", "tin" -> quantity * 2.0
             "bag" -> quantity * 5.0
             else -> 0.0
