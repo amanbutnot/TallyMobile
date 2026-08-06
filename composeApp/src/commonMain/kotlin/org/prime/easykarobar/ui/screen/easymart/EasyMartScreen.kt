@@ -241,7 +241,7 @@ object EasyMartScreen : Screen {
                             onClick = {
                                 if (phoneNumber.length == 10) {
                                     val otp = (100_000..999_999).random()
-                                    authViewModel.validateMobile(username = phoneNumber) {
+                                  //  authViewModel.validateMobile(username = phoneNumber) {
                                         authViewModel.sendOtp(
                                             number = phoneNumber,
                                             message = "Your login OTP is $otp. Please do not share it with anyone.",
@@ -254,7 +254,7 @@ object EasyMartScreen : Screen {
                                                     )
                                                 )
                                             })
-                                    }
+                                   // }
                                 }
                             },
                             modifier = Modifier
