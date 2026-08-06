@@ -1,0 +1,18 @@
+CREATE TABLE IF NOT EXISTS Product_Category (
+    ProductName TEXT,
+    ProductCode REAL,
+    CatName TEXT,
+    CatCode REAL,
+    GroupName TEXT,
+    GroupCode REAL
+);
+
+
+getSubCategory:
+SELECT
+    CatName,
+    CatCode
+FROM Product_Category
+WHERE GroupCode = :groupCode
+GROUP BY CatName, CatCode
+ORDER BY CatName;
