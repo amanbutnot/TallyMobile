@@ -152,15 +152,6 @@ private fun CartContent(
 
     var isDelivery by remember { mutableStateOf(true) }
 
-    val unitMap = remember {
-        try {
-            DatabaseHolder.instance.productUnitMasterQueries.selectAll().executeAsList()
-                .associate { it.Code.toDouble() to it.Name?.trim()?.lowercase() }
-        } catch (e: Exception) {
-            emptyMap()
-        }
-    }
-
     val availableCoupons = remember {
         try {
             DatabaseHolder.instance.coupon_MasterQueries.selectAll().executeAsList().map {
@@ -258,8 +249,7 @@ private fun CartContent(
             Spacer(modifier = Modifier.height(4.dp))
             CartSummary(
                 products = list,
-                appliedCoupon = appliedCoupon,
-                unitMap = unitMap
+                appliedCoupon = appliedCoupon
             )
         }
 
@@ -325,8 +315,7 @@ private fun CartContent(
                     pickupDay = pickupDay,
                     pickupStartTime = pickupStartTime,
                     pickupEndTime = pickupEndTime,
-                    isDelivery = isDelivery,
-                    unitMap = unitMap
+                    isDelivery = isDelivery
                 )
             }
         }
@@ -870,8 +859,7 @@ private fun CartProductItem(
 @Composable
 fun CartSummary(
     products: List<CartItem>,
-    appliedCoupon: Coupon? = null,
-    unitMap: Map<Double, String?> = emptyMap()
+    appliedCoupon: Coupon? = null
 ) {
 
 //    val totalMrp = products.sumOf {
@@ -923,9 +911,9 @@ fun CartSummary(
     val totalBeforeCoupon = (totalDiscountedPrice + totalGst).toDouble()
 
     val totalHamali = products.sumOf { cartItem ->
-        val unitName = unitMap[cartItem.product.unit_id ?: 0.0]
+        val unitName = cartItem.selectedUnit.value
         val quantity = cartItem.quantity.value
-        when (unitName?.lowercase()) {
+        when (unitName.lowercase()) {
             "box", "tin" -> quantity * 2.0
             "bag" -> quantity * 5.0
             else -> 0.0
@@ -1134,8 +1122,7 @@ fun ConfirmOrderButton(
     pickupDay: String = "",
     pickupStartTime: String = "",
     pickupEndTime: String = "",
-    isDelivery: Boolean = true,
-    unitMap: Map<Double, String?> = emptyMap()
+    isDelivery: Boolean = true
 ) {
     val totalDiscountedPrice = products.sumOf {
         val factor = it.product.con_factor ?: 1.0
@@ -1162,9 +1149,9 @@ fun ConfirmOrderButton(
     val totalBeforeCoupon = (totalDiscountedPrice + totalGst)
 
     val totalHamali = products.sumOf { cartItem ->
-        val unitName = unitMap[cartItem.product.unit_id ?: 0.0]
+        val unitName = cartItem.selectedUnit.value
         val quantity = cartItem.quantity.value
-        when (unitName?.lowercase()) {
+        when (unitName.lowercase()) {
             "box", "tin" -> quantity * 2.0
             "bag" -> quantity * 5.0
             else -> 0.0
@@ -1278,9 +1265,9 @@ fun ConfirmOrderButton(
                 }
 
                 products.forEach { cartItem ->
-                    val unitName = unitMap[cartItem.product.unit_id ?: 0.0]
+                    val unitName = cartItem.selectedUnit.value
                     val quantity = cartItem.quantity.value
-                    val rate = when (unitName?.lowercase()) {
+                    val rate = when (unitName.lowercase()) {
                         "box", "tin" -> 2.0
                         "bag" -> 5.0
                         else -> 0.0
