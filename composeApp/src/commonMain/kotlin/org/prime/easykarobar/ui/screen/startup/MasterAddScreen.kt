@@ -29,7 +29,7 @@ import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.screen.transactions.sale.makeNegativeConditional
 import kotlin.math.absoluteValue
 
-object MasterAddScreen : Screen {
+data class MasterAddScreen(val number: String) : Screen {
 
     @Composable
     override fun Content() {
@@ -173,6 +173,18 @@ object MasterAddScreen : Screen {
                     }
                 }
                 if (SharedPrefs.IsEasyMart.get()) {
+                    try {
+                        val db = DatabaseHolder.instance
+                        val result = db.ledgerPricingQueries.selectChangePrice(number).executeAsOneOrNull()
+                        println("verify otp result $result")
+                        if (result != null) {
+                            SharedPrefs.ChangePrice.save(result.L6 ?: 0.0)
+                        }else{
+                            SharedPrefs.ChangePrice.save(0.0)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                     nav.replaceAll(Dashboard)
                 } else {
                     nav.replaceAll(Dashboard)

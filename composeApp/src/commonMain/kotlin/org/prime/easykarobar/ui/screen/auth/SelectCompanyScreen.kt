@@ -57,7 +57,12 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 
-data class SelectCompanyScreen(val username: String, val passwd: String, val list: CompanyList) :
+data class SelectCompanyScreen(
+    val username: String,
+    val passwd: String,
+    val list: CompanyList,
+    val number: String
+) :
     Screen {
     @Composable
     override fun Content() {
@@ -116,7 +121,7 @@ data class SelectCompanyScreen(val username: String, val passwd: String, val lis
                                         ),
                                         onSuccess = {
 
-                                            nav.push(GoogleDriveDownloadScreen)
+                                            nav.push(GoogleDriveDownloadScreen(number))
                                         },
                                         onListSuccess = {}
                                     )

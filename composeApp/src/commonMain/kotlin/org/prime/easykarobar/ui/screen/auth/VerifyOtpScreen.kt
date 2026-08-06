@@ -213,18 +213,7 @@ data class VerifyOtpScreen(
                                                             list = CompanyList(emptyList()),
                                                         )
                                                     )
-                                                    try {
-                                                        val db = DatabaseHolder.instance
-                                                        val result = db.ledgerPricingQueries.selectChangePrice(number).executeAsOneOrNull()
-                                                        if (result != null) {
-                                                            SharedPrefs.ChangePrice.save(result.L6 ?: 0.0)
-                                                        }else{
-                                                            SharedPrefs.ChangePrice.save(0.0)
-                                                        }
-                                                    } catch (e: Exception) {
-                                                        e.printStackTrace()
-                                                    }
-                                                    nav.replaceAll(GoogleDriveDownloadScreen)
+                                                    nav.replaceAll(GoogleDriveDownloadScreen(number))
                                                 }, onListSuccess = { companyList ->
                                                     SharedPrefs.LoginInfo.save(BuildKonfig.USERNAME)
                                                     SharedPrefs.LoginData.save(
@@ -249,7 +238,8 @@ data class VerifyOtpScreen(
                                                         SelectCompanyScreen(
                                                             BuildKonfig.USERNAME,
                                                             BuildKonfig.PASSWORD,
-                                                            companyList
+                                                            companyList,
+                                                            number
                                                         )
                                                     )
                                                 }

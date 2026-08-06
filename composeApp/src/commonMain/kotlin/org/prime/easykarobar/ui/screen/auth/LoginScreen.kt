@@ -199,7 +199,7 @@ object LoginScreen : Screen {
                                                 list = CompanyList(emptyList()),
                                             )
                                         )
-                                        nav.push(GoogleDriveDownloadScreen)
+                                        nav.push(GoogleDriveDownloadScreen(email.trim()))
                                     }, onListSuccess = { companyList ->
                                         SharedPrefs.LoginInfo.save(email.trim())
                                         SharedPrefs.LoginData.save(
@@ -213,7 +213,8 @@ object LoginScreen : Screen {
                                             SelectCompanyScreen(
                                                 email.trim(),
                                                 password.trim(),
-                                                companyList
+                                                companyList,
+                                                email.trim()
                                             )
                                         )
                                     }

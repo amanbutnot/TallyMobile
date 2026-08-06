@@ -63,7 +63,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-object GoogleDriveDownloadScreen : Screen {
+data class GoogleDriveDownloadScreen(val number: String) : Screen {
     @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalTime::class)
     @Composable
     override fun Content() {
@@ -121,7 +121,7 @@ object GoogleDriveDownloadScreen : Screen {
                         val now = Clock.System.now().toEpochMilliseconds()
                         SharedPrefs.LastSync.save(now)
                         withContext(Dispatchers.Main) {
-                            nav.replaceAll(MasterAddScreen)
+                            nav.replaceAll(MasterAddScreen(number))
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
