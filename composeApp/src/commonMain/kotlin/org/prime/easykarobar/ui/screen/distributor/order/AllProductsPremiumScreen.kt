@@ -152,6 +152,7 @@ data class AllProductsPremiumScreen(
         var currentCategoryCode by remember { mutableStateOf(productCode) }
         var currentCategoryName by remember { mutableStateOf(categoryName ?: "All Products") }
         var currentProductGuids by remember { mutableStateOf(productGuids) }
+        var currentSubCategoryCode by remember { mutableStateOf<Double?>(null) }
 
         val categories = remember {
             db.productsQueries.productCategoriesForDis(
@@ -160,35 +161,37 @@ data class AllProductsPremiumScreen(
             ).executeAsList()
         }
 
-        val productList = remember(currentCategoryCode, currentProductGuids) {
+        val subCategories = remember(currentCategoryCode) {
+            if (currentCategoryCode != null) {
+                db.product_CategoryQueries.getSubCategory(currentCategoryCode!!).executeAsList()
+            } else {
+                emptyList()
+            }
+        }
+
+        val productList = remember(currentCategoryCode, currentSubCategoryCode, currentProductGuids) {
+            val mapper = { product_id: String?, hospital_id: String?, product_name: String?, category_id: Double?, unit_id: Double?, sales_price: Double?, MRP: Double?, purchase_price: Double?, discount: Double?, gst_tax_percentage: Double, product_description: String?, created_at: String, updated_at: String, discounted_price: Double?, main_unit: String?, alt_unit: String?, con_factor: Double?, con_type: Double? ->
+                GetProductsForDis(
+                    product_id, hospital_id, product_name, category_id, unit_id, sales_price,
+                    MRP, purchase_price, discount, gst_tax_percentage, product_description,
+                    created_at, updated_at, discounted_price, main_unit, alt_unit, con_factor, con_type
+                )
+            }
+
             if (currentProductGuids != null) {
-                db.productsQueries.getProductsByGuidsForDis(currentProductGuids!!) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price, main_unit, alt_unit, con_factor, con_type ->
-                    GetProductsForDis(
-                        product_id,
-                        hospital_id,
-                        product_name,
-                        category_id,
-                        unit_id,
-                        sales_price,
-                        MRP,
-                        purchase_price,
-                        discount,
-                        gst_tax_percentage,
-                        product_description,
-                        created_at,
-                        updated_at,
-                        discounted_price,
-                        main_unit,
-                        alt_unit,
-                        con_factor,
-                        con_type
-                    )
-                }.executeAsList()
+                db.productsQueries.getProductsByGuidsForDis(currentProductGuids!!, mapper).executeAsList()
+            } else if (currentCategoryCode != null) {
+                db.productsQueries.getProductsByCategoryMapping(
+                    groupCode = currentCategoryCode!!,
+                    catCode = currentSubCategoryCode,
+                    mapper = mapper
+                ).executeAsList()
             } else {
                 db.productsQueries.getProductsForDis(
                     filterGroup = filterAGRP,
                     groupCodes = groupCodes,
-                    productCode = currentCategoryCode
+                    productCode = null,
+                    mapper = mapper
                 ).executeAsList()
             }
         }
@@ -346,19 +349,63 @@ data class AllProductsPremiumScreen(
                                         currentCategoryCode = null
                                         currentCategoryName = "All Products"
                                         currentProductGuids = null
+                                        currentSubCategoryCode = null
                                     }
                                 )
                             }
                             items(categories) { category ->
                                 CategoryChip(
                                     name = category.Name ?: "",
-                                    isSelected = currentCategoryCode == category.GUID?.toDoubleOrNull() && currentProductGuids == null,
+                                    isSelected = currentCategoryCode == category.GUID?.toDoubleOrNull(),
                                     onClick = {
-                                        currentCategoryCode = category.GUID?.toDoubleOrNull()
+                                        val code = category.GUID?.toDoubleOrNull()
+                                        currentCategoryCode = code
                                         currentCategoryName = category.Name ?: ""
+                                        currentSubCategoryCode = null
                                         currentProductGuids = null
                                     }
                                 )
+                            }
+                        }
+
+                        if (subCategories.isNotEmpty()) {
+                            LazyRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFFFF6D00))
+                                    .padding(bottom = 8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                item {
+                                    CategoryChip(
+                                        name = "All Sub",
+                                        isSelected = currentSubCategoryCode == null,
+                                        onClick = {
+                                            currentSubCategoryCode = null
+                                            if (currentCategoryCode != null) {
+                                                val guids = db.product_CategoryQueries.getProductGuidsByGroup(currentCategoryCode!!).executeAsList()
+                                                if (guids.isNotEmpty()) {
+                                                    currentProductGuids = guids.mapNotNull { it.ProductCode?.toString()?.removeSuffix(".0") }
+                                                } else {
+                                                    currentProductGuids = null
+                                                }
+                                            } else {
+                                                currentProductGuids = null
+                                            }
+                                        }
+                                    )
+                                }
+                                items(subCategories) { sub ->
+                                    CategoryChip(
+                                        name = sub.CatName ?: "",
+                                        isSelected = currentSubCategoryCode == sub.CatCode,
+                                        onClick = {
+                                            currentSubCategoryCode = sub.CatCode
+                                            currentProductGuids = null
+                                        }
+                                    )
+                                }
                             }
                         }
                     }

@@ -220,6 +220,55 @@ FROM Products
 WHERE GUID IN :guids AND ( Products.E4 <> -1.0   OR  Products.E4 IS NULL) AND   (Products.E5<>-1.0 OR  Products.E5 IS NULL )
 ORDER BY Name;
 
+getProductsByCategoryMapping:
+SELECT
+    GUID AS product_id,
+    GUID AS hospital_id,
+    Name AS product_name,
+    GroupCode AS category_id,
+    UnitCode AS unit_id,
+    SalesPrice AS sales_price,
+    MRP,
+    PurcPrice AS purchase_price,
+    SaleDisc AS discount,
+
+COALESCE(
+    (
+        SELECT IGST
+        FROM Tax_Category_Mast
+        WHERE Tax_Category_Mast.GUID = Products.TaxCategoryCode
+          AND AppDate <= '2025-04-01'
+        ORDER BY AppDate DESC
+        LIMIT 1
+    ),
+    0
+) AS gst_tax_percentage,
+
+    Name AS product_description,
+    '' AS created_at,
+    '' AS updated_at,
+
+    ROUND(
+        CASE
+            WHEN IFNULL(SaleDisc, 0) = 0 THEN SalesPrice
+            ELSE SalesPrice - (SalesPrice * SaleDisc / 100.0)
+        END,
+        2
+    ) AS discounted_price,
+    UnitName AS main_unit,
+    AltUnit AS alt_unit,
+    ConFactor AS con_factor,
+    ConType AS con_type
+
+FROM Products
+WHERE GUID IN (
+    SELECT CAST(CAST(ProductCode AS INTEGER) AS TEXT) FROM Product_Category
+    WHERE GroupCode = :groupCode
+    AND (:catCode IS NULL OR CatCode = :catCode)
+)
+AND ( Products.E4 <> -1.0   OR  Products.E4 IS NULL) AND (Products.E5<>-1.0 OR  Products.E5 IS NULL )
+ORDER BY Name;
+
 
 
 -- FOR SALE PURCHASE CONFIGURATIONS

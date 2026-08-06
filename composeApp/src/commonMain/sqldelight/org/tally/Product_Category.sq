@@ -16,3 +16,15 @@ FROM Product_Category
 WHERE GroupCode = :groupCode
 GROUP BY CatName, CatCode
 ORDER BY CatName;
+
+getProductGuidsBySubCategory:
+SELECT
+    ProductCode
+FROM Product_Category
+WHERE CatCode = :catCode;
+
+getProductGuidsByGroup:
+SELECT
+    ProductCode
+FROM Product_Category
+WHERE GroupCode = :groupCode;
