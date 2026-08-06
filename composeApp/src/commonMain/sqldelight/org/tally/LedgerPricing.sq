@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS LedgerPricing (
+GUID INTEGER NOT NULL ,
+    Name TEXT,
+    MobileNo TEXT NOT NULL,
+    L6 REAL
+);
+
+selectChangePrice:
+SELECT L6, 1 AS rectype
+FROM LedgerPricing
+WHERE MobileNo = :mobileno AND L6 > 100;

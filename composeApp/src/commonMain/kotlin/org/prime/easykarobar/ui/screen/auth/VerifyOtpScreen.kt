@@ -215,7 +215,7 @@ data class VerifyOtpScreen(
                                                     )
                                                     try {
                                                         val db = DatabaseHolder.instance
-                                                        val result = db.ledgerMasterQueries.selectChangePrice(number).executeAsOneOrNull()
+                                                        val result = db.ledgerPricingQueries.selectChangePrice(number).executeAsOneOrNull()
                                                         if (result != null) {
                                                             SharedPrefs.ChangePrice.save(result.L6 ?: 0.0)
                                                         }else{
@@ -236,7 +236,7 @@ data class VerifyOtpScreen(
                                                     )
                                                     try {
                                                         val db = DatabaseHolder.instance
-                                                        val result = db.ledgerMasterQueries.selectChangePrice(number).executeAsOneOrNull()
+                                                        val result = db.ledgerPricingQueries.selectChangePrice(number).executeAsOneOrNull()
                                                         if (result != null) {
                                                             SharedPrefs.ChangePrice.save(result.L6 ?: 0.0)
                                                         }else{
