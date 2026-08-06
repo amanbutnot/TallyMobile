@@ -35,6 +35,15 @@ CREATE TABLE Products (
     PRICE5 REAL
 );
 
+CREATE TABLE IF NOT EXISTS ProductMultyPricing (
+    GUID TEXT PRIMARY KEY,
+    Price1 REAL,
+    Price2 REAL,
+    Price3 REAL,
+    Price4 REAL,
+    Price5 REAL
+);
+
 existingItems:
 SELECT GUID FROM Products WHERE (Name = :name1 OR Alias = :alias1) OR (Name = :name2 OR Alias = :alias2);
 
@@ -134,140 +143,231 @@ SELECT Name,GUID FROM ProductGroupMaster WHERE (:filterGroup = 0 OR ProductGroup
 
 getProductsForDis:
 SELECT
-    GUID AS product_id,
-    GUID AS hospital_id,
-    Name AS product_name,
-    GroupCode AS category_id,
-    UnitCode AS unit_id,
-    SalesPrice AS sales_price,
+    product_id,
+    hospital_id,
+    product_name,
+    category_id,
+    unit_id,
+    effective_sales_price AS sales_price,
     MRP,
-    PurcPrice AS purchase_price,
-    SaleDisc AS discount,
-
-COALESCE(
-    (
-        SELECT IGST
-        FROM Tax_Category_Mast
-        WHERE Tax_Category_Mast.GUID = Products.TaxCategoryCode
-          AND AppDate <= '2025-04-01'
-        ORDER BY AppDate DESC
-        LIMIT 1
-    ),
-    0
-) AS gst_tax_percentage,
-
-    Name AS product_description,
-    '' AS created_at,
-    '' AS updated_at,
-
+    purchase_price,
+    discount,
+    gst_tax_percentage,
+    product_description,
+    created_at,
+    updated_at,
     ROUND(
         CASE
-            WHEN IFNULL(SaleDisc, 0) = 0 THEN SalesPrice
-            ELSE SalesPrice - (SalesPrice * SaleDisc / 100.0)
+            WHEN IFNULL(discount, 0) = 0 THEN effective_sales_price
+            ELSE effective_sales_price - (effective_sales_price * discount / 100.0)
         END,
         2
     ) AS discounted_price,
-    UnitName AS main_unit,
-    AltUnit AS alt_unit,
-    ConFactor AS con_factor,
-    ConType AS con_type
-
-FROM Products
-WHERE (:filterGroup = 0 OR Products.GroupCode IN :groupCodes) AND (:productCode IS NULL OR Products.GroupCode = :productCode) AND ( Products.E4 <> -1.0   OR  Products.E4 IS NULL) AND   (Products.E5<>-1.0 OR  Products.E5 IS NULL )
-ORDER BY Name;
+    main_unit,
+    alt_unit,
+    con_factor,
+    con_type
+FROM (
+    SELECT
+        Products.GUID AS product_id,
+        Products.GUID AS hospital_id,
+        Products.Name AS product_name,
+        Products.GroupCode AS category_id,
+        Products.UnitCode AS unit_id,
+        COALESCE(
+            CASE
+                WHEN :changePrice = 101.0 AND IFNULL(PMP.Price1, 0.0) != 0.0 THEN PMP.Price1
+                WHEN :changePrice = 102.0 AND IFNULL(PMP.Price2, 0.0) != 0.0 THEN PMP.Price2
+                WHEN :changePrice = 103.0 AND IFNULL(PMP.Price3, 0.0) != 0.0 THEN PMP.Price3
+                WHEN :changePrice = 104.0 AND IFNULL(PMP.Price4, 0.0) != 0.0 THEN PMP.Price4
+                WHEN :changePrice = 105.0 AND IFNULL(PMP.Price5, 0.0) != 0.0 THEN PMP.Price5
+                ELSE NULL
+            END,
+            Products.SalesPrice
+        ) AS effective_sales_price,
+        Products.MRP,
+        Products.PurcPrice AS purchase_price,
+        Products.SaleDisc AS discount,
+        COALESCE(
+            (
+                SELECT IGST
+                FROM Tax_Category_Mast
+                WHERE Tax_Category_Mast.GUID = Products.TaxCategoryCode
+                  AND AppDate <= '2025-04-01'
+                ORDER BY AppDate DESC
+                LIMIT 1
+            ),
+            0
+        ) AS gst_tax_percentage,
+        Products.Name AS product_description,
+        '' AS created_at,
+        '' AS updated_at,
+        Products.UnitName AS main_unit,
+        Products.AltUnit AS alt_unit,
+        Products.ConFactor AS con_factor,
+        Products.ConType AS con_type,
+        Products.E4,
+        Products.E5,
+        Products.GroupCode,
+        Products.GUID
+    FROM Products
+    LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
+) AS Sub
+WHERE (:filterGroup = 0 OR GroupCode IN :groupCodes) AND (:productCode IS NULL OR GroupCode = :productCode) AND ( E4 <> -1.0   OR  E4 IS NULL) AND   (E5<>-1.0 OR  E5 IS NULL )
+ORDER BY product_name;
 
 getProductsByGuidsForDis:
 SELECT
-    GUID AS product_id,
-    GUID AS hospital_id,
-    Name AS product_name,
-    GroupCode AS category_id,
-    UnitCode AS unit_id,
-    SalesPrice AS sales_price,
+    product_id,
+    hospital_id,
+    product_name,
+    category_id,
+    unit_id,
+    effective_sales_price AS sales_price,
     MRP,
-    PurcPrice AS purchase_price,
-    SaleDisc AS discount,
-
-COALESCE(
-    (
-        SELECT IGST
-        FROM Tax_Category_Mast
-        WHERE Tax_Category_Mast.GUID = Products.TaxCategoryCode
-          AND AppDate <= '2025-04-01'
-        ORDER BY AppDate DESC
-        LIMIT 1
-    ),
-    0
-) AS gst_tax_percentage,
-
-    Name AS product_description,
-    '' AS created_at,
-    '' AS updated_at,
-
+    purchase_price,
+    discount,
+    gst_tax_percentage,
+    product_description,
+    created_at,
+    updated_at,
     ROUND(
         CASE
-            WHEN IFNULL(SaleDisc, 0) = 0 THEN SalesPrice
-            ELSE SalesPrice - (SalesPrice * SaleDisc / 100.0)
+            WHEN IFNULL(discount, 0) = 0 THEN effective_sales_price
+            ELSE effective_sales_price - (effective_sales_price * discount / 100.0)
         END,
         2
     ) AS discounted_price,
-    UnitName AS main_unit,
-    AltUnit AS alt_unit,
-    ConFactor AS con_factor,
-    ConType AS con_type
-
-FROM Products
-WHERE GUID IN :guids AND ( Products.E4 <> -1.0   OR  Products.E4 IS NULL) AND   (Products.E5<>-1.0 OR  Products.E5 IS NULL )
-ORDER BY Name;
+    main_unit,
+    alt_unit,
+    con_factor,
+    con_type
+FROM (
+    SELECT
+        Products.GUID AS product_id,
+        Products.GUID AS hospital_id,
+        Products.Name AS product_name,
+        Products.GroupCode AS category_id,
+        Products.UnitCode AS unit_id,
+        COALESCE(
+            CASE
+                WHEN :changePrice = 101.0 AND IFNULL(PMP.Price1, 0.0) != 0.0 THEN PMP.Price1
+                WHEN :changePrice = 102.0 AND IFNULL(PMP.Price2, 0.0) != 0.0 THEN PMP.Price2
+                WHEN :changePrice = 103.0 AND IFNULL(PMP.Price3, 0.0) != 0.0 THEN PMP.Price3
+                WHEN :changePrice = 104.0 AND IFNULL(PMP.Price4, 0.0) != 0.0 THEN PMP.Price4
+                WHEN :changePrice = 105.0 AND IFNULL(PMP.Price5, 0.0) != 0.0 THEN PMP.Price5
+                ELSE NULL
+            END,
+            Products.SalesPrice
+        ) AS effective_sales_price,
+        Products.MRP,
+        Products.PurcPrice AS purchase_price,
+        Products.SaleDisc AS discount,
+        COALESCE(
+            (
+                SELECT IGST
+                FROM Tax_Category_Mast
+                WHERE Tax_Category_Mast.GUID = Products.TaxCategoryCode
+                  AND AppDate <= '2025-04-01'
+                ORDER BY AppDate DESC
+                LIMIT 1
+            ),
+            0
+        ) AS gst_tax_percentage,
+        Products.Name AS product_description,
+        '' AS created_at,
+        '' AS updated_at,
+        Products.UnitName AS main_unit,
+        Products.AltUnit AS alt_unit,
+        Products.ConFactor AS con_factor,
+        Products.ConType AS con_type,
+        Products.E4,
+        Products.E5,
+        Products.GUID
+    FROM Products
+    LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
+) AS Sub
+WHERE GUID IN :guids AND ( E4 <> -1.0   OR  E4 IS NULL) AND   (E5<>-1.0 OR  E5 IS NULL )
+ORDER BY product_name;
 
 getProductsByCategoryMapping:
 SELECT
-    GUID AS product_id,
-    GUID AS hospital_id,
-    Name AS product_name,
-    GroupCode AS category_id,
-    UnitCode AS unit_id,
-    SalesPrice AS sales_price,
+    product_id,
+    hospital_id,
+    product_name,
+    category_id,
+    unit_id,
+    effective_sales_price AS sales_price,
     MRP,
-    PurcPrice AS purchase_price,
-    SaleDisc AS discount,
-
-COALESCE(
-    (
-        SELECT IGST
-        FROM Tax_Category_Mast
-        WHERE Tax_Category_Mast.GUID = Products.TaxCategoryCode
-          AND AppDate <= '2025-04-01'
-        ORDER BY AppDate DESC
-        LIMIT 1
-    ),
-    0
-) AS gst_tax_percentage,
-
-    Name AS product_description,
-    '' AS created_at,
-    '' AS updated_at,
-
+    purchase_price,
+    discount,
+    gst_tax_percentage,
+    product_description,
+    created_at,
+    updated_at,
     ROUND(
         CASE
-            WHEN IFNULL(SaleDisc, 0) = 0 THEN SalesPrice
-            ELSE SalesPrice - (SalesPrice * SaleDisc / 100.0)
+            WHEN IFNULL(discount, 0) = 0 THEN effective_sales_price
+            ELSE effective_sales_price - (effective_sales_price * discount / 100.0)
         END,
         2
     ) AS discounted_price,
-    UnitName AS main_unit,
-    AltUnit AS alt_unit,
-    ConFactor AS con_factor,
-    ConType AS con_type
-
-FROM Products
+    main_unit,
+    alt_unit,
+    con_factor,
+    con_type
+FROM (
+    SELECT
+        Products.GUID AS product_id,
+        Products.GUID AS hospital_id,
+        Products.Name AS product_name,
+        Products.GroupCode AS category_id,
+        Products.UnitCode AS unit_id,
+        COALESCE(
+            CASE
+                WHEN :changePrice = 101.0 AND IFNULL(PMP.Price1, 0.0) != 0.0 THEN PMP.Price1
+                WHEN :changePrice = 102.0 AND IFNULL(PMP.Price2, 0.0) != 0.0 THEN PMP.Price2
+                WHEN :changePrice = 103.0 AND IFNULL(PMP.Price3, 0.0) != 0.0 THEN PMP.Price3
+                WHEN :changePrice = 104.0 AND IFNULL(PMP.Price4, 0.0) != 0.0 THEN PMP.Price4
+                WHEN :changePrice = 105.0 AND IFNULL(PMP.Price5, 0.0) != 0.0 THEN PMP.Price5
+                ELSE NULL
+            END,
+            Products.SalesPrice
+        ) AS effective_sales_price,
+        Products.MRP,
+        Products.PurcPrice AS purchase_price,
+        Products.SaleDisc AS discount,
+        COALESCE(
+            (
+                SELECT IGST
+                FROM Tax_Category_Mast
+                WHERE Tax_Category_Mast.GUID = Products.TaxCategoryCode
+                  AND AppDate <= '2025-04-01'
+                ORDER BY AppDate DESC
+                LIMIT 1
+            ),
+            0
+        ) AS gst_tax_percentage,
+        Products.Name AS product_description,
+        '' AS created_at,
+        '' AS updated_at,
+        Products.UnitName AS main_unit,
+        Products.AltUnit AS alt_unit,
+        Products.ConFactor AS con_factor,
+        Products.ConType AS con_type,
+        Products.E4,
+        Products.E5,
+        Products.GUID
+    FROM Products
+    LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
+) AS Sub
 WHERE GUID IN (
     SELECT CAST(CAST(ProductCode AS INTEGER) AS TEXT) FROM Product_Category
     WHERE GroupCode = :groupCode
     AND (:catCode IS NULL OR CatCode = :catCode)
 )
-AND ( Products.E4 <> -1.0   OR  Products.E4 IS NULL) AND (Products.E5<>-1.0 OR  Products.E5 IS NULL )
-ORDER BY Name;
+AND ( E4 <> -1.0   OR  E4 IS NULL) AND (E5<>-1.0 OR  E5 IS NULL )
+ORDER BY product_name;
 
 
 

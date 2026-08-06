@@ -143,7 +143,8 @@ object ShoppingScreen : Screen {
 
         val list = db.productsQueries.getProductsForDis(
             filterGroup = filterItemGroups(),
-            groupCodes = itemGroupCodes(), productCode = null
+            groupCodes = itemGroupCodes(), productCode = null,
+            changePrice = SharedPrefs.ChangePrice.get()
         ).executeAsList()
         val categoryList = db.productsQueries.productCategoriesForDis(
             filterGroup = filterItemGroups(),

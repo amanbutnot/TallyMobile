@@ -210,7 +210,8 @@ object CategoryShoppingScreen : Screen {
                     products = db.productsQueries.getProductsForDis(
                         filterGroup = filterItemGroups(),
                         groupCodes = itemGroupCodes(),
-                        productCode = null
+                        productCode = null,
+                        changePrice = SharedPrefs.ChangePrice.get()
                     ).executeAsList()
                 )
             }

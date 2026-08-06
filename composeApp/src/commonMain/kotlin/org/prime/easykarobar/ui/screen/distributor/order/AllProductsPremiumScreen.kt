@@ -169,7 +169,8 @@ data class AllProductsPremiumScreen(
             }
         }
 
-        val productList = remember(currentCategoryCode, currentSubCategoryCode, currentProductGuids) {
+        val changePrice = SharedPrefs.ChangePrice.get()
+        val productList = remember(currentCategoryCode, currentSubCategoryCode, currentProductGuids, changePrice) {
             val mapper = { product_id: String?, hospital_id: String?, product_name: String?, category_id: Double?, unit_id: Double?, sales_price: Double?, MRP: Double?, purchase_price: Double?, discount: Double?, gst_tax_percentage: Double, product_description: String?, created_at: String, updated_at: String, discounted_price: Double?, main_unit: String?, alt_unit: String?, con_factor: Double?, con_type: Double? ->
                 GetProductsForDis(
                     product_id, hospital_id, product_name, category_id, unit_id, sales_price,
@@ -179,11 +180,16 @@ data class AllProductsPremiumScreen(
             }
 
             if (currentProductGuids != null) {
-                db.productsQueries.getProductsByGuidsForDis(currentProductGuids!!, mapper).executeAsList()
+                db.productsQueries.getProductsByGuidsForDis(
+                    guids = currentProductGuids!!,
+                    changePrice = changePrice,
+                    mapper = mapper
+                ).executeAsList()
             } else if (currentCategoryCode != null) {
                 db.productsQueries.getProductsByCategoryMapping(
                     groupCode = currentCategoryCode!!,
                     catCode = currentSubCategoryCode,
+                    changePrice = changePrice,
                     mapper = mapper
                 ).executeAsList()
             } else {
@@ -191,6 +197,7 @@ data class AllProductsPremiumScreen(
                     filterGroup = filterAGRP,
                     groupCodes = groupCodes,
                     productCode = null,
+                    changePrice = changePrice,
                     mapper = mapper
                 ).executeAsList()
             }

@@ -177,6 +177,21 @@ actual class DriverFactory(private val context: Context) {
                     );
                 """.trimIndent()
             )
+
+            ensureTable(
+                driver = driver,
+                tableName = "ProductMultyPricing",
+                createTableSql = """
+                    CREATE TABLE IF NOT EXISTS ProductMultyPricing (
+                        GUID TEXT PRIMARY KEY,
+                        Price1 REAL,
+                        Price2 REAL,
+                        Price3 REAL,
+                        Price4 REAL,
+                        Price5 REAL
+                    );
+                """.trimIndent()
+            )
         } catch (e: Exception) {
             println("❌ Error during manual migration: ${e.message}")
         }

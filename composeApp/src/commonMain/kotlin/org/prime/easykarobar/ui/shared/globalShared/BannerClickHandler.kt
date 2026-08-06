@@ -4,6 +4,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.platform.UriHandler
 import cafe.adriel.voyager.navigator.Navigator
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.distributor.order.AllProductsPremiumScreen
 import org.tally.BANNER_MASTER
 import org.tally.FEATURES_MASTER
@@ -37,7 +38,10 @@ fun handleBannerClick(
         }
 
         BannerClicks.OpenItem.value -> {
-            val product = db.productsQueries.getProductsByGuidsForDis(listOf(c2 ?: "")) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price, main_unit, alt_unit, con_factor, con_type ->
+            val product = db.productsQueries.getProductsByGuidsForDis(
+                guids = listOf(c2 ?: ""),
+                changePrice = SharedPrefs.ChangePrice.get()
+            ) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price, main_unit, alt_unit, con_factor, con_type ->
                 GetProductsForDis(
                     product_id,
                     hospital_id,

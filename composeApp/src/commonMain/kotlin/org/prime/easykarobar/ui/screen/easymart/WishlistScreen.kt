@@ -77,7 +77,8 @@ object WishlistScreen : Screen {
             DatabaseHolder.instance.productsQueries.getProductsForDis(
                 filterGroup = filterItemGroups(),
                 groupCodes = itemGroupCodes(),
-                productCode = null
+                productCode = null,
+                changePrice = SharedPrefs.ChangePrice.get()
             ).executeAsList()
         }
 

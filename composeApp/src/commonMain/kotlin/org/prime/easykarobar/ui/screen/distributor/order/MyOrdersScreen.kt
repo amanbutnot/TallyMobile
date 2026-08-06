@@ -76,6 +76,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.CancelOrderRequest
 import org.prime.easykarobar.data.model.ORDERSTATUS
@@ -274,7 +275,10 @@ fun MyOrderContent(
                         cartViewModel.emptyList()
                         val ids = order.items.map { it.product_id }
                         val products = DatabaseHolder.instance.productsQueries
-                            .getProductsByGuidsForDis(ids) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price, main_unit, alt_unit, con_factor, con_type ->
+                            .getProductsByGuidsForDis(
+                                guids = ids,
+                                changePrice = SharedPrefs.ChangePrice.get()
+                            ) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price, main_unit, alt_unit, con_factor, con_type ->
                                 GetProductsForDis(
                                     product_id,
                                     hospital_id,
