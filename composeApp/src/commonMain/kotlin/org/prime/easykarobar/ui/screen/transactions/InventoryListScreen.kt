@@ -162,7 +162,7 @@ data class InventoryListScreen(
                                                 vchType = vchType,
                                                 tranId = item.id,
                                                 isEdit = true,
-                                                enableUpdateButton = item.status_billed == ORDERSTATUS.Pending.name
+                                                enableUpdateButton = item.OrderStatus == ORDERSTATUS.Pending.name
                                             )
                                         )
                                     }
@@ -257,7 +257,7 @@ private fun ListItem(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (listState.status_billed == ORDERSTATUS.Pending.name)
+            containerColor = if (listState.OrderStatus == ORDERSTATUS.Pending.name)
                 Color(0xffFBC02D).copy(alpha = 0.04f)
             else
                 MaterialTheme.colorScheme.surface,
@@ -349,7 +349,7 @@ private fun ListItem(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = listState.status_billed,
+                    text = listState.OrderStatus,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
@@ -386,8 +386,8 @@ private fun ListItem(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (showStatusChange &&
-                listState.status_billed != ORDERSTATUS.Delivered.name &&
-                listState.status_billed != ORDERSTATUS.Cancelled.name
+                listState.OrderStatus != ORDERSTATUS.Delivered.name &&
+                listState.OrderStatus != ORDERSTATUS.Cancelled.name
             ) {
                 OutlinedButton(
                     onClick = onStatusChangeClick,
