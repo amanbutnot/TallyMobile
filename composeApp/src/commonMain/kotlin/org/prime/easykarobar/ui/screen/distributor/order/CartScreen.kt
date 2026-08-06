@@ -1164,7 +1164,7 @@ fun ConfirmOrderButton(
     val totalHamali = products.sumOf { cartItem ->
         val unitName = unitMap[cartItem.product.unit_id ?: 0.0]
         val quantity = cartItem.quantity.value
-        when (unitName) {
+        when (unitName?.lowercase()) {
             "box", "tin" -> quantity * 2.0
             "bag" -> quantity * 5.0
             else -> 0.0
@@ -1280,7 +1280,7 @@ fun ConfirmOrderButton(
                 products.forEach { cartItem ->
                     val unitName = unitMap[cartItem.product.unit_id ?: 0.0]
                     val quantity = cartItem.quantity.value
-                    val rate = when (unitName) {
+                    val rate = when (unitName?.lowercase()) {
                         "box", "tin" -> 2.0
                         "bag" -> 5.0
                         else -> 0.0
