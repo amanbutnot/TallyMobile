@@ -241,20 +241,20 @@ object EasyMartScreen : Screen {
                             onClick = {
                                 if (phoneNumber.length == 10) {
                                     val otp = (100_000..999_999).random()
-                                  //  authViewModel.validateMobile(username = phoneNumber) {
-                                        authViewModel.sendOtp(
-                                            number = phoneNumber,
-                                            message = "Your login OTP is $otp. Please do not share it with anyone.",
-                                            onSuccess = {
-                                                navigator.push(
-                                                    VerifyOtpScreen(
-                                                        otp.toString(),
-                                                        phoneNumber,
-                                                        isForgot = false
-                                                    )
+                                    //  authViewModel.validateMobile(username = phoneNumber) {
+                                    authViewModel.sendOtp(
+                                        number = phoneNumber,
+                                        message = "Your login OTP is $otp. Please do not share it with anyone.",
+                                        onSuccess = {
+                                            navigator.push(
+                                                VerifyOtpScreen(
+                                                    otp.toString(),
+                                                    phoneNumber,
+                                                    isForgot = false
                                                 )
-                                            })
-                                   // }
+                                            )
+                                        })
+                                    // }
                                 }
                             },
                             modifier = Modifier
