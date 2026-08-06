@@ -141,7 +141,7 @@ data class InventoryListResponse(
     val order_no: String,
     val total_amount: String,
     val status: String,
-    val status_billed: String,
+    val OrderStatus: String,
     val billing_guid: String,
     val billing_name: String,
     val billing_mobile: String,
