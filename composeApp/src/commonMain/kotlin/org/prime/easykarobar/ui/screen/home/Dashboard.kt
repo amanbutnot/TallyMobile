@@ -106,7 +106,8 @@ object Dashboard : Screen {
                                                         SelectCompanyScreen(
                                                             loginData!!.username,
                                                             loginData.password,
-                                                            loginData.list
+                                                            loginData.list,
+                                                            loginData.username
                                                         )
                                                     )
                                                 }
@@ -146,7 +147,7 @@ object Dashboard : Screen {
                                                 DeviceId = deviceId
                                             ),
                                             onSuccess = {
-                                                nav.push(GoogleDriveDownloadScreen)
+                                                nav.push(GoogleDriveDownloadScreen(loginData?.username ?: ""))
                                             }, onListSuccess = { companyList ->
                                                 SharedPrefs.LoginInfo.save(
                                                     loginData?.username?.trim() ?: ""
@@ -162,7 +163,8 @@ object Dashboard : Screen {
                                                     SelectCompanyScreen(
                                                         loginData?.username?.trim() ?: "",
                                                         loginData?.password?.trim() ?: "",
-                                                        companyList
+                                                        companyList,
+                                                        loginData?.username?.trim() ?: ""
                                                     )
                                                 )
                                             }
@@ -213,11 +215,11 @@ object Dashboard : Screen {
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
-//                                containerColor = colors.primary.copy(alpha = 0.2f)
-                                containerColor = Color(0xFFFF6D00),
-                                titleContentColor = Color.White,
-                                navigationIconContentColor = Color.White,
-                                actionIconContentColor = Color.White
+                                containerColor = colors.primary.copy(alpha = 0.2f)
+//                                containerColor = Color(0xFFFF6D00),
+//                                titleContentColor = Color.White,
+//                                navigationIconContentColor = Color.White,
+//                                actionIconContentColor = Color.White
                             )
                         )
                     }
