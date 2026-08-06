@@ -501,7 +501,9 @@ object CategoryShoppingScreen : Screen {
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp
                 ),
-                modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp)
+                modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp).clickable{
+                    println(SharedPrefs.ChangePrice.get().toString() + " change price;")
+                }
             )
 
             val chunks = remember(categories) { categories.chunked(3) }
