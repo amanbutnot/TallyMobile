@@ -119,7 +119,7 @@ object DistributorReportSubTab : Tab {
                     title = "My Orders",
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        nav.push(MyOrdersScreen)
+                        nav.push(MyOrdersScreen())
                     }
                 )
             }

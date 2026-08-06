@@ -71,13 +71,15 @@ object OrderRepository {
         }
     }
 
-    suspend fun listOrders(): ApiResponse<List<Order>>? {
+    suspend fun listOrders(orderId: String?): ApiResponse<List<Order>>? {
         val token = SharedPrefs.Token.get()
         return try {
             val res = KtorClient.client.post("$BASE_URL/Transactions/listOfDistributorOrders.php") {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
-               setBody(ListRequest(SharedPrefs.DistributorData.get()?.ledger_GUID.toString()) )
+                setBody(
+                    ListRequest(SharedPrefs.DistributorData.get()?.ledger_GUID.toString(), orderId)
+                )
             }
             println(res.bodyAsText())
             res.body()
@@ -89,14 +91,12 @@ object OrderRepository {
 }
 
 
-
-
 @Serializable
 data class ListRequest(
-    val billing_guid:String
+    val billing_guid: String, val order_id: String? = null
 )
 
 @Serializable
 data class ChangeStatusResponse(
-    val order_id:String
+    val order_id: String
 )

@@ -118,10 +118,10 @@ class OrderViewModel : ViewModel() {
     }
 
 
-    fun listOrders() {
+    fun listOrders(orderId: String? = null) {
         viewModelScope.launch {
             _listOrderState.value = _listOrderState.value.copy(isLoading = true)
-            val res = OrderRepository.listOrders()
+            val res = OrderRepository.listOrders(orderId)
             if (res?.statuscode == 200) {
                 _listOrderState.value = ListOrderState(
                     success = true,
@@ -316,7 +316,8 @@ class CartViewModel : ScreenModel {
     }
 
     fun getProductQuantity(product: GetProductsForDis): Double {
-        return _cartItems.find { it.product.product_id == product.product_id }?.quantity?.value ?: 0.0
+        return _cartItems.find { it.product.product_id == product.product_id }?.quantity?.value
+            ?: 0.0
     }
 
     fun updateQuantity(product: GetProductsForDis, quantity: Double, selectedUnit: String? = null) {

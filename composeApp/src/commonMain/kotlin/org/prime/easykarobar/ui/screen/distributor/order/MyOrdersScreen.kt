@@ -92,7 +92,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.tally.GetProductsForDis
 
-object MyOrdersScreen : Screen {
+data class MyOrdersScreen(val order_id:String?=null) : Screen {
     @Composable
     override fun Content() {
         val nav = LocalNavigator.currentOrThrow

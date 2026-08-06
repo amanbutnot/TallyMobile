@@ -250,7 +250,7 @@ object SettingScreen : Screen {
                             subtitle = "Track and view your orders",
                             containerColor = colors.primary,
                             contentColor = colors.onPrimary,
-                            onClick = { parentNav?.push(MyOrdersScreen) },
+                            onClick = { parentNav?.push(MyOrdersScreen()) },
                             modifier = Modifier.fillMaxWidth()
                         )
 

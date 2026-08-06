@@ -113,7 +113,7 @@ data class AllProductScreen(
                             TopHeaderAllProducts(
                                 searchQuery = searchQuery.value,
                                 onSearchQueryChange = { searchQuery.value = it },
-                                onOrdersClick = { nav.push(MyOrdersScreen) },
+                                onOrdersClick = { nav.push(MyOrdersScreen()) },
                                 onCartClick = { nav.push(CartScreen) },
                                 cartViewModel = viewModel
                             )

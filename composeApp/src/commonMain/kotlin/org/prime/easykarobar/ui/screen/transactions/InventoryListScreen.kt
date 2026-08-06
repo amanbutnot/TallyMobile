@@ -54,6 +54,7 @@ import org.prime.easykarobar.data.model.ORDERSTATUS
 import org.prime.easykarobar.data.model.UpdateOrderStatusRequest
 import org.prime.easykarobar.data.model.transactions.InventoryListRequest
 import org.prime.easykarobar.data.model.transactions.InventoryListResponse
+import org.prime.easykarobar.ui.screen.distributor.order.MyOrdersScreen
 import org.prime.easykarobar.ui.screen.transactions.sale.SaleScreen
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
@@ -156,15 +157,19 @@ data class InventoryListScreen(
                                             showStatusSheet = true
                                         }
                                     ) {
-                                        nav.push(
-                                            SaleScreen(
-                                                name = name,
-                                                vchType = vchType,
-                                                tranId = item.id,
-                                                isEdit = true,
-                                                enableUpdateButton = item.OrderStatus == ORDERSTATUS.Pending.name
+                                        if (showStatusChange) {
+                                            nav.push(MyOrdersScreen(order_id = item.id.toString()))
+                                        } else {
+                                            nav.push(
+                                                SaleScreen(
+                                                    name = name,
+                                                    vchType = vchType,
+                                                    tranId = item.id,
+                                                    isEdit = true,
+                                                    enableUpdateButton = item.OrderStatus == ORDERSTATUS.Pending.name
+                                                )
                                             )
-                                        )
+                                        }
                                     }
                                 }
                             }
