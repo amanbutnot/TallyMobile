@@ -196,6 +196,7 @@ data class VerifyOtpScreen(
                                             nav.replace(ChangePasswordScreen(number))
                                         } else {
                                             SharedPrefs.IsEasyMart.save(true)
+                                            SharedPrefs.RegisteredNumber.save(number)
                                             authViewModel.userLogin(
                                                 LoginRequest(
                                                     Username = BuildKonfig.USERNAME,

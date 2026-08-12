@@ -37,6 +37,7 @@ object SharedPrefs {
         LoginVersion.clear()
         LastSync.clear()
         IsEasyMart.clear()
+        RegisteredNumber.clear()
     }
     object IsEasyMart {
         private const val KEY = "is_easy_mart"
@@ -46,6 +47,21 @@ object SharedPrefs {
 
         fun get(): Boolean {
             return settings.getBoolean(KEY, false)
+        }
+
+        fun clear() {
+            settings.remove(KEY)
+        }
+    }
+
+    object RegisteredNumber {
+        private const val KEY = "registered_number"
+        fun save(number: String) {
+            settings.putString(KEY, number)
+        }
+
+        fun get(): String? {
+            return settings.getStringOrNull(KEY)
         }
 
         fun clear() {

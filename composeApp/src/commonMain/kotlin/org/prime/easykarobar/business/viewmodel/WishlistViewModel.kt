@@ -22,7 +22,7 @@ class WishlistViewModel : ScreenModel {
     val deleteState: State<DataState<Unit>> = _deleteState
 
     private val mobileNo: String
-        get() = SharedPrefs.User.get()?.Mobile ?: BuildKonfig.USERNAME
+        get() = SharedPrefs.RegisteredNumber.get() ?: SharedPrefs.User.get()?.Mobile ?: BuildKonfig.USERNAME
 
     fun addWishlist(itemGuid: String, groupGuid: String, onSuccess: () -> Unit = {}) {
         screenModelScope.launch {
