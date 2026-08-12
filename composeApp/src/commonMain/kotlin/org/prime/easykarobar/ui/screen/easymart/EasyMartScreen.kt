@@ -43,7 +43,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -203,6 +202,7 @@ object EasyMartScreen : Screen {
                                 if (it.length <= 10 && it.all { char -> char.isDigit() }) phoneNumber =
                                     it
                             },
+
                             modifier = Modifier.fillMaxWidth(),
                             placeholder = { Text("Enter Mobile Number") },
                             leadingIcon = {
@@ -219,7 +219,6 @@ object EasyMartScreen : Screen {
                                 )
                             },
                             keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Phone,
                                 imeAction = ImeAction.Done
                             ),
                             keyboardActions = KeyboardActions(
