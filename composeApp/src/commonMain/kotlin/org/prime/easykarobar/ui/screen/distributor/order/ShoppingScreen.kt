@@ -1096,7 +1096,7 @@ fun ItemCard(
             // --- Price (visually separated but not screaming)
             Text(
                 text = item.sales_price?.formatToAmtDec().toString(),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
