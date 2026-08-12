@@ -490,7 +490,7 @@ object SettingScreen : Screen {
                             if (BuildKonfig.STORE_ID.isNotEmpty()) {
                                 parentNav?.replaceAll(EasyMartScreen)
                             } else {
-                                parentNav?.replaceAll(OnBoardingScreen)
+                                nav.replaceAll(OnBoardingScreen)
                             }
                         },
                         onCancel = {
