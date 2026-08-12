@@ -138,16 +138,13 @@ fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<ProductsWithConf
     val filterIGRP = perms?.FilterIGRP == "Y"
     val filterItems = perms?.FilterItems == "Y"
     val showZeroGroup = if (SharedPrefs.ShowZeroStock.get() == false) 1L else 0L
-
-    println(filterItems)
     val itemConfig = when (vchType) {
+
         9, 3, 12, 26 -> {
-            println("data is from sale here")
             SaleItemConfig()
         }
 
         13, 10, 2, 27 -> {
-            println("data is from purchase here")
             PurItemConfig()
         }
 
@@ -155,19 +152,32 @@ fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<ProductsWithConf
             ""
         }
     }
-    println("VCH TYPE: $vchType")
+
     println("ITEM CONFIG: $itemConfig")
-    return when {
+
+    val result = when {
+
         perms == null -> {
+            println("QUERY BRANCH: permissions == null")
+            println("QUERY: selectAllConfig")
+            println("PARAM applyN1Filter: $showZeroGroup")
+            println("PARAM compConfigFilter: $itemConfig")
+
             db.productsQueries.selectAllConfig(
                 applyN1Filter = showZeroGroup,
                 compConfigFilter = itemConfig,
                 mapper = ::mapToProductsWithConfig
             ).executeAsList()
         }
+
         // Both filters active
         filterIGRP && filterItems -> {
+            println("QUERY BRANCH: BOTH FILTERS ACTIVE")
+
             val excludeGuids = perms.ConfigItems.parseToStringList()
+
+
+
             db.productsQueries.selectAllFilterAGRPConfig(
                 compConfigFilter = itemConfig,
                 GroupCode = filterItemGroupCodes(),
@@ -179,9 +189,11 @@ fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<ProductsWithConf
 
         // Only GroupCode filter
         filterIGRP -> {
+            val groupCodes = filterItemGroupCodes()
+
             db.productsQueries.selectByGroupCodeConfig(
                 compConfigFilter = itemConfig,
-                GroupCode = filterItemGroupCodes(),
+                GroupCode = groupCodes,
                 applyN1Filter = showZeroGroup,
                 mapper = ::mapToProductsWithConfig
             ).executeAsList()
@@ -207,8 +219,8 @@ fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<ProductsWithConf
             ).executeAsList()
         }
     }
+    return result
 }
-
 
 fun getItemMasters(db: TallyDatabase): List<Products> {
     val perms = SharedPrefs.Permissions.get()
