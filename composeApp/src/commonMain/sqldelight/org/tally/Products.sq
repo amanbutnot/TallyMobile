@@ -411,7 +411,7 @@ LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
 WHERE GroupCode IN ?
   AND Products.GUID NOT IN ?
-  AND (:applyN1Filter = 0 OR N1 > 0) AND Products.E4 <> -1.0 AND Products.E5<>-1.0
+  AND (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0 AND COALESCE(Products.E5, 0.0)<>-1.0
 ORDER BY Name;
 
 selectByGroupCodeConfig:
@@ -450,7 +450,7 @@ FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
     WHERE GroupCode IN ?
-  AND (:applyN1Filter = 0 OR N1 > 0) AND Products.E4 <> -1.0 AND Products.E5<>-1.0
+  AND (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0 AND COALESCE(Products.E5, 0.0)<>-1.0
 ORDER BY Name;
 
 selectExcludingGuidConfig:
@@ -489,7 +489,7 @@ FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
 WHERE Products.GUID NOT IN ?
-  AND (:applyN1Filter = 0 OR N1 > 0) AND Products.E4 <> -1.0 AND Products.E5<>-1.0
+  AND (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0 AND COALESCE(Products.E5, 0.0)<>-1.0
 ORDER BY Name;
 
 selectAllConfig:
@@ -527,5 +527,5 @@ SELECT
 FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
-WHERE (:applyN1Filter = 0 OR N1 > 0) AND Products.E4 <> -1.0 AND Products.E5<>-1.0
+WHERE (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0 AND COALESCE(Products.E5, 0.0)<>-1.0
 ORDER BY Name;
