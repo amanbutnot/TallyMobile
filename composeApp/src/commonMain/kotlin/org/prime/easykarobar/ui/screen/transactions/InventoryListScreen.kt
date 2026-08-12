@@ -57,6 +57,7 @@ import org.prime.easykarobar.data.model.transactions.InventoryListResponse
 import org.prime.easykarobar.ui.screen.distributor.order.MyOrdersScreen
 import org.prime.easykarobar.ui.screen.transactions.sale.SaleScreen
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
+import org.prime.easykarobar.ui.shared.composables.OrderCard
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
@@ -149,17 +150,35 @@ data class InventoryListScreen(
                         LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
                             state.data?.let {
                                 itemsIndexed(it) { index, item ->
-                                    ListItem(
-                                        listState = item,
-                                        showStatusChange = showStatusChange,
-                                        onStatusChangeClick = {
-                                            selectedItem = item
-                                            showStatusSheet = true
+                                    if (showStatusChange) {
+                                        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                                            OrderCard(
+                                                orderNo = item.order_no,
+                                                orderStatus = item.OrderStatus,
+                                                orderDate = item.created_at,
+                                                billingName = getNameFromGUID(item.billing_guid),
+                                                totalAmount = item.total_amount,
+                                                showStatusChange = true,
+                                                onStatusChangeClick = {
+                                                    selectedItem = item
+                                                    showStatusSheet = true
+                                                },
+                                                onClick = {
+                                                    nav.push(
+                                                        MyOrdersScreen(
+                                                            order_id = item.id.toString(),
+                                                            isStatusChangeMode = true
+                                                        )
+                                                    )
+                                                }
+                                            )
                                         }
-                                    ) {
-                                        if (showStatusChange) {
-                                            nav.push(MyOrdersScreen(order_id = item.id.toString()))
-                                        } else {
+                                    } else {
+                                        ListItem(
+                                            listState = item,
+                                            showStatusChange = false,
+                                            onStatusChangeClick = { }
+                                        ) {
                                             nav.push(
                                                 SaleScreen(
                                                     name = name,
