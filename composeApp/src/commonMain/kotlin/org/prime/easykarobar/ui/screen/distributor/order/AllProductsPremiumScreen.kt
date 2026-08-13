@@ -790,19 +790,30 @@ data class AllProductsPremiumScreen(
         val factor = product.con_factor ?: 1.0
         val conType = product.con_type ?: 1.0
 
-        val currentSalesPrice =
+        val currentListPrice =
             if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                 product.sales_price ?: 0.0
             } else {
-                if (conType == 1.0) (product.sales_price ?: 0.0) / factor else (product.sales_price
+                val price = if (conType == 1.0) (product.sales_price ?: 0.0) / factor else (product.sales_price
                     ?: 0.0) * factor
+                kotlin.math.round(price * 100.0) / 100.0
+            }
+
+        val currentDiscountedPrice =
+            if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
+                product.discounted_price ?: currentListPrice
+            } else {
+                val price = if (conType == 1.0) (product.discounted_price ?: 0.0) / factor else (product.discounted_price
+                    ?: 0.0) * factor
+                kotlin.math.round(price * 100.0) / 100.0
             }
 
         val currentMrp =
             if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                 product.MRP ?: 0.0
             } else {
-                if (conType == 1.0) (product.MRP ?: 0.0) / factor else (product.MRP ?: 0.0) * factor
+                val price = if (conType == 1.0) (product.MRP ?: 0.0) / factor else (product.MRP ?: 0.0) * factor
+                kotlin.math.round(price * 100.0) / 100.0
             }
 
         Surface(
@@ -854,7 +865,7 @@ data class AllProductsPremiumScreen(
                         .padding(top = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val discount =
+                    val discountPercentage =
                         product.MRP?.takeIf { it != 0.0 && it != product.sales_price }?.let { mrp ->
                             ((mrp - (product.sales_price ?: 0.0)) / mrp) * 100
                         }
@@ -863,9 +874,9 @@ data class AllProductsPremiumScreen(
                         modifier = Modifier.weight(1f),
                         contentAlignment = Alignment.CenterStart
                     ) {
-                        if (discount != null && discount > 0) {
+                        if (discountPercentage != null && discountPercentage > 0) {
                             Text(
-                                text = "${discount.toInt()}% OFF",
+                                text = "${discountPercentage.toInt()}% OFF",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 10.sp
@@ -941,7 +952,7 @@ data class AllProductsPremiumScreen(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = currentSalesPrice.formatToAmtDec(),
+                        text = currentDiscountedPrice.formatToAmtDec(),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Black,
                             fontSize = 16.sp
@@ -949,7 +960,7 @@ data class AllProductsPremiumScreen(
                         color = Color(0xFF1A1C1E)
                     )
 
-                    if (currentMrp != 0.0 && currentMrp != currentSalesPrice) {
+                    if (currentMrp != 0.0 && currentMrp != currentDiscountedPrice) {
                         Text(
                             text = currentMrp.formatToAmtDec(),
                             style = MaterialTheme.typography.bodySmall.copy(
@@ -1060,19 +1071,30 @@ data class AllProductsPremiumScreen(
         val factor = product.con_factor ?: 1.0
         val conType = product.con_type ?: 1.0
 
-        val currentSalesPrice =
+        val currentListPrice =
             if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                 product.sales_price ?: 0.0
             } else {
-                if (conType == 1.0) (product.sales_price ?: 0.0) / factor else (product.sales_price
+                val price = if (conType == 1.0) (product.sales_price ?: 0.0) / factor else (product.sales_price
                     ?: 0.0) * factor
+                kotlin.math.round(price * 100.0) / 100.0
+            }
+
+        val currentDiscountedPrice =
+            if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
+                product.discounted_price ?: currentListPrice
+            } else {
+                val price = if (conType == 1.0) (product.discounted_price ?: 0.0) / factor else (product.discounted_price
+                    ?: 0.0) * factor
+                kotlin.math.round(price * 100.0) / 100.0
             }
 
         val currentMrp =
             if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                 product.MRP ?: 0.0
             } else {
-                if (conType == 1.0) (product.MRP ?: 0.0) / factor else (product.MRP ?: 0.0) * factor
+                val price = if (conType == 1.0) (product.MRP ?: 0.0) / factor else (product.MRP ?: 0.0) * factor
+                kotlin.math.round(price * 100.0) / 100.0
             }
 
         Surface(
@@ -1153,7 +1175,7 @@ data class AllProductsPremiumScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                if (currentMrp != 0.0 && currentMrp != currentSalesPrice) {
+                                if (currentMrp != 0.0 && currentMrp != currentDiscountedPrice) {
                                     Text(
                                         text = "₹${currentMrp.formatToAmtDec()}",
                                         style = MaterialTheme.typography.bodySmall.copy(
@@ -1164,7 +1186,7 @@ data class AllProductsPremiumScreen(
                                     )
                                 }
                                 Text(
-                                    text = "₹${currentSalesPrice.formatToAmtDec()}",
+                                    text = "₹${currentDiscountedPrice.formatToAmtDec()}",
                                     style = MaterialTheme.typography.titleLarge.copy(
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 18.sp

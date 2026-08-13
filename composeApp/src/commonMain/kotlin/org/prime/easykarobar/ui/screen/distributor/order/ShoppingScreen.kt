@@ -42,6 +42,8 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -455,7 +457,6 @@ object ShoppingScreen : Screen {
                     Spacer(Modifier.height(18.dp))
                 }
 
-                // --- Price block (clean, compact, intentional)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -471,17 +472,89 @@ object ShoppingScreen : Screen {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
+                            val isInCart = cartViewModel.isProductInCart(product)
+                            val savedUnit = cartViewModel.getProductUnit(product)
+                            var selectedUnit by remember(product.product_id, isInCart) {
+                                mutableStateOf(if (isInCart) savedUnit else product.main_unit ?: "")
+                            }
+
+                            val factor = product.con_factor ?: 1.0
+                            val conType = product.con_type ?: 1.0
+
+                            val currentListPrice =
+                                if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
+                                    product.sales_price ?: 0.0
+                                } else {
+                                    val price = if (conType == 1.0) (product.sales_price
+                                        ?: 0.0) / factor else (product.sales_price
+                                        ?: 0.0) * factor
+                                    kotlin.math.round(price * 100.0) / 100.0
+                                }
+
+                            val currentDiscountedPrice =
+                                if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
+                                    product.discounted_price ?: currentListPrice
+                                } else {
+                                    val price = if (conType == 1.0) (product.discounted_price
+                                        ?: 0.0) / factor else (product.discounted_price
+                                        ?: 0.0) * factor
+                                    kotlin.math.round(price * 100.0) / 100.0
+                                }
+
+                            val currentMrp =
+                                if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
+                                    product.MRP ?: 0.0
+                                } else {
+                                    val price = if (conType == 1.0) (product.MRP ?: 0.0) / factor else (product.MRP ?: 0.0) * factor
+                                    kotlin.math.round(price * 100.0) / 100.0
+                                }
+
+                            // --- Unit Selection ---
+                            if (!product.alt_unit.isNullOrBlank() && product.alt_unit != product.main_unit) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    AssistChip(
+                                        onClick = {
+                                            selectedUnit = product.main_unit ?: ""
+                                            if (isInCart) cartViewModel.updateUnit(
+                                                product,
+                                                selectedUnit
+                                            )
+                                        },
+                                        label = { Text(product.main_unit ?: "") },
+                                        colors = if (selectedUnit == product.main_unit) AssistChipDefaults.assistChipColors(
+                                            containerColor = colorScheme.primaryContainer
+                                        ) else AssistChipDefaults.assistChipColors()
+                                    )
+                                    AssistChip(
+                                        onClick = {
+                                            selectedUnit = product.alt_unit ?: ""
+                                            if (isInCart) cartViewModel.updateUnit(
+                                                product,
+                                                selectedUnit
+                                            )
+                                        },
+                                        label = { Text(product.alt_unit ?: "") },
+                                        colors = if (selectedUnit == product.alt_unit) AssistChipDefaults.assistChipColors(
+                                            containerColor = colorScheme.primaryContainer
+                                        ) else AssistChipDefaults.assistChipColors()
+                                    )
+                                }
+                            }
+
                             Text(
-                                text = "${product.sales_price?.formatToAmtDec()}",
+                                text = currentDiscountedPrice.formatToAmtDec(),
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = colorScheme.primary
                             )
 
-                            if (product.MRP != product.sales_price && product.MRP != 0.0) {
+                            if (currentMrp != currentDiscountedPrice && currentMrp != 0.0) {
                                 Text(
-                                    text = "${product.MRP?.formatToAmtDec()}",
+                                    text = currentMrp.formatToAmtDec(),
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         textDecoration = TextDecoration.LineThrough
                                     ),
@@ -1088,18 +1161,59 @@ fun ItemCard(
 
 
             Spacer(Modifier.height(6.dp))
-            val per = item.MRP?.takeIf { it != 0.0 }?.let { mrp ->
-                ((mrp - (item.sales_price ?: 0.0)) / mrp) * 100
+            val savedUnit = viewModel.getProductUnit(item)
+            val selectedUnit = if (inCart) savedUnit else item.main_unit ?: ""
+
+            val factor = item.con_factor ?: 1.0
+            val conType = item.con_type ?: 1.0
+
+            val currentListPrice =
+                if (selectedUnit == item.main_unit || item.alt_unit.isNullOrBlank()) {
+                    item.sales_price ?: 0.0
+                } else {
+                    val price = if (conType == 1.0) (item.sales_price ?: 0.0) / factor else (item.sales_price
+                        ?: 0.0) * factor
+                    kotlin.math.round(price * 100.0) / 100.0
+                }
+
+            val currentDiscountedPrice =
+                if (selectedUnit == item.main_unit || item.alt_unit.isNullOrBlank()) {
+                    item.discounted_price ?: currentListPrice
+                } else {
+                    val price = if (conType == 1.0) (item.discounted_price ?: 0.0) / factor else (item.discounted_price
+                        ?: 0.0) * factor
+                    kotlin.math.round(price * 100.0) / 100.0
+                }
+
+            val currentMrp =
+                if (selectedUnit == item.main_unit || item.alt_unit.isNullOrBlank()) {
+                    item.MRP ?: 0.0
+                } else {
+                    val price = if (conType == 1.0) (item.MRP ?: 0.0) / factor else (item.MRP ?: 0.0) * factor
+                    kotlin.math.round(price * 100.0) / 100.0
+                }
+
+            val per = currentMrp.takeIf { it != 0.0 && it != currentDiscountedPrice }?.let { mrp ->
+                ((mrp - currentDiscountedPrice) / mrp) * 100
             }
 
 
             // --- Price (visually separated but not screaming)
-            Text(
-                text = item.sales_price?.formatToAmtDec().toString(),
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Column {
+                Text(
+                    text = currentDiscountedPrice.formatToAmtDec(),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                if (selectedUnit.isNotBlank()) {
+                    Text(
+                        text = selectedUnit,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+            }
 
             if (per == null) {
                 Text(

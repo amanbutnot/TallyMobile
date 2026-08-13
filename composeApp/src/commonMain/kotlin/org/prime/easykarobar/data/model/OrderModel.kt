@@ -22,7 +22,11 @@ data class items(
     val price: Double,
     val discount_percent: Double,
     val tax_amount: Double,
-    val net_amount: Double
+    val net_amount: Double,
+    val selected_unit: String? = null,
+    val con_factor: Double? = null,
+    val con_type: Double? = null,
+    val alt_qty: Double? = null
 )
 
 @Serializable
