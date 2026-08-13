@@ -181,6 +181,7 @@ FROM (
                 WHEN :changePrice = 103.0 AND IFNULL(PMP.Price3, 0.0) != 0.0 THEN PMP.Price3
                 WHEN :changePrice = 104.0 AND IFNULL(PMP.Price4, 0.0) != 0.0 THEN PMP.Price4
                 WHEN :changePrice = 105.0 AND IFNULL(PMP.Price5, 0.0) != 0.0 THEN PMP.Price5
+                WHEN :changePrice != 101.0 AND IFNULL(PMP.Price1, 0.0) != 0.0 THEN PMP.Price1
                 ELSE NULL
             END,
             Products.SalesPrice
@@ -256,6 +257,7 @@ FROM (
                 WHEN :changePrice = 103.0 AND IFNULL(PMP.Price3, 0.0) != 0.0 THEN PMP.Price3
                 WHEN :changePrice = 104.0 AND IFNULL(PMP.Price4, 0.0) != 0.0 THEN PMP.Price4
                 WHEN :changePrice = 105.0 AND IFNULL(PMP.Price5, 0.0) != 0.0 THEN PMP.Price5
+                WHEN :changePrice != 101.0 AND IFNULL(PMP.Price1, 0.0) != 0.0 THEN PMP.Price1
                 ELSE NULL
             END,
             Products.SalesPrice
@@ -330,6 +332,7 @@ FROM (
                 WHEN :changePrice = 103.0 AND IFNULL(PMP.Price3, 0.0) != 0.0 THEN PMP.Price3
                 WHEN :changePrice = 104.0 AND IFNULL(PMP.Price4, 0.0) != 0.0 THEN PMP.Price4
                 WHEN :changePrice = 105.0 AND IFNULL(PMP.Price5, 0.0) != 0.0 THEN PMP.Price5
+                WHEN :changePrice != 101.0 AND IFNULL(PMP.Price1, 0.0) != 0.0 THEN PMP.Price1
                 ELSE NULL
             END,
             Products.SalesPrice
