@@ -258,6 +258,16 @@ object CategoryShoppingScreen : Screen {
         }
 
         val wishlistViewModel = nav.rememberNavigatorScreenModel { WishlistViewModel() }
+        val wishlistState by wishlistViewModel.listState
+        val wishlistGuids = remember(wishlistState.data) {
+            wishlistState.data?.mapNotNull { it.item_name }?.toSet() ?: emptySet()
+        }
+
+        val cartItems = cartViewModel.cartItems
+        val cartGuids = remember(cartItems.size) { 
+            cartItems.mapNotNull { it.product.product_id }.toSet()
+        }
+
         LaunchedEffect(Unit) {
             wishlistViewModel.getWishlist()
         }
@@ -395,6 +405,8 @@ object CategoryShoppingScreen : Screen {
                                     cartViewModel = cartViewModel,
                                     wishlistViewModel = wishlistViewModel,
                                     isTwoPerRow = isTwoPerRow,
+                                    cartGuids = cartGuids,
+                                    wishlistGuids = wishlistGuids,
                                     onItemClick = { item ->
                                         selectedProduct.value = item
                                         showProductInfo.value = true
@@ -449,6 +461,8 @@ object CategoryShoppingScreen : Screen {
                                 cartViewModel = cartViewModel,
                                 wishlistViewModel = wishlistViewModel,
                                 isTwoPerRow = isTwoPerRow,
+                                cartGuids = cartGuids,
+                                wishlistGuids = wishlistGuids,
                                 onItemClick = { item ->
                                     selectedProduct.value = item
                                     showProductInfo.value = true
@@ -591,6 +605,8 @@ object CategoryShoppingScreen : Screen {
         cartViewModel: CartViewModel,
         wishlistViewModel: WishlistViewModel,
         isTwoPerRow: Boolean,
+        cartGuids: Set<String?>,
+        wishlistGuids: Set<String?>,
         onItemClick: (GetProductsForDis) -> Unit,
         onMoreClick: () -> Unit
     ) {
@@ -629,6 +645,8 @@ object CategoryShoppingScreen : Screen {
 
             val chunks =
                 remember(products, isTwoPerRow) { products.chunked(if (isTwoPerRow) 2 else 1) }
+            val premiumScreen = remember { AllProductsPremiumScreen(isTab = false) }
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -641,12 +659,11 @@ object CategoryShoppingScreen : Screen {
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         rowItems.forEach { product ->
-                            val isInCart = cartViewModel.isProductInCart(product)
-                            val isInWishlist =
-                                wishlistViewModel.listState.value.data?.any { it.item_name == product.product_id } == true
+                            val isInCart = product.product_id in cartGuids
+                            val isInWishlist = product.product_id in wishlistGuids
 
                             Box(modifier = Modifier.weight(1f)) {
-                                AllProductsPremiumScreen(isTab = false).PremiumProductItem(
+                                premiumScreen.PremiumProductItem(
                                     product = product,
                                     cartViewModel = cartViewModel,
                                     wishlistViewModel = wishlistViewModel,
@@ -673,6 +690,8 @@ object CategoryShoppingScreen : Screen {
         cartViewModel: CartViewModel,
         wishlistViewModel: WishlistViewModel,
         isTwoPerRow: Boolean,
+        cartGuids: Set<String?>,
+        wishlistGuids: Set<String?>,
         onItemClick: (GetProductsForDis) -> Unit
     ) {
         if (products.isEmpty()) return
@@ -694,6 +713,8 @@ object CategoryShoppingScreen : Screen {
 
             val chunks =
                 remember(products, isTwoPerRow) { products.chunked(if (isTwoPerRow) 2 else 1) }
+            val premiumScreen = remember { AllProductsPremiumScreen(isTab = false) }
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -706,12 +727,11 @@ object CategoryShoppingScreen : Screen {
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         rowItems.forEach { product ->
-                            val isInCart = cartViewModel.isProductInCart(product)
-                            val isInWishlist =
-                                wishlistViewModel.listState.value.data?.any { it.item_name == product.product_id } == true
+                            val isInCart = product.product_id in cartGuids
+                            val isInWishlist = product.product_id in wishlistGuids
 
                             Box(modifier = Modifier.weight(1f)) {
-                                AllProductsPremiumScreen(isTab = false).PremiumProductItem(
+                                premiumScreen.PremiumProductItem(
                                     product = product,
                                     cartViewModel = cartViewModel,
                                     wishlistViewModel = wishlistViewModel,
