@@ -81,7 +81,6 @@ import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.CreateOrderRequest
 import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.utils.SharedPrefs
-import org.tally.SelectConfigMasterC1ByType
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
 import org.prime.easykarobar.ui.shared.composables.QuantityTextField
 import org.prime.easykarobar.ui.shared.composables.TallyAlertBox
@@ -101,6 +100,31 @@ data class Coupon(
     val discountValue: Double,
     val minOrderValue: Double
 )
+
+data class DeliveryChargeConfig(
+    val minAmount: Double,
+    val maxAmount: Double,
+    val charge: Double
+)
+
+fun getDeliveryChargeConfigs(): List<DeliveryChargeConfig> {
+    return try {
+        DatabaseHolder.instance.configMasterQueries.selectDeliveryCharges().executeAsList().map {
+            DeliveryChargeConfig(
+                minAmount = it.C1?.toDoubleOrNull() ?: 0.0,
+                maxAmount = it.C2?.toDoubleOrNull() ?: 0.0,
+                charge = it.C3?.toDoubleOrNull() ?: 0.0
+            )
+        }
+    } catch (e: Exception) {
+        emptyList()
+    }
+}
+
+fun calculateDeliveryCharge(totalAmount: Double, configs: List<DeliveryChargeConfig>): Double {
+    val config = configs.find { totalAmount >= it.minAmount && totalAmount <= it.maxAmount }
+    return config?.charge ?: 0.0
+}
 
 object CartScreen : Screen {
     @Composable
@@ -914,6 +938,11 @@ fun CartSummary(
         currentDiscountedPrice * it.quantity.value
     }
 
+    val deliveryConfigs = remember { getDeliveryChargeConfigs() }
+    val deliveryCharge = calculateDeliveryCharge(totalDiscountedPrice, deliveryConfigs)
+    val minOrderAmount = deliveryConfigs.minOfOrNull { it.minAmount } ?: 0.0
+    val isBelowMinOrder = totalDiscountedPrice < minOrderAmount
+
     val totalSavings = (totalMrp - totalDiscountedPrice).toDouble()
 
     val totalGst = products.sumOf {
@@ -955,7 +984,7 @@ fun CartSummary(
         }
     } else 0.0
 
-    val finalTotal = totalBeforeCoupon - couponDiscount + totalHamali
+    val finalTotal = totalBeforeCoupon - couponDiscount + totalHamali + deliveryCharge
     val totalSavingsCombined = totalSavings + couponDiscount
 
     Card(
@@ -1049,6 +1078,15 @@ fun CartSummary(
                 )
             }
 
+            if (deliveryCharge > 0.0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                SummaryRow(
+                    label = "Delivery Charges",
+                    value = deliveryCharge.formatToAmtDec(),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+                )
+            }
+
             if (appliedCoupon != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 SummaryRow(
@@ -1131,6 +1169,32 @@ fun CartSummary(
 
                 Spacer(modifier = Modifier.height(12.dp))
             }
+
+            if (isBelowMinOrder) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f),
+                            RoundedCornerShape(8.dp)
+                        )
+                        .border(
+                            0.5.dp,
+                            MaterialTheme.colorScheme.error.copy(alpha = 0.3f),
+                            RoundedCornerShape(8.dp)
+                        )
+                        .padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "⚠️ Minimum order amount should be ₹${minOrderAmount.formatToAmtDec(0)}",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -1198,6 +1262,11 @@ fun ConfirmOrderButton(
         }
     }
 
+    val deliveryConfigs = remember { getDeliveryChargeConfigs() }
+    val deliveryCharge = calculateDeliveryCharge(totalDiscountedPrice, deliveryConfigs)
+    val minOrderAmount = deliveryConfigs.minOfOrNull { it.minAmount } ?: 0.0
+    val isBelowMinOrder = totalDiscountedPrice < minOrderAmount
+
     val couponDiscount = if (appliedCoupon != null && totalDiscountedPrice >= appliedCoupon.minOrderValue) {
         if (appliedCoupon.discountType == "flat") {
             appliedCoupon.discountValue
@@ -1206,7 +1275,7 @@ fun ConfirmOrderButton(
         }
     } else 0.0
 
-    val finalTotal = totalBeforeCoupon - couponDiscount + totalHamali
+    val finalTotal = totalBeforeCoupon - couponDiscount + totalHamali + deliveryCharge
 
     val orderViewModel: OrderViewModel = viewModel { OrderViewModel() }
     val orderDataState by orderViewModel.createOrderState
@@ -1216,6 +1285,7 @@ fun ConfirmOrderButton(
     var showPincodeDialog by remember { mutableStateOf(false) }
     var pincodeValue by remember { mutableStateOf("") }
     var showPickupDialog by remember { mutableStateOf(false) }
+    var showMinOrderAlert by remember { mutableStateOf(false) }
     var currentIsDelivery by remember { mutableStateOf(isDelivery) }
 
     LaunchedEffect(isDelivery) {
@@ -1224,7 +1294,9 @@ fun ConfirmOrderButton(
 
     Button(
         onClick = {
-            if (currentIsDelivery) {
+            if (isBelowMinOrder) {
+                showMinOrderAlert = true
+            } else if (currentIsDelivery) {
                 showPincodeDialog = true
             } else {
                 showConfirmDialog = true
@@ -1308,6 +1380,18 @@ fun ConfirmOrderButton(
             },
             onCancel = { showPickupDialog = false },
             onDismiss = { showPickupDialog = false }
+        )
+    }
+
+    if (showMinOrderAlert) {
+        TallyAlertBox(
+            title = "Minimum Order Amount",
+            message = "Your order should be greater than ₹${minOrderAmount.formatToAmtDec(0)} to place an order.",
+            confirmButtonText = "Ok",
+            cancelButtonText = "",
+            onConfirm = { showMinOrderAlert = false },
+            onCancel = { showMinOrderAlert = false },
+            onDismiss = { showMinOrderAlert = false }
         )
     }
 
@@ -1409,6 +1493,22 @@ fun ConfirmOrderButton(
                             )
                         )
                     }
+                }
+
+                if (deliveryCharge > 0) {
+                    sundriesList.add(
+                        SundryItem(
+                            name = "delivery charges",
+                            amount = deliveryCharge,
+                            rate = 0.0,
+                            percentValue = 0.0,
+                            srno = sundriesList.size + 1,
+                            guid = "",
+                            i1 = 0,
+                            i2 = 0,
+                            d2 = 0
+                        )
+                    )
                 }
 
                 val timeRemarks = if (currentIsDelivery) {
