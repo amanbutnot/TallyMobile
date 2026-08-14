@@ -96,8 +96,9 @@ import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.printing.productListHtml
 import org.prime.easykarobar.ui.shared.composables.QuantityTextField
 import org.prime.easykarobar.ui.shared.composables.TallySearchBar
+import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
-import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
+import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import org.tally.GetProductsForDis
@@ -146,8 +147,8 @@ data class AllProductsPremiumScreen(
         var isTwoPerRow by remember { mutableStateOf(SharedPrefs.ProductLayout.get()) }
 
         val perms = SharedPrefs.Permissions.get()
-        val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
-        val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
+        val filterAGRP = filterItemGroups()
+        val groupCodes = itemGroupCodes()
 
         var currentCategoryCode by remember { mutableStateOf(productCode) }
         var currentCategoryName by remember { mutableStateOf(categoryName ?: "All Products") }
@@ -178,10 +179,18 @@ data class AllProductsPremiumScreen(
                     changePrice = changePrice,
                     mapper = mapper
                 ).executeAsList()
-            } else if (currentCategoryCode != null) {
+            } else if (currentSubCategoryCode != null && currentCategoryCode != null) {
                 db.productsQueries.getProductsByCategoryMapping(
                     groupCode = currentCategoryCode!!,
                     catCode = currentSubCategoryCode,
+                    changePrice = changePrice,
+                    mapper = mapper
+                ).executeAsList()
+            } else if (currentCategoryCode != null) {
+                db.productsQueries.getProductsForDis(
+                    filterGroup = filterAGRP,
+                    groupCodes = groupCodes,
+                    productCode = currentCategoryCode,
                     changePrice = changePrice,
                     mapper = mapper
                 ).executeAsList()
@@ -383,16 +392,7 @@ data class AllProductsPremiumScreen(
                                         isSelected = currentSubCategoryCode == null,
                                         onClick = {
                                             currentSubCategoryCode = null
-                                            if (currentCategoryCode != null) {
-                                                val guids = db.product_CategoryQueries.getProductGuidsByGroup(currentCategoryCode!!).executeAsList()
-                                                if (guids.isNotEmpty()) {
-                                                    currentProductGuids = guids.mapNotNull { it.ProductCode?.toString()?.removeSuffix(".0") }
-                                                } else {
-                                                    currentProductGuids = null
-                                                }
-                                            } else {
-                                                currentProductGuids = null
-                                            }
+                                            currentProductGuids = null
                                         }
                                     )
                                 }

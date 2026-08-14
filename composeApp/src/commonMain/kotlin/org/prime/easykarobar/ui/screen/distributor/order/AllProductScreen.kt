@@ -43,6 +43,8 @@ import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen.ShowProd
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
+import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
+import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.tally.GetProductsForDis
 
 data class AllProductScreen(
@@ -59,9 +61,8 @@ data class AllProductScreen(
             val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
             val searchQuery = remember { mutableStateOf("") }
             val db = DatabaseHolder.instance
-            val perms = SharedPrefs.Permissions.get()
-            val filterAGRP = if (perms?.FilterAGRP == "Y") 1L else 0L
-            val groupCodes = perms?.ConfigAGRP.parseToDoubleList()
+            val filterAGRP = filterItemGroups()
+            val groupCodes = itemGroupCodes()
             println("Product code is $productCode")
             val list = db.productsQueries.getProductsForDis(
                 filterGroup = filterAGRP,
