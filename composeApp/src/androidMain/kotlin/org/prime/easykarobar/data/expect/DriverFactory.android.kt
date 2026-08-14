@@ -192,6 +192,28 @@ actual class DriverFactory(private val context: Context) {
                     );
                 """.trimIndent()
             )
+
+            ensureTable(
+                driver = driver,
+                tableName = "CONFIG_MASTER",
+                createTableSql = """
+                    CREATE TABLE IF NOT EXISTS CONFIG_MASTER (
+                        ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                        CONFIG_TYPE INTEGER NOT NULL,
+                        SRNO INTEGER NOT NULL,
+                        C1 TEXT,
+                        C2 TEXT,
+                        C3 TEXT,
+                        C4 TEXT,
+                        C5 TEXT,
+                        C6 TEXT,
+                        C7 TEXT,
+                        C8 TEXT,
+                        C9 TEXT,
+                        C10 TEXT
+                    );
+                """.trimIndent()
+            )
         } catch (e: Exception) {
             println("❌ Error during manual migration: ${e.message}")
         }

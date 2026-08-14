@@ -47,6 +47,7 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,6 +81,7 @@ import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.CreateOrderRequest
 import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.tally.SelectConfigMasterC1ByType
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
 import org.prime.easykarobar.ui.shared.composables.QuantityTextField
 import org.prime.easykarobar.ui.shared.composables.TallyAlertBox
@@ -1211,9 +1213,22 @@ fun ConfirmOrderButton(
     val nav = LocalNavigator.currentOrThrow
     var showConfirmDialog by remember { mutableStateOf(false) }
 
+    var showPincodeDialog by remember { mutableStateOf(false) }
+    var pincodeValue by remember { mutableStateOf("") }
+    var showPickupDialog by remember { mutableStateOf(false) }
+    var currentIsDelivery by remember { mutableStateOf(isDelivery) }
+
+    LaunchedEffect(isDelivery) {
+        currentIsDelivery = isDelivery
+    }
+
     Button(
         onClick = {
-            showConfirmDialog = true
+            if (currentIsDelivery) {
+                showPincodeDialog = true
+            } else {
+                showConfirmDialog = true
+            }
         },
         modifier = Modifier
             .fillMaxWidth()
@@ -1241,6 +1256,59 @@ fun ConfirmOrderButton(
                 color = Color.White
             )
         }
+    }
+
+    if (showPincodeDialog) {
+        TallyAlertBox(
+            title = "Enter Pincode",
+            message = "Please enter your pincode to check delivery availability",
+            confirmButtonText = "Check",
+            cancelButtonText = "Cancel",
+            onConfirm = {
+                if (pincodeValue.isNotEmpty()) {
+                    val exists = DatabaseHolder.instance.configMasterQueries
+                        .selectConfigMasterC1ByType(configType = 1L)
+                        .executeAsList()
+                        .any { it.C1 == pincodeValue }
+
+                    if (exists) {
+                        showPincodeDialog = false
+                        showConfirmDialog = true
+                    } else {
+                        showPincodeDialog = false
+                        showPickupDialog = true
+                    }
+                }
+            },
+            onCancel = { showPincodeDialog = false },
+            onDismiss = { showPincodeDialog = false },
+            content = {
+                TallyTextField(
+                    value = pincodeValue,
+                    onValueChange = { pincodeValue = it },
+                    placeholder = "Enter Pincode",
+                    isPassword = false,
+                    isNumber = true,
+                    label = "Pincode"
+                )
+            }
+        )
+    }
+
+    if (showPickupDialog) {
+        TallyAlertBox(
+            title = "Delivery Not Available",
+            message = "Delivery is not available for this pincode. Do you want to place the order for pickup instead?",
+            confirmButtonText = "Yes, Pickup",
+            cancelButtonText = "No",
+            onConfirm = {
+                currentIsDelivery = false
+                showPickupDialog = false
+                showConfirmDialog = true
+            },
+            onCancel = { showPickupDialog = false },
+            onDismiss = { showPickupDialog = false }
+        )
     }
 
     if (showConfirmDialog) {
@@ -1343,7 +1411,7 @@ fun ConfirmOrderButton(
                     }
                 }
 
-                val timeRemarks = if (isDelivery) {
+                val timeRemarks = if (currentIsDelivery) {
                     "Delivery: $deliveryDay, Time: $startTime - $endTime"
                 } else {
                     "Pickup: $pickupDay, Time: $pickupStartTime - $pickupEndTime"

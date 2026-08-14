@@ -163,10 +163,12 @@ SELECT
         END,
         2
     ) AS discounted_price,
-    main_unit,
-    alt_unit,
-    con_factor,
-    con_type
+    E4,
+    E5,
+    UnitName AS main_unit,
+    AltUnit AS alt_unit,
+    ConFactor AS con_factor,
+    ConType AS con_type
 FROM (
     SELECT
         Products.GUID AS product_id,
@@ -203,10 +205,10 @@ FROM (
         Products.Name AS product_description,
         '' AS created_at,
         '' AS updated_at,
-        Products.UnitName AS main_unit,
-        Products.AltUnit AS alt_unit,
-        Products.ConFactor AS con_factor,
-        Products.ConType AS con_type,
+        Products.UnitName,
+        Products.AltUnit,
+        Products.ConFactor,
+        Products.ConType,
         Products.E4,
         Products.E5,
         Products.GroupCode,
@@ -214,7 +216,7 @@ FROM (
     FROM Products
     LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
 ) AS Sub
-WHERE (:filterGroup = 0 OR GroupCode IN :groupCodes) AND (:productCode IS NULL OR GroupCode = :productCode) AND ( E4 <> -1.0   OR  E4 IS NULL) AND   (E5<>-1.0 OR  E5 IS NULL )
+WHERE (:filterGroup = 0 OR GroupCode IN :groupCodes) AND (:productCode IS NULL OR GroupCode = :productCode) AND ( E4 <> -1.0   OR  E4 IS NULL)
 ORDER BY product_name;
 
 getProductsByGuidsForDis:
@@ -239,10 +241,12 @@ SELECT
         END,
         2
     ) AS discounted_price,
-    main_unit,
-    alt_unit,
-    con_factor,
-    con_type
+    E4,
+    E5,
+    UnitName AS main_unit,
+    AltUnit AS alt_unit,
+    ConFactor AS con_factor,
+    ConType AS con_type
 FROM (
     SELECT
         Products.GUID AS product_id,
@@ -279,17 +283,17 @@ FROM (
         Products.Name AS product_description,
         '' AS created_at,
         '' AS updated_at,
-        Products.UnitName AS main_unit,
-        Products.AltUnit AS alt_unit,
-        Products.ConFactor AS con_factor,
-        Products.ConType AS con_type,
+        Products.UnitName,
+        Products.AltUnit,
+        Products.ConFactor,
+        Products.ConType,
         Products.E4,
         Products.E5,
         Products.GUID
     FROM Products
     LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
 ) AS Sub
-WHERE GUID IN :guids AND ( E4 <> -1.0   OR  E4 IS NULL) AND   (E5<>-1.0 OR  E5 IS NULL )
+WHERE GUID IN :guids AND ( E4 <> -1.0   OR  E4 IS NULL)
 ORDER BY product_name;
 
 getProductsByCategoryMapping:
@@ -314,10 +318,12 @@ SELECT
         END,
         2
     ) AS discounted_price,
-    main_unit,
-    alt_unit,
-    con_factor,
-    con_type
+    E4,
+    E5,
+    UnitName AS main_unit,
+    AltUnit AS alt_unit,
+    ConFactor AS con_factor,
+    ConType AS con_type
 FROM (
     SELECT
         Products.GUID AS product_id,
@@ -354,10 +360,10 @@ FROM (
         Products.Name AS product_description,
         '' AS created_at,
         '' AS updated_at,
-        Products.UnitName AS main_unit,
-        Products.AltUnit AS alt_unit,
-        Products.ConFactor AS con_factor,
-        Products.ConType AS con_type,
+        Products.UnitName,
+        Products.AltUnit,
+        Products.ConFactor,
+        Products.ConType,
         Products.E4,
         Products.E5,
         Products.GUID
@@ -369,7 +375,7 @@ WHERE GUID IN (
     WHERE GroupCode = :groupCode
     AND (:catCode IS NULL OR CatCode = :catCode)
 )
-AND ( E4 <> -1.0   OR  E4 IS NULL) AND (E5<>-1.0 OR  E5 IS NULL )
+AND ( E4 <> -1.0   OR  E4 IS NULL)
 ORDER BY product_name;
 
 
@@ -414,7 +420,7 @@ LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
 WHERE GroupCode IN ?
   AND Products.GUID NOT IN ?
-  AND (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0 AND COALESCE(Products.E5, 0.0)<>-1.0
+  AND (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0
 ORDER BY Name;
 
 selectByGroupCodeConfig:
@@ -453,7 +459,7 @@ FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
     WHERE GroupCode IN ?
-  AND (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0 AND COALESCE(Products.E5, 0.0)<>-1.0
+  AND (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0
 ORDER BY Name;
 
 selectExcludingGuidConfig:
@@ -492,7 +498,7 @@ FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
 WHERE Products.GUID NOT IN ?
-  AND (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0 AND COALESCE(Products.E5, 0.0)<>-1.0
+  AND (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0
 ORDER BY Name;
 
 selectAllConfig:
@@ -530,5 +536,7 @@ SELECT
 FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
-WHERE (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0 AND COALESCE(Products.E5, 0.0)<>-1.0
+WHERE (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0
 ORDER BY Name;
+
+-- if e5 -1 (out of stock)
