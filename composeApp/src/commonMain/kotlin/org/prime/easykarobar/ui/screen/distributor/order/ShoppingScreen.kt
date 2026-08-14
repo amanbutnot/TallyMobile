@@ -75,6 +75,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -146,7 +147,8 @@ object ShoppingScreen : Screen {
         val list = db.productsQueries.getProductsForDis(
             filterGroup = filterItemGroups(),
             groupCodes = itemGroupCodes(), productCode = null,
-            changePrice = SharedPrefs.ChangePrice.get()
+            changePrice = SharedPrefs.ChangePrice.get(),
+            mapper = ::GetProductsForDis
         ).executeAsList()
         val categoryList = db.productsQueries.productCategoriesForDis(
             filterGroup = filterItemGroups(),
@@ -1009,19 +1011,20 @@ fun ItemCard(
     val showImage = viewModel.showImage.value
     val inCart = viewModel.isProductInCart(item)
     val quantity = viewModel.getProductQuantity(item)
+    val isOutOfStock = item.E5 == -1.0
 
     Card(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .border(
                 0.4.dp,
-                MaterialTheme.colorScheme.primary,
+                if (isOutOfStock) Color(0xFF94A3B8) else MaterialTheme.colorScheme.primary,
                 shape = RoundedCornerShape(12.dp)
             )
-            .clickable { onItemClick() },
+            .clickable(enabled = !isOutOfStock) { onItemClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = if (isOutOfStock) Color(0xFFF1F5F9) else MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -1061,6 +1064,22 @@ fun ItemCard(
                         fallback = painterResource(Res.drawable.splashImage),
                         onError = { println(it.result.throwable) }
                     )
+
+                    if (isOutOfStock) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.4f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "OUT OF STOCK",
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
 
                     val wishlistItems by wishlistViewModel.listState
                     val isInWishlist = wishlistItems.data?.any { it.item_name == item.product_id } == true
@@ -1239,7 +1258,24 @@ fun ItemCard(
             Spacer(Modifier.height(10.dp))
 
             // --- Button that doesn't look like a warning when in cart
-            if (inCart) {
+            if (isOutOfStock) {
+                Button(
+                    onClick = { },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    enabled = false,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Gray.copy(alpha = 0.5f),
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        text = "Out of Stock",
+                        fontSize = 12.sp
+                    )
+                }
+            } else if (inCart) {
                 Row(
                     modifier = Modifier.fillMaxWidth().border(
                         1.dp,

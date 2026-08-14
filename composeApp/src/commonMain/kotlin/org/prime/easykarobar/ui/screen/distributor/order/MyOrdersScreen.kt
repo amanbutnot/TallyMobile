@@ -265,29 +265,9 @@ fun MyOrderContent(
                             val products = DatabaseHolder.instance.productsQueries
                                 .getProductsByGuidsForDis(
                                     guids = ids,
-                                    changePrice = SharedPrefs.ChangePrice.get()
-                                ) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price, main_unit, alt_unit, con_factor, con_type ->
-                                    GetProductsForDis(
-                                        product_id,
-                                        hospital_id,
-                                        product_name,
-                                        category_id,
-                                        unit_id,
-                                        sales_price,
-                                        MRP,
-                                        purchase_price,
-                                        discount,
-                                        gst_tax_percentage,
-                                        product_description,
-                                        created_at,
-                                        updated_at,
-                                        discounted_price,
-                                        main_unit,
-                                        alt_unit,
-                                        con_factor,
-                                        con_type
-                                    )
-                                }.executeAsList()
+                                    changePrice = SharedPrefs.ChangePrice.get(),
+                                    mapper = ::GetProductsForDis
+                                ).executeAsList()
 
                             products.forEach { product ->
                                 val orderItem = order.items.find { it.product_id == product.product_id }

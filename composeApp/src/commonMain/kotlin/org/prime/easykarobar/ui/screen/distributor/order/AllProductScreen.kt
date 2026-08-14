@@ -66,7 +66,8 @@ data class AllProductScreen(
             val list = db.productsQueries.getProductsForDis(
                 filterGroup = filterAGRP,
                 groupCodes = groupCodes, productCode = productCode,
-                changePrice = SharedPrefs.ChangePrice.get()
+                changePrice = SharedPrefs.ChangePrice.get(),
+                mapper = ::GetProductsForDis
             ).executeAsList()
             val viewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
             val wishlistViewModel = nav.rememberNavigatorScreenModel { WishlistViewModel() }

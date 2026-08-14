@@ -40,29 +40,9 @@ fun handleBannerClick(
         BannerClicks.OpenItem.value -> {
             val product = db.productsQueries.getProductsByGuidsForDis(
                 guids = listOf(c2 ?: ""),
-                changePrice = SharedPrefs.ChangePrice.get()
-            ) { product_id, hospital_id, product_name, category_id, unit_id, sales_price, MRP, purchase_price, discount, gst_tax_percentage, product_description, created_at, updated_at, discounted_price, main_unit, alt_unit, con_factor, con_type ->
-                GetProductsForDis(
-                    product_id,
-                    hospital_id,
-                    product_name,
-                    category_id,
-                    unit_id,
-                    sales_price,
-                    MRP,
-                    purchase_price,
-                    discount,
-                    gst_tax_percentage,
-                    product_description,
-                    created_at,
-                    updated_at,
-                    discounted_price,
-                    main_unit,
-                    alt_unit,
-                    con_factor,
-                    con_type
-                )
-            }.executeAsOneOrNull()
+                changePrice = SharedPrefs.ChangePrice.get(),
+                mapper = ::GetProductsForDis
+            ).executeAsOneOrNull()
 
             if (product != null) {
                 selectedProduct.value = product

@@ -1,5 +1,6 @@
 package org.prime.easykarobar.ui.screen.easymart
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -48,7 +49,6 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
-import kotlinx.coroutines.launch
 import org.prime.easykarobar.business.viewmodel.WishlistViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
@@ -78,7 +78,8 @@ object WishlistScreen : Screen {
                 filterGroup = filterItemGroups(),
                 groupCodes = itemGroupCodes(),
                 productCode = null,
-                changePrice = SharedPrefs.ChangePrice.get()
+                changePrice = SharedPrefs.ChangePrice.get(),
+                mapper = ::GetProductsForDis
             ).executeAsList()
         }
 
@@ -150,13 +151,16 @@ object WishlistScreen : Screen {
         val imageUrl = getProductImage(storeId, product.product_id.toString())
         val isInCart = cartViewModel.isProductInCart(product)
         val quantity = cartViewModel.getProductQuantity(product)
+        val isOutOfStock = product.E5 == -1.0
 
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onClick() },
+                .clickable(enabled = !isOutOfStock) { onClick() },
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            colors = CardDefaults.cardColors(
+                containerColor = if (isOutOfStock) Color(0xFFF1F5F9) else MaterialTheme.colorScheme.surface
+            )
         ) {
             Row(
                 modifier = Modifier
@@ -164,14 +168,33 @@ object WishlistScreen : Screen {
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = null, onLoading = { Res.drawable.category_placeholder }, onError = { Res.drawable.category_placeholder },
-                    modifier = Modifier
-                        .size(80.dp)
-                        .padding(4.dp),
-                    contentScale = ContentScale.Fit
-                )
+                Box(modifier = Modifier.size(80.dp)) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = null,
+                        onLoading = { Res.drawable.category_placeholder },
+                        onError = { Res.drawable.category_placeholder },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(4.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                    if (isOutOfStock) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.4f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "OUT",
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.width(12.dp))
 
@@ -190,7 +213,14 @@ object WishlistScreen : Screen {
                     )
                 }
 
-                if (isInCart) {
+                if (isOutOfStock) {
+                    Text(
+                        text = "Out of Stock",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Red,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                } else if (isInCart) {
                     Row(
                         modifier = Modifier
                             .padding(horizontal = 4.dp)

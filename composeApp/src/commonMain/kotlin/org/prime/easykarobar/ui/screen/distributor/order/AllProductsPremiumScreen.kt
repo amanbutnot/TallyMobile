@@ -170,15 +170,8 @@ data class AllProductsPremiumScreen(
         }
 
         val changePrice = SharedPrefs.ChangePrice.get()
-        val productList = remember(currentCategoryCode, currentSubCategoryCode, currentProductGuids, changePrice) {
-            val mapper = { product_id: String?, hospital_id: String?, product_name: String?, category_id: Double?, unit_id: Double?, sales_price: Double?, MRP: Double?, purchase_price: Double?, discount: Double?, gst_tax_percentage: Double, product_description: String?, created_at: String, updated_at: String, discounted_price: Double?, main_unit: String?, alt_unit: String?, con_factor: Double?, con_type: Double? ->
-                GetProductsForDis(
-                    product_id, hospital_id, product_name, category_id, unit_id, sales_price,
-                    MRP, purchase_price, discount, gst_tax_percentage, product_description,
-                    created_at, updated_at, discounted_price, main_unit, alt_unit, con_factor, con_type
-                )
-            }
-
+        val mapper = ::GetProductsForDis
+        val productList: List<GetProductsForDis> = remember(currentCategoryCode, currentSubCategoryCode, currentProductGuids, changePrice) {
             if (currentProductGuids != null) {
                 db.productsQueries.getProductsByGuidsForDis(
                     guids = currentProductGuids!!,
@@ -786,6 +779,7 @@ data class AllProductsPremiumScreen(
         var selectedUnit by remember(product.product_id, isInCart) {
             mutableStateOf(if (isInCart) savedUnit else product.main_unit ?: "")
         }
+        val isOutOfStock = product.E5 == -1.0
 
         val factor = product.con_factor ?: 1.0
         val conType = product.con_type ?: 1.0
@@ -822,10 +816,11 @@ data class AllProductsPremiumScreen(
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
+                    enabled = !isOutOfStock,
                     onClick = onClick
                 ),
             shape = RoundedCornerShape(16.dp),
-            color = Color.White,
+            color = if (isOutOfStock) Color(0xFFF1F5F9) else Color.White,
             shadowElevation = 1.dp
         ) {
             Column(
@@ -856,6 +851,22 @@ data class AllProductsPremiumScreen(
                         fallback = painterResource(Res.drawable.category_placeholder),
                         error = painterResource(Res.drawable.category_placeholder)
                     )
+
+                    if (isOutOfStock) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.4f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "OUT OF STOCK",
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
 
                 // --- Badges + Wishlist Row ---
@@ -975,7 +986,28 @@ data class AllProductsPremiumScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // --- Action Button / Quantity Selector ---
-                if (isInCart) {
+                if (isOutOfStock) {
+                    Button(
+                        onClick = { },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(36.dp),
+                        enabled = false,
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Gray.copy(alpha = 0.5f),
+                            contentColor = Color.White
+                        ),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text(
+                            text = "Out of Stock",
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                } else if (isInCart) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1067,6 +1099,7 @@ data class AllProductsPremiumScreen(
         var selectedUnit by remember(product.product_id, isInCart) {
             mutableStateOf(if (isInCart) savedUnit else product.main_unit ?: "")
         }
+        val isOutOfStock = product.E5 == -1.0
 
         val factor = product.con_factor ?: 1.0
         val conType = product.con_type ?: 1.0
@@ -1103,10 +1136,11 @@ data class AllProductsPremiumScreen(
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
+                    enabled = !isOutOfStock,
                     onClick = onClick
                 ),
             shape = RoundedCornerShape(12.dp),
-            color = Color.White,
+            color = if (isOutOfStock) Color(0xFFF1F5F9) else Color.White,
             shadowElevation = 1.dp
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
@@ -1135,6 +1169,23 @@ data class AllProductsPremiumScreen(
                             fallback = painterResource(Res.drawable.category_placeholder),
                             error = painterResource(Res.drawable.category_placeholder)
                         )
+
+                        if (isOutOfStock) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.4f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "OUT OF STOCK",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.width(16.dp))
@@ -1196,7 +1247,29 @@ data class AllProductsPremiumScreen(
                             }
 
                             // Add Button / Quantity Selector
-                            if (isInCart) {
+                            if (isOutOfStock) {
+                                Surface(
+                                    color = Color.Gray.copy(alpha = 0.5f),
+                                    shape = RoundedCornerShape(18.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(
+                                            horizontal = 16.dp,
+                                            vertical = 8.dp
+                                        ),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Text(
+                                            "Out of Stock",
+                                            style = MaterialTheme.typography.labelLarge.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White
+                                            )
+                                        )
+                                    }
+                                }
+                            } else if (isInCart) {
                                 Row(
                                     modifier = Modifier
                                         .height(36.dp)

@@ -211,7 +211,8 @@ object CategoryShoppingScreen : Screen {
                         filterGroup = filterItemGroups(),
                         groupCodes = itemGroupCodes(),
                         productCode = null,
-                        changePrice = SharedPrefs.ChangePrice.get()
+                        changePrice = SharedPrefs.ChangePrice.get(),
+                        mapper = ::GetProductsForDis
                     ).executeAsList()
                 )
             }
