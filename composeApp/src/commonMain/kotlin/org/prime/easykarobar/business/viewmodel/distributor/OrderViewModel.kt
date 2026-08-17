@@ -10,6 +10,7 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import kotlinx.coroutines.launch
 import org.prime.easykarobar.business.repository.OrderRepository
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.CancelOrderRequest
 import org.prime.easykarobar.data.model.CancelOrderResponse
 import org.prime.easykarobar.data.model.CreateOrderRequest
@@ -330,6 +331,39 @@ class CartViewModel : ScreenModel {
     fun getProductUnit(product: GetProductsForDis): String {
         return _cartItems.find { it.product.product_id == product.product_id }?.selectedUnit?.value
             ?: product.main_unit ?: ""
+    }
+
+    fun getValidationMessage(cartItem: CartItem): String? {
+        val product = cartItem.product
+        val quantity = cartItem.quantity.value
+        val selectedUnit = cartItem.selectedUnit.value
+
+        if (selectedUnit == product.main_unit) {
+            val minOrder = product.OF7
+            val maxOrder = product.OF8
+
+            if (minOrder != null && quantity < minOrder) {
+                return "Minimum order is ${minOrder.formatToAmtDec()} $selectedUnit"
+            }
+            if (maxOrder != null && quantity > maxOrder) {
+                return "Maximum order is ${maxOrder.formatToAmtDec()} $selectedUnit"
+            }
+        } else if (selectedUnit == product.alt_unit && !product.alt_unit.isNullOrBlank()) {
+            val minOrder = product.OF9
+            val maxOrder = product.OF10
+
+            if (minOrder != null && quantity < minOrder) {
+                return "Minimum order is ${minOrder.formatToAmtDec()} $selectedUnit"
+            }
+            if (maxOrder != null && quantity > maxOrder) {
+                return "Maximum order is ${maxOrder.formatToAmtDec()} $selectedUnit"
+            }
+        }
+        return null
+    }
+
+    fun isCartValid(): Boolean {
+        return _cartItems.all { getValidationMessage(it) == null }
     }
 }
 

@@ -32,6 +32,10 @@ CREATE TABLE Products (
     PRICE2 REAL,
     PRICE3 REAL,
     PRICE4 REAL,
+    OF7 REAL,
+    OF8 REAL,
+    OF9 REAL,
+    OF10 REAL,
     PRICE5 REAL
 );
 
@@ -168,7 +172,11 @@ SELECT
     UnitName AS main_unit,
     AltUnit AS alt_unit,
     ConFactor AS con_factor,
-    ConType AS con_type
+    ConType AS con_type,
+    OF7,
+    OF8,
+    OF9,
+    OF10
 FROM (
     SELECT
         Products.GUID AS product_id,
@@ -212,7 +220,11 @@ FROM (
         Products.E4,
         Products.E5,
         Products.GroupCode,
-        Products.GUID
+        Products.GUID,
+        Products.OF7,
+        Products.OF8,
+        Products.OF9,
+        Products.OF10
     FROM Products
     LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
 ) AS Sub
@@ -246,7 +258,11 @@ SELECT
     UnitName AS main_unit,
     AltUnit AS alt_unit,
     ConFactor AS con_factor,
-    ConType AS con_type
+    ConType AS con_type,
+    OF7,
+    OF8,
+    OF9,
+    OF10
 FROM (
     SELECT
         Products.GUID AS product_id,
@@ -289,7 +305,11 @@ FROM (
         Products.ConType,
         Products.E4,
         Products.E5,
-        Products.GUID
+        Products.GUID,
+        Products.OF7,
+        Products.OF8,
+        Products.OF9,
+        Products.OF10
     FROM Products
     LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
 ) AS Sub
@@ -323,7 +343,11 @@ SELECT
     UnitName AS main_unit,
     AltUnit AS alt_unit,
     ConFactor AS con_factor,
-    ConType AS con_type
+    ConType AS con_type,
+    OF7,
+    OF8,
+    OF9,
+    OF10
 FROM (
     SELECT
         Products.GUID AS product_id,
@@ -366,10 +390,15 @@ FROM (
         Products.ConType,
         Products.E4,
         Products.E5,
-        Products.GUID
+        Products.GUID,
+        Products.OF7,
+        Products.OF8,
+        Products.OF9,
+        Products.OF10
     FROM Products
     LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
 ) AS Sub
+
 WHERE GUID IN (
     SELECT CAST(CAST(ProductCode AS INTEGER) AS TEXT) FROM Product_Category
     WHERE GroupCode = :groupCode

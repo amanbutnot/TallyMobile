@@ -888,6 +888,16 @@ private fun CartProductItem(
                         )
                     }
                 }
+
+                val validationMessage = viewModel.getValidationMessage(product)
+                if (validationMessage != null) {
+                    Text(
+                        text = validationMessage,
+                        color = Color.Red,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
         }
     }
@@ -1286,15 +1296,20 @@ fun ConfirmOrderButton(
     var pincodeValue by remember { mutableStateOf("") }
     var showPickupDialog by remember { mutableStateOf(false) }
     var showMinOrderAlert by remember { mutableStateOf(false) }
+    var showCartValidationAlert by remember { mutableStateOf(false) }
     var currentIsDelivery by remember { mutableStateOf(isDelivery) }
 
     LaunchedEffect(isDelivery) {
         currentIsDelivery = isDelivery
     }
 
+    val isCartValid = cartViewModel?.isCartValid() ?: true
+
     Button(
         onClick = {
-            if (isBelowMinOrder) {
+            if (!isCartValid) {
+                showCartValidationAlert = true
+            } else if (isBelowMinOrder) {
                 showMinOrderAlert = true
             } else if (currentIsDelivery) {
                 showPincodeDialog = true
@@ -1392,6 +1407,18 @@ fun ConfirmOrderButton(
             onConfirm = { showMinOrderAlert = false },
             onCancel = { showMinOrderAlert = false },
             onDismiss = { showMinOrderAlert = false }
+        )
+    }
+
+    if (showCartValidationAlert) {
+        TallyAlertBox(
+            title = "Invalid Order Quantities",
+            message = "Some items in your cart have invalid quantities. Please check the messages underneath each item.",
+            confirmButtonText = "Ok",
+            cancelButtonText = "",
+            onConfirm = { showCartValidationAlert = false },
+            onCancel = { showCartValidationAlert = false },
+            onDismiss = { showCartValidationAlert = false }
         )
     }
 
