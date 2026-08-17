@@ -28,3 +28,15 @@ SELECT
     ProductCode
 FROM Product_Category
 WHERE GroupCode = :groupCode;
+
+getCatNamesByGroup:
+SELECT DISTINCT CatName
+FROM Product_Category
+WHERE (:groupCode IS NULL OR GroupCode = :groupCode)
+AND CatName IS NOT NULL
+ORDER BY CatName;
+
+getMappingsByGroup:
+SELECT CAST(CAST(ProductCode AS INTEGER) AS TEXT) AS product_id, CatName
+FROM Product_Category
+WHERE (:groupCode IS NULL OR GroupCode = :groupCode);

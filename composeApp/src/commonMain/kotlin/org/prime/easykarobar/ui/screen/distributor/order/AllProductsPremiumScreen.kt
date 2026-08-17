@@ -143,6 +143,7 @@ data class AllProductsPremiumScreen(
 
         var showRangeSlider by remember { mutableStateOf(false) }
         var showSortSheet by remember { mutableStateOf(false) }
+        var showBrandSheet by remember { mutableStateOf(false) }
         var sortOrder by remember { mutableStateOf("Default") }
         var isTwoPerRow by remember { mutableStateOf(SharedPrefs.ProductLayout.get()) }
 
@@ -153,7 +154,7 @@ data class AllProductsPremiumScreen(
         var currentCategoryCode by remember { mutableStateOf(productCode) }
         var currentCategoryName by remember { mutableStateOf(categoryName ?: "All Products") }
         var currentProductGuids by remember { mutableStateOf(productGuids) }
-        var currentSubCategoryCode by remember { mutableStateOf<Double?>(null) }
+        var selectedCatNames by remember { mutableStateOf(setOf<String>()) }
 
         val categories = remember {
             db.productsQueries.productCategoriesForDis(
@@ -162,27 +163,24 @@ data class AllProductsPremiumScreen(
             ).executeAsList()
         }
 
-        val subCategories = remember(currentCategoryCode) {
-            if (currentCategoryCode != null) {
-                db.product_CategoryQueries.getSubCategory(currentCategoryCode!!).executeAsList()
-            } else {
-                emptyList()
-            }
+        val catNames = remember(currentCategoryCode) {
+            db.product_CategoryQueries.getCatNamesByGroup(currentCategoryCode).executeAsList()
+        }
+
+        val productMappings = remember(currentCategoryCode) {
+            db.product_CategoryQueries.getMappingsByGroup(currentCategoryCode).executeAsList()
+        }
+
+        val productToCatNameMap = remember(productMappings) {
+            productMappings.groupBy { it.product_id }.mapValues { entry -> entry.value.mapNotNull { it.CatName }.toSet() }
         }
 
         val changePrice = SharedPrefs.ChangePrice.get()
         val mapper = ::GetProductsForDis
-        val productList: List<GetProductsForDis> = remember(currentCategoryCode, currentSubCategoryCode, currentProductGuids, changePrice) {
+        val productList: List<GetProductsForDis> = remember(currentCategoryCode, currentProductGuids, changePrice) {
             if (currentProductGuids != null) {
                 db.productsQueries.getProductsByGuidsForDis(
                     guids = currentProductGuids!!,
-                    changePrice = changePrice,
-                    mapper = mapper
-                ).executeAsList()
-            } else if (currentSubCategoryCode != null && currentCategoryCode != null) {
-                db.productsQueries.getProductsByCategoryMapping(
-                    groupCode = currentCategoryCode!!,
-                    catCode = currentSubCategoryCode,
                     changePrice = changePrice,
                     mapper = mapper
                 ).executeAsList()
@@ -213,13 +211,19 @@ data class AllProductsPremiumScreen(
             mutableStateOf(0f..maxPrice)
         }
 
-        val filteredProducts = remember(priceRange, productList, sortOrder, searchQuery) {
+        val filteredProducts = remember(priceRange, productList, sortOrder, searchQuery, selectedCatNames) {
             val filtered = productList.filter { product ->
                 val price = product.sales_price ?: 0.0
                 val matchesPrice = price >= priceRange.start && price <= priceRange.endInclusive
                 val matchesSearch =
                     product.product_name?.contains(searchQuery, ignoreCase = true) == true
-                matchesPrice && matchesSearch
+
+                val productCatNames = productToCatNameMap[product.product_id] ?: emptySet()
+                val matchesCat = if (selectedCatNames.isEmpty()) true else {
+                    productCatNames.any { it in selectedCatNames }
+                }
+
+                matchesPrice && matchesSearch && matchesCat
             }
 
             when (sortOrder) {
@@ -358,7 +362,7 @@ data class AllProductsPremiumScreen(
                                         currentCategoryCode = null
                                         currentCategoryName = "All Products"
                                         currentProductGuids = null
-                                        currentSubCategoryCode = null
+                                        selectedCatNames = emptySet()
                                     }
                                 )
                             }
@@ -370,42 +374,10 @@ data class AllProductsPremiumScreen(
                                         val code = category.GUID?.toDoubleOrNull()
                                         currentCategoryCode = code
                                         currentCategoryName = category.Name ?: ""
-                                        currentSubCategoryCode = null
+                                        selectedCatNames = emptySet()
                                         currentProductGuids = null
                                     }
                                 )
-                            }
-                        }
-
-                        if (subCategories.isNotEmpty()) {
-                            LazyRow(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(Color(0xFFFF6D00))
-                                    .padding(bottom = 8.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                item {
-                                    CategoryChip(
-                                        name = "All Sub",
-                                        isSelected = currentSubCategoryCode == null,
-                                        onClick = {
-                                            currentSubCategoryCode = null
-                                            currentProductGuids = null
-                                        }
-                                    )
-                                }
-                                items(subCategories) { sub ->
-                                    CategoryChip(
-                                        name = sub.CatName ?: "",
-                                        isSelected = currentSubCategoryCode == sub.CatCode,
-                                        onClick = {
-                                            currentSubCategoryCode = sub.CatCode
-                                            currentProductGuids = null
-                                        }
-                                    )
-                                }
                             }
                         }
                     }
@@ -449,8 +421,16 @@ data class AllProductsPremiumScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             FilterSortButton(
-                                text = "Filter Price",
+                                text = if (selectedCatNames.isEmpty()) "Brands" else "${selectedCatNames.size} Brands",
                                 icon = Icons.Default.FilterList,
+                                isActive = selectedCatNames.isNotEmpty(),
+                                onClick = { showBrandSheet = true },
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            FilterSortButton(
+                                text = "Price",
+                                icon = Icons.Default.KeyboardArrowDown,
                                 isActive = showRangeSlider || priceRange.start > 0f || priceRange.endInclusive < maxPrice,
                                 onClick = { showRangeSlider = !showRangeSlider },
                                 modifier = Modifier.weight(1f)
@@ -599,6 +579,131 @@ data class AllProductsPremiumScreen(
             }
         }
 
+        if (showBrandSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showBrandSheet = false },
+                sheetState = rememberModalBottomSheetState(),
+                containerColor = Color.White,
+                dragHandle = {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Box(
+                            Modifier
+                                .padding(vertical = 12.dp)
+                                .size(width = 32.dp, height = 4.dp)
+                                .background(Color(0xFFE2E8F0), RoundedCornerShape(2.dp))
+                        )
+                    }
+                }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .padding(bottom = 40.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Select Brands",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E293B)
+                            )
+                        )
+                        if (selectedCatNames.isNotEmpty()) {
+                            Text(
+                                "Clear All",
+                                modifier = Modifier.clickable { selectedCatNames = emptySet() },
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    color = Color(0xFFFF6D00),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    androidx.compose.foundation.lazy.LazyColumn(
+                        modifier = Modifier.fillMaxWidth().height(400.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(catNames) { catName ->
+                            val isSelected = selectedCatNames.contains(catName)
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        selectedCatNames = if (isSelected) {
+                                            selectedCatNames - catName
+                                        } else {
+                                            selectedCatNames + catName
+                                        }
+                                    },
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) Color(0xFFF8F9FB) else Color.Transparent
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .border(
+                                                width = 2.dp,
+                                                color = if (isSelected) Color(0xFFFF6D00) else Color(0xFFCBD5E1),
+                                                shape = RoundedCornerShape(4.dp)
+                                            )
+                                            .background(
+                                                color = if (isSelected) Color(0xFFFF6D00) else Color.Transparent,
+                                                shape = RoundedCornerShape(4.dp)
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (isSelected) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(Modifier.width(16.dp))
+                                    Text(
+                                        text = catName,
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (isSelected) Color(0xFF1E293B) else Color(0xFF64748B)
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+
+                    Button(
+                        onClick = { showBrandSheet = false },
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00)),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text("Apply Filters", style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+            }
+        }
         if (showSortSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showSortSheet = false },
@@ -1498,17 +1603,29 @@ data class AllProductsPremiumScreen(
             ),
             shape = RoundedCornerShape(12.dp),
             color = if (isSelected) Color(0xFF1A1C1E) else Color(0xFFF1F3F5),
-            border = if (isSelected) null else BorderStroke(1.dp, Color(0xFFE0E0E0))
+            border = if (isSelected) null else BorderStroke(1.dp, Color(0xFFE2E8F0))
         ) {
-            Text(
-                text = name,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) Color.White else Color(0xFF1A1C1E),
-                    fontSize = 14.sp
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                if (isSelected) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp).padding(end = 4.dp)
+                    )
+                }
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isSelected) Color.White else Color(0xFF1A1C1E),
+                        fontSize = 13.sp
+                    )
                 )
-            )
+            }
         }
     }
 }
