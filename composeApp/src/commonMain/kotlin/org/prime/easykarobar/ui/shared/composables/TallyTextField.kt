@@ -40,6 +40,9 @@ fun TallyTextField(
     onValueChange: (String) -> Unit,
     placeholder: String,
     isPassword: Boolean,
+    singleLine: Boolean = true,
+    maxLines: Int = 1,
+    minLines: Int = 1,
     isNumber: Boolean,
     modifier: Modifier = Modifier,
     label: String,
@@ -61,6 +64,9 @@ fun TallyTextField(
         textStyle = MaterialTheme.typography.bodyMedium,
         modifier = modifier.defaultMinSize(minHeight = 48.dp),
         shape = RoundedCornerShape(16.dp),
+        singleLine = singleLine,
+        maxLines = maxLines,
+        minLines = minLines,
         value = value,
         onValueChange = onValueChange,
         keyboardOptions = KeyboardOptions.Default.copy(
@@ -101,7 +107,6 @@ fun TallyTextField(
                 style = MaterialTheme.typography.bodyMedium
             )
         },
-        singleLine = true,
         visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
         trailingIcon = {
             if (isPassword) {

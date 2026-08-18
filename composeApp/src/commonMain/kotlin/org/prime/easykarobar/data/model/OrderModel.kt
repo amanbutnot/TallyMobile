@@ -8,6 +8,7 @@ import org.prime.easykarobar.data.model.transactions.SundryItem
 data class CreateOrderRequest(
     val billing_guid: String, //LEDGER GUID
     val billing_name: String, //LEDGER NAME
+    val billing_address: String? = null,
     val remarks: String,
     val total_amt: String,
     val items: List<items>,

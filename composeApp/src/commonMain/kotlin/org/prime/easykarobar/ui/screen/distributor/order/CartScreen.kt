@@ -170,6 +170,7 @@ private fun CartContent(
     var couponText by remember { mutableStateOf("") }
     var appliedCoupon by remember { mutableStateOf<Coupon?>(null) }
     var remarks by remember { mutableStateOf("") }
+    var billingAddress by remember { mutableStateOf("") }
     var deliveryDay by remember { mutableStateOf("Today") }
     var startTime by remember { mutableStateOf("") }
     var endTime by remember { mutableStateOf("") }
@@ -330,6 +331,21 @@ private fun CartContent(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                Spacer(modifier = Modifier.height(12.dp))
+
+                TallyTextField(
+                    value = billingAddress,
+                    onValueChange = { billingAddress = it },
+                    placeholder = "Address *",
+                    isPassword = false,
+                    singleLine = false,
+                    maxLines = 2,
+                    minLines =2 ,
+                    isNumber = false,
+                    label = "Address",
+                    modifier = Modifier.fillMaxWidth()
+                )
+
                 Spacer(modifier = Modifier.height(16.dp))
 
                 ConfirmOrderButton(
@@ -337,6 +353,7 @@ private fun CartContent(
                     cartViewModel = viewModel,
                     appliedCoupon = appliedCoupon,
                     remarks = remarks,
+                    billingAddress = billingAddress,
                     deliveryDay = deliveryDay,
                     startTime = startTime,
                     endTime = endTime,
@@ -1231,6 +1248,7 @@ fun ConfirmOrderButton(
     cartViewModel: CartViewModel? = null,
     appliedCoupon: Coupon? = null,
     remarks: String = "",
+    billingAddress: String = "",
     deliveryDay: String = "",
     startTime: String = "",
     endTime: String = "",
@@ -1311,6 +1329,7 @@ fun ConfirmOrderButton(
     var showPickupDialog by remember { mutableStateOf(false) }
     var showMinOrderAlert by remember { mutableStateOf(false) }
     var showCartValidationAlert by remember { mutableStateOf(false) }
+    var showAddressAlert by remember { mutableStateOf(false) }
     var currentIsDelivery by remember { mutableStateOf(isDelivery) }
 
     LaunchedEffect(isDelivery) {
@@ -1323,6 +1342,8 @@ fun ConfirmOrderButton(
         onClick = {
             if (!isCartValid) {
                 showCartValidationAlert = true
+            } else if (billingAddress.trim().isEmpty()) {
+                showAddressAlert = true
             } else if (isBelowMinOrder) {
                 showMinOrderAlert = true
             } else if (currentIsDelivery) {
@@ -1433,6 +1454,18 @@ fun ConfirmOrderButton(
             onConfirm = { showCartValidationAlert = false },
             onCancel = { showCartValidationAlert = false },
             onDismiss = { showCartValidationAlert = false }
+        )
+    }
+
+    if (showAddressAlert) {
+        TallyAlertBox(
+            title = "Address Required",
+            message = "Please enter a billing address to proceed with the order.",
+            confirmButtonText = "Ok",
+            cancelButtonText = "",
+            onConfirm = { showAddressAlert = false },
+            onCancel = { showAddressAlert = false },
+            onDismiss = { showAddressAlert = false }
         )
     }
 
@@ -1564,6 +1597,7 @@ fun ConfirmOrderButton(
                         billing_guid = SharedPrefs.DistributorData.get()?.ledger_GUID.toString(),
                         remarks = finalRemarks,
                         billing_name = SharedPrefs.DistributorData.get()?.ledger_name.toString(),
+                        billing_address = billingAddress,
                         total_amt = finalTotal.toString(),
                         items = itemsList,
                         sundries = sundriesList
