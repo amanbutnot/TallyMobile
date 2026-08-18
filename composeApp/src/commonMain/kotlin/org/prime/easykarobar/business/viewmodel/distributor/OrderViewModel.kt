@@ -342,20 +342,20 @@ class CartViewModel : ScreenModel {
             val minOrder = product.OF7
             val maxOrder = product.OF8
 
-            if (minOrder != null && quantity < minOrder) {
+            if (minOrder != null && minOrder != 0.0 && quantity < minOrder) {
                 return "Minimum order is ${minOrder.formatToAmtDec()} $selectedUnit"
             }
-            if (maxOrder != null && quantity > maxOrder) {
+            if (maxOrder != null && maxOrder != 0.0 && quantity > maxOrder) {
                 return "Maximum order is ${maxOrder.formatToAmtDec()} $selectedUnit"
             }
         } else if (selectedUnit == product.alt_unit && !product.alt_unit.isNullOrBlank()) {
             val minOrder = product.OF9
             val maxOrder = product.OF10
 
-            if (minOrder != null && quantity < minOrder) {
+            if (minOrder != null && minOrder != 0.0 && quantity < minOrder) {
                 return "Minimum order is ${minOrder.formatToAmtDec()} $selectedUnit"
             }
-            if (maxOrder != null && quantity > maxOrder) {
+            if (maxOrder != null && maxOrder != 0.0 && quantity > maxOrder) {
                 return "Maximum order is ${maxOrder.formatToAmtDec()} $selectedUnit"
             }
         }

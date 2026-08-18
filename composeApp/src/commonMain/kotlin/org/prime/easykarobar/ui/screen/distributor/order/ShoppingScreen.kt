@@ -652,6 +652,19 @@ object ShoppingScreen : Screen {
                     }
                 }
 
+                val cartItem = cartViewModel.getAllProducts().find { it.product.product_id == product.product_id }
+                val validationMessage = cartItem?.let { cartViewModel.getValidationMessage(it) }
+
+                if (validationMessage != null) {
+                    Text(
+                        text = validationMessage,
+                        color = Color.Red,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
                 Spacer(Modifier.height(12.dp))
 
                 // --- Close button (neutral, not shouting)
@@ -1334,6 +1347,19 @@ fun ItemCard(
                         fontSize = 12.sp
                     )
                 }
+            }
+
+            val cartItem = viewModel.getAllProducts().find { it.product.product_id == item.product_id }
+            val validationMessage = cartItem?.let { viewModel.getValidationMessage(it) }
+
+            if (validationMessage != null) {
+                Text(
+                    text = validationMessage,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }
