@@ -15,15 +15,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +34,8 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +46,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -71,7 +79,9 @@ data class InventoryListScreen(
     val name: String,
     val showStatusChange: Boolean = false
 ) : Screen {
-    @OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class,
+        androidx.compose.foundation.layout.ExperimentalLayoutApi::class
+    )
     @Composable
     override fun Content() {
         val viewModel: InventoryVoucherViewModel = viewModel { InventoryVoucherViewModel() }
@@ -85,6 +95,9 @@ data class InventoryListScreen(
         var selectedItem by remember { mutableStateOf<InventoryListResponse?>(null) }
         var selectedStatus by remember { mutableStateOf<ORDERSTATUS?>(null) }
         val sheetState = rememberModalBottomSheetState()
+
+        val filterOptions = listOf("All") + ORDERSTATUS.entries.take(6).map { it.displayName() }
+        var selectedFilterIndex by remember { mutableStateOf(0) }
 
 
         LaunchedEffect(Unit) {
@@ -147,47 +160,94 @@ data class InventoryListScreen(
                     }
 
                     else -> {
-                        LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-                            state.data?.let {
-                                itemsIndexed(it) { index, item ->
-                                    if (showStatusChange) {
-                                        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                                            OrderCard(
-                                                orderNo = item.order_no,
-                                                orderStatus = item.OrderStatus,
-                                                orderDate = item.created_at,
-                                                billingName = getNameFromGUID(item.billing_guid),
-                                                totalAmount = item.total_amount,
-                                                showStatusChange = true,
-                                                onStatusChangeClick = {
-                                                    selectedItem = item
-                                                    showStatusSheet = true
-                                                },
-                                                onClick = {
-                                                    nav.push(
-                                                        MyOrdersScreen(
-                                                            order_id = item.id.toString(),
-                                                            isStatusChangeMode = true
-                                                        )
-                                                    )
-                                                }
-                                            )
-                                        }
-                                    } else {
-                                        ListItem(
-                                            listState = item,
-                                            showStatusChange = false,
-                                            onStatusChangeClick = { }
-                                        ) {
-                                            nav.push(
-                                                SaleScreen(
-                                                    name = name,
-                                                    vchType = vchType,
-                                                    tranId = item.id,
-                                                    isEdit = true,
-                                                    enableUpdateButton = item.OrderStatus == ORDERSTATUS.Pending.name
+                        val filteredData = remember(state.data, selectedFilterIndex) {
+                            if (selectedFilterIndex == 0) {
+                                state.data
+                            } else {
+                                val statusToMatch = ORDERSTATUS.entries[selectedFilterIndex - 1].name
+                                state.data?.filter { it.OrderStatus == statusToMatch }
+                            }
+                        }
+
+                        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                            androidx.compose.foundation.layout.FlowRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                filterOptions.forEachIndexed { index, label ->
+                                    ToggleButton(
+                                        checked = selectedFilterIndex == index,
+                                        onCheckedChange = { selectedFilterIndex = index },
+                                        colors = ToggleButtonDefaults.toggleButtonColors(
+                                            checkedContainerColor = MaterialTheme.colorScheme.primary,
+                                            checkedContentColor = MaterialTheme.colorScheme.onPrimary,
+                                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        shapes = when (index) {
+                                            0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                            filterOptions.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                            else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                                        },
+                                        modifier = Modifier.semantics { role = Role.RadioButton },
+                                    ) {
+                                        Text(label)
+                                    }
+                                }
+                            }
+
+                            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                filteredData?.let {
+                                    itemsIndexed(it) { index, item ->
+                                        if (showStatusChange) {
+                                            Box(
+                                                modifier = Modifier.padding(
+                                                    horizontal = 16.dp,
+                                                    vertical = 8.dp
                                                 )
-                                            )
+                                            ) {
+                                                OrderCard(
+                                                    orderNo = item.order_no,
+                                                    orderStatus = item.OrderStatus,
+                                                    orderDate = item.created_at,
+                                                    billingName = getNameFromGUID(item.billing_guid),
+                                                    totalAmount = item.total_amount,
+                                                    showStatusChange = true,
+                                                    onStatusChangeClick = {
+                                                        selectedItem = item
+                                                        showStatusSheet = true
+                                                    },
+                                                    onClick = {
+                                                        nav.push(
+                                                            MyOrdersScreen(
+                                                                order_id = item.id.toString(),
+                                                                isStatusChangeMode = true
+                                                            )
+                                                        )
+                                                    }
+                                                )
+                                            }
+                                        } else {
+                                            ListItem(
+                                                listState = item,
+                                                showStatusChange = false,
+                                                onStatusChangeClick = { }
+                                            ) {
+                                                nav.push(
+                                                    SaleScreen(
+                                                        name = name,
+                                                        vchType = vchType,
+                                                        tranId = item.id,
+                                                        isEdit = true,
+                                                        enableUpdateButton = item.OrderStatus == ORDERSTATUS.Pending.name
+                                                    )
+                                                )
+                                            }
                                         }
                                     }
                                 }

@@ -146,10 +146,10 @@ enum class ORDERSTATUS {
     @SerialName("Confirmed")
     Confirmed,
 
-    @SerialName("Ready for pickup")
+    @SerialName("ReadyForPickup")
     ReadyForPickup,
 
-    @SerialName("Out for delivery")
+    @SerialName("OutForDelivery")
     OutForDelivery,
 
     @SerialName("Delivered")
