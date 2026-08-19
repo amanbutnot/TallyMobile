@@ -58,6 +58,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -123,9 +125,19 @@ fun getDeliveryChargeConfigs(): List<DeliveryChargeConfig> {
     }
 }
 
-fun calculateDeliveryCharge(totalAmount: Double, configs: List<DeliveryChargeConfig>): Double {
-    val config = configs.find { totalAmount >= it.minAmount && totalAmount <= it.maxAmount }
-    return config?.charge ?: 0.0
+fun calculateDeliveryCharge(
+    totalAmount: Double,
+    configs: List<DeliveryChargeConfig>
+): Double {
+    val config = configs.find {
+        totalAmount in it.minAmount..it.maxAmount
+    }
+
+    return config?.charge
+        ?: configs.maxByOrNull { it.maxAmount }
+            ?.takeIf { totalAmount > it.maxAmount }
+            ?.charge
+        ?: 0.0
 }
 
 object CartScreen : Screen {
@@ -178,6 +190,7 @@ private fun CartContent(
     var pickupDay by remember { mutableStateOf("Today") }
     var pickupStartTime by remember { mutableStateOf("") }
     var pickupEndTime by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
 
     var isDelivery by remember { mutableStateOf(true) }
 
@@ -186,7 +199,8 @@ private fun CartContent(
             DatabaseHolder.instance.coupon_MasterQueries.selectAll().executeAsList().map {
                 val discType = it.DISC_TYPE?.lowercase() ?: "flat"
                 val expDateFormatted = convertCouponDate(it.EXP_DATE)
-                val expDisplay = if (expDateFormatted != null) "Expires: ${Tdate(expDateFormatted)}" else ""
+                val expDisplay =
+                    if (expDateFormatted != null) "Expires: ${Tdate(expDateFormatted)}" else ""
 
                 Coupon(
                     code = it.CODE,
@@ -197,9 +211,24 @@ private fun CartContent(
                         else -> "₹${it.DISC_PER.formatToAmtDec(0)} OFF"
                     },
                     description = when (discType) {
-                        "percentage" -> "${it.DISC_PER.formatToAmtDec(0)}% off on orders above ₹${it.BILL_VAL.formatToAmtDec(0)}. $expDisplay"
-                        "flat" -> "Flat ₹${it.DISC_PER.formatToAmtDec(0)} off on orders above ₹${it.BILL_VAL.formatToAmtDec(0)}. $expDisplay"
-                        "cashback" -> "₹${it.DISC_PER.formatToAmtDec(0)} cashback on orders above ₹${it.BILL_VAL.formatToAmtDec(0)}. $expDisplay"
+                        "percentage" -> "${it.DISC_PER.formatToAmtDec(0)}% off on orders above ₹${
+                            it.BILL_VAL.formatToAmtDec(
+                                0
+                            )
+                        }. $expDisplay"
+
+                        "flat" -> "Flat ₹${it.DISC_PER.formatToAmtDec(0)} off on orders above ₹${
+                            it.BILL_VAL.formatToAmtDec(
+                                0
+                            )
+                        }. $expDisplay"
+
+                        "cashback" -> "₹${it.DISC_PER.formatToAmtDec(0)} cashback on orders above ₹${
+                            it.BILL_VAL.formatToAmtDec(
+                                0
+                            )
+                        }. $expDisplay"
+
                         else -> "Discount on orders above ₹${it.BILL_VAL.formatToAmtDec(0)}. $expDisplay"
                     }.trim(),
                     discountType = if (discType == "percentage") "percent" else "flat",
@@ -242,7 +271,8 @@ private fun CartContent(
                             appliedCoupon = coupon
                             couponError = null
                         } else {
-                            couponError = "Minimum order value of ₹${coupon.minOrderValue.formatToAmtDec(0)} required"
+                            couponError =
+                                "Minimum order value of ₹${coupon.minOrderValue.formatToAmtDec(0)} required"
                         }
                     } else {
                         couponError = "Invalid coupon code"
@@ -255,7 +285,8 @@ private fun CartContent(
                             appliedCoupon = it
                             couponError = null
                         } else {
-                            couponError = "Minimum order value of ₹${it.minOrderValue.formatToAmtDec(0)} required"
+                            couponError =
+                                "Minimum order value of ₹${it.minOrderValue.formatToAmtDec(0)} required"
                         }
                     } else {
                         appliedCoupon = null
@@ -278,7 +309,7 @@ private fun CartContent(
             Spacer(modifier = Modifier.height(4.dp))
             CartSummary(
                 products = list,
-                appliedCoupon = appliedCoupon
+                appliedCoupon = appliedCoupon, isDelivery = isDelivery
             )
         }
 
@@ -340,10 +371,11 @@ private fun CartContent(
                     isPassword = false,
                     singleLine = false,
                     maxLines = 2,
-                    minLines =2 ,
+                    minLines = 2,
                     isNumber = false,
                     label = "Address",
                     modifier = Modifier.fillMaxWidth()
+                        .focusRequester(focusRequester = focusRequester)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -360,7 +392,7 @@ private fun CartContent(
                     pickupDay = pickupDay,
                     pickupStartTime = pickupStartTime,
                     pickupEndTime = pickupEndTime,
-                    isDelivery = isDelivery
+                    isDelivery = isDelivery, focusRequester = focusRequester
                 )
             }
         }
@@ -645,7 +677,8 @@ fun TallyTimePicker(
                 val minute = timePickerState.minute
                 val amPm = if (hour < 12) "AM" else "PM"
                 val h = if (hour % 12 == 0) 12 else hour % 12
-                val formattedTime = "${h.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} $amPm"
+                val formattedTime =
+                    "${h.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} $amPm"
                 onTimeSelected(formattedTime)
             }) {
                 Text("OK")
@@ -696,8 +729,9 @@ private fun CartProductItem(
         if (selectedUnit == product.product.main_unit || product.product.alt_unit.isNullOrBlank()) {
             product.product.MRP ?: 0.0
         } else {
-            val price = if (conType == 1.0) (product.product.MRP ?: 0.0) / factor else (product.product.MRP
-                ?: 0.0) * factor
+            val price =
+                if (conType == 1.0) (product.product.MRP ?: 0.0) / factor else (product.product.MRP
+                    ?: 0.0) * factor
             kotlin.math.round(price * 100.0) / 100.0
         }
 
@@ -936,7 +970,7 @@ private fun CartProductItem(
 
 @Composable
 fun CartSummary(
-    products: List<CartItem>,
+    products: List<CartItem>, isDelivery: Boolean,
     appliedCoupon: Coupon? = null
 ) {
 
@@ -1017,13 +1051,14 @@ fun CartSummary(
         }
     }
 
-    val couponDiscount = if (appliedCoupon != null && totalDiscountedPrice >= appliedCoupon.minOrderValue) {
-        if (appliedCoupon.discountType == "flat") {
-            appliedCoupon.discountValue
-        } else {
-            (totalDiscountedPrice * appliedCoupon.discountValue) / 100.0
-        }
-    } else 0.0
+    val couponDiscount =
+        if (appliedCoupon != null && totalDiscountedPrice >= appliedCoupon.minOrderValue) {
+            if (appliedCoupon.discountType == "flat") {
+                appliedCoupon.discountValue
+            } else {
+                (totalDiscountedPrice * appliedCoupon.discountValue) / 100.0
+            }
+        } else 0.0
 
     val finalTotal = totalBeforeCoupon - couponDiscount + totalHamali + deliveryCharge
     val totalSavingsCombined = totalSavings + couponDiscount
@@ -1119,7 +1154,7 @@ fun CartSummary(
                 )
             }
 
-            if (deliveryCharge > 0.0) {
+            if (deliveryCharge > 0.0 && isDelivery) {
                 Spacer(modifier = Modifier.height(8.dp))
                 SummaryRow(
                     label = "Delivery Charges",
@@ -1255,7 +1290,7 @@ fun ConfirmOrderButton(
     pickupDay: String = "",
     pickupStartTime: String = "",
     pickupEndTime: String = "",
-    isDelivery: Boolean = true
+    isDelivery: Boolean = true, focusRequester: FocusRequester
 ) {
     val totalDiscountedPrice = products.sumOf {
         val factor = it.product.con_factor ?: 1.0
@@ -1309,13 +1344,14 @@ fun ConfirmOrderButton(
     val minOrderAmount = deliveryConfigs.minOfOrNull { it.minAmount } ?: 0.0
     val isBelowMinOrder = totalDiscountedPrice < minOrderAmount
 
-    val couponDiscount = if (appliedCoupon != null && totalDiscountedPrice >= appliedCoupon.minOrderValue) {
-        if (appliedCoupon.discountType == "flat") {
-            appliedCoupon.discountValue
-        } else {
-            (totalDiscountedPrice * appliedCoupon.discountValue) / 100.0
-        }
-    } else 0.0
+    val couponDiscount =
+        if (appliedCoupon != null && totalDiscountedPrice >= appliedCoupon.minOrderValue) {
+            if (appliedCoupon.discountType == "flat") {
+                appliedCoupon.discountValue
+            } else {
+                (totalDiscountedPrice * appliedCoupon.discountValue) / 100.0
+            }
+        } else 0.0
 
     val finalTotal = totalBeforeCoupon - couponDiscount + totalHamali + deliveryCharge
 
@@ -1417,16 +1453,16 @@ fun ConfirmOrderButton(
         )
     }
 
-    if (showPickupDialog) {
+    if (showPickupDialog && isDelivery) {
         TallyAlertBox(
             title = "Delivery Not Available",
-            message = "Delivery is not available for this pincode. Do you want to place the order for pickup instead?",
-            confirmButtonText = "Yes, Pickup",
-            cancelButtonText = "No",
+            message = "Delivery is unavailable for this pincode. Please select PICKUP as the order type to continue.",
+            confirmButtonText = "OK",
+            cancelButtonText = "",
             onConfirm = {
-                currentIsDelivery = false
+              //  currentIsDelivery = false
                 showPickupDialog = false
-                showConfirmDialog = true
+//                showConfirmDialog = true
             },
             onCancel = { showPickupDialog = false },
             onDismiss = { showPickupDialog = false }
@@ -1463,7 +1499,10 @@ fun ConfirmOrderButton(
             message = "Please enter a billing address to proceed with the order.",
             confirmButtonText = "Ok",
             cancelButtonText = "",
-            onConfirm = { showAddressAlert = false },
+            onConfirm = {
+                focusRequester.requestFocus()
+                showAddressAlert = false
+            },
             onCancel = { showAddressAlert = false },
             onDismiss = { showAddressAlert = false }
         )
@@ -1569,7 +1608,7 @@ fun ConfirmOrderButton(
                     }
                 }
 
-                if (deliveryCharge > 0) {
+                if (deliveryCharge > 0 && isDelivery) {
                     sundriesList.add(
                         SundryItem(
                             name = "delivery charges",
@@ -1590,7 +1629,8 @@ fun ConfirmOrderButton(
                 } else {
                     "Pickup: $pickupDay, Time: $pickupStartTime - $pickupEndTime"
                 }
-                val finalRemarks = if (remarks.isNotEmpty()) "$remarks | $timeRemarks" else timeRemarks
+                val finalRemarks =
+                    if (remarks.isNotEmpty()) "$remarks | $timeRemarks" else timeRemarks
 
                 orderViewModel.createOrder(
                     CreateOrderRequest(
@@ -1846,6 +1886,7 @@ fun CouponItem(
         }
     }
 }
+
 @Composable
 fun SummaryRow(
     label: String,

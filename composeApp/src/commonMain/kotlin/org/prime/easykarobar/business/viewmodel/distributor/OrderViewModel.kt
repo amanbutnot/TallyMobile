@@ -339,8 +339,8 @@ class CartViewModel : ScreenModel {
         val selectedUnit = cartItem.selectedUnit.value
 
         if (selectedUnit == product.main_unit) {
-            val minOrder = product.OF7
-            val maxOrder = product.OF8
+            val minOrder = product.OF3
+            val maxOrder = product.OF4
 
             if (minOrder != null && minOrder != 0.0 && quantity < minOrder) {
                 return "Minimum order is ${minOrder.formatToAmtDec()} $selectedUnit"

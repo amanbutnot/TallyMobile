@@ -164,15 +164,11 @@ data class AllProductsPremiumScreen(
         }
 
         val catNames = remember(currentCategoryCode) {
-            db.product_CategoryQueries.getCatNamesByGroup(currentCategoryCode).executeAsList()
-        }
-
-        val productMappings = remember(currentCategoryCode) {
-            db.product_CategoryQueries.getMappingsByGroup(currentCategoryCode).executeAsList()
-        }
-
-        val productToCatNameMap = remember(productMappings) {
-            productMappings.groupBy { it.product_id }.mapValues { entry -> entry.value.mapNotNull { it.CatName }.toSet() }
+            db.productsQueries.getBrandsForDis(
+                filterGroup = filterAGRP,
+                groupCodes = groupCodes,
+                productCode = currentCategoryCode
+            ).executeAsList().mapNotNull { it }
         }
 
         val changePrice = SharedPrefs.ChangePrice.get()
@@ -218,9 +214,8 @@ data class AllProductsPremiumScreen(
                 val matchesSearch =
                     product.product_name?.contains(searchQuery, ignoreCase = true) == true
 
-                val productCatNames = productToCatNameMap[product.product_id] ?: emptySet()
                 val matchesCat = if (selectedCatNames.isEmpty()) true else {
-                    productCatNames.any { it in selectedCatNames }
+                    product.OF8 != null && product.OF8 in selectedCatNames
                 }
 
                 matchesPrice && matchesSearch && matchesCat

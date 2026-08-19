@@ -32,8 +32,9 @@ CREATE TABLE Products (
     PRICE2 REAL,
     PRICE3 REAL,
     PRICE4 REAL,
-    OF7 REAL,
-    OF8 REAL,
+    OF3 REAL,
+    OF4 REAL,
+    OF8 TEXT,
     OF9 REAL,
     OF10 REAL,
     PRICE5 REAL
@@ -173,10 +174,11 @@ SELECT
     AltUnit AS alt_unit,
     ConFactor AS con_factor,
     ConType AS con_type,
-    OF7,
-    OF8,
+    OF3,
+    OF4,
     OF9,
-    OF10
+    OF10,
+    OF8
 FROM (
     SELECT
         Products.GUID AS product_id,
@@ -221,10 +223,11 @@ FROM (
         Products.E5,
         Products.GroupCode,
         Products.GUID,
-        Products.OF7,
-        Products.OF8,
+        Products.OF3,
+        Products.OF4,
         Products.OF9,
-        Products.OF10
+        Products.OF10,
+        Products.OF8
     FROM Products
     LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
 ) AS Sub
@@ -259,10 +262,11 @@ SELECT
     AltUnit AS alt_unit,
     ConFactor AS con_factor,
     ConType AS con_type,
-    OF7,
-    OF8,
+    OF3,
+    OF4,
     OF9,
-    OF10
+    OF10,
+    OF8
 FROM (
     SELECT
         Products.GUID AS product_id,
@@ -306,10 +310,11 @@ FROM (
         Products.E4,
         Products.E5,
         Products.GUID,
-        Products.OF7,
-        Products.OF8,
+        Products.OF3,
+        Products.OF4,
         Products.OF9,
-        Products.OF10
+        Products.OF10,
+        Products.OF8
     FROM Products
     LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
 ) AS Sub
@@ -344,10 +349,11 @@ SELECT
     AltUnit AS alt_unit,
     ConFactor AS con_factor,
     ConType AS con_type,
-    OF7,
-    OF8,
+    OF3,
+    OF4,
     OF9,
-    OF10
+    OF10,
+    OF8
 FROM (
     SELECT
         Products.GUID AS product_id,
@@ -391,10 +397,11 @@ FROM (
         Products.E4,
         Products.E5,
         Products.GUID,
-        Products.OF7,
-        Products.OF8,
+        Products.OF3,
+        Products.OF4,
         Products.OF9,
-        Products.OF10
+        Products.OF10,
+        Products.OF8
     FROM Products
     LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
 ) AS Sub
@@ -569,3 +576,12 @@ WHERE (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0
 ORDER BY Name;
 
 -- if e5 -1 (out of stock)
+
+getBrandsForDis:
+SELECT DISTINCT OF8
+FROM Products
+WHERE (:filterGroup = 0 OR GroupCode IN :groupCodes)
+  AND (:productCode IS NULL OR GroupCode = :productCode)
+  AND ( E4 <> -1.0 OR E4 IS NULL)
+  AND OF8 IS NOT NULL AND OF8 != ''
+ORDER BY OF8;

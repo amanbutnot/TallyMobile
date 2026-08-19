@@ -465,7 +465,7 @@ fun TallyAlertBox(
             }
         },
         dismissButton = {
-            if(cancelButtonText == ""){
+            if(cancelButtonText != ""){
                 OutlinedButton(
                     onClick = onCancel,
                     colors = ButtonDefaults.outlinedButtonColors(
