@@ -463,6 +463,7 @@ object SettingScreen : Screen {
                     }
 
                     TallyIconButton("Sign Out", Icons.AutoMirrored.Filled.Logout) {
+                        println(SharedPrefs.ChangePrice.get())
                         showAlertBox = true
                     }
                     Spacer(modifier = Modifier.height(20.dp))

@@ -9,3 +9,8 @@ selectChangePrice:
 SELECT L6, 1 AS rectype
 FROM LedgerPricing
 WHERE MobileNo = :mobileno AND L6 > 100;
+
+existsByMobile:
+SELECT COUNT(*)
+FROM LedgerPricing
+WHERE MobileNo = :mobileno;

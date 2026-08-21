@@ -25,6 +25,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.business.viewmodel.masters.AccountViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.screen.easymart.DispatchInfoScreen
 import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.screen.transactions.sale.makeNegativeConditional
 import kotlin.math.absoluteValue
@@ -176,11 +177,18 @@ data class MasterAddScreen(val number: String) : Screen {
                     try {
                         val db = DatabaseHolder.instance
                         val result = db.ledgerPricingQueries.selectChangePrice(number).executeAsOneOrNull()
-                        println("verify otp result $result")
+                        println("verify otp result $number $result")
                         if (result != null) {
                             SharedPrefs.ChangePrice.save(result.L6 ?: 0.0)
-                        }else{
+                        } else {
                             SharedPrefs.ChangePrice.save(0.0)
+                        }
+
+                        val exists = db.ledgerPricingQueries.existsByMobile(number).executeAsOne() > 0
+                        println(SharedPrefs.DispatchInfo.getMobile())
+                        if (!exists && SharedPrefs.DispatchInfo.getMobile() != number) {
+                            nav.replaceAll(DispatchInfoScreen(number))
+                            return@listAccount
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()

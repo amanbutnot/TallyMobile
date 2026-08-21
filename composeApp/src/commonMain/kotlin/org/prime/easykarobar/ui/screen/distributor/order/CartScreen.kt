@@ -84,6 +84,7 @@ import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.CreateOrderRequest
 import org.prime.easykarobar.data.model.transactions.SundryItem
+import org.prime.easykarobar.data.model.transactions.TransportDetails
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
 import org.prime.easykarobar.ui.shared.composables.QuantityTextField
@@ -95,6 +96,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.convertCouponDate
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 
 data class Coupon(
     val code: String,
@@ -1460,7 +1462,7 @@ fun ConfirmOrderButton(
             confirmButtonText = "OK",
             cancelButtonText = "",
             onConfirm = {
-              //  currentIsDelivery = false
+                //  currentIsDelivery = false
                 showPickupDialog = false
 //                showConfirmDialog = true
             },
@@ -1640,7 +1642,20 @@ fun ConfirmOrderButton(
                         billing_address = billingAddress,
                         total_amt = finalTotal.toString(),
                         items = itemsList,
-                        sundries = sundriesList
+                        sundries = sundriesList,
+                        other_info = TransportDetails(
+                            transportName = "",
+                            station = "",
+                            gstNum = "",
+                            vehicleNum = "",
+                            pincode = SharedPrefs.DispatchInfo.getPincode() ?: "",
+                            grDate = CurrentDate(),
+                            dispatch_name = SharedPrefs.DispatchInfo.getName(),
+                            dispatch_mobile = SharedPrefs.DispatchInfo.getMobile(),
+                            dispatch_address = SharedPrefs.DispatchInfo.getAddress(),
+                            dispatch_pincode = SharedPrefs.DispatchInfo.getPincode(),
+                            dispatch_state = SharedPrefs.DispatchInfo.getState(),
+                        )
                     )
                 )
             },
