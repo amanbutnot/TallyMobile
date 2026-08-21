@@ -155,12 +155,21 @@ data class AllProductsPremiumScreen(
         var currentCategoryName by remember { mutableStateOf(categoryName ?: "All Products") }
         var currentProductGuids by remember { mutableStateOf(productGuids) }
         var selectedCatNames by remember { mutableStateOf(setOf<String>()) }
+        var currentSubCategoryCode by remember { mutableStateOf<Double?>(null) }
 
         val categories = remember {
             db.productsQueries.productCategoriesForDis(
                 filterGroup = filterAGRP,
                 groupCodes = groupCodes
             ).executeAsList()
+        }
+
+        val subCategories = remember(currentCategoryCode) {
+            if (currentCategoryCode != null) {
+                db.product_CategoryQueries.getSubCategory(currentCategoryCode!!).executeAsList()
+            } else {
+                emptyList()
+            }
         }
 
         val catNames = remember(currentCategoryCode) {
@@ -173,10 +182,17 @@ data class AllProductsPremiumScreen(
 
         val changePrice = SharedPrefs.ChangePrice.get()
         val mapper = ::GetProductsForDis
-        val productList: List<GetProductsForDis> = remember(currentCategoryCode, currentProductGuids, changePrice) {
+        val productList: List<GetProductsForDis> = remember(currentCategoryCode, currentSubCategoryCode, currentProductGuids, changePrice) {
             if (currentProductGuids != null) {
                 db.productsQueries.getProductsByGuidsForDis(
                     guids = currentProductGuids!!,
+                    changePrice = changePrice,
+                    mapper = mapper
+                ).executeAsList()
+            } else if (currentSubCategoryCode != null && currentCategoryCode != null) {
+                db.productsQueries.getProductsByCategoryMapping(
+                    groupCode = currentCategoryCode!!,
+                    catCode = currentSubCategoryCode,
                     changePrice = changePrice,
                     mapper = mapper
                 ).executeAsList()
@@ -358,6 +374,7 @@ data class AllProductsPremiumScreen(
                                         currentCategoryName = "All Products"
                                         currentProductGuids = null
                                         selectedCatNames = emptySet()
+                                        currentSubCategoryCode = null
                                     }
                                 )
                             }
@@ -371,8 +388,50 @@ data class AllProductsPremiumScreen(
                                         currentCategoryName = category.Name ?: ""
                                         selectedCatNames = emptySet()
                                         currentProductGuids = null
+                                        currentSubCategoryCode = null
                                     }
                                 )
+                            }
+                        }
+
+                        if (subCategories.isNotEmpty()) {
+                            LazyRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFFFF6D00))
+                                    .padding(bottom = 8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                item {
+                                    CategoryChip(
+                                        name = "All Sub",
+                                        isSelected = currentSubCategoryCode == null,
+                                        onClick = {
+                                            currentSubCategoryCode = null
+                                            if (currentCategoryCode != null) {
+                                                val guids = db.product_CategoryQueries.getProductGuidsByGroup(currentCategoryCode!!).executeAsList()
+                                                if (guids.isNotEmpty()) {
+                                                    currentProductGuids = guids.mapNotNull { it.ProductCode?.toString()?.removeSuffix(".0") }
+                                                } else {
+                                                    currentProductGuids = null
+                                                }
+                                            } else {
+                                                currentProductGuids = null
+                                            }
+                                        }
+                                    )
+                                }
+                                items(subCategories) { sub ->
+                                    CategoryChip(
+                                        name = sub.CatName ?: "",
+                                        isSelected = currentSubCategoryCode == sub.CatCode,
+                                        onClick = {
+                                            currentSubCategoryCode = sub.CatCode
+                                            currentProductGuids = null
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
