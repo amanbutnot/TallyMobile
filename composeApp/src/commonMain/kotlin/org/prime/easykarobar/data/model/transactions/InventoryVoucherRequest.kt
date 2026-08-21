@@ -78,6 +78,13 @@ data class TransportDetails(
     val OptionalField20: String? = null,
     val Saadhar: String? = null,
 
+    val dispatch_name: String? = null,
+    val dispatch_mobile: String? = null,
+    val dispatch_address: String? = null,
+    val dispatch_pincode: String? = null,
+    val dispatch_state: String? = null,
+    val dispatch_gst: String? = null,
+
     )
 
 
