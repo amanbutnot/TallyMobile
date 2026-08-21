@@ -26,20 +26,28 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.launch
+import org.prime.easykarobar.business.viewmodel.masters.AccountViewModel
+import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.home.Dashboard
+import org.prime.easykarobar.ui.screen.masters.AccountModel
 import org.prime.easykarobar.ui.screen.masters.INDIAN_STATES
 import org.prime.easykarobar.ui.screen.transactions.TransactionOneBottomSheet
 import org.prime.easykarobar.ui.shared.composables.TallyButton
+import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
+import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
 
@@ -51,6 +59,11 @@ data class DispatchInfoScreen(val mobile: String) : Screen {
         val nav = LocalNavigator.currentOrThrow
         val colors = MaterialTheme.colorScheme
         val type = MaterialTheme.typography
+        val scope = rememberCoroutineScope()
+        val accountViewModel: AccountViewModel = viewModel { AccountViewModel() }
+        val dataState by accountViewModel.dataState
+
+        val db = DatabaseHolder.instance
 
         var name by remember { mutableStateOf("") }
         var address by remember { mutableStateOf("") }
@@ -65,6 +78,7 @@ data class DispatchInfoScreen(val mobile: String) : Screen {
         var nameError by remember { mutableStateOf(false) }
         var addressError by remember { mutableStateOf(false) }
         var mobileError by remember { mutableStateOf(false) }
+        var showResultDialog by remember { mutableStateOf(false) }
 
         TallyScaffold(
             title = "Sign Up Information",
@@ -238,11 +252,63 @@ data class DispatchInfoScreen(val mobile: String) : Screen {
                                     pincode = pincode,
                                     state = state
                                 )
-                                nav.replaceAll(Dashboard)
+
+                                val sundryDebtorGroup = db.ledgerGroupMasterQueries.getChildrenByGroupName(
+                                    GroupName = listOf("Sundry Debtors"),
+                                    GUID = listOf("")
+                                ).executeAsOneOrNull() ?: db.ledgerGroupMasterQueries.simpleSelectAll().executeAsList().firstOrNull { it.Name == "Sundry Debtors" }
+
+                                val account = AccountModel(
+                                    name = name.trim(),
+                                    alias = "",
+                                    printName = name.trim(),
+                                    parentGroupName = sundryDebtorGroup?.Name ?: "Sundry Debtors",
+                                    parentGroupGuid = sundryDebtorGroup?.GUID ?: "",
+                                    openingBalance = "0.00",
+                                    drCr = "Dr",
+                                    gstNo = gst.trim(),
+                                    itPan = "",
+                                    addressLine1 = address.trim(),
+                                    addressLine2 = "",
+                                    addressLine3 = "",
+                                    addressLine4 = "",
+                                    country = "India",
+                                    state = state.trim(),
+                                    pincode = pincode.trim(),
+                                    station = "",
+                                    mobileNo = mobileNumber.trim(),
+                                    email = "",
+                                    whatsappNo = mobileNumber.trim(),
+                                    maintainBillByBill = 0,
+                                    saleCreditDays = "",
+                                    purchaseCreditDays = "",
+                                )
+
+                                scope.launch {
+                                    accountViewModel.createAccount(account) {
+                                        showResultDialog = true
+                                    }
+                                }
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    if (dataState.isLoading) {
+                        TallyLoadingDialog("Creating your account")
+                    }
+
+                    if (showResultDialog) {
+                        TallyResultDialog(
+                            message = dataState.message ?: "Error Occurred",
+                            onDone = {
+                                showResultDialog = false
+                                nav.replaceAll(Dashboard)
+                            },
+                            isSuccess = dataState.success,
+                            confirmText = "OK"
+                        )
+                    }
                 }
             }
         )

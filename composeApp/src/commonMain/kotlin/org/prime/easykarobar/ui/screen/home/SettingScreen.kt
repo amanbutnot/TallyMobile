@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CurrencyRupee
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MonetizationOn
@@ -90,6 +91,7 @@ object SettingScreen : Screen {
         val queries = db.companyInformationQueries
         val compInfo = queries.getCompanyInformation().executeAsOne()
         var showAlertBox by remember { mutableStateOf(false) }
+        var showDeleteAlert by remember { mutableStateOf(false) }
         var zeroStock by remember { mutableStateOf(true) }
         var ProductLayout by remember { mutableStateOf(false) }
         var showTaxTypeOption by remember { mutableStateOf(0) }
@@ -466,6 +468,14 @@ object SettingScreen : Screen {
                         println(SharedPrefs.ChangePrice.get())
                         showAlertBox = true
                     }
+
+                    if (SharedPrefs.IsEasyMart.get()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        TallyIconButton("Delete Account", Icons.Default.Delete) {
+                            showDeleteAlert = true
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(20.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(8.dp),
@@ -499,6 +509,25 @@ object SettingScreen : Screen {
                         },
                         onDismiss = {
                             showAlertBox = false
+                        },
+                    )
+                }
+
+                if (showDeleteAlert) {
+                    TallyAlertBox(
+                        title = "Delete Account?",
+                        message = "Are you sure you want to delete your account? This action cannot be undone.",
+                        confirmButtonText = "Delete",
+                        cancelButtonText = "Cancel",
+                        onConfirm = {
+                            showDeleteAlert = false
+                            // TODO: User to implement delete functionality
+                        },
+                        onCancel = {
+                            showDeleteAlert = false
+                        },
+                        onDismiss = {
+                            showDeleteAlert = false
                         },
                     )
                 }
