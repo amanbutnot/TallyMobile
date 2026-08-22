@@ -82,8 +82,16 @@ data class GoogleDriveDownloadScreen(val number: String) : Screen {
         val driveState by downloadViewModel.driveState.collectAsState()
         val downloadState by downloadViewModel.downloadState.collectAsState()
 
-        val topColor = try { Color(BuildKonfig.SPLASH_TOP_COLOR.removePrefix("#").toLong(16) or 0xFF000000) } catch (e: Exception) { colors.primary }
-        val bottomColor = try { Color(BuildKonfig.SPLASH_BOTTOM_COLOR.removePrefix("#").toLong(16) or 0xFF000000) } catch (e: Exception) { colors.primaryContainer }
+        val topColor = try {
+            Color(BuildKonfig.SPLASH_TOP_COLOR.removePrefix("#").toLong(16) or 0xFF000000)
+        } catch (e: Exception) {
+            colors.primary
+        }
+        val bottomColor = try {
+            Color(BuildKonfig.SPLASH_BOTTOM_COLOR.removePrefix("#").toLong(16) or 0xFF000000)
+        } catch (e: Exception) {
+            colors.primaryContainer
+        }
 
         // Handle download errors
         LaunchedEffect(downloadState.error) {
@@ -136,7 +144,9 @@ data class GoogleDriveDownloadScreen(val number: String) : Screen {
             }
 
             if (storeId.isNotEmpty()) {
-                val url = "https://easykarobar.in/database/$storeId.zip"
+                val url = "https://easykarobar.in/database/$storeId.zip?filetime=${
+                    Clock.System.now().toEpochMilliseconds().toInt()
+                }"
                 downloadViewModel.downloadDatabaseFromUrl(
                     url = url,
                     destinationPath = destinationPath,
@@ -163,7 +173,14 @@ data class GoogleDriveDownloadScreen(val number: String) : Screen {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(topColor.copy(alpha = 0.1f), colors.background)))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            topColor.copy(alpha = 0.1f),
+                            colors.background
+                        )
+                    )
+                )
                 .navigationBarsPadding()
         ) {
             Column(
@@ -180,7 +197,10 @@ data class GoogleDriveDownloadScreen(val number: String) : Screen {
 
                 Text(
                     text = if (SharedPrefs.IsEasyMart.get()) "Setting up your store..." else "Downloading Data...",
-                    style = type.headlineSmall.copy(fontWeight = FontWeight.Bold, color = colors.onBackground),
+                    style = type.headlineSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onBackground
+                    ),
                     textAlign = TextAlign.Center
                 )
 
@@ -225,7 +245,7 @@ data class GoogleDriveDownloadScreen(val number: String) : Screen {
 @Composable
 private fun RocketAnimation(mainColor: Color) {
     val infiniteTransition = rememberInfiniteTransition(label = "rocket")
-    
+
     val translateY by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = -20f,
@@ -262,7 +282,7 @@ private fun RocketAnimation(mainColor: Color) {
             color = mainColor.copy(alpha = 0.1f),
             border = androidx.compose.foundation.BorderStroke(2.dp, mainColor.copy(alpha = 0.3f))
         ) {}
-        
+
         Icon(
             imageVector = Icons.Default.RocketLaunch,
             contentDescription = null,

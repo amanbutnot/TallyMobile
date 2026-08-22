@@ -449,13 +449,15 @@ object SharedPrefs {
         private const val KEY_ADDRESS = "dispatch_address"
         private const val KEY_PINCODE = "dispatch_pincode"
         private const val KEY_STATE = "dispatch_state"
+        private const val KEY_GST = "dispatch_gst"
 
-        fun save(name: String, mobile: String, address: String, pincode: String, state: String) {
+        fun save(name: String, mobile: String, address: String, pincode: String, state: String, gst: String) {
             settings2.putString(KEY_NAME, name)
             settings2.putString(KEY_MOBILE, mobile)
             settings2.putString(KEY_ADDRESS, address)
             settings2.putString(KEY_PINCODE, pincode)
             settings2.putString(KEY_STATE, state)
+            settings2.putString(KEY_GST, gst)
         }
 
         fun getName(): String? = settings2.getStringOrNull(KEY_NAME)
@@ -463,6 +465,7 @@ object SharedPrefs {
         fun getAddress(): String? = settings2.getStringOrNull(KEY_ADDRESS)
         fun getPincode(): String? = settings2.getStringOrNull(KEY_PINCODE)
         fun getState(): String? = settings2.getStringOrNull(KEY_STATE)
+        fun getGst(): String? = settings2.getStringOrNull(KEY_GST)
 
         fun clear() {
             settings2.remove(KEY_NAME)
@@ -470,6 +473,7 @@ object SharedPrefs {
             settings2.remove(KEY_ADDRESS)
             settings2.remove(KEY_PINCODE)
             settings2.remove(KEY_STATE)
+            settings2.remove(KEY_GST)
         }
     }
 

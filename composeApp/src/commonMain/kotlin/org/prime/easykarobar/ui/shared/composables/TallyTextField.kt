@@ -45,6 +45,7 @@ fun TallyTextField(
     minLines: Int = 1,
     isNumber: Boolean,
     modifier: Modifier = Modifier,
+    isEnabled:Boolean = true,
     label: String,
     imeAction: ImeAction = ImeAction.Next
 ) {
@@ -65,6 +66,7 @@ fun TallyTextField(
         modifier = modifier.defaultMinSize(minHeight = 48.dp),
         shape = RoundedCornerShape(16.dp),
         singleLine = singleLine,
+        enabled = isEnabled,
         maxLines = maxLines,
         minLines = minLines,
         value = value,
