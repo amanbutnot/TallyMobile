@@ -46,6 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,7 +61,9 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.internal.BackHandler
+import kotlinx.coroutines.launch
 import org.prime.easykarobar.BuildKonfig
+import org.prime.easykarobar.business.repository.masters.AccountRepository
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.deleteDbFile
 import org.prime.easykarobar.data.utils.MOBILE_VERSION
@@ -74,6 +77,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyAlertBox
 import org.prime.easykarobar.ui.shared.composables.TallyDivider
 import org.prime.easykarobar.ui.shared.composables.TallyIconButton
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
+import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
@@ -96,6 +100,9 @@ object SettingScreen : Screen {
         var ProductLayout by remember { mutableStateOf(false) }
         var showTaxTypeOption by remember { mutableStateOf(0) }
         var showTaxOptionDialog by remember { mutableStateOf(false) }
+        var deleteRemarks by remember { mutableStateOf("") }
+        var isDeleting by remember { mutableStateOf(false) }
+        val scope = rememberCoroutineScope()
 
         zeroStock = SharedPrefs.ShowZeroStock.get() ?: true
         ProductLayout = SharedPrefs.ProductLayout.get()
@@ -517,18 +524,59 @@ object SettingScreen : Screen {
                     TallyAlertBox(
                         title = "Delete Account?",
                         message = "Are you sure you want to delete your account? This action cannot be undone.",
-                        confirmButtonText = "Delete",
+                        confirmButtonText = if (isDeleting) "Deleting..." else "Delete",
                         cancelButtonText = "Cancel",
                         onConfirm = {
-                            showDeleteAlert = false
-                            // TODO: User to implement delete functionality
+                            if (deleteRemarks.isBlank()) return@TallyAlertBox
+                            isDeleting = true
+                            scope.launch {
+                                val ledgerGuid = SharedPrefs.User.get()?.distributor?.ledger_GUID ?: ""
+                                val result = AccountRepository.deleteAccount(ledgerGuid, deleteRemarks)
+                                isDeleting = false
+                                if (result?.statuscode == 200) {
+                                    showDeleteAlert = false
+                                    deleteDbFile()
+                                    SharedPrefs.logout()
+                                    if (BuildKonfig.STORE_ID.isNotEmpty()) {
+                                        parentNav?.replaceAll(EasyMartScreen)
+                                    } else {
+                                        nav.replaceAll(OnBoardingScreen)
+                                    }
+                                }
+                            }
                         },
                         onCancel = {
-                            showDeleteAlert = false
+                            if (!isDeleting) {
+                                showDeleteAlert = false
+                                deleteRemarks = ""
+                            }
                         },
                         onDismiss = {
-                            showDeleteAlert = false
+                            if (!isDeleting) {
+                                showDeleteAlert = false
+                                deleteRemarks = ""
+                            }
                         },
+                        content = {
+                            Column {
+                                Text(
+                                    "Please provide a reason for closing your account:",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                                TallyTextField(
+                                    value = deleteRemarks,
+                                    onValueChange = { deleteRemarks = it },
+                                    placeholder = "Remarks",
+                                    isPassword = false,
+                                    isNumber = false,
+                                    label = "Remarks",
+                                    singleLine = false,
+                                    maxLines = 3
+                                )
+                            }
+                        }
                     )
                 }
             }

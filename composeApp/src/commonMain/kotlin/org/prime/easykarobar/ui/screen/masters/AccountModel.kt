@@ -32,6 +32,12 @@ data class AccountModel(
 )
 
 @Serializable
+data class DeleteAccountRequest(
+    val ledger_guid: String,
+    val remarks: String
+)
+
+@Serializable
 data class CreateItemResponse(
 
     val name: String,
