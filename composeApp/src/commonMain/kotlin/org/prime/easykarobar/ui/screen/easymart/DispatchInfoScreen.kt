@@ -132,6 +132,7 @@ data class DispatchInfoScreen(val mobile: String) : Screen {
                         placeholder = "Enter Mobile Number",
                         isPassword = false,
                         isNumber = true,
+                        isEnabled = false,
                         label = "Mobile *",
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -250,13 +251,25 @@ data class DispatchInfoScreen(val mobile: String) : Screen {
                                     mobile = mobileNumber,
                                     address = address,
                                     pincode = pincode,
-                                    state = state
+                                    state = state,
+                                    gst = gst
                                 )
 
-                                val sundryDebtorGroup = db.ledgerGroupMasterQueries.getChildrenByGroupName(
-                                    GroupName = listOf("Sundry Debtors"),
-                                    GUID = listOf("")
-                                ).executeAsOneOrNull() ?: db.ledgerGroupMasterQueries.simpleSelectAll().executeAsList().firstOrNull { it.Name == "Sundry Debtors" }
+                                // Update price based on GST entry
+                                if (gst.trim().isNotBlank()) {
+                                    SharedPrefs.ChangePrice.save(102.0) // PRICE1
+                                } else {
+                                    SharedPrefs.ChangePrice.save(101.0) // PRICE2
+                                }
+
+                                val sundryDebtorGroup =
+                                    db.ledgerGroupMasterQueries.getChildrenByGroupName(
+                                        GroupName = listOf("Sundry Debtors"),
+                                        GUID = listOf("")
+                                    ).executeAsOneOrNull()
+                                        ?: db.ledgerGroupMasterQueries.simpleSelectAll()
+                                            .executeAsList()
+                                            .firstOrNull { it.Name == "Sundry Debtors" }
 
                                 val account = AccountModel(
                                     name = name.trim(),
