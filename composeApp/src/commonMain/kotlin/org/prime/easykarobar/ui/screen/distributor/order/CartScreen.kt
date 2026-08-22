@@ -184,7 +184,7 @@ private fun CartContent(
     var couponText by remember { mutableStateOf("") }
     var appliedCoupon by remember { mutableStateOf<Coupon?>(null) }
     var remarks by remember { mutableStateOf("") }
-    var billingAddress by remember { mutableStateOf("") }
+    var billingAddress by remember { mutableStateOf(SharedPrefs.DispatchInfo.getAddress() ?: "") }
     var deliveryDay by remember { mutableStateOf("Today") }
     var startTime by remember { mutableStateOf("") }
     var endTime by remember { mutableStateOf("") }
@@ -1363,7 +1363,7 @@ fun ConfirmOrderButton(
     var showConfirmDialog by remember { mutableStateOf(false) }
 
     var showPincodeDialog by remember { mutableStateOf(false) }
-    var pincodeValue by remember { mutableStateOf("") }
+    var pincodeValue by remember { mutableStateOf(SharedPrefs.DispatchInfo.getPincode() ?: "") }
     var showPickupDialog by remember { mutableStateOf(false) }
     var showMinOrderAlert by remember { mutableStateOf(false) }
     var showCartValidationAlert by remember { mutableStateOf(false) }
