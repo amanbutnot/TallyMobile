@@ -178,7 +178,8 @@ SELECT
     OF4,
     OF9,
     OF10,
-    OF8
+    OF8,
+    brand_name
 FROM (
     SELECT
         Products.GUID AS product_id,
@@ -227,9 +228,11 @@ FROM (
         Products.OF4,
         Products.OF9,
         Products.OF10,
-        Products.OF8
+        Products.OF8,
+        OFM.Name AS brand_name
     FROM Products
     LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
+    LEFT JOIN OFMaster OFM ON CAST(Products.OF8 AS REAL) = OFM.Code
 ) AS Sub
 WHERE (:filterGroup = 0 OR GroupCode IN :groupCodes) AND (:productCode IS NULL OR GroupCode = :productCode) AND ( E4 <> -1.0   OR  E4 IS NULL)
 ORDER BY product_name;
@@ -266,7 +269,8 @@ SELECT
     OF4,
     OF9,
     OF10,
-    OF8
+    OF8,
+    brand_name
 FROM (
     SELECT
         Products.GUID AS product_id,
@@ -314,9 +318,11 @@ FROM (
         Products.OF4,
         Products.OF9,
         Products.OF10,
-        Products.OF8
+        Products.OF8,
+        OFM.Name AS brand_name
     FROM Products
     LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
+    LEFT JOIN OFMaster OFM ON CAST(Products.OF8 AS REAL) = OFM.Code
 ) AS Sub
 WHERE GUID IN :guids AND ( E4 <> -1.0   OR  E4 IS NULL)
 ORDER BY product_name;
@@ -353,7 +359,8 @@ SELECT
     OF4,
     OF9,
     OF10,
-    OF8
+    OF8,
+    brand_name
 FROM (
     SELECT
         Products.GUID AS product_id,
@@ -401,9 +408,11 @@ FROM (
         Products.OF4,
         Products.OF9,
         Products.OF10,
-        Products.OF8
+        Products.OF8,
+        OFM.Name AS brand_name
     FROM Products
     LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
+    LEFT JOIN OFMaster OFM ON CAST(Products.OF8 AS REAL) = OFM.Code
 ) AS Sub
 
 WHERE GUID IN (
@@ -578,10 +587,11 @@ ORDER BY Name;
 -- if e5 -1 (out of stock)
 
 getBrandsForDis:
-SELECT DISTINCT OF8
+SELECT DISTINCT OFMaster.Name
 FROM Products
-WHERE (:filterGroup = 0 OR GroupCode IN :groupCodes)
-  AND (:productCode IS NULL OR GroupCode = :productCode)
-  AND ( E4 <> -1.0 OR E4 IS NULL)
-  AND OF8 IS NOT NULL AND OF8 != ''
-ORDER BY OF8;
+JOIN OFMaster ON CAST(Products.OF8 AS REAL) = OFMaster.Code
+WHERE (:filterGroup = 0 OR Products.GroupCode IN :groupCodes)
+  AND (:productCode IS NULL OR Products.GroupCode = :productCode)
+  AND ( Products.E4 <> -1.0 OR Products.E4 IS NULL)
+  AND Products.OF8 IS NOT NULL AND Products.OF8 != ''
+ORDER BY OFMaster.Name;

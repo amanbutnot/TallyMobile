@@ -231,7 +231,7 @@ data class AllProductsPremiumScreen(
                     product.product_name?.contains(searchQuery, ignoreCase = true) == true
 
                 val matchesCat = if (selectedCatNames.isEmpty()) true else {
-                    product.OF8 != null && product.OF8 in selectedCatNames
+                    product.brand_name != null && product.brand_name in selectedCatNames
                 }
 
                 matchesPrice && matchesSearch && matchesCat
@@ -689,15 +689,15 @@ data class AllProductsPremiumScreen(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         items(catNames) { catName ->
-                            val isSelected = selectedCatNames.contains(catName)
+                            val isSelected = selectedCatNames.contains(catName.Name)
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
                                         selectedCatNames = if (isSelected) {
-                                            selectedCatNames - catName
+                                            selectedCatNames - (catName.Name?:"")
                                         } else {
-                                            selectedCatNames + catName
+                                            selectedCatNames + (catName.Name?:"")
                                         }
                                     },
                                 shape = RoundedCornerShape(12.dp),
@@ -734,7 +734,7 @@ data class AllProductsPremiumScreen(
                                     }
                                     Spacer(Modifier.width(16.dp))
                                     Text(
-                                        text = catName,
+                                        text = catName.Name.toString(),
                                         style = MaterialTheme.typography.bodyLarge.copy(
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                             color = if (isSelected) Color(0xFF1E293B) else Color(0xFF64748B)

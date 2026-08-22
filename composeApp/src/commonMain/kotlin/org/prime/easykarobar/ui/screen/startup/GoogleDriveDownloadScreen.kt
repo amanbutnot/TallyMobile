@@ -108,6 +108,7 @@ data class GoogleDriveDownloadScreen(val number: String) : Screen {
         LaunchedEffect(Unit) {
             val fileId = SharedPrefs.FileId.get()
             val storeId = BuildKonfig.STORE_ID
+            println("Store id is $storeId")
 
             deleteDbFile()
             val destinationPath = getAppDatabaseDirectory()

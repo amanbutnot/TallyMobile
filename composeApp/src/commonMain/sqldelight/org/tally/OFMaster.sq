@@ -1,0 +1,18 @@
+CREATE TABLE OFMaster (
+    Code REAL,
+    MasterType REAL,
+    Name TEXT
+);
+
+insertOFMaster:
+INSERT OR REPLACE INTO OFMaster(Code, MasterType, Name)
+VALUES (?, ?, ?);
+
+selectAll:
+SELECT * FROM OFMaster;
+
+selectByCode:
+SELECT * FROM OFMaster WHERE Code = ?;
+
+selectByCodes:
+SELECT * FROM OFMaster WHERE Code IN ?;

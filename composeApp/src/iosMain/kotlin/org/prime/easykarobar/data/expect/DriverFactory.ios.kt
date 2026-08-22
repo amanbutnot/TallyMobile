@@ -273,6 +273,18 @@ actual class DriverFactory {
                     );
                 """.trimIndent()
             )
+
+            ensureTable(
+                driver = driver,
+                tableName = "OFMaster",
+                createTableSql = """
+                    CREATE TABLE IF NOT EXISTS OFMaster (
+                        Code REAL,
+                        MasterType REAL,
+                        Name TEXT
+                    );
+                """.trimIndent()
+            )
         } catch (e: Exception) {
             println("❌ Error during manual migration: ${e.message}")
         }
