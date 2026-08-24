@@ -705,25 +705,22 @@ private fun CartProductItem(
     val nav = LocalNavigator.currentOrThrow
     val viewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
 
-    val factor = product.product.con_factor ?: 1.0
-    val conType = product.product.con_type ?: 1.0
     val selectedUnit = product.selectedUnit.value
 
     val currentListPrice =
         if (selectedUnit == product.product.main_unit || product.product.alt_unit.isNullOrBlank()) {
             product.product.sales_price ?: 0.0
         } else {
-            val price = if (conType == 1.0) (product.product.sales_price
-                ?: 0.0) / factor else (product.product.sales_price ?: 0.0) * factor
-            kotlin.math.round(price * 100.0) / 100.0
+            product.product.sales_price_alt ?: 0.0
         }
 
     val currentDiscountedPrice =
         if (selectedUnit == product.product.main_unit || product.product.alt_unit.isNullOrBlank()) {
             product.product.discounted_price ?: currentListPrice
         } else {
-            val price = if (conType == 1.0) (product.product.discounted_price
-                ?: 0.0) / factor else (product.product.discounted_price ?: 0.0) * factor
+            val baseAltPrice = product.product.sales_price_alt ?: 0.0
+            val discount = product.product.discount ?: 0.0
+            val price = if (discount == 0.0) baseAltPrice else baseAltPrice - (baseAltPrice * discount / 100.0)
             kotlin.math.round(price * 100.0) / 100.0
         }
 
@@ -731,10 +728,7 @@ private fun CartProductItem(
         if (selectedUnit == product.product.main_unit || product.product.alt_unit.isNullOrBlank()) {
             product.product.MRP ?: 0.0
         } else {
-            val price =
-                if (conType == 1.0) (product.product.MRP ?: 0.0) / factor else (product.product.MRP
-                    ?: 0.0) * factor
-            kotlin.math.round(price * 100.0) / 100.0
+            product.product.MRP ?: 0.0
         }
 
     Card(
@@ -992,24 +986,22 @@ fun CartSummary(
             if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
                 mrp
             } else {
-                val price = if (conType == 1.0) mrp / factor else mrp * factor
-                kotlin.math.round(price * 100.0) / 100.0
+                mrp
             }
         currentMrp * it.quantity.value
     }
 
 
     val totalDiscountedPrice = products.sumOf {
-        val factor = it.product.con_factor ?: 1.0
-        val conType = it.product.con_type ?: 1.0
         val selectedUnit = it.selectedUnit.value
 
         val currentDiscountedPrice =
             if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
                 it.product.discounted_price ?: 0.0
             } else {
-                val price = if (conType == 1.0) (it.product.discounted_price
-                    ?: 0.0) / factor else (it.product.discounted_price ?: 0.0) * factor
+                val baseAltPrice = it.product.sales_price_alt ?: 0.0
+                val discount = it.product.discount ?: 0.0
+                val price = if (discount == 0.0) baseAltPrice else baseAltPrice - (baseAltPrice * discount / 100.0)
                 kotlin.math.round(price * 100.0) / 100.0
             }
         currentDiscountedPrice * it.quantity.value
@@ -1023,16 +1015,15 @@ fun CartSummary(
     val totalSavings = (totalMrp - totalDiscountedPrice).toDouble()
 
     val totalGst = products.sumOf {
-        val factor = it.product.con_factor ?: 1.0
-        val conType = it.product.con_type ?: 1.0
         val selectedUnit = it.selectedUnit.value
 
         val currentDiscountedPrice =
             if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
                 it.product.discounted_price ?: 0.0
             } else {
-                val price = if (conType == 1.0) (it.product.discounted_price
-                    ?: 0.0) / factor else (it.product.discounted_price ?: 0.0) * factor
+                val baseAltPrice = it.product.sales_price_alt ?: 0.0
+                val discount = it.product.discount ?: 0.0
+                val price = if (discount == 0.0) baseAltPrice else baseAltPrice - (baseAltPrice * discount / 100.0)
                 kotlin.math.round(price * 100.0) / 100.0
             }
 
@@ -1295,32 +1286,30 @@ fun ConfirmOrderButton(
     isDelivery: Boolean = true, focusRequester: FocusRequester
 ) {
     val totalDiscountedPrice = products.sumOf {
-        val factor = it.product.con_factor ?: 1.0
-        val conType = it.product.con_type ?: 1.0
         val selectedUnit = it.selectedUnit.value
 
         val currentDiscountedPrice =
             if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
                 it.product.discounted_price ?: 0.0
             } else {
-                val price = if (conType == 1.0) (it.product.discounted_price
-                    ?: 0.0) / factor else (it.product.discounted_price ?: 0.0) * factor
+                val baseAltPrice = it.product.sales_price_alt ?: 0.0
+                val discount = it.product.discount ?: 0.0
+                val price = if (discount == 0.0) baseAltPrice else baseAltPrice - (baseAltPrice * discount / 100.0)
                 kotlin.math.round(price * 100.0) / 100.0
             }
         currentDiscountedPrice * it.quantity.value
     }
 
     val totalGst = products.sumOf {
-        val factor = it.product.con_factor ?: 1.0
-        val conType = it.product.con_type ?: 1.0
         val selectedUnit = it.selectedUnit.value
 
         val currentDiscountedPrice =
             if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
                 it.product.discounted_price ?: 0.0
             } else {
-                val price = if (conType == 1.0) (it.product.discounted_price
-                    ?: 0.0) / factor else (it.product.discounted_price ?: 0.0) * factor
+                val baseAltPrice = it.product.sales_price_alt ?: 0.0
+                val discount = it.product.discount ?: 0.0
+                val price = if (discount == 0.0) baseAltPrice else baseAltPrice - (baseAltPrice * discount / 100.0)
                 kotlin.math.round(price * 100.0) / 100.0
             }
 

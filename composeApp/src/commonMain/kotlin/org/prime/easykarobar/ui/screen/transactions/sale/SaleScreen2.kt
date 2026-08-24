@@ -391,7 +391,9 @@ data class SaleScreen2(
                         selectedUnit = product.UnitName,
                         altQty = calculatedAltQty,
                         mainUnit = product.UnitName,
-                        altUnit = product.AltUnit
+                        altUnit = product.AltUnit,
+                        salesPriceAlt = product.SalesPriceAlt,
+                        purcPriceAlt = product.PurcPriceAlt
                     )
                     displayItemName = product.Name.orEmpty()
                     showAddMorePopup = true
@@ -926,6 +928,9 @@ data class SaleScreen2(
                                             altUnit = product?.AltUnit ?: pendingItem.altUnit,
                                             conFactor = product?.ConFactor ?: pendingItem.conFactor,
                                             conType = product?.ConType ?: pendingItem.conType,
+                                            salesPriceAlt = product?.SalesPriceAlt,
+                                            purcPriceAlt = product?.PurcPriceAlt,
+                                            isSale = isSale,
                                             gstPercentage = gst,
                                             onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers, cFactor, cType, sUnit, aQty ->
                                                 val newItem = InvoiceItem(
@@ -1834,7 +1839,9 @@ data class SaleScreen2(
                                 selectedUnit = prod?.UnitName,
                                 altQty = calculatedAltQty,
                                 mainUnit = prod?.UnitName,
-                                altUnit = prod?.AltUnit
+                                altUnit = prod?.AltUnit,
+                                salesPriceAlt = if (isSale) autoPricing.SalesPriceAlt else prod?.SalesPriceAlt,
+                                purcPriceAlt = if (!isSale) autoPricing.SalesPriceAlt else prod?.PurcPriceAlt
                             )
                             pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
                         } else if (pricing.isNotEmpty()) {
@@ -1904,7 +1911,9 @@ data class SaleScreen2(
                                 selectedUnit = prod?.UnitName,
                                 altQty = calculatedAltQty,
                                 mainUnit = prod?.UnitName,
-                                altUnit = prod?.AltUnit
+                                altUnit = prod?.AltUnit,
+                                salesPriceAlt = prod?.SalesPriceAlt,
+                                purcPriceAlt = prod?.PurcPriceAlt
                             )
                             pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
                         }
@@ -1925,7 +1934,9 @@ data class SaleScreen2(
                                 SalePrice = it.SalesPrice ?: 0.0,
                                 PurchasePrice = it.SalesPrice ?: 0.0,
                                 Discount = it.Disc ?: 0.0,
-                                CompoundDiscount = it.Disc.toString()
+                                CompoundDiscount = it.Disc.toString(),
+                                salesPriceAlt = if (isSale) it.SalesPriceAlt else null,
+                                purcPriceAlt = if (!isSale) it.SalesPriceAlt else null
                             )
                         },
                     onSelect = { pricing ->
@@ -2017,7 +2028,9 @@ data class SaleScreen2(
                                 selectedUnit = prod?.UnitName,
                                 altQty = calculatedAltQty,
                                 mainUnit = prod?.UnitName,
-                                altUnit = prod?.AltUnit
+                                altUnit = prod?.AltUnit,
+                                salesPriceAlt = pricing.salesPriceAlt ?: prod?.SalesPriceAlt,
+                                purcPriceAlt = pricing.purcPriceAlt ?: prod?.PurcPriceAlt
                             )
                             selectedPricing = null
                             pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)

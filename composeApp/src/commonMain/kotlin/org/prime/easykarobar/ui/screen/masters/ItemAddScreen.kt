@@ -112,7 +112,9 @@ data class ItemFormData(
     val opAmount: String,
     // Pricing
     val salePrice: String,
+    val salePriceAlt: String,
     val purchPrice: String,
+    val purchPriceAlt: String,
     val mrp: String,
     val minSalePrice: String,
     val selfValPrice: String,
@@ -451,7 +453,9 @@ object ItemAddScreen : Screen {
 
         // ── 6. Pricing ─────────────────────────────────────────────────────
         var salePrice by remember { mutableStateOf("") }
+        var salePriceAlt by remember { mutableStateOf("") }
         var purchPrice by remember { mutableStateOf("") }
+        var purchPriceAlt by remember { mutableStateOf("") }
         var mrp by remember { mutableStateOf("") }
         var minSalePrice by remember { mutableStateOf("") }
         var selfValPrice by remember { mutableStateOf("") }
@@ -569,7 +573,9 @@ object ItemAddScreen : Screen {
                 opQtyAlt = opQtyAlt,
                 opAmount = opAmount,
                 salePrice = salePrice,
+                salePriceAlt = salePriceAlt,
                 purchPrice = purchPrice,
+                purchPriceAlt = purchPriceAlt,
                 mrp = mrp,
                 minSalePrice = minSalePrice,
                 selfValPrice = selfValPrice,
@@ -845,6 +851,28 @@ object ItemAddScreen : Screen {
                             )
                         }
                     }
+                    if (!altSameAsMain) {
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            Box(Modifier.weight(1f)) {
+                                FormField(
+                                    "Sale Price (Alt)",
+                                    salePriceAlt,
+                                    { salePriceAlt = it },
+                                    "0.00",
+                                    isNumber = true
+                                )
+                            }
+                            Box(Modifier.weight(1f)) {
+                                FormField(
+                                    "Purc Price (Alt)",
+                                    purchPriceAlt,
+                                    { purchPriceAlt = it },
+                                    "0.00",
+                                    isNumber = true
+                                )
+                            }
+                        }
+                    }
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Box(Modifier.weight(1f)) {
                             FormField("MRP", mrp, { mrp = it }, "0.00", isNumber = true)
@@ -948,12 +976,14 @@ object ItemAddScreen : Screen {
                                             ?: 0.0,
                                         saleDiscount = state.data?.saleDiscount?.toDoubleOrNull()
                                             ?: 0.0,
-                                        purchDiscount = state.data?.purchPrice?.toDoubleOrNull()
+                                        purchDiscount = state.data?.purchDiscount?.toDoubleOrNull()
                                             ?: 0.0,
                                         product_guid = state.data?.productGuid.toString(),
                                         altUnit = state.data?.altUnit,
                                         conFactor = state.data?.conFactor ?: 1.0,
-                                        conType = if (state.data?.conType == CON_TYPE_OPTIONS[0]) 1.0 else 2.0
+                                        conType = if (state.data?.conType == CON_TYPE_OPTIONS[0]) 1.0 else 2.0,
+                                        salesPriceAlt = state.data?.salePriceAlt?.toDoubleOrNull() ?: 0.0,
+                                        purcPriceAlt = state.data?.purchPriceAlt?.toDoubleOrNull() ?: 0.0
                                     )
                                 }
                                 showResultDialog = true

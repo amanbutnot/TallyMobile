@@ -65,7 +65,9 @@ data class CreateItemResponse(
     val opAmount: String,
 
     val salePrice: String,
+    val salePriceAlt: String,
     val purchPrice: String,
+    val purchPriceAlt: String,
     val mrp: String,
     val minSalePrice: String,
     val selfValPrice: String,
@@ -119,7 +121,9 @@ data class ProductItemResponse(
     val opAmount: String,
 
     val salePrice: String,
-    val purchPrice: String,
+    val salePriceAlt: String?=null,
+    val purchPrice: String?=null,
+    val purchPriceAlt: String?=null,
     val mrp: String,
     val minSalePrice: String,
     val selfValPrice: String,

@@ -126,7 +126,9 @@ actual class DriverFactory {
                     "N1" to "REAL",
                     "AltUnit" to "TEXT",
                     "ConFactor" to "REAL",
-                    "ConType" to "REAL"
+                    "ConType" to "REAL",
+                    "SalesPriceAlt" to "REAL",
+                    "PurcPriceAlt" to "REAL"
                 )
             )
 

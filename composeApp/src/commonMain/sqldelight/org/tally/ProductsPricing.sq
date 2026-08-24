@@ -5,6 +5,9 @@ CREATE TABLE IF NOT EXISTS Products_Pricing (
     SalesPrice REAL,
     Mrp REAL,
     Disc REAL,
+    SalesPriceAlt REAL,
+    MrpAlt REAL,
+    DiscAlt REAL,
     PRIMARY KEY (GUID, Srno)
 );
 

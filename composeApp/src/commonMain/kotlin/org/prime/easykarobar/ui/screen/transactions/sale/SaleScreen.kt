@@ -1164,6 +1164,9 @@ data class SaleScreen(
                                             altUnit = product?.AltUnit ?: pendingItem.altUnit,
                                             conFactor = product?.ConFactor ?: pendingItem.conFactor,
                                             conType = product?.ConType ?: pendingItem.conType,
+                                            salesPriceAlt = product?.SalesPriceAlt,
+                                            purcPriceAlt = product?.PurcPriceAlt,
+                                            isSale = isSale,
                                             gstPercentage = gst,
                                             onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers, cFactor, cType, sUnit, aQty ->
                                                 val newItem = InvoiceItem(
@@ -3238,6 +3241,9 @@ fun ExpandedItemEditor1(
     altUnit: String? = null,
     conFactor: Double? = null,
     conType: Double? = null,
+    salesPriceAlt: Double? = null,
+    purcPriceAlt: Double? = null,
+    isSale: Boolean = true,
     onAdd: (
         qty: Int,
         unitPrice: Double,
@@ -3407,11 +3413,8 @@ fun ExpandedItemEditor1(
                     AssistChip(
                         onClick = {
                             if (selectedUnit != mainUnit) {
-                                val currentLP =
-                                    listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
-                                val factor = conFactor ?: 1.0
-                                val newPrice =
-                                    if (conType == 1.0) currentLP * factor else currentLP / factor
+                                val newPrice = defaultListPrice
+
                                 listPriceN =
                                     (kotlin.math.round(newPrice * 100.0) / 100.0).formatToAmtDec()
                                 selectedUnit = mainUnit
@@ -3425,11 +3428,9 @@ fun ExpandedItemEditor1(
                     AssistChip(
                         onClick = {
                             if (selectedUnit != altUnit) {
-                                val currentLP =
-                                    listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
-                                val factor = conFactor ?: 1.0
-                                val newPrice =
-                                    if (conType == 1.0) currentLP / factor else currentLP * factor
+                                val altPrice = if (isSale) salesPriceAlt else purcPriceAlt
+                                val newPrice = altPrice ?: defaultListPrice
+
                                 listPriceN =
                                     (kotlin.math.round(newPrice * 100.0) / 100.0).formatToAmtDec()
                                 selectedUnit = altUnit

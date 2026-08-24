@@ -54,6 +54,8 @@ data class ProductsWithConfig(
     val AltUnit: String?,
     val ConFactor: Double?,
     val ConType: Double?,
+    val SalesPriceAlt: Double?,
+    val PurcPriceAlt: Double?,
     val McOpening: Double
 )
 
@@ -87,11 +89,13 @@ private fun mapToProductsWithConfig(
     AltUnit: String?,
     ConFactor: Double?,
     ConType: Double?,
+    SalesPriceAlt: Double?,
+    PurcPriceAlt: Double?,
     McOpening: Double
 ): ProductsWithConfig = ProductsWithConfig(
     ID, Name, Alias, PrintName, GroupName, GroupCode, UnitName, UnitCode, OpStk, OpStkValue,
     TaxCategory, TaxCategoryCode, HSN, SalesPrice, PurcPrice, MRP, MinSalesPrice, SelfValPrice,
-    SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1, AltUnit, ConFactor, ConType, McOpening
+    SaleDisc, PurcDisc, Vendor, VendorCode, MaintainStock, ALTERID, GUID, N1, AltUnit, ConFactor, ConType, SalesPriceAlt, PurcPriceAlt, McOpening
 )
 
 fun getLedgerMasters(db: TallyDatabase): List<LedgerMaster> {

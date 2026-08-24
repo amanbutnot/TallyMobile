@@ -81,7 +81,7 @@ data class MasterAddScreen(val number: String) : Screen {
                             taxCategoryGuid = data.taxCategoryGuid.toDoubleOrNull()
                                 ?: 0.0,
                             salePrice = data.salePrice.toDoubleOrNull() ?: 0.0,
-                            purchPrice = data.purchPrice.toDoubleOrNull()
+                            purchPrice = data.purchPrice?.toDoubleOrNull()
                                 ?: 0.0,
                             mrp = data.mrp.toDoubleOrNull() ?: 0.0,
                             minSalePrice = data.minSalePrice.toDoubleOrNull()
@@ -90,7 +90,7 @@ data class MasterAddScreen(val number: String) : Screen {
                                 ?: 0.0,
                             saleDiscount = data.saleDiscount.toDoubleOrNull()
                                 ?: 0.0,
-                            purchDiscount = data.purchPrice.toDoubleOrNull()
+                            purchDiscount = data.purchDiscount.toDoubleOrNull()
                                 ?: 0.0,
                             product_guid = data.id.toString(),
                             altUnit = data.altUnit,
@@ -99,7 +99,9 @@ data class MasterAddScreen(val number: String) : Screen {
                                 "Main / Alt" -> 1.0
                                 "Alt / Main" -> 2.0
                                 else -> data.conType.toDoubleOrNull() ?: 1.0
-                            }
+                            },
+                            salesPriceAlt = data.salePriceAlt?.toDoubleOrNull() ?: 0.0,
+                            purcPriceAlt = data.purchPriceAlt?.toDoubleOrNull() ?: 0.0
                         )
                     }
                     state.data?.data_bills?.forEach { data ->

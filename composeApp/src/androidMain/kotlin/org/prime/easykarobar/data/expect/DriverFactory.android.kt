@@ -67,7 +67,9 @@ actual class DriverFactory(private val context: Context) {
                     "N1" to "REAL",
                     "AltUnit" to "TEXT",
                     "ConFactor" to "REAL",
-                    "ConType" to "REAL"
+                    "ConType" to "REAL",
+                    "SalesPriceAlt" to "REAL",
+                    "PurcPriceAlt" to "REAL"
                 )
             )
 

@@ -940,24 +940,20 @@ data class AllProductsPremiumScreen(
         }
         val isOutOfStock = product.E5 == -1.0
 
-        val factor = product.con_factor ?: 1.0
-        val conType = product.con_type ?: 1.0
-
         val currentListPrice =
             if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                 product.sales_price ?: 0.0
             } else {
-                val price = if (conType == 1.0) (product.sales_price ?: 0.0) / factor else (product.sales_price
-                    ?: 0.0) * factor
-                kotlin.math.round(price * 100.0) / 100.0
+                product.sales_price_alt ?: 0.0
             }
 
         val currentDiscountedPrice =
             if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                 product.discounted_price ?: currentListPrice
             } else {
-                val price = if (conType == 1.0) (product.discounted_price ?: 0.0) / factor else (product.discounted_price
-                    ?: 0.0) * factor
+                val baseAltPrice = product.sales_price_alt ?: 0.0
+                val discount = product.discount ?: 0.0
+                val price = if (discount == 0.0) baseAltPrice else baseAltPrice - (baseAltPrice * discount / 100.0)
                 kotlin.math.round(price * 100.0) / 100.0
             }
 
@@ -965,8 +961,7 @@ data class AllProductsPremiumScreen(
             if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                 product.MRP ?: 0.0
             } else {
-                val price = if (conType == 1.0) (product.MRP ?: 0.0) / factor else (product.MRP ?: 0.0) * factor
-                kotlin.math.round(price * 100.0) / 100.0
+                product.MRP ?: 0.0
             }
 
         Surface(
@@ -1273,24 +1268,20 @@ data class AllProductsPremiumScreen(
         }
         val isOutOfStock = product.E5 == -1.0
 
-        val factor = product.con_factor ?: 1.0
-        val conType = product.con_type ?: 1.0
-
         val currentListPrice =
             if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                 product.sales_price ?: 0.0
             } else {
-                val price = if (conType == 1.0) (product.sales_price ?: 0.0) / factor else (product.sales_price
-                    ?: 0.0) * factor
-                kotlin.math.round(price * 100.0) / 100.0
+                product.sales_price_alt ?: 0.0
             }
 
         val currentDiscountedPrice =
             if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                 product.discounted_price ?: currentListPrice
             } else {
-                val price = if (conType == 1.0) (product.discounted_price ?: 0.0) / factor else (product.discounted_price
-                    ?: 0.0) * factor
+                val baseAltPrice = product.sales_price_alt ?: 0.0
+                val discount = product.discount ?: 0.0
+                val price = if (discount == 0.0) baseAltPrice else baseAltPrice - (baseAltPrice * discount / 100.0)
                 kotlin.math.round(price * 100.0) / 100.0
             }
 
@@ -1298,8 +1289,7 @@ data class AllProductsPremiumScreen(
             if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                 product.MRP ?: 0.0
             } else {
-                val price = if (conType == 1.0) (product.MRP ?: 0.0) / factor else (product.MRP ?: 0.0) * factor
-                kotlin.math.round(price * 100.0) / 100.0
+                product.MRP ?: 0.0
             }
 
         Surface(
