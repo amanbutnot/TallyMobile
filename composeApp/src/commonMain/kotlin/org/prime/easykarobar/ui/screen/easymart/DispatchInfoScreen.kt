@@ -78,6 +78,7 @@ data class DispatchInfoScreen(val mobile: String) : Screen {
         var nameError by remember { mutableStateOf(false) }
         var addressError by remember { mutableStateOf(false) }
         var mobileError by remember { mutableStateOf(false) }
+        var gstError by remember { mutableStateOf<String?>(null) }
         var showResultDialog by remember { mutableStateOf(false) }
 
         TallyScaffold(
@@ -228,13 +229,19 @@ data class DispatchInfoScreen(val mobile: String) : Screen {
 
                     TallyTextField(
                         value = gst,
-                        onValueChange = { gst = it },
+                        onValueChange = {
+                            gst = it
+                            gstError = null
+                        },
                         placeholder = "Enter GSTIN (Optional)",
                         isPassword = false,
                         isNumber = false,
                         label = "GSTIN",
                         modifier = Modifier.fillMaxWidth()
                     )
+                    if (gstError != null) {
+                        Text(gstError!!, color = colors.error, style = type.labelSmall)
+                    }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -245,7 +252,11 @@ data class DispatchInfoScreen(val mobile: String) : Screen {
                             if (mobileNumber.isBlank()) mobileError = true
                             if (address.isBlank()) addressError = true
 
-                            if (!nameError && !mobileError && !addressError) {
+                            gstError = if (gst.isNotBlank() && gst.length != 16) {
+                                "GSTIN must be exactly 16 characters"
+                            } else null
+
+                            if (!nameError && !mobileError && !addressError && gstError == null) {
                                 SharedPrefs.DispatchInfo.save(
                                     name = name,
                                     mobile = mobileNumber,

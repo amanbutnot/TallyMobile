@@ -165,7 +165,8 @@ data class InventoryListResponse(
 data class InventoryListRequest(
     val VchType: Int,
     val StartDate: String,
-    val EndDate: String
+    val EndDate: String,
+    val isCustomer: Boolean
 )
 
 @Serializable

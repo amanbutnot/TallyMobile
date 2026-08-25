@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Inbox
@@ -105,7 +104,7 @@ data class InventoryListScreen(
                 InventoryListRequest(
                     VchType = vchType,
                     StartDate = startDate,
-                    EndDate = endDate
+                    EndDate = endDate,isCustomer = showStatusChange
                 )
             )
         }
@@ -119,7 +118,7 @@ data class InventoryListScreen(
                         InventoryListRequest(
                             VchType = vchType,
                             StartDate = startDate,
-                            EndDate = endDate
+                            EndDate = endDate,isCustomer = showStatusChange
                         )
                     )
                 },

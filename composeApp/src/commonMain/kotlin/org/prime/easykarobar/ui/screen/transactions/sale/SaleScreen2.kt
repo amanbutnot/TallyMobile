@@ -2435,8 +2435,16 @@ data class SaleScreen2(
                     DownloadResultDialog(
                         message = "${state.message}\n${state.data?.VoucherNumber}",
                         onDone = { showResultDialog = false; nav.pop() },
-                        isSuccess = state.success, fileName = name,
-                        htmlContent = htmlContent, onLoadingChange = { shareLoading = it }
+                        isSuccess = state.success,
+                        fileName = oneState.data?.billed_vchno
+                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
+                            ?: CompanyName(),
+                        htmlContent = htmlContent,
+                        onLoadingChange = { shareLoading = it },
+                        secondFileName = oneState.data?.billed_vchno
+                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
+                            ?: (CompanyName() + "_Slip"),
+                        secondHtmlContent = slipHtmlContent
                     )
                 }
             },

@@ -737,7 +737,7 @@ data class AllProductsPremiumScreen(
                                         text = catName.Name.toString(),
                                         style = MaterialTheme.typography.bodyLarge.copy(
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (isSelected) Color(0xFF1E293B) else Color(0xFF64748B)
+
                                         )
                                     )
                                 }

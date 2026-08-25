@@ -10,6 +10,8 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -173,7 +175,9 @@ fun DownloadResultDialog(
     confirmText: String = if (isSuccess) "OK" else "Retry",
     fileName: String = "",
     htmlContent: String = "",
-    onLoadingChange: (Boolean) -> Unit = {}
+    onLoadingChange: (Boolean) -> Unit = {},
+    secondFileName: String = "",
+    secondHtmlContent: String = ""
 ) {
     var visible by remember { mutableStateOf(true) }
     val backgroundColor = MaterialTheme.colorScheme.surface
@@ -259,7 +263,7 @@ fun DownloadResultDialog(
                     if (isSuccess) {
                         // Action buttons for success
                         Column(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             // Download Button
@@ -296,7 +300,7 @@ fun DownloadResultDialog(
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
-                                    text = "Download PDF",
+                                    text = "Download A4",
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 16.sp,
                                     letterSpacing = 0.5.sp
@@ -333,11 +337,91 @@ fun DownloadResultDialog(
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
-                                    text = "Share PDF",
+                                    text = "Share A4",
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 16.sp,
                                     letterSpacing = 0.5.sp
                                 )
+                            }
+
+                            if (secondHtmlContent.isNotBlank()) {
+                                // Download Slip Button
+                                Button(
+                                    onClick = {
+                                        scope.launch {
+                                            handlePdfAction(
+                                                fileName = secondFileName,
+                                                htmlContent = secondHtmlContent,
+                                                action = PdfAction.Download,
+                                                onLoadingChange = onLoadingChange
+                                            )
+                                            visible = false
+                                            onDone()
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = primaryColor,
+                                        contentColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                    elevation = ButtonDefaults.buttonElevation(
+                                        defaultElevation = 3.dp,
+                                        pressedElevation = 6.dp
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Download,
+                                        contentDescription = "Download Slip",
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = "Download Slip",
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 16.sp,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+
+                                // Share Slip Button
+                                OutlinedButton(
+                                    onClick = {
+                                        scope.launch {
+                                            handlePdfAction(
+                                                fileName = secondFileName,
+                                                htmlContent = secondHtmlContent,
+                                                action = PdfAction.Share,
+                                                onLoadingChange = onLoadingChange
+                                            )
+                                            visible = false
+                                            onDone()
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                    border = BorderStroke(2.dp, primaryColor),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = primaryColor
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Share,
+                                        contentDescription = "Share Slip",
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = "Share Slip",
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 16.sp,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
                             }
 
                             // Done Button
@@ -357,7 +441,7 @@ fun DownloadResultDialog(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Done,
-                                    contentDescription = "Share",
+                                    contentDescription = "Done",
                                     modifier = Modifier.size(22.dp)
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
