@@ -492,17 +492,14 @@ object ShoppingScreen : Screen {
                                 if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                                     product.discounted_price ?: currentListPrice
                                 } else {
-                                    val baseAltPrice = product.sales_price_alt ?: 0.0
-                                    val discount = product.discount ?: 0.0
-                                    val price = if (discount == 0.0) baseAltPrice else baseAltPrice - (baseAltPrice * discount / 100.0)
-                                    kotlin.math.round(price * 100.0) / 100.0
+                                    product.discounted_price_alt ?: currentListPrice
                                 }
 
                             val currentMrp =
                                 if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                                     product.MRP ?: 0.0
                                 } else {
-                                    product.MRP ?: 0.0
+                                    product.mrp_alt ?: 0.0
                                 }
 
                             // --- Unit Selection ---
@@ -1189,33 +1186,25 @@ fun ItemCard(
             val savedUnit = viewModel.getProductUnit(item)
             val selectedUnit = if (inCart) savedUnit else item.main_unit ?: ""
 
-            val factor = item.con_factor ?: 1.0
-            val conType = item.con_type ?: 1.0
-
             val currentListPrice =
                 if (selectedUnit == item.main_unit || item.alt_unit.isNullOrBlank()) {
                     item.sales_price ?: 0.0
                 } else {
-                    val price = if (conType == 1.0) (item.sales_price ?: 0.0) / factor else (item.sales_price
-                        ?: 0.0) * factor
-                    kotlin.math.round(price * 100.0) / 100.0
+                    item.sales_price_alt ?: 0.0
                 }
 
             val currentDiscountedPrice =
                 if (selectedUnit == item.main_unit || item.alt_unit.isNullOrBlank()) {
                     item.discounted_price ?: currentListPrice
                 } else {
-                    val price = if (conType == 1.0) (item.discounted_price ?: 0.0) / factor else (item.discounted_price
-                        ?: 0.0) * factor
-                    kotlin.math.round(price * 100.0) / 100.0
+                    item.discounted_price_alt ?: currentListPrice
                 }
 
             val currentMrp =
                 if (selectedUnit == item.main_unit || item.alt_unit.isNullOrBlank()) {
                     item.MRP ?: 0.0
                 } else {
-                    val price = if (conType == 1.0) (item.MRP ?: 0.0) / factor else (item.MRP ?: 0.0) * factor
-                    kotlin.math.round(price * 100.0) / 100.0
+                    item.mrp_alt ?: 0.0
                 }
 
             val per = currentMrp.takeIf { it != 0.0 && it != currentDiscountedPrice }?.let { mrp ->

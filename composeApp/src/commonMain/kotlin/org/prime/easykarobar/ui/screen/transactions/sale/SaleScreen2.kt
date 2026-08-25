@@ -505,6 +505,8 @@ data class SaleScreen2(
                         net = itm.total_amt.toDouble(),
                         gstPercentage = itm.tax_rate1.toDouble(),
                         taxCategoryCode = 0,
+                        salesPriceAlt = prodFromDb?.SalesPriceAlt,
+                        purcPriceAlt = prodFromDb?.PurcPriceAlt,
                         itemdesc1 = itm.itemdesc1,
                         itemdesc2 = itm.itemdesc2,
                         itemdesc3 = itm.itemdesc3,
@@ -928,8 +930,8 @@ data class SaleScreen2(
                                             altUnit = product?.AltUnit ?: pendingItem.altUnit,
                                             conFactor = product?.ConFactor ?: pendingItem.conFactor,
                                             conType = product?.ConType ?: pendingItem.conType,
-                                            salesPriceAlt = product?.SalesPriceAlt,
-                                            purcPriceAlt = product?.PurcPriceAlt,
+                                            salesPriceAlt = product?.SalesPriceAlt ?: pendingItem.salesPriceAlt,
+                                            purcPriceAlt = product?.PurcPriceAlt ?: pendingItem.purcPriceAlt,
                                             isSale = isSale,
                                             gstPercentage = gst,
                                             onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers, cFactor, cType, sUnit, aQty ->
@@ -945,6 +947,8 @@ data class SaleScreen2(
                                                     net = net,
                                                     guid = product?.GUID ?: pendingSelectedProductGUID ?: pendingItem.guid,
                                                     gstPercentage = gstPercentage,
+                                                    salesPriceAlt = product?.SalesPriceAlt ?: pendingItem.salesPriceAlt,
+                                                    purcPriceAlt = product?.PurcPriceAlt ?: pendingItem.purcPriceAlt,
                                                     taxCategoryCode = product?.TaxCategoryCode?.toInt() ?: pendingItem.taxCategoryCode,
                                                     itemdesc1 = itemDescs.getOrNull(0),
                                                     itemdesc2 = itemDescs.getOrNull(1),
@@ -1278,6 +1282,8 @@ data class SaleScreen2(
                             altQty = editingItem?.altQty, // recalculated in editor if needed
                             mainUnit = prod?.UnitName ?: editingItem?.mainUnit,
                             altUnit = prod?.AltUnit ?: editingItem?.altUnit,
+                            salesPriceAlt = editingItem?.salesPriceAlt ?: prod?.SalesPriceAlt,
+                            purcPriceAlt = editingItem?.purcPriceAlt ?: prod?.PurcPriceAlt,
                             hsn = prod?.HSN ?: editingItem?.hsn
                         )
 
@@ -1505,6 +1511,8 @@ data class SaleScreen2(
                             altQty = editingItem?.altQty, // recalculated in editor if needed
                             mainUnit = prod?.UnitName ?: editingItem?.mainUnit,
                             altUnit = prod?.AltUnit ?: editingItem?.altUnit,
+                            salesPriceAlt = editingItem?.salesPriceAlt ?: prod?.SalesPriceAlt,
+                            purcPriceAlt = editingItem?.purcPriceAlt ?: prod?.PurcPriceAlt,
                             hsn = prod?.HSN ?: editingItem?.hsn
                         )
 
@@ -1690,6 +1698,8 @@ data class SaleScreen2(
                             altQty = editingItem?.altQty, // recalculated in editor if needed
                             mainUnit = prod?.UnitName ?: editingItem?.mainUnit,
                             altUnit = prod?.AltUnit ?: editingItem?.altUnit,
+                            salesPriceAlt = editingItem?.salesPriceAlt ?: prod?.SalesPriceAlt,
+                            purcPriceAlt = editingItem?.purcPriceAlt ?: prod?.PurcPriceAlt,
                             hsn = prod?.HSN ?: editingItem?.hsn
                         )
 
@@ -1840,8 +1850,8 @@ data class SaleScreen2(
                                 altQty = calculatedAltQty,
                                 mainUnit = prod?.UnitName,
                                 altUnit = prod?.AltUnit,
-                                salesPriceAlt = if (isSale) autoPricing.SalesPriceAlt else prod?.SalesPriceAlt,
-                                purcPriceAlt = if (!isSale) autoPricing.SalesPriceAlt else prod?.PurcPriceAlt
+                                salesPriceAlt = autoPricing.SalesPriceAlt,
+                                purcPriceAlt = autoPricing.SalesPriceAlt
                             )
                             pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
                         } else if (pricing.isNotEmpty()) {
@@ -1935,8 +1945,9 @@ data class SaleScreen2(
                                 PurchasePrice = it.SalesPrice ?: 0.0,
                                 Discount = it.Disc ?: 0.0,
                                 CompoundDiscount = it.Disc.toString(),
-                                salesPriceAlt = if (isSale) it.SalesPriceAlt else null,
-                                purcPriceAlt = if (!isSale) it.SalesPriceAlt else null
+                                SalesPriceAlt = it.SalesPriceAlt,
+                                MrpAlt = it.MrpAlt,
+                                DiscAlt = it.DiscAlt
                             )
                         },
                     onSelect = { pricing ->
@@ -2029,8 +2040,8 @@ data class SaleScreen2(
                                 altQty = calculatedAltQty,
                                 mainUnit = prod?.UnitName,
                                 altUnit = prod?.AltUnit,
-                                salesPriceAlt = pricing.salesPriceAlt ?: prod?.SalesPriceAlt,
-                                purcPriceAlt = pricing.purcPriceAlt ?: prod?.PurcPriceAlt
+                                salesPriceAlt = pricing.SalesPriceAlt ?: prod?.SalesPriceAlt,
+                                purcPriceAlt = pricing.SalesPriceAlt ?: prod?.PurcPriceAlt
                             )
                             selectedPricing = null
                             pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
@@ -2135,7 +2146,9 @@ data class SaleScreen2(
                             selectedUnit = editingItem?.selectedUnit ?: prod?.UnitName,
                             altQty = editingItem?.altQty, // recalculated in editor if needed
                             mainUnit = prod?.UnitName ?: editingItem?.mainUnit,
-                            altUnit = prod?.AltUnit ?: editingItem?.altUnit
+                            altUnit = prod?.AltUnit ?: editingItem?.altUnit,
+                            salesPriceAlt = editingItem?.salesPriceAlt ?: prod?.SalesPriceAlt,
+                            purcPriceAlt = editingItem?.purcPriceAlt ?: prod?.PurcPriceAlt
                         )
 
                         val list = selectedItems.toMutableList()
@@ -2243,6 +2256,8 @@ data class SaleScreen2(
                             altQty = editingItem?.altQty, // recalculated in editor if needed
                             mainUnit = prod?.UnitName ?: editingItem?.mainUnit,
                             altUnit = prod?.AltUnit ?: editingItem?.altUnit,
+                            salesPriceAlt = editingItem?.salesPriceAlt ?: prod?.SalesPriceAlt,
+                            purcPriceAlt = editingItem?.purcPriceAlt ?: prod?.PurcPriceAlt,
                             hsn = prod?.HSN ?: editingItem?.hsn
                         )
 
@@ -2347,6 +2362,8 @@ data class SaleScreen2(
                             altQty = editingItem?.altQty, // recalculated in editor if needed
                             mainUnit = prod?.UnitName ?: editingItem?.mainUnit,
                             altUnit = prod?.AltUnit ?: editingItem?.altUnit,
+                            salesPriceAlt = editingItem?.salesPriceAlt ?: prod?.SalesPriceAlt,
+                            purcPriceAlt = editingItem?.purcPriceAlt ?: prod?.PurcPriceAlt,
                             hsn = prod?.HSN ?: editingItem?.hsn
                         )
 

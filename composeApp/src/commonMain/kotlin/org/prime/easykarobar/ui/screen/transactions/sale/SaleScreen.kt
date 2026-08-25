@@ -172,7 +172,10 @@ data class ProductPricing(
     val SalePrice: Double,
     val PurchasePrice: Double,
     val Discount: Double,
-    val CompoundDiscount: String
+    val CompoundDiscount: String,
+    val SalesPriceAlt: Double? = null,
+    val MrpAlt: Double? = null,
+    val DiscAlt: Double? = null
 )
 
 
@@ -232,6 +235,10 @@ data class InvoiceItem(
     val altQty: Double? = null,
     val mainUnit: String? = null,
     val altUnit: String? = null,
+    val salesPriceAlt: Double? = null,
+    val purcPriceAlt: Double? = null,
+    val mrpAlt: Double? = null,
+    val discountAlt: Double? = null,
 ) {
     val total: Double get() = price * qty
 }
@@ -534,7 +541,9 @@ data class SaleScreen(
                                 altQty = calculatedAltQty,
                                 mainUnit = product.UnitName,
                                 altUnit = product.AltUnit,
-                                hsn = product.HSN
+                                hsn = product.HSN,
+                                salesPriceAlt = product.SalesPriceAlt,
+                                purcPriceAlt = product.PurcPriceAlt
                             )
 
                             displayItemName = product.Name.orEmpty()
@@ -699,6 +708,8 @@ data class SaleScreen(
                         net = itm.total_amt.toDouble(),
                         gstPercentage = itm.tax_rate1.toDouble(),
                         taxCategoryCode = 0,
+                        salesPriceAlt = prodFromDb?.SalesPriceAlt,
+                        purcPriceAlt = prodFromDb?.PurcPriceAlt,
                         // Restore descriptions
                         itemdesc1 = itm.itemdesc1,
                         itemdesc2 = itm.itemdesc2,
@@ -1183,6 +1194,8 @@ data class SaleScreen(
                                                         ?: pendingSelectedProductGUID
                                                         ?: pendingItem.guid,
                                                     gstPercentage = gstPercentage,
+                                                    salesPriceAlt = product?.SalesPriceAlt ?: pendingItem.salesPriceAlt,
+                                                    purcPriceAlt = product?.PurcPriceAlt ?: pendingItem.purcPriceAlt,
                                                     taxCategoryCode = product?.TaxCategoryCode?.toInt()
                                                         ?: pendingItem.taxCategoryCode,
                                                     itemdesc1 = itemDescs.getOrNull(0),
@@ -1738,7 +1751,9 @@ data class SaleScreen(
                                 altQty = null,
                                 mainUnit = prod?.UnitName,
                                 altUnit = prod?.AltUnit,
-                                hsn = prod?.HSN
+                                hsn = prod?.HSN,
+                                salesPriceAlt = autoPricing.SalesPriceAlt,
+                                purcPriceAlt = autoPricing.SalesPriceAlt
                             )
                             showItemSheet = false
                         } else if (pricingForProduct.isNotEmpty()) {
@@ -1768,7 +1783,9 @@ data class SaleScreen(
                                 altQty = null,
                                 mainUnit = prod?.UnitName,
                                 altUnit = prod?.AltUnit,
-                                hsn = prod?.HSN
+                                hsn = prod?.HSN,
+                                salesPriceAlt = prod?.SalesPriceAlt,
+                                purcPriceAlt = prod?.PurcPriceAlt
                             )
                             showItemSheet = false
                         }
@@ -1788,7 +1805,11 @@ data class SaleScreen(
                                 SalePrice = it.SalesPrice ?: 0.0,
                                 PurchasePrice = it.SalesPrice ?: 0.0,
                                 Discount = it.Disc ?: 0.0,
-                                CompoundDiscount = it.Disc.toString(), VchType = it.VchType.toInt()
+                                CompoundDiscount = it.Disc.toString(),
+                                VchType = it.VchType.toInt(),
+                                SalesPriceAlt = it.SalesPriceAlt,
+                                MrpAlt = it.MrpAlt,
+                                DiscAlt = it.DiscAlt
                             )
                         },
                     onSelect = { pricing: ProductPricing ->
@@ -1824,7 +1845,9 @@ data class SaleScreen(
                                 altQty = null,
                                 mainUnit = prod?.UnitName,
                                 altUnit = prod?.AltUnit,
-                                hsn = prod?.HSN
+                                hsn = prod?.HSN,
+                                salesPriceAlt = pricing.SalesPriceAlt ?: prod?.SalesPriceAlt,
+                                purcPriceAlt = pricing.SalesPriceAlt ?: prod?.PurcPriceAlt
                             )
 
                             showItemSheet = false
@@ -1923,6 +1946,8 @@ data class SaleScreen(
                             net = netAmt,
                             guid = pendingSelectedProductGUID ?: editingItem?.guid ?: "",
                             gstPercentage = gstPct,
+                            salesPriceAlt = selectedPricing?.SalesPriceAlt ?: editingItem?.salesPriceAlt ?: prod?.SalesPriceAlt,
+                            purcPriceAlt = selectedPricing?.SalesPriceAlt ?: editingItem?.purcPriceAlt ?: prod?.PurcPriceAlt,
                             taxCategoryCode = taxCategoryCode.toInt(),
                             CD = selectedPricing?.CompoundDiscount ?: editingItem?.CD ?: "",
                             item_serial = selectedList,
@@ -2033,6 +2058,8 @@ data class SaleScreen(
                             net = netAmt,
                             guid = pendingSelectedProductGUID ?: editingItem?.guid ?: "",
                             gstPercentage = gstPct,
+                            salesPriceAlt = selectedPricing?.SalesPriceAlt ?: editingItem?.salesPriceAlt ?: prod?.SalesPriceAlt,
+                            purcPriceAlt = selectedPricing?.SalesPriceAlt ?: editingItem?.purcPriceAlt ?: prod?.PurcPriceAlt,
                             taxCategoryCode = taxCategoryCode.toInt(),
                             CD = selectedPricing?.CompoundDiscount ?: editingItem?.CD ?: "",
                             item_serial = editingItem?.item_serial ?: emptyList(),
@@ -3243,6 +3270,7 @@ fun ExpandedItemEditor1(
     conType: Double? = null,
     salesPriceAlt: Double? = null,
     purcPriceAlt: Double? = null,
+    discountAlt: Double? = null,
     isSale: Boolean = true,
     onAdd: (
         qty: Int,

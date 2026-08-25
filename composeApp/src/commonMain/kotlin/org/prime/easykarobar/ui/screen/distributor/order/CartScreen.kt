@@ -718,17 +718,14 @@ private fun CartProductItem(
         if (selectedUnit == product.product.main_unit || product.product.alt_unit.isNullOrBlank()) {
             product.product.discounted_price ?: currentListPrice
         } else {
-            val baseAltPrice = product.product.sales_price_alt ?: 0.0
-            val discount = product.product.discount ?: 0.0
-            val price = if (discount == 0.0) baseAltPrice else baseAltPrice - (baseAltPrice * discount / 100.0)
-            kotlin.math.round(price * 100.0) / 100.0
+            product.product.discounted_price_alt ?: currentListPrice
         }
 
     val currentMrp =
         if (selectedUnit == product.product.main_unit || product.product.alt_unit.isNullOrBlank()) {
             product.product.MRP ?: 0.0
         } else {
-            product.product.MRP ?: 0.0
+            product.product.mrp_alt ?: 0.0
         }
 
     Card(
@@ -986,7 +983,7 @@ fun CartSummary(
             if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
                 mrp
             } else {
-                mrp
+                it.product.mrp_alt ?: mrp
             }
         currentMrp * it.quantity.value
     }
@@ -999,10 +996,7 @@ fun CartSummary(
             if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
                 it.product.discounted_price ?: 0.0
             } else {
-                val baseAltPrice = it.product.sales_price_alt ?: 0.0
-                val discount = it.product.discount ?: 0.0
-                val price = if (discount == 0.0) baseAltPrice else baseAltPrice - (baseAltPrice * discount / 100.0)
-                kotlin.math.round(price * 100.0) / 100.0
+                it.product.discounted_price_alt ?: 0.0
             }
         currentDiscountedPrice * it.quantity.value
     }
@@ -1021,10 +1015,7 @@ fun CartSummary(
             if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
                 it.product.discounted_price ?: 0.0
             } else {
-                val baseAltPrice = it.product.sales_price_alt ?: 0.0
-                val discount = it.product.discount ?: 0.0
-                val price = if (discount == 0.0) baseAltPrice else baseAltPrice - (baseAltPrice * discount / 100.0)
-                kotlin.math.round(price * 100.0) / 100.0
+                it.product.discounted_price_alt ?: 0.0
             }
 
         val gstPercentage = it.product.gst_tax_percentage ?: 0.0
@@ -1292,10 +1283,7 @@ fun ConfirmOrderButton(
             if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
                 it.product.discounted_price ?: 0.0
             } else {
-                val baseAltPrice = it.product.sales_price_alt ?: 0.0
-                val discount = it.product.discount ?: 0.0
-                val price = if (discount == 0.0) baseAltPrice else baseAltPrice - (baseAltPrice * discount / 100.0)
-                kotlin.math.round(price * 100.0) / 100.0
+                it.product.discounted_price_alt ?: 0.0
             }
         currentDiscountedPrice * it.quantity.value
     }
@@ -1307,10 +1295,7 @@ fun ConfirmOrderButton(
             if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
                 it.product.discounted_price ?: 0.0
             } else {
-                val baseAltPrice = it.product.sales_price_alt ?: 0.0
-                val discount = it.product.discount ?: 0.0
-                val price = if (discount == 0.0) baseAltPrice else baseAltPrice - (baseAltPrice * discount / 100.0)
-                kotlin.math.round(price * 100.0) / 100.0
+                it.product.discounted_price_alt ?: 0.0
             }
 
         val gstPercentage = it.product.gst_tax_percentage ?: 0.0

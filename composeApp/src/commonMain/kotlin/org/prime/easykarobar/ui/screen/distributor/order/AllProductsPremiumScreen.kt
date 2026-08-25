@@ -951,17 +951,14 @@ data class AllProductsPremiumScreen(
             if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                 product.discounted_price ?: currentListPrice
             } else {
-                val baseAltPrice = product.sales_price_alt ?: 0.0
-                val discount = product.discount ?: 0.0
-                val price = if (discount == 0.0) baseAltPrice else baseAltPrice - (baseAltPrice * discount / 100.0)
-                kotlin.math.round(price * 100.0) / 100.0
+                product.discounted_price_alt ?: currentListPrice
             }
 
         val currentMrp =
             if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                 product.MRP ?: 0.0
             } else {
-                product.MRP ?: 0.0
+                product.mrp_alt ?: 0.0
             }
 
         Surface(
@@ -1279,17 +1276,14 @@ data class AllProductsPremiumScreen(
             if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                 product.discounted_price ?: currentListPrice
             } else {
-                val baseAltPrice = product.sales_price_alt ?: 0.0
-                val discount = product.discount ?: 0.0
-                val price = if (discount == 0.0) baseAltPrice else baseAltPrice - (baseAltPrice * discount / 100.0)
-                kotlin.math.round(price * 100.0) / 100.0
+                product.discounted_price_alt ?: currentListPrice
             }
 
         val currentMrp =
             if (selectedUnit == product.main_unit || product.alt_unit.isNullOrBlank()) {
                 product.MRP ?: 0.0
             } else {
-                product.MRP ?: 0.0
+                product.mrp_alt ?: 0.0
             }
 
         Surface(

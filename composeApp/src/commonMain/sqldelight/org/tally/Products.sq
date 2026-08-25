@@ -160,33 +160,43 @@ SELECT
     category_id,
     unit_id,
     effective_sales_price AS sales_price,
-    MRP,
+    effective_sales_price_alt AS sales_price_alt,
+    effective_mrp AS MRP,
+    effective_mrp_alt AS mrp_alt,
     purchase_price,
-    discount,
+    effective_discount AS discount,
+    effective_discount_alt AS discount_alt,
     gst_tax_percentage,
     product_description,
     created_at,
     updated_at,
     ROUND(
         CASE
-            WHEN IFNULL(discount, 0) = 0 THEN effective_sales_price
-            ELSE effective_sales_price - (effective_sales_price * discount / 100.0)
+            WHEN IFNULL(effective_discount, 0) = 0 THEN effective_sales_price
+            ELSE effective_sales_price - (effective_sales_price * effective_discount / 100.0)
         END,
         2
     ) AS discounted_price,
+    ROUND(
+        CASE
+            WHEN IFNULL(effective_discount_alt, 0) = 0 THEN effective_sales_price_alt
+            ELSE effective_sales_price_alt - (effective_sales_price_alt * effective_discount_alt / 100.0)
+        END,
+        2
+    ) AS discounted_price_alt,
     E4,
     E5,
     UnitName AS main_unit,
     AltUnit AS alt_unit,
     ConFactor AS con_factor,
     ConType AS con_type,
-    SalesPriceAlt AS sales_price_alt,
     PurcPriceAlt AS purc_price_alt,
     OF3,
     OF4,
     OF9,
     OF10,
     OF8,
+    L6,
     brand_name
 FROM (
     SELECT
@@ -195,21 +205,14 @@ FROM (
         Products.Name AS product_name,
         Products.GroupCode AS category_id,
         Products.UnitCode AS unit_id,
-        COALESCE(
-            CASE
-                WHEN :changePrice = 101.0 AND IFNULL(PMP.Price1, 0.0) != 0.0 THEN PMP.Price1
-                WHEN :changePrice = 102.0 AND IFNULL(PMP.Price2, 0.0) != 0.0 THEN PMP.Price2
-                WHEN :changePrice = 103.0 AND IFNULL(PMP.Price3, 0.0) != 0.0 THEN PMP.Price3
-                WHEN :changePrice = 104.0 AND IFNULL(PMP.Price4, 0.0) != 0.0 THEN PMP.Price4
-                WHEN :changePrice = 105.0 AND IFNULL(PMP.Price5, 0.0) != 0.0 THEN PMP.Price5
-                WHEN :changePrice != 101.0 AND IFNULL(PMP.Price1, 0.0) != 0.0 THEN PMP.Price1
-                ELSE NULL
-            END,
-            Products.SalesPrice
-        ) AS effective_sales_price,
-        Products.MRP,
+        COALESCE(PP.SalesPrice, Products.SalesPrice) AS effective_sales_price,
+        COALESCE(PP.SalesPriceAlt, Products.SalesPriceAlt) AS effective_sales_price_alt,
+        COALESCE(PP.Mrp, Products.MRP) AS effective_mrp,
+        COALESCE(PP.MrpAlt, Products.MRP) AS effective_mrp_alt,
         Products.PurcPrice AS purchase_price,
-        Products.SaleDisc AS discount,
+        Products.PurcPriceAlt,
+        COALESCE(PP.Disc, Products.SaleDisc) AS effective_discount,
+        COALESCE(PP.DiscAlt, Products.SaleDisc) AS effective_discount_alt,
         COALESCE(
             (
                 SELECT IGST
@@ -228,8 +231,6 @@ FROM (
         Products.AltUnit,
         Products.ConFactor,
         Products.ConType,
-        Products.SalesPriceAlt,
-        Products.PurcPriceAlt,
         Products.E4,
         Products.E5,
         Products.GroupCode,
@@ -239,9 +240,10 @@ FROM (
         Products.OF9,
         Products.OF10,
         Products.OF8,
+        Products.L6,
         OFM.Name AS brand_name
     FROM Products
-    LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
+    LEFT JOIN Products_Pricing PP ON CAST(Products.GUID AS REAL) = CAST(PP.GUID AS REAL) AND CAST(PP.Srno AS REAL) = CAST(:changePrice AS REAL)
     LEFT JOIN OFMaster OFM ON CAST(Products.OF8 AS REAL) = OFM.Code
 ) AS Sub
 WHERE (:filterGroup = 0 OR GroupCode IN :groupCodes) AND (:productCode IS NULL OR GroupCode = :productCode) AND ( E4 <> -1.0   OR  E4 IS NULL)
@@ -255,33 +257,43 @@ SELECT
     category_id,
     unit_id,
     effective_sales_price AS sales_price,
-    MRP,
+    effective_sales_price_alt AS sales_price_alt,
+    effective_mrp AS MRP,
+    effective_mrp_alt AS mrp_alt,
     purchase_price,
-    discount,
+    effective_discount AS discount,
+    effective_discount_alt AS discount_alt,
     gst_tax_percentage,
     product_description,
     created_at,
     updated_at,
     ROUND(
         CASE
-            WHEN IFNULL(discount, 0) = 0 THEN effective_sales_price
-            ELSE effective_sales_price - (effective_sales_price * discount / 100.0)
+            WHEN IFNULL(effective_discount, 0) = 0 THEN effective_sales_price
+            ELSE effective_sales_price - (effective_sales_price * effective_discount / 100.0)
         END,
         2
     ) AS discounted_price,
+    ROUND(
+        CASE
+            WHEN IFNULL(effective_discount_alt, 0) = 0 THEN effective_sales_price_alt
+            ELSE effective_sales_price_alt - (effective_sales_price_alt * effective_discount_alt / 100.0)
+        END,
+        2
+    ) AS discounted_price_alt,
     E4,
     E5,
     UnitName AS main_unit,
     AltUnit AS alt_unit,
     ConFactor AS con_factor,
     ConType AS con_type,
-    SalesPriceAlt AS sales_price_alt,
     PurcPriceAlt AS purc_price_alt,
     OF3,
     OF4,
     OF9,
     OF10,
     OF8,
+    L6,
     brand_name
 FROM (
     SELECT
@@ -290,21 +302,14 @@ FROM (
         Products.Name AS product_name,
         Products.GroupCode AS category_id,
         Products.UnitCode AS unit_id,
-        COALESCE(
-            CASE
-                WHEN :changePrice = 101.0 AND IFNULL(PMP.Price1, 0.0) != 0.0 THEN PMP.Price1
-                WHEN :changePrice = 102.0 AND IFNULL(PMP.Price2, 0.0) != 0.0 THEN PMP.Price2
-                WHEN :changePrice = 103.0 AND IFNULL(PMP.Price3, 0.0) != 0.0 THEN PMP.Price3
-                WHEN :changePrice = 104.0 AND IFNULL(PMP.Price4, 0.0) != 0.0 THEN PMP.Price4
-                WHEN :changePrice = 105.0 AND IFNULL(PMP.Price5, 0.0) != 0.0 THEN PMP.Price5
-                WHEN :changePrice != 101.0 AND IFNULL(PMP.Price1, 0.0) != 0.0 THEN PMP.Price1
-                ELSE NULL
-            END,
-            Products.SalesPrice
-        ) AS effective_sales_price,
-        Products.MRP,
+        COALESCE(PP.SalesPrice, Products.SalesPrice) AS effective_sales_price,
+        COALESCE(PP.SalesPriceAlt, Products.SalesPriceAlt) AS effective_sales_price_alt,
+        COALESCE(PP.Mrp, Products.MRP) AS effective_mrp,
+        COALESCE(PP.MrpAlt, Products.MRP) AS effective_mrp_alt,
         Products.PurcPrice AS purchase_price,
-        Products.SaleDisc AS discount,
+        Products.PurcPriceAlt,
+        COALESCE(PP.Disc, Products.SaleDisc) AS effective_discount,
+        COALESCE(PP.DiscAlt, Products.SaleDisc) AS effective_discount_alt,
         COALESCE(
             (
                 SELECT IGST
@@ -323,8 +328,6 @@ FROM (
         Products.AltUnit,
         Products.ConFactor,
         Products.ConType,
-        Products.SalesPriceAlt,
-        Products.PurcPriceAlt,
         Products.E4,
         Products.E5,
         Products.GUID,
@@ -333,9 +336,10 @@ FROM (
         Products.OF9,
         Products.OF10,
         Products.OF8,
+        Products.L6,
         OFM.Name AS brand_name
     FROM Products
-    LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
+    LEFT JOIN Products_Pricing PP ON CAST(Products.GUID AS REAL) = CAST(PP.GUID AS REAL) AND CAST(PP.Srno AS REAL) = CAST(:changePrice AS REAL)
     LEFT JOIN OFMaster OFM ON CAST(Products.OF8 AS REAL) = OFM.Code
 ) AS Sub
 WHERE GUID IN :guids AND ( E4 <> -1.0   OR  E4 IS NULL)
@@ -349,33 +353,43 @@ SELECT
     category_id,
     unit_id,
     effective_sales_price AS sales_price,
-    MRP,
+    effective_sales_price_alt AS sales_price_alt,
+    effective_mrp AS MRP,
+    effective_mrp_alt AS mrp_alt,
     purchase_price,
-    discount,
+    effective_discount AS discount,
+    effective_discount_alt AS discount_alt,
     gst_tax_percentage,
     product_description,
     created_at,
     updated_at,
     ROUND(
         CASE
-            WHEN IFNULL(discount, 0) = 0 THEN effective_sales_price
-            ELSE effective_sales_price - (effective_sales_price * discount / 100.0)
+            WHEN IFNULL(effective_discount, 0) = 0 THEN effective_sales_price
+            ELSE effective_sales_price - (effective_sales_price * effective_discount / 100.0)
         END,
         2
     ) AS discounted_price,
+    ROUND(
+        CASE
+            WHEN IFNULL(effective_discount_alt, 0) = 0 THEN effective_sales_price_alt
+            ELSE effective_sales_price_alt - (effective_sales_price_alt * effective_discount_alt / 100.0)
+        END,
+        2
+    ) AS discounted_price_alt,
     E4,
     E5,
     UnitName AS main_unit,
     AltUnit AS alt_unit,
     ConFactor AS con_factor,
     ConType AS con_type,
-    SalesPriceAlt AS sales_price_alt,
     PurcPriceAlt AS purc_price_alt,
     OF3,
     OF4,
     OF9,
     OF10,
     OF8,
+    L6,
     brand_name
 FROM (
     SELECT
@@ -384,21 +398,14 @@ FROM (
         Products.Name AS product_name,
         Products.GroupCode AS category_id,
         Products.UnitCode AS unit_id,
-        COALESCE(
-            CASE
-                WHEN :changePrice = 101.0 AND IFNULL(PMP.Price1, 0.0) != 0.0 THEN PMP.Price1
-                WHEN :changePrice = 102.0 AND IFNULL(PMP.Price2, 0.0) != 0.0 THEN PMP.Price2
-                WHEN :changePrice = 103.0 AND IFNULL(PMP.Price3, 0.0) != 0.0 THEN PMP.Price3
-                WHEN :changePrice = 104.0 AND IFNULL(PMP.Price4, 0.0) != 0.0 THEN PMP.Price4
-                WHEN :changePrice = 105.0 AND IFNULL(PMP.Price5, 0.0) != 0.0 THEN PMP.Price5
-                WHEN :changePrice != 101.0 AND IFNULL(PMP.Price1, 0.0) != 0.0 THEN PMP.Price1
-                ELSE NULL
-            END,
-            Products.SalesPrice
-        ) AS effective_sales_price,
-        Products.MRP,
+        COALESCE(PP.SalesPrice, Products.SalesPrice) AS effective_sales_price,
+        COALESCE(PP.SalesPriceAlt, Products.SalesPriceAlt) AS effective_sales_price_alt,
+        COALESCE(PP.Mrp, Products.MRP) AS effective_mrp,
+        COALESCE(PP.MrpAlt, Products.MRP) AS effective_mrp_alt,
         Products.PurcPrice AS purchase_price,
-        Products.SaleDisc AS discount,
+        Products.PurcPriceAlt,
+        COALESCE(PP.Disc, Products.SaleDisc) AS effective_discount,
+        COALESCE(PP.DiscAlt, Products.SaleDisc) AS effective_discount_alt,
         COALESCE(
             (
                 SELECT IGST
@@ -417,8 +424,6 @@ FROM (
         Products.AltUnit,
         Products.ConFactor,
         Products.ConType,
-        Products.SalesPriceAlt,
-        Products.PurcPriceAlt,
         Products.E4,
         Products.E5,
         Products.GUID,
@@ -427,11 +432,13 @@ FROM (
         Products.OF9,
         Products.OF10,
         Products.OF8,
+        Products.L6,
         OFM.Name AS brand_name
     FROM Products
-    LEFT JOIN ProductMultyPricing PMP ON CAST(Products.GUID AS REAL) = CAST(PMP.GUID AS REAL)
+    LEFT JOIN Products_Pricing PP ON CAST(Products.GUID AS REAL) = CAST(PP.GUID AS REAL) AND CAST(PP.Srno AS REAL) = CAST(:changePrice AS REAL)
     LEFT JOIN OFMaster OFM ON CAST(Products.OF8 AS REAL) = OFM.Code
 ) AS Sub
+
 
 WHERE GUID IN (
     SELECT CAST(CAST(ProductCode AS INTEGER) AS TEXT) FROM Product_Category
