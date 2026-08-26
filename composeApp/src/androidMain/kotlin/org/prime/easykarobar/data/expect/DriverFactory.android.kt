@@ -73,6 +73,16 @@ actual class DriverFactory(private val context: Context) {
                 )
             )
 
+            ensureColumns(
+                driver = driver,
+                tableName = "Products_Pricing",
+                columnsToAdd = listOf(
+                    "SalesPriceAlt" to "REAL",
+                    "MrpAlt" to "REAL",
+                    "DiscAlt" to "REAL"
+                )
+            )
+
             ensureTable(
                 driver = driver,
                 tableName = "SLIDE_MASTER",

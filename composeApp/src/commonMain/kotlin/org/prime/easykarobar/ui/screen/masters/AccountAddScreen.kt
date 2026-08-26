@@ -856,28 +856,30 @@ object AccountAddScreen : Screen {
                                 ).executeAsList()
                                 if (existing.isEmpty()) {
                                     viewmodel.createAccount(account) {
-                                        db.ledgerMasterQueries.insertLedger(
-                                            code = dataState.data?.ledger_guid?.toLong(),
-                                            name = dataState.data?.name?.trim(),
-                                            alias = dataState.data?.alias?.trim(),
-                                            groupName = dataState.data?.parentGroupName,
-                                            groupCode = dataState.data?.parentGroupGuid?.toDoubleOrNull()
-                                                ?: 0.0,
-                                            opBal = dataState.data?.openingBalance?.toDoubleOrNull()
-                                                ?: 0.0,
-                                            address1 = dataState.data?.addressLine1,
-                                            address2 = dataState.data?.addressLine2,
-                                            address3 = dataState.data?.addressLine3,
-                                            address4 = dataState.data?.addressLine4,
-                                            country = dataState.data?.country,
-                                            state = dataState.data?.state,
-                                            gstin = dataState.data?.gstNo,
-                                            email = dataState.data?.email,
-                                            mobileNo = dataState.data?.mobileNo,
-                                            alterId = 0,
-                                            guid = dataState.data?.ledger_guid.toString(),
-                                            panNo = dataState.data?.itPan
-                                        )
+                                        if (dataState.success) {
+                                            db.ledgerMasterQueries.insertLedger(
+                                                code = dataState.data?.ledger_guid?.toLong(),
+                                                name = dataState.data?.name?.trim(),
+                                                alias = dataState.data?.alias?.trim(),
+                                                groupName = dataState.data?.parentGroupName,
+                                                groupCode = dataState.data?.parentGroupGuid?.toDoubleOrNull()
+                                                    ?: 0.0,
+                                                opBal = dataState.data?.openingBalance?.toDoubleOrNull()
+                                                    ?: 0.0,
+                                                address1 = dataState.data?.addressLine1,
+                                                address2 = dataState.data?.addressLine2,
+                                                address3 = dataState.data?.addressLine3,
+                                                address4 = dataState.data?.addressLine4,
+                                                country = dataState.data?.country,
+                                                state = dataState.data?.state,
+                                                gstin = dataState.data?.gstNo,
+                                                email = dataState.data?.email,
+                                                mobileNo = dataState.data?.mobileNo,
+                                                alterId = 0,
+                                                guid = dataState.data?.ledger_guid.toString(),
+                                                panNo = dataState.data?.itPan
+                                            )
+                                        }
                                         showResultDialog = true
                                     }
                                 } else {
@@ -910,8 +912,11 @@ object AccountAddScreen : Screen {
                 }
                 if (showResultDialog) {
                     TallyResultDialog(
-                        message = dataState.message ?: "Error Occurred",
-                        onDone = { nav.pop() },
+                        message = if (dataState.success) dataState.message ?: "Success" else dataState.error ?: "Error Occurred",
+                        onDone = {
+                            showResultDialog = false
+                            if (dataState.success) nav.pop()
+                        },
                         isSuccess = dataState.success,
                         confirmText = "OK"
                     )

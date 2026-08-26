@@ -20,7 +20,7 @@ class AccountViewModel : ViewModel() {
 
     private val _listState = mutableStateOf(DataState<AccountItemResponse>())
     val listState: State<DataState<AccountItemResponse>> = _listState
-    fun createAccount(accountModel: AccountModel, onSuccess: () -> Unit) {
+    fun createAccount(accountModel: AccountModel, onResult: () -> Unit) {
         viewModelScope.launch {
 
             _dataState.value = DataState(isLoading = true)
@@ -34,7 +34,6 @@ class AccountViewModel : ViewModel() {
                     data = res.data,
                     message = res.message
                 )
-                onSuccess()
             } else {
                 _dataState.value = DataState(
                     success = false,
@@ -42,6 +41,7 @@ class AccountViewModel : ViewModel() {
                     error = res?.message ?: "Error Occurred: Please try again."
                 )
             }
+            onResult()
         }
     }
 

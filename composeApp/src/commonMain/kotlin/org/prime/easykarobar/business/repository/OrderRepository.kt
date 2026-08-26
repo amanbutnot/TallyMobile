@@ -24,6 +24,7 @@ object OrderRepository {
 
     suspend fun createNewOrder(createOrderRequest: CreateOrderRequest): ApiResponse<CreateOrderResponse>? {
         val token = SharedPrefs.Token.get()
+        println("checking for hamali and name $createOrderRequest")
         return try {
             val res = KtorClient.client.post("$BASE_URL/Transactions/addDistributors.php") {
                 contentType(ContentType.Application.Json)

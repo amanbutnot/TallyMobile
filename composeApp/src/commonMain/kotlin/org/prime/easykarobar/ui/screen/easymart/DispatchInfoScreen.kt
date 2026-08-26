@@ -34,13 +34,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cafe.adriel.voyager.core.annotation.InternalVoyagerApi
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.navigator.internal.BackHandler
 import kotlinx.coroutines.launch
 import org.prime.easykarobar.business.viewmodel.masters.AccountViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.screen.auth.LoginScreen
 import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.screen.masters.AccountModel
 import org.prime.easykarobar.ui.screen.masters.INDIAN_STATES
@@ -53,7 +56,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyTextField
 
 data class DispatchInfoScreen(val mobile: String) : Screen {
 
-    @OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class, InternalVoyagerApi::class)
     @Composable
     override fun Content() {
         val nav = LocalNavigator.currentOrThrow
@@ -81,9 +84,13 @@ data class DispatchInfoScreen(val mobile: String) : Screen {
         var gstError by remember { mutableStateOf<String?>(null) }
         var showResultDialog by remember { mutableStateOf(false) }
 
+        BackHandler(true) {
+            nav.replaceAll(LoginScreen)
+        }
+
         TallyScaffold(
             title = "Sign Up Information",
-            showNavigationIcon = false,
+            onBack = { nav.replaceAll(LoginScreen) },
             content = { padding ->
                 Column(
                     modifier = Modifier
@@ -324,10 +331,12 @@ data class DispatchInfoScreen(val mobile: String) : Screen {
 
                     if (showResultDialog) {
                         TallyResultDialog(
-                            message = dataState.message ?: "Error Occurred",
+                            message = if (dataState.success) dataState.message ?: "Success" else dataState.error ?: "Error Occurred",
                             onDone = {
                                 showResultDialog = false
-                                nav.replaceAll(Dashboard)
+                                if (dataState.success) {
+                                    nav.replaceAll(Dashboard)
+                                }
                             },
                             isSuccess = dataState.success,
                             confirmText = "OK"
