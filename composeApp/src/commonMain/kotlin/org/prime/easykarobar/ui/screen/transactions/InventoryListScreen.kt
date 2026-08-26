@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -17,8 +18,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonGroupDefaults
@@ -41,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,19 +61,29 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.business.viewmodel.distributor.OrderViewModel
 import org.prime.easykarobar.business.viewmodel.transactions.InventoryVoucherViewModel
+import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.ORDERSTATUS
 import org.prime.easykarobar.data.model.UpdateOrderStatusRequest
 import org.prime.easykarobar.data.model.transactions.InventoryListRequest
 import org.prime.easykarobar.data.model.transactions.InventoryListResponse
+import org.prime.easykarobar.data.model.transactions.TransportDetails
+import org.prime.easykarobar.ui.printing.salesHtml
+import org.prime.easykarobar.ui.printing.salesSlipHtml
 import org.prime.easykarobar.ui.screen.distributor.order.MyOrdersScreen
+import org.prime.easykarobar.ui.screen.transactions.sale.InvoiceItem
 import org.prime.easykarobar.ui.screen.transactions.sale.SaleScreen
+import org.prime.easykarobar.ui.shared.composables.DownloadResultDialog
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
 import org.prime.easykarobar.ui.shared.composables.OrderCard
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
+import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
+import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.getNameFromGUID
+import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
+import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 
 data class InventoryListScreen(
     val startDate: String,
@@ -88,12 +102,21 @@ data class InventoryListScreen(
         val nav = LocalNavigator.currentOrThrow
         val state by viewModel.listState
         val updateState by orderViewModel.updateStatusState
+        val oneState by viewModel.oneState
 
         var showStatusSheet by remember { mutableStateOf(false) }
         var showConfirmDialog by remember { mutableStateOf(false) }
         var selectedItem by remember { mutableStateOf<InventoryListResponse?>(null) }
         var selectedStatus by remember { mutableStateOf<ORDERSTATUS?>(null) }
         val sheetState = rememberModalBottomSheetState()
+
+        var showDetailsSheet by remember { mutableStateOf(false) }
+        var selectedItemForDetails by remember { mutableStateOf<InventoryListResponse?>(null) }
+        var shareLoading by remember { mutableStateOf(false) }
+        var showDownloadDialog by remember { mutableStateOf(false) }
+        var a4Html by remember { mutableStateOf("") }
+        var slipHtml by remember { mutableStateOf("") }
+        var downloadFileName by remember { mutableStateOf("") }
 
         val filterOptions = listOf("All") + ORDERSTATUS.entries.take(6).map { it.displayName() }
         var selectedFilterIndex by remember { mutableStateOf(0) }
@@ -107,6 +130,55 @@ data class InventoryListScreen(
                     EndDate = endDate,isCustomer = showStatusChange
                 )
             )
+        }
+
+        LaunchedEffect(oneState) {
+            if (oneState.success && oneState.data != null) {
+                val data = oneState.data!!
+                val items = data.items.map { itm ->
+                    InvoiceItem(
+                        name = itm.product_name,
+                        price = itm.price.toDoubleOrNull() ?: 0.0,
+                        listPrice = itm.list_price.toDoubleOrNull() ?: 0.0,
+                        qty = itm.quantity,
+                        discountPercentage = itm.discount_percent.toDoubleOrNull() ?: 0.0,
+                        taxable = itm.item_amount.toDoubleOrNull() ?: 0.0,
+                        gstAmt = itm.taxamt1.toDoubleOrNull() ?: 0.0,
+                        net = itm.total_amt.toDoubleOrNull() ?: 0.0,
+                        gstPercentage = itm.tax_rate1.toDoubleOrNull() ?: 0.0,
+                        taxCategoryCode = 0,
+                        CD = itm.CD
+                    )
+                }
+
+                a4Html = salesHtml(
+                    name = name,
+                    partyName = data.billing_name,
+                    partyGuid = data.billing_guid,
+                    invoiceNo = data.order_no,
+                    date = Tdate(data.created_at.take(10)),
+                    items = items,
+                    sundries = data.sundries,
+                    grandTotal = data.total_amount.toDoubleOrNull() ?: 0.0,
+                    transportDetails = mapTransportDetails(data.other_info),
+                    showTax = true
+                )
+
+                slipHtml = salesSlipHtml(
+                    name = name,
+                    partyName = data.billing_name,
+                    partyGuid = data.billing_guid,
+                    invoiceNo = data.order_no,
+                    date = Tdate(data.created_at.take(10)),
+                    items = items,
+                    sundries = data.sundries,
+                    grandTotal = data.total_amount.toDoubleOrNull() ?: 0.0,
+                    transportDetails = mapTransportDetails(data.other_info),
+                    showTax = true
+                )
+
+                downloadFileName = data.order_no.replace("/", "_")
+            }
         }
 
         if (updateState.success) {
@@ -221,13 +293,20 @@ data class InventoryListScreen(
                                                         selectedItem = item
                                                         showStatusSheet = true
                                                     },
+                                                    onDownloadClick = {
+                                                        selectedItemForDetails = item
+                                                        viewModel.getOneInventoryVoucher(item.id)
+                                                        showDownloadDialog = true
+                                                    },
+                                                    onShareClick = {
+                                                        selectedItemForDetails = item
+                                                        viewModel.getOneInventoryVoucher(item.id)
+                                                        showDownloadDialog = true
+                                                    },
                                                     onClick = {
-                                                        nav.push(
-                                                            MyOrdersScreen(
-                                                                order_id = item.id.toString(),
-                                                                isStatusChangeMode = true
-                                                            )
-                                                        )
+                                                        selectedItemForDetails = item
+                                                        viewModel.getOneInventoryVoucher(item.id)
+                                                        showDetailsSheet = true
                                                     }
                                                 )
                                             }
@@ -289,6 +368,118 @@ data class InventoryListScreen(
                     }
                 }
 
+                if (showDetailsSheet) {
+                    val detailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                    ModalBottomSheet(
+                        onDismissRequest = { showDetailsSheet = false },
+                        sheetState = detailSheetState
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                                .navigationBarsPadding(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                "Bill Details",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            when {
+                                oneState.isLoading -> {
+                                    TallyCircularLoader()
+                                }
+                                oneState.error != null -> {
+                                    Text("Error: ${oneState.error}", color = MaterialTheme.colorScheme.error)
+                                }
+                                oneState.data != null -> {
+                                    val data = oneState.data!!
+
+                                    if (data.sundries.isNotEmpty()) {
+                                        Text(
+                                            "Sundries",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        data.sundries.forEach { sundry ->
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(sundry.name)
+                                                Text(sundry.amount.formatToAmtDec())
+                                            }
+                                        }
+                                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Button(
+                                            onClick = {
+                                                showDownloadDialog = true
+                                            },
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Icon(Icons.Default.Download, contentDescription = null)
+                                            Spacer(Modifier.width(8.dp))
+                                            Text("Export Bill")
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = {
+                                                nav.push(
+                                                    MyOrdersScreen(
+                                                        order_id = data.id.toString(),
+                                                        isStatusChangeMode = true
+                                                    )
+                                                )
+                                                showDetailsSheet = false
+                                            },
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text("View Full Order")
+                                        }
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(32.dp))
+                        }
+                    }
+                }
+
+                if (showDownloadDialog) {
+                    if (oneState.isLoading) {
+                        TallyLoadingDialog(
+                            text = "Preparing Bill..."
+                        )
+                    } else if (oneState.data != null) {
+                        DownloadResultDialog(
+                            message = "Bill Prepared Successfully",
+                            onDone = { showDownloadDialog = false },
+                            isSuccess = true,
+                            fileName = downloadFileName,
+                            htmlContent = a4Html,
+                            secondFileName = downloadFileName + "_Slip",
+                            secondHtmlContent = slipHtml,
+                            onLoadingChange = { shareLoading = it }
+                        )
+                    } else if (oneState.error != null) {
+                        TallyResultDialog(
+                            message = oneState.error ?: "Error preparing bill",
+                            onDone = { showDownloadDialog = false },
+                            isSuccess = false
+                        )
+                    }
+                }
+
                 if (showConfirmDialog) {
                     AlertDialog(
                         onDismissRequest = { showConfirmDialog = false },
@@ -324,6 +515,24 @@ data class InventoryListScreen(
                     )
                 }
             })
+    }
+
+    private fun mapTransportDetails(details: TransportDetails?): org.prime.easykarobar.ui.printing.TransportDetails {
+        return org.prime.easykarobar.ui.printing.TransportDetails(
+            transportName = details?.transportName ?: "",
+            gstRrNo = details?.gstNum ?: "",
+            vehicleNo = details?.vehicleNum ?: "",
+            station = details?.station ?: "",
+            pincode = details?.pincode ?: "",
+            gstRrDate = details?.grDate ?: "",
+            SpartyName = details?.SpartyName,
+            Saddress1 = details?.Saddress1,
+            Saddress2 = details?.Saddress2,
+            Saddress3 = details?.Saddress3,
+            Saddress4 = details?.Saddress4,
+            SshipState = details?.SshipState,
+            SgstIn = details?.SgstIn
+        )
     }
 }
 
