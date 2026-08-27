@@ -1610,7 +1610,7 @@ fun ConfirmOrderButton(
 
                 orderViewModel.createOrder(
                     CreateOrderRequest(
-                        billing_guid = SharedPrefs.DistributorData.get()?.ledger_GUID.toString(),
+                        billing_guid = SharedPrefs.BillingGuid.get() ?: SharedPrefs.DistributorData.get()?.ledger_GUID.toString(),
                         remarks = finalRemarks,
                         billing_name = SharedPrefs.DispatchInfo.getName().toString(),
                         billing_address = billingAddress,

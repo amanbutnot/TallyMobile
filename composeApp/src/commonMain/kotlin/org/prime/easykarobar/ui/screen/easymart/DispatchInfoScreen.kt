@@ -317,6 +317,11 @@ data class DispatchInfoScreen(val mobile: String) : Screen {
 
                                 scope.launch {
                                     accountViewModel.createAccount(account) {
+                                        if (accountViewModel.dataState.value.success) {
+                                            accountViewModel.dataState.value.data?.ledger_guid?.let { guid ->
+                                                SharedPrefs.BillingGuid.save(guid)
+                                            }
+                                        }
                                         showResultDialog = true
                                     }
                                 }

@@ -25,6 +25,7 @@ object SharedPrefs {
         FileId.clear()
         Cart.clear()
         User.clear()
+        BillingGuid.clear()
 
         // user related data
         DistributorData.clear()
@@ -474,6 +475,21 @@ object SharedPrefs {
             settings.remove(KEY_PINCODE)
             settings.remove(KEY_STATE)
             settings.remove(KEY_GST)
+        }
+    }
+
+    object BillingGuid {
+        private const val KEY = "billing_guid"
+        fun save(value: String) {
+            settings.putString(KEY, value)
+        }
+
+        fun get(): String? {
+            return settings.getStringOrNull(KEY)
+        }
+
+        fun clear() {
+            settings.remove(KEY)
         }
     }
 
