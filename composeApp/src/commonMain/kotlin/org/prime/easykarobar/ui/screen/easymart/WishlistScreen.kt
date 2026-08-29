@@ -58,6 +58,7 @@ import org.prime.easykarobar.ui.shared.composables.QuantityTextField
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
+import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
 import org.tally.GetProductsForDis
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.category_placeholder
@@ -87,7 +88,7 @@ object WishlistScreen : Screen {
             viewModel.getWishlist()
         }
 
-
+        EasyMartRefreshableBox(nav = nav) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -283,3 +284,4 @@ object WishlistScreen : Screen {
             }
         }
     }
+}

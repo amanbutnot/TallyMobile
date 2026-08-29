@@ -53,6 +53,8 @@ import org.prime.easykarobar.ui.screen.home.tabs.DistributorHomeSubTab
 import org.prime.easykarobar.ui.screen.home.tabs.DistributorReportSubTab
 import org.prime.easykarobar.ui.screen.home.userRole
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
+import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
+import org.prime.easykarobar.ui.utils.pushEasyMart
 
 object DmsScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -64,7 +66,8 @@ object DmsScreen : Screen {
 
         val db = DatabaseHolder.instance
         val hideGroup = db.companyConfigurationQueries.hideGroup().executeAsOneOrNull()?.T2.toString() == "Y"
-        TabNavigator(if (hideGroup) AllProductsPremiumTab else DistributorHomeSubTab) { tabNavigator ->
+        EasyMartRefreshableBox(nav = nav) {
+            TabNavigator(if (hideGroup) AllProductsPremiumTab else DistributorHomeSubTab) { tabNavigator ->
             Scaffold(
                 topBar = {
                     TopAppBar(
@@ -92,7 +95,7 @@ object DmsScreen : Screen {
                                 }
                             }) {
                                 IconButton(onClick = {
-                                    nav.push(CartScreen)
+                                    nav.pushEasyMart(CartScreen)
                                 }) {
                                     Icon(
                                         Icons.Default.ShoppingCart,
@@ -102,7 +105,7 @@ object DmsScreen : Screen {
                                 }
                             }
 
-                            IconButton(onClick = { nav.push(SettingScreen) }) {
+                            IconButton(onClick = { nav.pushEasyMart(SettingScreen) }) {
                                 Icon(
                                     Icons.Default.Person,
                                     contentDescription = "Settings icon",
@@ -189,4 +192,5 @@ object DmsScreen : Screen {
             }
         }
     }
+}
 }

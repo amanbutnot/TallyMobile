@@ -196,7 +196,7 @@ data class GoogleDriveDownloadScreen(val number: String) : Screen {
                 Spacer(modifier = Modifier.height(48.dp))
 
                 Text(
-                    text = if (SharedPrefs.IsEasyMart.get()) "Setting up your store..." else "Downloading Data...",
+                    text = if (SharedPrefs.IsEasyMart.get()) "Offering latest offers for you..." else "Downloading Data...",
                     style = type.headlineSmall.copy(
                         fontWeight = FontWeight.Bold,
                         color = colors.onBackground

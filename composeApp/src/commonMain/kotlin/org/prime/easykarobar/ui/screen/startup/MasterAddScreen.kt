@@ -41,6 +41,9 @@ data class MasterAddScreen(val number: String) : Screen {
         val nav = LocalNavigator.currentOrThrow
 
         LaunchedEffect(Unit) {
+            if (SharedPrefs.IsEasyMart.get()) {
+                SharedPrefs.IsEasyMart.saveLastCheckTime(kotlin.time.Clock.System.now().toEpochMilliseconds())
+            }
             viewmodel.listAccount {
                 state.data?.data?.forEach { dataState ->
                     db.ledgerMasterQueries.insertLedger(
@@ -187,8 +190,8 @@ data class MasterAddScreen(val number: String) : Screen {
                         }
 
                         val exists = db.ledgerPricingQueries.existsByMobile(number).executeAsOne() > 0
-                        println(SharedPrefs.DispatchInfo.getMobile())
-                        if (!exists && SharedPrefs.DispatchInfo.getMobile() != number) {
+                        println("Exists by mobile: $exists, Dispatch saved: ${SharedPrefs.DispatchInfo.isSaved()}")
+                        if (!exists && !SharedPrefs.DispatchInfo.isSaved()) {
                             nav.replaceAll(DispatchInfoScreen(number))
                             return@listAccount
                         }

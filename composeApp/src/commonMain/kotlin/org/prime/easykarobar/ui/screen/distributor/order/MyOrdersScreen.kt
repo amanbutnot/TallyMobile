@@ -67,6 +67,8 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
+import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
+import org.prime.easykarobar.ui.utils.pushEasyMart
 import org.tally.GetProductsForDis
 
 data class MyOrdersScreen(
@@ -96,28 +98,28 @@ data class MyOrdersScreen(
             showEditIcon = false,
             onEditClick = {},
         ) { paddingValues ->
-
-            listState.data?.let {
-                if (it.isEmpty()) {
-                    Column(
-                        modifier = Modifier.fillMaxSize()
-                            .background(MaterialTheme.colorScheme.background)
-                    ) {
-                        EmptyListPlaceholder(
-                            icon = Icons.Default.ShoppingCart,
-                            title = "No Orders",
-                            onAddClick = { })
-                    }
-                } else MyOrderContent(
-                    list = it,
-                    paddingValues = paddingValues,
-                    viewModel = viewModel,
-                    order_id = order_id,
-                    isStatusChangeMode = isStatusChangeMode
-                )
+            EasyMartRefreshableBox(nav = nav) {
+                listState.data?.let {
+                    if (it.isEmpty()) {
+                        Column(
+                            modifier = Modifier.fillMaxSize()
+                                .background(MaterialTheme.colorScheme.background)
+                        ) {
+                            EmptyListPlaceholder(
+                                icon = Icons.Default.ShoppingCart,
+                                title = "No Orders",
+                                onAddClick = { })
+                        }
+                    } else MyOrderContent(
+                        list = it,
+                        paddingValues = paddingValues,
+                        viewModel = viewModel,
+                        order_id = order_id,
+                        isStatusChangeMode = isStatusChangeMode
+                    )
+                }
             }
         }
-
     }
 }
 
@@ -274,7 +276,7 @@ fun MyOrderContent(
                                 val quantity = orderItem?.quantity ?: 1
                                 cartViewModel.updateQuantity(product, quantity.toDouble())
                             }
-                            nav.push(CartScreen)
+                            nav.pushEasyMart(CartScreen)
                         }
                     }
                 )

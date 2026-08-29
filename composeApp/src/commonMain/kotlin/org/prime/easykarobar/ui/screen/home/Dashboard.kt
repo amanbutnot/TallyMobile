@@ -71,6 +71,7 @@ import org.prime.easykarobar.ui.screen.home.tabs.WhatsAppSupportTab
 import org.prime.easykarobar.ui.screen.home.tabs.WishlistTab
 import org.prime.easykarobar.ui.screen.startup.GoogleDriveDownloadScreen
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
+import org.prime.easykarobar.ui.utils.pushEasyMart
 
 object Dashboard : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -193,7 +194,7 @@ object Dashboard : Screen {
                                         },
                                     ) {
                                         IconButton(onClick = {
-                                            nav.push(CartScreen)
+                                            nav.pushEasyMart(CartScreen)
                                         }) {
                                             Icon(
                                                 Icons.Default.ShoppingCart,
@@ -204,7 +205,7 @@ object Dashboard : Screen {
                                     }
                                 }
                                 if (!SharedPrefs.IsEasyMart.get()) {
-                                    IconButton(onClick = { nav.push(SettingScreen) }) {
+                                    IconButton(onClick = { nav.pushEasyMart(SettingScreen) }) {
                                         Icon(
                                             if (userRole() == ROLE.DISTRIBUTOR) Icons.Default.Person else Icons.Default.Settings,
                                             contentDescription = "Settings icon",

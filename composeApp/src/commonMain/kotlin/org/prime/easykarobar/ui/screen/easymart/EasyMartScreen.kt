@@ -57,6 +57,8 @@ import org.prime.easykarobar.business.viewmodel.AuthViewModel
 import org.prime.easykarobar.ui.screen.auth.VerifyOtpScreen
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
+import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
+import org.prime.easykarobar.ui.utils.pushEasyMart
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.dmsSplash
 
@@ -96,11 +98,12 @@ object EasyMartScreen : Screen {
             colors.primaryContainer
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(colors.surface)
-        ) {
+        EasyMartRefreshableBox(nav = navigator) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(colors.surface)
+            ) {
             // Top Background Gradient with Curve
             Box(
                 modifier = Modifier
@@ -245,7 +248,7 @@ object EasyMartScreen : Screen {
                                         number = phoneNumber,
                                         message = "Your login OTP is $otp. Please do not share it with anyone.",
                                         onSuccess = {
-                                            navigator.push(
+                                            navigator.pushEasyMart(
                                                 VerifyOtpScreen(
                                                     otp.toString(),
                                                     phoneNumber,
@@ -269,7 +272,7 @@ object EasyMartScreen : Screen {
                             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                         ) {
                             Text(
-                                "Get OTP",
+                                "Get OTP DEMO",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold
                                 )
@@ -298,4 +301,5 @@ object EasyMartScreen : Screen {
             }
         }
     }
+}
 }

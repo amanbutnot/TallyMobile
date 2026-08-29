@@ -30,6 +30,7 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.prime.easykarobar.ui.screen.distributor.order.MyOrdersScreen
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportFilterScreen
 import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingDisFilterScreen
+import org.prime.easykarobar.ui.utils.pushEasyMart
 
 object DistributorReportSubTab : Tab {
     override val options: TabOptions
@@ -89,7 +90,7 @@ object DistributorReportSubTab : Tab {
                     title = "Ledger",
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        nav.push(LedgerReportFilterScreen(showAccount = false))
+                        nav.pushEasyMart(LedgerReportFilterScreen(showAccount = false))
                     }
                 )
 
@@ -98,7 +99,7 @@ object DistributorReportSubTab : Tab {
                     title = "Outstanding",
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        nav.push(OutstandingDisFilterScreen(name = "Bill Receivable"))
+                        nav.pushEasyMart(OutstandingDisFilterScreen(name = "Bill Receivable"))
                     }
                 )
             }
@@ -119,7 +120,7 @@ object DistributorReportSubTab : Tab {
                     title = "My Orders",
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        nav.push(MyOrdersScreen())
+                        nav.pushEasyMart(MyOrdersScreen())
                     }
                 )
             }

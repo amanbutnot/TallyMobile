@@ -16,7 +16,7 @@ object SharedPrefs {
     private val settings2: Settings = Settings()
     fun clearAll() {
         settings.clear()
-  //      settings2.clear()
+        settings2.clear()
     }
     fun logout() {
 
@@ -42,6 +42,7 @@ object SharedPrefs {
     }
     object IsEasyMart {
         private const val KEY = "is_easy_mart"
+        private const val KEY_TIME = "is_easy_mart_last_check"
         fun save(value: Boolean) {
             settings.putBoolean(KEY, value)
         }
@@ -50,8 +51,17 @@ object SharedPrefs {
             return settings.getBoolean(KEY, false)
         }
 
+        fun saveLastCheckTime(time: Long) {
+            settings.putLong(KEY_TIME, time)
+        }
+
+        fun getLastCheckTime(): Long {
+            return settings.getLong(KEY_TIME, 0L)
+        }
+
         fun clear() {
             settings.remove(KEY)
+            settings.remove(KEY_TIME)
         }
     }
 
@@ -467,6 +477,10 @@ object SharedPrefs {
         fun getPincode(): String? = settings.getStringOrNull(KEY_PINCODE)
         fun getState(): String? = settings.getStringOrNull(KEY_STATE)
         fun getGst(): String? = settings.getStringOrNull(KEY_GST)
+
+        fun isSaved(): Boolean {
+            return !getName().isNullOrBlank() && !getMobile().isNullOrBlank() && !getAddress().isNullOrBlank()
+        }
 
         fun clear() {
             settings.remove(KEY_NAME)

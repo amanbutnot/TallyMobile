@@ -6,6 +6,7 @@ import cafe.adriel.voyager.navigator.Navigator
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.distributor.order.AllProductsPremiumScreen
+import org.prime.easykarobar.ui.utils.pushEasyMart
 import org.tally.BANNER_MASTER
 import org.tally.FEATURES_MASTER
 import org.tally.GetProductsForDis
@@ -56,7 +57,7 @@ fun handleBannerClick(
                 groupCodes = itemGroupCodes()
             ).executeAsList().find { it.GUID == c2 }
 
-            nav.push(
+            nav.pushEasyMart(
                 AllProductsPremiumScreen(
                     categoryName = category?.Name ?: "Category",
                     productCode = c2?.toDoubleOrNull(),
@@ -68,7 +69,7 @@ fun handleBannerClick(
         BannerClicks.SelectItems.value -> {
             val guids = c2?.split(",")?.map { it.trim() } ?: emptyList()
             if (guids.isNotEmpty()) {
-                nav.push(
+                nav.pushEasyMart(
                     AllProductsPremiumScreen(
                         categoryName = "Products",
                         productGuids = guids,

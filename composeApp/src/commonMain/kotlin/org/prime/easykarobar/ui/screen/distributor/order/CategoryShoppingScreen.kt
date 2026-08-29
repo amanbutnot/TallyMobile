@@ -75,6 +75,8 @@ import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getCategoryImage
 import org.prime.easykarobar.ui.shared.globalShared.handleBannerClick
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
+import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
+import org.prime.easykarobar.ui.utils.pushEasyMart
 import org.tally.GetProductsForDis
 import org.tally.ProductCategoriesForDis
 import org.tally.SLIDE_IMG
@@ -152,7 +154,7 @@ object CategoryShoppingScreen : Screen {
                                 modifier = Modifier.padding(end = 12.dp)
                             ) {
                                 IconButton(
-                                    onClick = { nav.push(CartScreen) }
+                                    onClick = { nav.pushEasyMart(CartScreen) }
                                 ) {
                                     Icon(
                                         Icons.Default.ShoppingCart,
@@ -178,7 +180,9 @@ object CategoryShoppingScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val nav = navigator.parent?.parent ?: navigator.parent ?: navigator
         val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
-        val db = DatabaseHolder.instance
+
+        EasyMartRefreshableBox(nav = nav) {
+            val db = DatabaseHolder.instance
         val showProductInfo = remember { mutableStateOf(false) }
         val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
         val urlProvider = LocalUriHandler.current
@@ -440,7 +444,7 @@ object CategoryShoppingScreen : Screen {
                                     categories = filteredCategories,
                                     title = if (debouncedSearchQuery.isBlank()) "All Categories" else "Matching Categories",
                                     onCategoryClick = { category ->
-                                        nav.push(
+                                        nav.pushEasyMart(
                                             AllProductsPremiumScreen(
                                                 categoryName = category.Name,
                                                 productCode = category.GUID?.toDouble() ?: 0.0,
@@ -480,7 +484,7 @@ object CategoryShoppingScreen : Screen {
                                         showProductInfo.value = true
                                     },
                                     onMoreClick = {
-                                        nav.push(
+                                        nav.pushEasyMart(
                                             AllProductsPremiumScreen(
                                                 categoryName = category.Name,
                                                 productCode = category.GUID?.toDouble() ?: 0.0,
@@ -494,26 +498,26 @@ object CategoryShoppingScreen : Screen {
                     }
                 }
             }
-        }
-
-        if (showProductInfo.value) {
-            selectedProduct.value?.let {
-                ShoppingScreen.ShowProductInfo(
-                    showProductInfo = showProductInfo,
-                    product = it,
-                    cartViewModel = cartViewModel,
-                    onButtonClick = {
-                        if (cartViewModel.isProductInCart(it)) {
-                            cartViewModel.removeProduct(it)
-                        } else {
-                            cartViewModel.addProduct(it)
-                        }
-                    },
-                    wishlistViewModel = wishlistViewModel
-                )
+            if (showProductInfo.value) {
+                selectedProduct.value?.let {
+                    ShoppingScreen.ShowProductInfo(
+                        showProductInfo = showProductInfo,
+                        product = it,
+                        cartViewModel = cartViewModel,
+                        onButtonClick = {
+                            if (cartViewModel.isProductInCart(it)) {
+                                cartViewModel.removeProduct(it)
+                            } else {
+                                cartViewModel.addProduct(it)
+                            }
+                        },
+                        wishlistViewModel = wishlistViewModel
+                    )
+                }
             }
         }
     }
+}
 
     @Composable
     fun CategoriesGrid(

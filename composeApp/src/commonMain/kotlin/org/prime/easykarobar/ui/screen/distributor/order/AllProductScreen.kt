@@ -39,12 +39,14 @@ import org.prime.easykarobar.business.viewmodel.WishlistViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen.ItemCard
 import org.prime.easykarobar.ui.screen.distributor.order.ShoppingScreen.ShowProductInfo
 import org.prime.easykarobar.ui.shared.composables.EmptyListPlaceholder
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
-import org.prime.easykarobar.ui.shared.globalShared.parseToDoubleList
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
+import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
+import org.prime.easykarobar.ui.utils.pushEasyMart
 import org.tally.GetProductsForDis
 
 data class AllProductScreen(
@@ -53,10 +55,12 @@ data class AllProductScreen(
 ) : Screen {
     @Composable
     override fun Content() {
-        Column(
-            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-        ) {
-            val nav = LocalNavigator.currentOrThrow
+        val nav = LocalNavigator.currentOrThrow
+
+        EasyMartRefreshableBox(nav = nav) {
+            Column(
+                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+            ) {
             val showProductInfo = remember { mutableStateOf(false) }
             val selectedProduct = remember { mutableStateOf<GetProductsForDis?>(null) }
             val searchQuery = remember { mutableStateOf("") }
@@ -115,8 +119,8 @@ data class AllProductScreen(
                             TopHeaderAllProducts(
                                 searchQuery = searchQuery.value,
                                 onSearchQueryChange = { searchQuery.value = it },
-                                onOrdersClick = { nav.push(MyOrdersScreen()) },
-                                onCartClick = { nav.push(CartScreen) },
+                                onOrdersClick = { nav.pushEasyMart(MyOrdersScreen()) },
+                                onCartClick = { nav.pushEasyMart(CartScreen) },
                                 cartViewModel = viewModel
                             )
                             Spacer(Modifier.height(8.dp))
@@ -163,6 +167,7 @@ data class AllProductScreen(
             }
         }
     }
+}
 }
 
 @Composable
@@ -241,3 +246,4 @@ fun TopHeaderAllProducts(
         }
     }
 }
+

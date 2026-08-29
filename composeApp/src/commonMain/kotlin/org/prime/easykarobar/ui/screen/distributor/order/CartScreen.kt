@@ -97,6 +97,7 @@ import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.convertCouponDate
 import org.prime.easykarobar.ui.shared.globalShared.getProductImage
 import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
+import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
 
 data class Coupon(
     val code: String,
@@ -156,18 +157,21 @@ object CartScreen : Screen {
             showEditIcon = false,
             onEditClick = {},
         ) { paddingValues ->
-            Column(
-                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-                    .padding(paddingValues).navigationBarsPadding()
-            ) {
-                if (state.isEmpty()) {
-                    EmptyListPlaceholder(
-                        icon = Icons.Default.ShoppingBag,
-                        title = "No Items in cart",
-                        onAddClick = { nav.pop() }
-                    )
-                } else {
-                    CartContent(viewModel.getAllProducts())
+            EasyMartRefreshableBox(nav = nav) {
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(paddingValues).navigationBarsPadding()
+                ) {
+                    if (state.isEmpty()) {
+                        EmptyListPlaceholder(
+                            icon = Icons.Default.ShoppingBag,
+                            title = "No Items in cart",
+                            onAddClick = { nav.pop() }
+                        )
+                    } else {
+                        CartContent(viewModel.getAllProducts())
+                    }
                 }
             }
         }

@@ -101,6 +101,8 @@ import org.prime.easykarobar.ui.shared.globalShared.getProductImage
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
+import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
+import org.prime.easykarobar.ui.utils.pushEasyMart
 import org.tally.GetProductsForDis
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.category_placeholder
@@ -182,7 +184,9 @@ data class AllProductsPremiumScreen(
 
         val changePrice = SharedPrefs.ChangePrice.get()
         val mapper = ::GetProductsForDis
-        val productList: List<GetProductsForDis> = remember(currentCategoryCode, currentSubCategoryCode, currentProductGuids, changePrice) {
+
+        EasyMartRefreshableBox(nav = nav) {
+            val productList: List<GetProductsForDis> = remember(currentCategoryCode, currentSubCategoryCode, currentProductGuids, changePrice) {
             if (currentProductGuids != null) {
                 db.productsQueries.getProductsByGuidsForDis(
                     guids = currentProductGuids!!,
@@ -345,7 +349,7 @@ data class AllProductsPremiumScreen(
                                 modifier = Modifier.padding(end = 12.dp)
                             ) {
                                 IconButton(
-                                    onClick = { nav.push(CartScreen) }
+                                    onClick = { nav.pushEasyMart(CartScreen) }
                                 ) {
                                     Icon(
                                         Icons.Default.ShoppingCart,
@@ -614,6 +618,7 @@ data class AllProductsPremiumScreen(
                 }
             }
         }
+    }
 
         if (showProductInfo.value) {
             selectedProduct.value?.let {

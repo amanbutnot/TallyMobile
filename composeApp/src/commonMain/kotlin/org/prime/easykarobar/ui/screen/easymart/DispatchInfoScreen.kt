@@ -43,7 +43,6 @@ import kotlinx.coroutines.launch
 import org.prime.easykarobar.business.viewmodel.masters.AccountViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.utils.SharedPrefs
-import org.prime.easykarobar.ui.screen.auth.LoginScreen
 import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.screen.masters.AccountModel
 import org.prime.easykarobar.ui.screen.masters.INDIAN_STATES
@@ -53,6 +52,7 @@ import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.TallyTextField
+import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
 
 data class DispatchInfoScreen(val mobile: String) : Screen {
 
@@ -85,12 +85,13 @@ data class DispatchInfoScreen(val mobile: String) : Screen {
         var showResultDialog by remember { mutableStateOf(false) }
 
         BackHandler(true) {
-            nav.replaceAll(LoginScreen)
+
         }
 
-        TallyScaffold(
-            title = "Sign Up Information",
-            onBack = { nav.replaceAll(LoginScreen) },
+        EasyMartRefreshableBox(nav = nav) {
+            TallyScaffold(
+                title = "Sign Up Information",
+            onBack = {  },
             content = { padding ->
                 Column(
                     modifier = Modifier
@@ -351,4 +352,5 @@ data class DispatchInfoScreen(val mobile: String) : Screen {
             }
         )
     }
+}
 }

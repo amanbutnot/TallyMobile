@@ -37,6 +37,7 @@ import org.prime.easykarobar.ui.screen.distributor.order.AllProductsPremiumScree
 import org.prime.easykarobar.ui.screen.distributor.order.CategoryShoppingScreen
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
+import org.prime.easykarobar.ui.utils.pushEasyMart
 
 object DistributorCategorySubTab : Tab {
     override val options: TabOptions
@@ -98,7 +99,7 @@ object DistributorCategorySubTab : Tab {
                     CategoryShoppingScreen.CategoriesGrid(
                         categories = filteredCategories,
                         onCategoryClick = { category ->
-                            nav.push(
+                            nav.pushEasyMart(
                                 AllProductsPremiumScreen(
                                     categoryName = category.Name,
                                     productCode = category.GUID?.toDouble() ?: 0.0,

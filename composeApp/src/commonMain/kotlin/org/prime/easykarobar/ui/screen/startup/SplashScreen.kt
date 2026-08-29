@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,8 +44,9 @@ import org.prime.easykarobar.ui.screen.home.Dashboard
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.dmsSplash
 import tallymobile.composeapp.generated.resources.splashImage
+import kotlin.time.Clock
 
-object SplashScreen : Screen {
+data class SplashScreen(val isRefreshing: Boolean = false) : Screen {
     @Composable
     override fun Content() {
         val nav = LocalNavigator.currentOrThrow
@@ -53,6 +55,9 @@ object SplashScreen : Screen {
         val isStoreIdFound = BuildKonfig.STORE_ID.isNotEmpty()
 
         LaunchedEffect(Unit) {
+            if (SharedPrefs.IsEasyMart.get()) {
+                SharedPrefs.IsEasyMart.saveLastCheckTime(Clock.System.now().toEpochMilliseconds())
+            }
             println(">>> LaunchedEffect started")
 
             delay(2000)
@@ -104,6 +109,15 @@ object SplashScreen : Screen {
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp)
                 )
+
+                if (isRefreshing) {
+                    Text(
+                        text = "Offering latest offers for you...",
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 32.dp),
+                        style = type.bodyMedium,
+                        color = colors.primary
+                    )
+                }
             }
         } else {
             Box(
@@ -141,6 +155,15 @@ object SplashScreen : Screen {
                         BarChartLine(height.dp, modifier = Modifier.weight(1f))
                     }
 
+                }
+
+                if (isRefreshing) {
+                    Text(
+                        text = "Offering latest offers for you...",
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 32.dp),
+                        style = type.bodyMedium,
+                        color = colors.primary
+                    )
                 }
             }
         }

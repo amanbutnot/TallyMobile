@@ -81,6 +81,8 @@ import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.StartDate
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
+import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
+import org.prime.easykarobar.ui.utils.pushEasyMart
 
 object SettingScreen : Screen {
     @OptIn(InternalVoyagerApi::class, ExperimentalMaterial3Api::class)
@@ -110,630 +112,598 @@ object SettingScreen : Screen {
 
         val colors = MaterialTheme.colorScheme
         TallyScaffold("Profile", showNavigationIcon = !SharedPrefs.IsEasyMart.get(), content = { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(colors.surfaceContainerLowest)
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = colors.primary
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp),
-                            verticalAlignment = Alignment.CenterVertically
+            EasyMartRefreshableBox(nav = nav) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(colors.surfaceContainerLowest)
+                        .padding(innerPadding)
+                        .verticalScroll(rememberScrollState())
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = colors.primary
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                         ) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = colors.onPrimary.copy(alpha = 0.1f),
-                                modifier = Modifier.size(56.dp)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier.fillMaxSize()
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = colors.onPrimary.copy(alpha = 0.1f),
+                                    modifier = Modifier.size(56.dp)
                                 ) {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        Text(
+                                            CompanyName().take(1),
+                                            color = colors.onBackground,
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 28.sp),
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column {
                                     Text(
-                                        CompanyName().take(1),
-                                        color = colors.onBackground,
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 28.sp),
+                                        text = CompanyName(),
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        color = colors.onPrimary
+                                    )
+                                    Text(
+                                        text = "Business Account",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = colors.onPrimary.copy(alpha = 0.8f)
                                     )
                                 }
                             }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text(
-                                    text = CompanyName(),
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    color = colors.onPrimary
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        if (userRole() == ROLE.ADMIN && !SharedPrefs.IsEasyMart.get()) {
+                            Text(
+                                text = "Distributor Management",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = colors.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                ManagementCard(
+                                    icon = Icons.Default.Add,
+                                    label = "Create",
+                                    subtitle = "New Distributor",
+                                    containerColor = colors.primaryContainer,
+                                    contentColor = colors.onPrimaryContainer,
+                                    onClick = { nav.pushEasyMart(CreateDistributorScreen()) },
+                                    modifier = Modifier.weight(1f)
                                 )
-                                Text(
-                                    text = "Business Account",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = colors.onPrimary.copy(alpha = 0.8f)
+                                ManagementCard(
+                                    icon = Icons.AutoMirrored.Filled.List,
+                                    label = "View All",
+                                    subtitle = "Distributors",
+                                    containerColor = colors.primary,
+                                    contentColor = colors.onPrimary,
+                                    onClick = { nav.pushEasyMart(ListDistributorScreen) },
+                                    modifier = Modifier.weight(1f)
                                 )
                             }
+
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        // Distributor Management Section
 
-                    if (userRole() == ROLE.ADMIN && !SharedPrefs.IsEasyMart.get()) {
-                        Text(
-                            text = "Distributor Management",
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                            color = colors.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-                        )
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            ManagementCard(
-                                icon = Icons.Default.Add,
-                                label = "Create",
-                                subtitle = "New Distributor",
-                                containerColor = colors.primaryContainer,
-                                contentColor = colors.onPrimaryContainer,
-                                onClick = { nav.push(CreateDistributorScreen()) },
-                                modifier = Modifier.weight(1f)
+
+                        Spacer(modifier = Modifier.height(20.dp))
+                        if (userRole() == ROLE.DISTRIBUTOR || SharedPrefs.IsEasyMart.get()) {
+                            Text(
+                                text = "Order Management",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = colors.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
                             )
                             ManagementCard(
                                 icon = Icons.AutoMirrored.Filled.List,
-                                label = "View All",
-                                subtitle = "Distributors",
+                                label = "My Orders",
+                                subtitle = "Track and view your orders",
                                 containerColor = colors.primary,
                                 contentColor = colors.onPrimary,
-                                onClick = { nav.push(ListDistributorScreen) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-
-                    }
-
-                    // Distributor Management Section
-
-
-                    Spacer(modifier = Modifier.height(20.dp))
-//                    TallyDivider()
-//
-//                    // Salesman Management Section
-//                    Text(
-//                        text = "Salesman Management",
-//                        style = MaterialTheme.typography.titleSmall.copy(
-//                            fontWeight = FontWeight.SemiBold
-//                        ),
-//                        color = colors.onSurfaceVariant,
-//                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-//                    )
-//
-//                    Row(
-//                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-//                        modifier = Modifier.fillMaxWidth()
-//                    ) {
-//                        ManagementCard(
-//                            icon = Icons.Default.Add,
-//                            label = "Create",
-//                            subtitle = "New Salesman",
-//                            containerColor = colors.secondaryContainer,
-//                            contentColor = colors.onSecondaryContainer,
-//                            onClick = { /* TODO: Navigate to CreateSalesmanScreen */ },
-//                            modifier = Modifier.weight(1f)
-//                        )
-//                        ManagementCard(
-//                            icon = Icons.Default.List,
-//                            label = "View All",
-//                            subtitle = "Salesmen",
-//                            containerColor = colors.secondary,
-//                            contentColor = colors.onSecondary,
-//                            onClick = { /* TODO: Navigate to ListSalesmanScreen */ },
-//                            modifier = Modifier.weight(1f)
-//                        )
-//                    }
-                    if (userRole() == ROLE.DISTRIBUTOR || SharedPrefs.IsEasyMart.get()) {
-                        Text(
-                            text = "Order Management",
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                            color = colors.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-                        )
-                        ManagementCard(
-                            icon = Icons.AutoMirrored.Filled.List,
-                            label = "My Orders",
-                            subtitle = "Track and view your orders",
-                            containerColor = colors.primary,
-                            contentColor = colors.onPrimary,
-                            onClick = { parentNav?.push(MyOrdersScreen()) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-                        TallyDivider()
-
-                        Text(
-                            text = "Store Information",
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                            color = colors.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-                        )
-
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ProfileItem(
-                                Icons.Default.Store,
-                                "Store ID",
-                                SharedPrefs.User.get()?.ID.toString()
-                            )
-                            ProfileItem(
-                                Icons.Default.SyncLock,
-                                "Last Synced from Software",
-                                compInfo.C8.toString()
-                            )
-                            TallyToggleRow(
-                                checked = ProductLayout,
-                                onCheckedChange = {
-                                    SharedPrefs.ProductLayout.save(it)
-                                    ProductLayout = it
-                                },
-                                title = "Layout Mode",
-                                desc = "Enable Two Layout Mode"
-                            )
-                        }
-                    } else {
-
-
-                        Spacer(modifier = Modifier.height(20.dp))
-                        TallyDivider()
-
-                        Text(
-                            text = "Account Information",
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                            color = colors.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-                        )
-
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ProfileItem(
-                                Icons.Default.Email,
-                                "Email Address",
-                                compInfo.T7.toString()
-                            )
-                            ProfileItem(
-                                Icons.Default.Person,
-                                "Name",
-                                SharedPrefs.User.get()?.FirstName ?: "-"
-                            )
-                            ProfileItem(
-                                Icons.Default.Numbers,
-                                "Mobile Number",
-                                SharedPrefs.User.get()?.Mobile ?: "-"
-                            )
-                            ProfileItem(Icons.Default.Business, "Company Name", CompanyName())
-                            ProfileItem(
-                                Icons.Default.LocationOn,
-                                "Business Address",
-                                compInfo.T3.toString()
-                            )
-                            ProfileItem(
-                                Icons.Default.Store,
-                                "Store ID",
-                                SharedPrefs.User.get()?.ID.toString()
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(20.dp))
-                        TallyDivider()
-
-                        Text(
-                            text = "Business Details",
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                            color = colors.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-                        )
-
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ProfileItem(
-                                Icons.Default.DateRange,
-                                "Financial Year",
-                                Tdate(StartDate())
+                                onClick = { parentNav?.pushEasyMart(MyOrdersScreen()) },
+                                modifier = Modifier.fillMaxWidth()
                             )
 
-                            ProfileItem(Icons.Default.Receipt, "GST Number", compInfo.T4.toString())
-                        }
+                            Spacer(modifier = Modifier.height(24.dp))
+                            TallyDivider()
 
-                        Spacer(modifier = Modifier.height(20.dp))
-                        TallyDivider()
+                            Text(
+                                text = "Store Information",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = colors.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                            )
 
-                        Text(
-                            text = "Format & Display Settings",
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                            color = colors.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-                        )
-
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ProfileItem(
-                                Icons.Default.CurrencyRupee,
-                                "Currency Symbol",
-                                compInfo.T9.toString()
-                            )
-                            ProfileItem(
-                                Icons.Default.Numbers,
-                                "Quantity Decimal",
-                                compInfo.D3.toString()
-                            )
-                            ProfileItem(
-                                Icons.Default.MonetizationOn,
-                                "Amount Decimal",
-                                compInfo.D4.toString()
-                            )
-                            ProfileItem(
-                                Icons.Default.CalendarToday,
-                                "Date Format",
-                                compInfo.T8.toString()
-                            )
-                            ProfileItem(
-                                Icons.Default.SyncLock,
-                                "Last Synced from Software",
-                                compInfo.C8.toString()
-                            )
-                            if (userRole() !in listOf(
-                                    ROLE.STAFF_MANAGER,
-                                    ROLE.OFFICE_STAFF
-                                ) && !SharedPrefs.IsEasyMart.get()
-                            ) {
-                                TallyToggleRow(
-                                    checked = zeroStock,
-                                    onCheckedChange = {
-                                        SharedPrefs.ShowZeroStock.save(it)
-                                        zeroStock = it
-                                    },
-                                    title = "Show Zero Stock in billing",
-                                    desc = "Include items with zero stock in billing"
-                                )
-
-                                val taxTypeLabel = when (showTaxTypeOption) {
-                                    1 -> "Only Inclusive"
-                                    2 -> "Only Extra"
-                                    else -> "Both"
-                                }
-
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 ProfileItem(
-                                    icon = Icons.Default.Receipt,
-                                    label = "Tax Type Visibility",
-                                    value = taxTypeLabel,
-                                    onClick = { showTaxOptionDialog = true }
+                                    Icons.Default.Store,
+                                    "Store ID",
+                                    SharedPrefs.User.get()?.ID.toString()
+                                )
+                                ProfileItem(
+                                    Icons.Default.SyncLock,
+                                    "Last Synced from Software",
+                                    compInfo.C8.toString()
+                                )
+                                TallyToggleRow(
+                                    checked = ProductLayout,
+                                    onCheckedChange = {
+                                        SharedPrefs.ProductLayout.save(it)
+                                        ProductLayout = it
+                                    },
+                                    title = "Layout Mode",
+                                    desc = "Enable Two Layout Mode"
                                 )
                             }
-                        }
-                    }
+                        } else {
 
-                    if (showTaxOptionDialog) {
-                        TallyAlertBox(
-                            title = "Select Tax Type Visibility",
-                            message = "Choose which tax types to show in billing screens",
-                            confirmButtonText = "Close",
-                            cancelButtonText = "Cancel",
-                            onConfirm = { showTaxOptionDialog = false },
-                            onCancel = { showTaxOptionDialog = false },
-                            onDismiss = { showTaxOptionDialog = false },
-                            content = {
-                                Column {
-                                    listOf(
-                                        "Both",
-                                        "Only Inclusive",
-                                        "Only Extra"
-                                    ).forEachIndexed { index, label ->
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable {
-                                                    SharedPrefs.ShowTaxType.save(index)
-                                                    showTaxTypeOption = index
-                                                    showTaxOptionDialog = false
-                                                }
-                                                .padding(vertical = 12.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            RadioButton(
-                                                selected = showTaxTypeOption == index,
-                                                onClick = null
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(label)
+
+                            Spacer(modifier = Modifier.height(20.dp))
+                            TallyDivider()
+
+                            Text(
+                                text = "Account Information",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = colors.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                            )
+
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                ProfileItem(
+                                    Icons.Default.Email,
+                                    "Email Address",
+                                    compInfo.T7.toString()
+                                )
+                                ProfileItem(
+                                    Icons.Default.Person,
+                                    "Name",
+                                    SharedPrefs.User.get()?.FirstName ?: "-"
+                                )
+                                ProfileItem(
+                                    Icons.Default.Numbers,
+                                    "Mobile Number",
+                                    SharedPrefs.User.get()?.Mobile ?: "-"
+                                )
+                                ProfileItem(Icons.Default.Business, "Company Name", CompanyName())
+                                ProfileItem(
+                                    Icons.Default.LocationOn,
+                                    "Business Address",
+                                    compInfo.T3.toString()
+                                )
+                                ProfileItem(
+                                    Icons.Default.Store,
+                                    "Store ID",
+                                    SharedPrefs.User.get()?.ID.toString()
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(20.dp))
+                            TallyDivider()
+
+                            Text(
+                                text = "Business Details",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = colors.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                            )
+
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                ProfileItem(
+                                    Icons.Default.DateRange,
+                                    "Financial Year",
+                                    Tdate(StartDate())
+                                )
+
+                                ProfileItem(Icons.Default.Receipt, "GST Number", compInfo.T4.toString())
+                            }
+
+                            Spacer(modifier = Modifier.height(20.dp))
+                            TallyDivider()
+
+                            Text(
+                                text = "Format & Display Settings",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = colors.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                            )
+
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                ProfileItem(
+                                    Icons.Default.CurrencyRupee,
+                                    "Currency Symbol",
+                                    compInfo.T9.toString()
+                                )
+                                ProfileItem(
+                                    Icons.Default.Numbers,
+                                    "Quantity Decimal",
+                                    compInfo.D3.toString()
+                                )
+                                ProfileItem(
+                                    Icons.Default.MonetizationOn,
+                                    "Amount Decimal",
+                                    compInfo.D4.toString()
+                                )
+                                ProfileItem(
+                                    Icons.Default.CalendarToday,
+                                    "Date Format",
+                                    compInfo.T8.toString()
+                                )
+                                ProfileItem(
+                                    Icons.Default.SyncLock,
+                                    "Last Synced from Software",
+                                    compInfo.C8.toString()
+                                )
+                                if (userRole() !in listOf(
+                                        ROLE.STAFF_MANAGER,
+                                        ROLE.OFFICE_STAFF
+                                    ) && !SharedPrefs.IsEasyMart.get()
+                                ) {
+                                    TallyToggleRow(
+                                        checked = zeroStock,
+                                        onCheckedChange = {
+                                            SharedPrefs.ShowZeroStock.save(it)
+                                            zeroStock = it
+                                        },
+                                        title = "Show Zero Stock in billing",
+                                        desc = "Include items with zero stock in billing"
+                                    )
+
+                                    val taxTypeLabel = when (showTaxTypeOption) {
+                                        1 -> "Only Inclusive"
+                                        2 -> "Only Extra"
+                                        else -> "Both"
+                                    }
+
+                                    ProfileItem(
+                                        icon = Icons.Default.Receipt,
+                                        label = "Tax Type Visibility",
+                                        value = taxTypeLabel,
+                                        onClick = { showTaxOptionDialog = true }
+                                    )
+                                }
+                            }
+                        }
+
+                        if (showTaxOptionDialog) {
+                            TallyAlertBox(
+                                title = "Select Tax Type Visibility",
+                                message = "Choose which tax types to show in billing screens",
+                                confirmButtonText = "Close",
+                                cancelButtonText = "Cancel",
+                                onConfirm = { showTaxOptionDialog = false },
+                                onCancel = { showTaxOptionDialog = false },
+                                onDismiss = { showTaxOptionDialog = false },
+                                content = {
+                                    Column {
+                                        listOf(
+                                            "Both",
+                                            "Only Inclusive",
+                                            "Only Extra"
+                                        ).forEachIndexed { index, label ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        SharedPrefs.ShowTaxType.save(index)
+                                                        showTaxTypeOption = index
+                                                        showTaxOptionDialog = false
+                                                    }
+                                                    .padding(vertical = 12.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                RadioButton(
+                                                    selected = showTaxTypeOption == index,
+                                                    onClick = null
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(label)
+                                            }
                                         }
                                     }
                                 }
+                            )
+                        }
+
+                        TallyIconButton("Sign Out", Icons.AutoMirrored.Filled.Logout) {
+                            println(SharedPrefs.ChangePrice.get())
+                            showAlertBox = true
+                        }
+
+                        if (SharedPrefs.IsEasyMart.get()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            TallyIconButton("Delete Account", Icons.Default.Delete) {
+                                showDeleteAlert = true
                             }
-                        )
-                    }
+                        }
 
-                    TallyIconButton("Sign Out", Icons.AutoMirrored.Filled.Logout) {
-                        println(SharedPrefs.ChangePrice.get())
-                        showAlertBox = true
-                    }
-
-                    if (SharedPrefs.IsEasyMart.get()) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        TallyIconButton("Delete Account", Icons.Default.Delete) {
-                            showDeleteAlert = true
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(8.dp),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            Text(
+                                "v $MOBILE_VERSION",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                            )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(8.dp),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        Text(
-                            "v $MOBILE_VERSION",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                    if (showAlertBox) {
+                        TallyAlertBox(
+                            title = "Logout?",
+                            message = "Do you want to logout?",
+                            confirmButtonText = "Logout",
+                            cancelButtonText = "Cancel",
+                            onConfirm = {
+                                SharedPrefs.clearAll()
+                                deleteDbFile()
+                                SharedPrefs.logout()
+                                if (BuildKonfig.STORE_ID.isNotEmpty()) {
+                                    parentNav?.replaceAll(EasyMartScreen)
+                                } else {
+                                    nav.replaceAll(OnBoardingScreen)
+                                }
+                            },
+                            onCancel = {
+                                showAlertBox = false
+                            },
+                            onDismiss = {
+                                showAlertBox = false
+                            },
                         )
                     }
-                }
 
-                if (showAlertBox) {
-                    TallyAlertBox(
-                        title = "Logout?",
-                        message = "Do you want to logout?",
-                        confirmButtonText = "Logout",
-                        cancelButtonText = "Cancel",
-                        onConfirm = {
-                            deleteDbFile()
-                            SharedPrefs.logout()
-                            if (BuildKonfig.STORE_ID.isNotEmpty()) {
-                                parentNav?.replaceAll(EasyMartScreen)
-                            } else {
-                                nav.replaceAll(OnBoardingScreen)
-                            }
-                        },
-                        onCancel = {
-                            showAlertBox = false
-                        },
-                        onDismiss = {
-                            showAlertBox = false
-                        },
-                    )
-                }
-
-                if (showDeleteAlert) {
-                    TallyAlertBox(
-                        title = "Delete Account?",
-                        message = "Are you sure you want to delete your account? This action cannot be undone.",
-                        confirmButtonText = if (isDeleting) "Deleting..." else "Delete",
-                        cancelButtonText = "Cancel",
-                        onConfirm = {
-                            if (deleteRemarks.isBlank()) return@TallyAlertBox
-                            isDeleting = true
-                            scope.launch {
-                                val ledgerGuid = SharedPrefs.User.get()?.distributor?.ledger_GUID ?: ""
-                                val result = AccountRepository.deleteAccount(ledgerGuid, deleteRemarks)
-                                isDeleting = false
-                                if (result?.statuscode == 200) {
-                                    showDeleteAlert = false
-                                    deleteDbFile()
-                                    SharedPrefs.logout()
-                                    if (BuildKonfig.STORE_ID.isNotEmpty()) {
-                                        parentNav?.replaceAll(EasyMartScreen)
-                                    } else {
-                                        nav.replaceAll(OnBoardingScreen)
+                    if (showDeleteAlert) {
+                        TallyAlertBox(
+                            title = "Delete Account?",
+                            message = "Are you sure you want to delete your account? This action cannot be undone.",
+                            confirmButtonText = if (isDeleting) "Deleting..." else "Delete",
+                            cancelButtonText = "Cancel",
+                            onConfirm = {
+                                if (deleteRemarks.isBlank()) return@TallyAlertBox
+                                isDeleting = true
+                                scope.launch {
+                                    val ledgerGuid = SharedPrefs.User.get()?.distributor?.ledger_GUID ?: ""
+                                    val result = AccountRepository.deleteAccount(ledgerGuid, deleteRemarks)
+                                    isDeleting = false
+                                    if (result?.statuscode == 200) {
+                                        showDeleteAlert = false
+                                        deleteDbFile()
+                                        SharedPrefs.logout()
+                                        if (BuildKonfig.STORE_ID.isNotEmpty()) {
+                                            parentNav?.replaceAll(EasyMartScreen)
+                                        } else {
+                                            nav.replaceAll(OnBoardingScreen)
+                                        }
                                     }
                                 }
+                            },
+                            onCancel = {
+                                if (!isDeleting) {
+                                    showDeleteAlert = false
+                                    deleteRemarks = ""
+                                }
+                            },
+                            onDismiss = {
+                                if (!isDeleting) {
+                                    showDeleteAlert = false
+                                    deleteRemarks = ""
+                                }
+                            },
+                            content = {
+                                Column {
+                                    Text(
+                                        "Please provide a reason for closing your account:",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+                                    TallyTextField(
+                                        value = deleteRemarks,
+                                        onValueChange = { deleteRemarks = it },
+                                        placeholder = "Remarks",
+                                        isPassword = false,
+                                        isNumber = false,
+                                        label = "Remarks",
+                                        singleLine = false,
+                                        maxLines = 3
+                                    )
+                                }
                             }
-                        },
-                        onCancel = {
-                            if (!isDeleting) {
-                                showDeleteAlert = false
-                                deleteRemarks = ""
-                            }
-                        },
-                        onDismiss = {
-                            if (!isDeleting) {
-                                showDeleteAlert = false
-                                deleteRemarks = ""
-                            }
-                        },
-                        content = {
-                            Column {
-                                Text(
-                                    "Please provide a reason for closing your account:",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
-                                TallyTextField(
-                                    value = deleteRemarks,
-                                    onValueChange = { deleteRemarks = it },
-                                    placeholder = "Remarks",
-                                    isPassword = false,
-                                    isNumber = false,
-                                    label = "Remarks",
-                                    singleLine = false,
-                                    maxLines = 3
-                                )
-                            }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         })
     }
-}
 
-@Composable
-private fun ManagementCard(
-    icon: ImageVector,
-    label: String,
-    subtitle: String,
-    containerColor: androidx.compose.ui.graphics.Color,
-    contentColor: androidx.compose.ui.graphics.Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .height(75.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(10.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    @Composable
+    private fun ManagementCard(
+        icon: ImageVector,
+        label: String,
+        subtitle: String,
+        containerColor: androidx.compose.ui.graphics.Color,
+        contentColor: androidx.compose.ui.graphics.Color,
+        onClick: () -> Unit,
+        modifier: Modifier = Modifier
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        Card(
+            modifier = modifier
+                .height(75.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .clickable(onClick = onClick),
+            shape = RoundedCornerShape(10.dp),
+            colors = CardDefaults.cardColors(containerColor = containerColor),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = contentColor,
-                modifier = Modifier.size(22.dp)
-            )
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.sp
-                    ),
-                    color = contentColor
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = contentColor,
+                    modifier = Modifier.size(22.dp)
                 )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 12.sp
-                    ),
-                    color = contentColor.copy(alpha = 0.7f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.sp
+                        ),
+                        color = contentColor
+                    )
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 12.sp
+                        ),
+                        color = contentColor.copy(alpha = 0.7f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }
-}
 
-@Composable
-private fun ProfileItem(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    onClick: (() -> Unit)? = null
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth().then(
-            if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
-        ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
+    @Composable
+    private fun ProfileItem(
+        icon: ImageVector,
+        label: String,
+        value: String,
+        onClick: (() -> Unit)? = null
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth().then(
+                if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+            ),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = label,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Medium
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Normal
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun TallyToggleRow(
+        title: String, desc: String,
+        checked: Boolean,
+        onCheckedChange: (Boolean) -> Unit
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                modifier = Modifier.size(40.dp)
+
+            Column(
+                modifier = Modifier.weight(1f)
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = label,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Normal
-                    ),
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+
+                Text(
+                    text = desc,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-        }
-    }
-}
 
-@Composable
-fun TallyToggleRow(
-    title: String, desc: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Text(
-                text = desc,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange
             )
         }
-
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
     }
 }
