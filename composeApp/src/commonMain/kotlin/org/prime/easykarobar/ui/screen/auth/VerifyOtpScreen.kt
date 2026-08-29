@@ -230,7 +230,12 @@ data class VerifyOtpScreen(
                                                         if (result != null) {
                                                             SharedPrefs.ChangePrice.save(result.L6 ?: 0.0)
                                                         }else{
-                                                            SharedPrefs.ChangePrice.save(0.0)
+                                                            val savedGst = SharedPrefs.DispatchInfo.getGst()
+                                                            if (!savedGst.isNullOrBlank()) {
+                                                                SharedPrefs.ChangePrice.save(102.0)
+                                                            } else {
+                                                                SharedPrefs.ChangePrice.save(101.0)
+                                                            }
                                                         }
                                                     } catch (e: Exception) {
                                                         e.printStackTrace()
