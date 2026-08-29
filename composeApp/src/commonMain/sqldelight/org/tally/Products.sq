@@ -116,11 +116,12 @@ WHERE GUID IN (
     FROM Product_Param_Stock
     WHERE BCN = :itemName
       COLLATE NOCASE
-)
+) AND COALESCE(E4, 0.0) <> -1.0
 UNION ALL
 SELECT *
 FROM Products
 WHERE Name= :itemName AND (:filterGroup = 0 OR Products.GroupCode IN :groupCodes)
+AND COALESCE(E4, 0.0) <> -1.0
   COLLATE NOCASE;
 
 
@@ -129,23 +130,27 @@ SELECT * FROM Products
 WHERE GroupCode IN ?
   AND GUID NOT IN ?
   AND (:applyN1Filter = 0 OR N1 > 0)
+  AND COALESCE(E4, 0.0) <> -1.0
 ORDER BY Name;
 
 selectByGroupCode:
 SELECT * FROM Products
 WHERE GroupCode IN ?
   AND (:applyN1Filter = 0 OR N1 > 0)
+  AND COALESCE(E4, 0.0) <> -1.0
 ORDER BY Name;
 
 selectExcludingGuid:
 SELECT * FROM Products
 WHERE GUID NOT IN ?
   AND (:applyN1Filter = 0 OR N1 > 0)
+  AND COALESCE(E4, 0.0) <> -1.0
 ORDER BY Name;
 
 selectAll:
 SELECT * FROM Products
 WHERE (:applyN1Filter = 0 OR N1 > 0)
+  AND COALESCE(E4, 0.0) <> -1.0
 ORDER BY Name;
 
 -- Distributor
