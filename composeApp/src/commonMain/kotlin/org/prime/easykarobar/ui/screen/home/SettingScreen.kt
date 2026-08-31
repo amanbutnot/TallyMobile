@@ -471,7 +471,7 @@ object SettingScreen : Screen {
                             confirmButtonText = "Logout",
                             cancelButtonText = "Cancel",
                             onConfirm = {
-                                SharedPrefs.clearAll()
+                             //   SharedPrefs.clearAll()
                                 deleteDbFile()
                                 SharedPrefs.logout()
                                 if (BuildKonfig.STORE_ID.isNotEmpty()) {

@@ -116,12 +116,14 @@ WHERE GUID IN (
     FROM Product_Param_Stock
     WHERE BCN = :itemName
       COLLATE NOCASE
-) AND COALESCE(E4, 0.0) <> -1.0
+) AND CAST(COALESCE(Products.E4, 0.0) AS REAL) <> -1.0
+  AND CAST(COALESCE(Products.E5, 0.0) AS REAL) <> -1.0
 UNION ALL
 SELECT *
 FROM Products
 WHERE Name= :itemName AND (:filterGroup = 0 OR Products.GroupCode IN :groupCodes)
-AND COALESCE(E4, 0.0) <> -1.0
+AND CAST(COALESCE(Products.E4, 0.0) AS REAL) <> -1.0
+      AND CAST(COALESCE(Products.E5, 0.0) AS REAL) <> -1.0
   COLLATE NOCASE;
 
 
@@ -130,27 +132,31 @@ SELECT * FROM Products
 WHERE GroupCode IN ?
   AND GUID NOT IN ?
   AND (:applyN1Filter = 0 OR N1 > 0)
-  AND COALESCE(E4, 0.0) <> -1.0
+  AND CAST(COALESCE(Products.E4, 0.0) AS REAL) <> -1.0
+        AND CAST(COALESCE(Products.E5, 0.0) AS REAL) <> -1.0
 ORDER BY Name;
 
 selectByGroupCode:
 SELECT * FROM Products
 WHERE GroupCode IN ?
   AND (:applyN1Filter = 0 OR N1 > 0)
-  AND COALESCE(E4, 0.0) <> -1.0
+  AND CAST(COALESCE(Products.E4, 0.0) AS REAL) <> -1.0
+        AND CAST(COALESCE(Products.E5, 0.0) AS REAL) <> -1.0
 ORDER BY Name;
 
 selectExcludingGuid:
 SELECT * FROM Products
 WHERE GUID NOT IN ?
   AND (:applyN1Filter = 0 OR N1 > 0)
-  AND COALESCE(E4, 0.0) <> -1.0
+  AND CAST(COALESCE(Products.E4, 0.0) AS REAL) <> -1.0
+        AND CAST(COALESCE(Products.E5, 0.0) AS REAL) <> -1.0
 ORDER BY Name;
 
 selectAll:
 SELECT * FROM Products
 WHERE (:applyN1Filter = 0 OR N1 > 0)
-  AND COALESCE(E4, 0.0) <> -1.0
+  AND CAST(COALESCE(Products.E4, 0.0) AS REAL) <> -1.0
+  AND CAST(COALESCE(Products.E5, 0.0) AS REAL) <> -1.0
 ORDER BY Name;
 
 -- Distributor
@@ -491,13 +497,17 @@ SELECT
     Products.ConType,
     Products.SalesPriceAlt,
     Products.PurcPriceAlt,
-    CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening
+    CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening,
+    Products.E4,
+    Products.E5
 FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
 WHERE GroupCode IN ?
   AND Products.GUID NOT IN ?
-  AND (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0
+  AND (:applyN1Filter = 0 OR N1 > 0)
+  AND CAST(COALESCE(Products.E4, 0.0) AS REAL) <> -1.0
+  AND CAST(COALESCE(Products.E5, 0.0) AS REAL) <> -1.0
 ORDER BY Name;
 
 selectByGroupCodeConfig:
@@ -533,12 +543,16 @@ SELECT
     Products.ConType,
     Products.SalesPriceAlt,
     Products.PurcPriceAlt,
-    CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening
+    CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening,
+    Products.E4,
+    Products.E5
 FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
-    WHERE GroupCode IN ?
-  AND (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0
+WHERE GroupCode IN ?
+  AND (:applyN1Filter = 0 OR N1 > 0)
+  AND CAST(COALESCE(Products.E4, 0.0) AS REAL) <> -1.0
+  AND CAST(COALESCE(Products.E5, 0.0) AS REAL) <> -1.0
 ORDER BY Name;
 
 selectExcludingGuidConfig:
@@ -574,12 +588,16 @@ SELECT
     Products.ConType,
     Products.SalesPriceAlt,
     Products.PurcPriceAlt,
-   CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening
+    CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening,
+    Products.E4,
+    Products.E5
 FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
 WHERE Products.GUID NOT IN ?
-  AND (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0
+  AND (:applyN1Filter = 0 OR N1 > 0)
+  AND CAST(COALESCE(Products.E4, 0.0) AS REAL) <> -1.0
+  AND CAST(COALESCE(Products.E5, 0.0) AS REAL) <> -1.0
 ORDER BY Name;
 
 selectAllConfig:
@@ -615,11 +633,15 @@ SELECT
     Products.ConType,
     Products.SalesPriceAlt,
     Products.PurcPriceAlt,
-    CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening
+    CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening,
+    Products.E4,
+    Products.E5
 FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
-WHERE (:applyN1Filter = 0 OR N1 > 0) AND COALESCE(Products.E4, 0.0) <> -1.0
+WHERE (:applyN1Filter = 0 OR N1 > 0)
+  AND CAST(COALESCE(Products.E4, 0.0) AS REAL) <> -1.0
+  AND CAST(COALESCE(Products.E5, 0.0) AS REAL) <> -1.0
 ORDER BY Name;
 
 -- if e5 -1 (out of stock)

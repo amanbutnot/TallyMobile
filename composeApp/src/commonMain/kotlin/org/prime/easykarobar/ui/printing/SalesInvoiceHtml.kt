@@ -2,6 +2,7 @@ package org.prime.easykarobar.ui.printing
 
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
+import org.prime.easykarobar.data.expect.formatToQtyDec
 import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.transactions.sale.InvoiceItem
@@ -351,7 +352,7 @@ fun salesInvoiceHtml(
 
     // ── Item rows ────────────────────────────────────────────────────────────
     items.forEachIndexed { index, item ->
-        val unitTaxable = if (item.qty != 0) item.taxable / item.qty.absoluteValue else 0.0
+        val unitTaxable = if (item.qty != 0.0) item.taxable / item.qty.absoluteValue else 0.0
 
         val taxCells = if (showTax) {
             if (isIgst) {
@@ -387,7 +388,7 @@ fun salesInvoiceHtml(
                 <td class="center">${index + 1}.</td>
                 <td><b>${item.name}</b>$serials</td>
                 <td class="center">${item.hsn}</td>
-                <td class="center">${item.qty.absoluteValue}.00</td>
+                <td class="center">${item.qty.absoluteValue.formatToQtyDec()}</td>
                 <td class="right">${unitTaxable.formatToAmtDec()}</td>
                 $taxCells
                 <td class="right"><b>${item.net.formatToAmtDec()}</b></td>
@@ -506,7 +507,7 @@ fun salesInvoiceHtml(
     html.append(
         """
     <div class="amount-in-words">
-        Total Qty : <b>${items.sumOf { it.qty }.absoluteValue}.00</b><br>
+        Total Qty : <b>${items.sumOf { it.qty }.absoluteValue.formatToQtyDec()}</b><br>
         Rupees ${numberToWords(grandTotal.toInt())} Only
     </div>""".trimIndent()
     )

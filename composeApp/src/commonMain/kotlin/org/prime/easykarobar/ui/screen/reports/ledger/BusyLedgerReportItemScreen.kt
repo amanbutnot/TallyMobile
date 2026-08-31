@@ -108,7 +108,7 @@ data class BusyLedgerReportItemScreen(
                         name = it.Item_Name ?: "",
                         price = it.Rate ?: 0.0,
                         listPrice = it.Rate ?: 0.0,
-                        qty = (it.Qty ?: 0.0).toInt(),
+                        qty = (it.Qty ?: 0.0),
                         discountPercentage = 0.0,
                         taxCategoryCode = 0,
                         gstPercentage = totalGstRate,

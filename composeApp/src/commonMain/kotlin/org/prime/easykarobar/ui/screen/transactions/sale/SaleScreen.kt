@@ -61,6 +61,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.SheetState
@@ -188,7 +189,7 @@ data class InvoiceItem(
     var name: String,
     val price: Double,
     val listPrice: Double,
-    val qty: Int = 0,
+    val qty: Double = 0.0,
     val priceType: Int = 0,
     val discountPercentage: Double,
     val taxCategoryCode: Int,
@@ -344,7 +345,7 @@ data class SaleScreen(
                     compInfo = info
                     ledgerList = ledgers
                     busyLedgerList = busyLedgers
-                    itemsList = items
+                    itemsList = items.filter { (it.E4 ?: 0.0) != -1.0 && (it.E5 ?: 0.0) != -1.0 }
                     productGroups = groups
                     productPricingList = pricing
                     isInitialLoading = false
@@ -355,11 +356,12 @@ data class SaleScreen(
         println("item list is in sale order $itemsList")
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
         val groupFilteredList = remember(itemsList, selectedGroups) {
-            if (selectedGroups.isEmpty()) {
+            val list = if (selectedGroups.isEmpty()) {
                 itemsList
             } else {
                 itemsList.filter { it.GroupName in getProductsGroupCodesByName(selectedGroups) }
             }
+            list.filter { (it.E4 ?: 0.0) != -1.0 && (it.E5 ?: 0.0) != -1.0 }
         }
 
         val viewmodel: InventoryVoucherViewModel = viewModel { InventoryVoucherViewModel() }
@@ -476,7 +478,7 @@ data class SaleScreen(
                         val discount =
                             if (isSale) product.SaleDisc ?: 0.0 else product.PurcDisc ?: 0.0
                         val price = listPrice - (listPrice * discount / 100.0)
-                        val qty = barcodeQty.toIntOrNull() ?: 1
+                        val qty = barcodeQty.toDoubleOrNull() ?: 1.0
 
                         val gstPercentage = try {
                             db.taxCategoryMastQueries.selectTaxRate(
@@ -1254,6 +1256,82 @@ data class SaleScreen(
                                                 editingItemIndex = null
                                                 editingItem = null
                                             },
+                                            onAddAndNew = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers, cFactor, cType, sUnit, aQty ->
+                                                val newItem = InvoiceItem(
+                                                    name = product?.Name ?: pendingItem.name,
+                                                    price = unitPrice,
+                                                    qty = qty,
+                                                    discountPercentage = discount,
+                                                    listPrice = listPriceText,
+                                                    taxable = taxable,
+                                                    CD = compoundDiscount ?: "",
+                                                    gstAmt = gstAmount,
+                                                    net = net,
+                                                    guid = product?.GUID
+                                                        ?: pendingSelectedProductGUID
+                                                        ?: pendingItem.guid,
+                                                    gstPercentage = gstPercentage,
+                                                    salesPriceAlt = product?.SalesPriceAlt ?: pendingItem.salesPriceAlt,
+                                                    purcPriceAlt = product?.PurcPriceAlt ?: pendingItem.purcPriceAlt,
+                                                    taxCategoryCode = product?.TaxCategoryCode?.toInt()
+                                                        ?: pendingItem.taxCategoryCode,
+                                                    itemdesc1 = itemDescs.getOrNull(0),
+                                                    itemdesc2 = itemDescs.getOrNull(1),
+                                                    itemdesc3 = itemDescs.getOrNull(2),
+                                                    itemdesc4 = itemDescs.getOrNull(3),
+                                                    itemdesc5 = itemDescs.getOrNull(4),
+                                                    itemdesc6 = itemDescs.getOrNull(5),
+                                                    itemdesc7 = itemDescs.getOrNull(6),
+                                                    itemdesc8 = itemDescs.getOrNull(7),
+                                                    itemdesc9 = itemDescs.getOrNull(8),
+                                                    itemdesc10 = itemDescs.getOrNull(9),
+                                                    itemdesc11 = itemDescs.getOrNull(10),
+                                                    itemdesc12 = itemDescs.getOrNull(11),
+                                                    itemdesc13 = itemDescs.getOrNull(12),
+                                                    itemdesc14 = itemDescs.getOrNull(13),
+                                                    itemdesc15 = itemDescs.getOrNull(14),
+                                                    itemdesc16 = itemDescs.getOrNull(15),
+                                                    itemdesc17 = itemDescs.getOrNull(16),
+                                                    itemdesc18 = itemDescs.getOrNull(17),
+                                                    itemdesc19 = itemDescs.getOrNull(18),
+                                                    itemdesc20 = itemDescs.getOrNull(19),
+                                                    additionalinfo = additionalInfos.getOrNull(0),
+                                                    item_serial = serialNumbers.map { sn ->
+                                                        SerialNoEnterReportSale(
+                                                            SerialNo = sn,
+                                                            MasterCode1 = product?.GUID?.toDoubleOrNull()
+                                                                ?: pendingItem.guid.toDoubleOrNull(),
+                                                            ProductName = pendingItem.name,
+                                                            UnitName = null,
+                                                            GroupName = null,
+                                                            Value1 = 1.0,
+                                                            Value2 = 0.0,
+                                                            Value3 = 0.0, MasterCode2 = ""
+                                                        )
+                                                    },
+                                                    conFactor = cFactor,
+                                                    conType = cType,
+                                                    selectedUnit = sUnit,
+                                                    altQty = aQty,
+                                                    mainUnit = product?.UnitName
+                                                        ?: pendingItem.mainUnit,
+                                                    altUnit = product?.AltUnit
+                                                        ?: pendingItem.altUnit,
+                                                    hsn = pendingItem.hsn,
+                                                    item_params = pendingItem.item_params,
+                                                    item_parameter = pendingItem.item_parameter
+                                                )
+                                                val mutable = selectedItems.toMutableList()
+                                                if (index != null) {
+                                                    mutable[index] = newItem
+                                                } else {
+                                                    mutable.add(newItem)
+                                                }
+                                                selectedItems = mutable
+                                                editingItemIndex = null
+                                                editingItem = null
+                                                showItemSheet = true
+                                            },
                                             onBack = {
                                                 editingItemIndex = null
                                                 editingItem = null
@@ -1735,7 +1813,7 @@ data class SaleScreen(
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
                                 price = listPrice - (listPrice * discount / 100.0),
-                                qty = 1,
+                                qty = 1.0,
                                 discountPercentage = discount,
                                 listPrice = listPrice,
                                 taxable = 0.0,
@@ -1767,7 +1845,7 @@ data class SaleScreen(
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
                                 price = listPrice - (listPrice * discount / 100.0),
-                                qty = 1,
+                                qty = 1.0,
                                 discountPercentage = discount,
                                 listPrice = listPrice,
                                 taxable = 0.0,
@@ -1829,7 +1907,7 @@ data class SaleScreen(
                                 } else {
                                     listPrice - (listPrice * discount / 100.0)
                                 },
-                                qty = 1,
+                                qty = 1.0,
                                 discountPercentage = discount,
                                 listPrice = listPrice,
                                 taxable = 0.0,
@@ -1890,7 +1968,7 @@ data class SaleScreen(
                             else if (selectedPricing != null) selectedPricing!!.SalePrice
                             else (editingItem?.price ?: 0.0)
 
-                        val qty = selectedList.size.coerceAtLeast(1)
+                        val qty = selectedList.size.coerceAtLeast(1).toDouble()
 
 // ── SAME TAX LOGIC AS MULTI-SELECT ─────────────────────────────
                         val taxableAmt: Double
@@ -2003,7 +2081,7 @@ data class SaleScreen(
                             if (selectedPricing != null) selectedPricing!!.SalePrice
                             else (editingItem?.price ?: 0.0)
 
-                        val qty = selectedList.size.coerceAtLeast(1)
+                        val qty = selectedList.size.coerceAtLeast(1).toDouble()
 
                         val taxableAmt: Double
                         val gstAmt: Double
@@ -2524,7 +2602,7 @@ fun CompactItemCard(
     item: InvoiceItem,
     gstPercentage: Double,
     taxType: TaxType,
-    onQuantityChange: (Int) -> Unit,
+    onQuantityChange: (Double) -> Unit,
     onSerialNo: () -> Unit,
     onParameter: () -> Unit,
     onRemove: () -> Unit,
@@ -2592,8 +2670,8 @@ fun CompactItemCard(
                     ) {
                         QuantitySelector(
                             qty = item.qty,
-                            onDecrease = { onQuantityChange((item.qty - 1).coerceAtLeast(1)) },
-                            onIncrease = { onQuantityChange(item.qty + 1) }
+                            onDecrease = { onQuantityChange((item.qty - 1.0).coerceAtLeast(0.01)) },
+                            onIncrease = { onQuantityChange(item.qty + 1.0) }
                         )
                         Text(
                             text = "x ${formatTwo(item.price)}",
@@ -2640,7 +2718,7 @@ fun CompactItemCard(
 }
 
 @Composable
-fun QuantitySelector(qty: Int, onDecrease: () -> Unit, onIncrease: () -> Unit) {
+fun QuantitySelector(qty: Double, onDecrease: () -> Unit, onIncrease: () -> Unit) {
     Surface(
         shape = MaterialTheme.shapes.small,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
@@ -2659,7 +2737,7 @@ fun QuantitySelector(qty: Int, onDecrease: () -> Unit, onIncrease: () -> Unit) {
                 )
             }
             Text(
-                text = "$qty",
+                text = if (qty % 1.0 == 0.0) "${qty.toLong()}" else qty.formatToQtyDec(),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(horizontal = 12.dp),
@@ -3124,7 +3202,7 @@ fun TransactionItemBottomList(
     ) {
         LazyListState()
     }
-    var query by remember { mutableStateOf("") }
+    var query by remember(showBottomSheet) { mutableStateOf("") }
 
     val filteredList = remember(list, query) {
         smartSearch(
@@ -3265,7 +3343,7 @@ fun ExpandedItemEditor1(
     name: String,
     defaultListPrice: Double,
     gstPercentage: Double,
-    initialQuantity: Int? = 0,
+    initialQuantity: Double? = 0.0,
     taxType: TaxType,
     initialDiscount: String,
     existingItem: InvoiceItem? = null,
@@ -3279,7 +3357,7 @@ fun ExpandedItemEditor1(
     discountAlt: Double? = null,
     isSale: Boolean = true,
     onAdd: (
-        qty: Int,
+        qty: Double,
         unitPrice: Double,
         discount: Double,
         compoundDiscount: String?,
@@ -3296,11 +3374,35 @@ fun ExpandedItemEditor1(
         selectedUnit: String?,
         altQty: Double?,
     ) -> Unit,
+    onAddAndNew: ((
+        qty: Double,
+        unitPrice: Double,
+        discount: Double,
+        compoundDiscount: String?,
+        listPrice: Double,
+        taxable: Double,
+        gstAmount: Double,
+        net: Double,
+        gstPercentage: Double,
+        itemDescs: List<String?>,
+        additionalInfos: List<String?>,
+        serialNumbers: List<String>,
+        conFactor: Double?,
+        conType: Double?,
+        selectedUnit: String?,
+        altQty: Double?,
+    ) -> Unit)? = null,
     onCancel: () -> Unit,
     onBack: () -> Unit,
 ) {
 
-    var qtyN by remember { mutableStateOf(if (initialQuantity == 0) "" else initialQuantity.toString()) }
+    var qtyN by remember {
+        mutableStateOf(
+            if (initialQuantity == 0.0 || initialQuantity == null) ""
+            else if (initialQuantity % 1.0 == 0.0) initialQuantity.toLong().toString()
+            else initialQuantity.toString()
+        )
+    }
     var listPriceN by remember { mutableStateOf(defaultListPrice.formatToAmtDec()) }
     var discountN by remember { mutableStateOf(initialDiscount.toString()) }
     var amountN by remember { mutableStateOf("") }
@@ -3374,7 +3476,7 @@ fun ExpandedItemEditor1(
         additionalInfos[0] = existingItem.additionalinfo ?: ""
     }
 
-    val qtyValue = qtyN.toIntOrNull()?.takeIf { it > 0 } ?: 0
+    val qtyValue = qtyN.toDoubleOrNull()?.takeIf { it > 0.0 } ?: 0.0
 
     val unitPrice by derivedStateOf {
         when (editMode) {
@@ -3390,7 +3492,7 @@ fun ExpandedItemEditor1(
             }
 
             PriceEditMode.AMOUNT -> {
-                if (!isAmountManuallyEdited || qtyValue == 0) return@derivedStateOf 0.0
+                if (!isAmountManuallyEdited || qtyValue == 0.0) return@derivedStateOf 0.0
                 val amt = amountN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
                 val price = amt / qtyValue
                 discountN = "0"
@@ -3401,7 +3503,7 @@ fun ExpandedItemEditor1(
     }
 
     val amount by derivedStateOf {
-        if (qtyValue > 0) unitPrice * qtyValue else 0.0
+        if (qtyValue > 0.0) unitPrice * qtyValue else 0.0
     }
 
     val taxableAmount: Double
@@ -3424,8 +3526,8 @@ fun ExpandedItemEditor1(
         }
     }
 
-    val isAddEnabled = if (isBusy()) qtyValue > 0 else {
-        qtyValue > 0 && amount != 0.0
+    val isAddEnabled = if (isBusy()) qtyValue > 0.0 else {
+        qtyValue > 0.0 && amount != 0.0
     }
 
     Surface(
@@ -3484,10 +3586,11 @@ fun ExpandedItemEditor1(
                     Text("Qty")
                     BorderedInput(
                         value = qtyN,
+                        keyboardType = KeyboardType.Decimal,
                         onValueChange = {
                             isAmountManuallyEdited = false
                             editMode = PriceEditMode.LIST_PRICE
-                            qtyN = it.filter(Char::isDigit)
+                            qtyN = it
                         }
                     )
                 }
@@ -3579,7 +3682,8 @@ fun ExpandedItemEditor1(
             }
 
             Row(
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 TextButton(onClick = onCancel) { Text("Cancel") }
@@ -3589,12 +3693,12 @@ fun ExpandedItemEditor1(
                     onClick = {
                         val factor = conFactor ?: 1.0
                         val calculatedAltQty = if (selectedUnit == altUnit) {
-                            qtyValue.toDouble()
+                            qtyValue
                         } else {
-                            if (conType == 1.0) { // 1 Main = factor Alt
-                                qtyValue.toDouble() * factor
-                            } else { // 1 Alt = factor Main => 1 Main = 1/factor Alt
-                                qtyValue.toDouble() / factor
+                            if (conType == 1.0) {
+                                qtyValue * factor
+                            } else {
+                                qtyValue / factor
                             }
                         }
 
@@ -3619,7 +3723,47 @@ fun ExpandedItemEditor1(
                         )
                     }
                 ) {
-                    Text("Add")
+                    Text("Save")
+                }
+
+                if (onAddAndNew != null) {
+                    OutlinedButton(
+                        enabled = isAddEnabled,
+                        onClick = {
+                            val factor = conFactor ?: 1.0
+                            val calculatedAltQty = if (selectedUnit == altUnit) {
+                                qtyValue
+                            } else {
+                                if (conType == 1.0) {
+                                    qtyValue * factor
+                                } else {
+                                    qtyValue / factor
+                                }
+                            }
+
+                            onAddAndNew(
+                                qtyValue,
+                                unitPrice,
+                                if (isCompoundDiscount) 0.0 else discountN.trim().toDoubleOrNull()
+                                    ?: 0.0,
+                                if (isCompoundDiscount) discountN else null,
+                                listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0,
+                                taxableAmount,
+                                gstAmount,
+                                netAmount,
+                                gstPercentage,
+                                itemDescs.map { it.ifBlank { null } },
+                                additionalInfos.map { it.ifBlank { null } },
+                                serialNumbers,
+                                conFactor,
+                                conType,
+                                selectedUnit,
+                                calculatedAltQty
+                            )
+                        }
+                    ) {
+                        Text("Add New")
+                    }
                 }
             }
         }

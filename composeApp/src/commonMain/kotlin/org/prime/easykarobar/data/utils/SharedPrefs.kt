@@ -410,7 +410,8 @@ object SharedPrefs {
 
         private fun getKey(): String {
             val userId = User.get()?.ID ?: "common"
-            return KEY + userId
+            val regNumber = RegisteredNumber.get() ?: ""
+            return KEY + userId + regNumber
         }
 
         fun save(items: List<CartPersistenceItem>) {

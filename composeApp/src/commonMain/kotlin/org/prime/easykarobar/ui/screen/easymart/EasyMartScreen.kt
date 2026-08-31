@@ -272,7 +272,7 @@ object EasyMartScreen : Screen {
                             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                         ) {
                             Text(
-                                "Get OTP DEMO",
+                                "Get OTP",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold
                                 )

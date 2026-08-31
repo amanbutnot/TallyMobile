@@ -122,6 +122,10 @@ fun salesSlipHtml(
         text-align: left;
     }
 
+    .items th.right {
+        text-align: right;
+    }
+
     .items .head2 th {
         padding-top: 2px;
     }
@@ -146,6 +150,10 @@ fun salesSlipHtml(
         font-weight: 700;
         padding: 2px 0;
         margin-top: 2px;
+    }
+
+    .tax th, .tax td {
+        text-align: left;
     }
 
     .tax th {
@@ -213,26 +221,33 @@ fun salesSlipHtml(
         <thead>
         <tr>
             <th style="width: 7%;">Sl</th>
-            <th style="width: 42%;">Product</th>
-            <th style="width: 17%;" class="right">Price</th>
+            <th style="width: 41%;">Product</th>
+            <th style="width: 18%;">Price</th>
             <th style="width: 16%;" class="right">Disc(%)</th>
             <th style="width: 18%;" class="right">Amt.</th>
         </tr>
         <tr class="head2">
             <th></th>
-            <th>Qty. &nbsp;&nbsp;&nbsp; HSN Code</th>
-            <th class="right">GST %</th>
-            <th colspan="2" class="right">GST Amt</th>
+            <th>Qty. &nbsp;&nbsp; Unit</th>
+            <th style="white-space: nowrap;">HSN Code</th>
+            <th colspan="2" class="right" style="text-align: right;">GST %</th>
         </tr>
         </thead>
 
         <tbody>
             ${
         items.mapIndexed { index, item ->
-            val unitTaxable = if (item.qty != 0) {
+            val unitTaxable = if (item.qty != 0.0) {
                 item.taxable / item.qty.absoluteValue
             } else {
                 0.0
+            }
+
+            val unit = item.selectedUnit.clean().ifBlank { item.mainUnit.clean() }
+            val qtyUnitText = if (unit.isNotBlank()) {
+                "${item.qty.absoluteValue.toDouble().formatToAmtDec()} &nbsp;&nbsp; $unit"
+            } else {
+                item.qty.absoluteValue.toDouble().formatToAmtDec()
             }
 
             val disc = when {
@@ -241,20 +256,9 @@ fun salesSlipHtml(
                 else -> "--"
             }
 
-            val rateText = if (isIgst) {
-                (if (item.taxRate1 != 0.0) item.taxRate1 else item.gstPercentage).formatToAmtDec() + "%"
-            } else {
-                val r1 = if (item.taxRate1 != 0.0) item.taxRate1 else item.gstPercentage / 2
-                val r2 = if (item.taxRate2 != 0.0) item.taxRate2 else item.gstPercentage / 2
-                "${r1.formatToAmtDec()}%+${r2.formatToAmtDec()}%"
-            }
-            val taxAmtText = if (isIgst) {
-                (if (item.taxAmt1 != 0.0) item.taxAmt1 else item.gstAmt).formatToAmtDec()
-            } else {
-                val a1 = if (item.taxAmt1 != 0.0) item.taxAmt1 else item.gstAmt / 2
-                val a2 = if (item.taxAmt2 != 0.0) item.taxAmt2 else item.gstAmt / 2
-                "${a1.formatToAmtDec()}+${a2.formatToAmtDec()}"
-            }
+            val r1 = if (item.taxRate1 != 0.0) item.taxRate1 else item.gstPercentage / 2
+            val r2 = if (item.taxRate2 != 0.0) item.taxRate2 else item.gstPercentage / 2
+            val rateText = "${r1.formatToAmtDec()}%+${r2.formatToAmtDec()}%"
 
             """
         <tr class="item-main">
@@ -266,9 +270,9 @@ fun salesSlipHtml(
         </tr>
         <tr class="item-sub">
             <td></td>
-            <td>${item.qty.absoluteValue.toDouble().formatToAmtDec()} &nbsp;&nbsp;&nbsp; ${item.hsn.clean()}</td>
-            <td class="right">$rateText</td>
-            <td colspan="2" class="right">$taxAmtText</td>
+            <td>$qtyUnitText</td>
+            <td>${item.hsn.clean()}</td>
+            <td colspan="2" class="right">$rateText</td>
         </tr>
             """.trimIndent()
         }.joinToString("\n")
@@ -302,7 +306,7 @@ fun salesSlipHtml(
         <tr>
             <th style="width: 18%;">Rate</th>
             <th style="width: 30%;">Taxable</th>
-            ${if (isIgst) "<th>IGST Amt.</th>" else "<th>CGST</th><th>SGST</th>"}
+            ${if (isIgst) "<th style=\"width: 52%;\">IGST Amt.</th>" else "<th style=\"width: 26%;\">CGST</th><th style=\"width: 26%;\">SGST</th>"}
         </tr>
         </thead>
         <tbody>

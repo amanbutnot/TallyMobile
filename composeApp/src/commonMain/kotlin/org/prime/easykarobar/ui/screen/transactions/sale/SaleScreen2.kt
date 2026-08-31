@@ -244,12 +244,12 @@ data class SaleScreen2(
 
         val ledgerList = getLedgerMasters(db)
         val busyLedgerList = db.bSMasterQueries.selectAll().executeAsList()
-        val itemsList = getConfigItemMasters(db, vchType)
+        val itemsList = getConfigItemMasters(db, vchType).filter { (it.E4 ?: 0.0) != -1.0 && (it.E5 ?: 0.0) != -1.0 }
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
         var selectedSerialNo by remember { mutableStateOf<List<String>>(emptyList()) }
         var serialNoTotal by remember { mutableStateOf(0.0) }
-        val groupFilteredList = if (selectedGroups.isEmpty()) itemsList
-        else itemsList.filter { it.GroupName in getProductsGroupCodesByName(selectedGroups) }
+        val groupFilteredList = (if (selectedGroups.isEmpty()) itemsList
+        else itemsList.filter { it.GroupName in getProductsGroupCodesByName(selectedGroups) }).filter { (it.E4 ?: 0.0) != -1.0 && (it.E5 ?: 0.0) != -1.0 }
 
         val productGroups = remember {
             db.productGroupMasterQueries.selectAll(
@@ -342,7 +342,7 @@ data class SaleScreen2(
                         if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
                     val discount = if (isSale) product.SaleDisc ?: 0.0 else product.PurcDisc ?: 0.0
                     val price = listPrice - (listPrice * discount / 100.0)
-                    val qty = barcodeQty.toIntOrNull() ?: 1
+                    val qty = barcodeQty.toDoubleOrNull() ?: 1.0
                     val gstPercentage = try {
                         db.taxCategoryMastQueries.selectTaxRate(
                             product.TaxCategoryCode?.toInt().toString(), selectedDate
@@ -1003,6 +1003,76 @@ data class SaleScreen2(
                                                 editingItemIndex = null
                                                 editingItem = null
                                             },
+                                            onAddAndNew = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers, cFactor, cType, sUnit, aQty ->
+                                                val newItem = InvoiceItem(
+                                                    name = product?.Name ?: pendingItem.name,
+                                                    price = unitPrice,
+                                                    qty = qty,
+                                                    discountPercentage = discount,
+                                                    listPrice = listPriceText,
+                                                    taxable = taxable,
+                                                    CD = compoundDiscount ?: "",
+                                                    gstAmt = gstAmount,
+                                                    net = net,
+                                                    guid = product?.GUID ?: pendingSelectedProductGUID ?: pendingItem.guid,
+                                                    gstPercentage = gstPercentage,
+                                                    salesPriceAlt = product?.SalesPriceAlt ?: pendingItem.salesPriceAlt,
+                                                    purcPriceAlt = product?.PurcPriceAlt ?: pendingItem.purcPriceAlt,
+                                                    taxCategoryCode = product?.TaxCategoryCode?.toInt() ?: pendingItem.taxCategoryCode,
+                                                    itemdesc1 = itemDescs.getOrNull(0),
+                                                    itemdesc2 = itemDescs.getOrNull(1),
+                                                    itemdesc3 = itemDescs.getOrNull(2),
+                                                    itemdesc4 = itemDescs.getOrNull(3),
+                                                    itemdesc5 = itemDescs.getOrNull(4),
+                                                    itemdesc6 = itemDescs.getOrNull(5),
+                                                    itemdesc7 = itemDescs.getOrNull(6),
+                                                    itemdesc8 = itemDescs.getOrNull(7),
+                                                    itemdesc9 = itemDescs.getOrNull(8),
+                                                    itemdesc10 = itemDescs.getOrNull(9),
+                                                    itemdesc11 = itemDescs.getOrNull(10),
+                                                    itemdesc12 = itemDescs.getOrNull(11),
+                                                    itemdesc13 = itemDescs.getOrNull(12),
+                                                    itemdesc14 = itemDescs.getOrNull(13),
+                                                    itemdesc15 = itemDescs.getOrNull(14),
+                                                    itemdesc16 = itemDescs.getOrNull(15),
+                                                    itemdesc17 = itemDescs.getOrNull(16),
+                                                    itemdesc18 = itemDescs.getOrNull(17),
+                                                    itemdesc19 = itemDescs.getOrNull(18),
+                                                    itemdesc20 = itemDescs.getOrNull(19),
+                                                    additionalinfo = additionalInfos.getOrNull(0),
+                                                    item_serial = serialNumbers.map { sn ->
+                                                        SerialNoEnterReportSale(
+                                                            SerialNo = sn,
+                                                            MasterCode1 = product?.GUID?.toDoubleOrNull() ?: pendingItem.guid.toDoubleOrNull(),
+                                                            MasterCode2 = "",
+                                                            ProductName = pendingItem.name,
+                                                            UnitName = null,
+                                                            GroupName = null,
+                                                            Value1 = 1.0,
+                                                            Value2 = 0.0,
+                                                            Value3 = 0.0
+                                                        )
+                                                    },
+                                                    item_params = pendingItem.item_params,
+                                                    item_parameter = pendingItem.item_parameter,
+                                                    conFactor = cFactor,
+                                                    conType = cType,
+                                                    selectedUnit = sUnit,
+                                                    altQty = aQty,
+                                                    mainUnit = product?.UnitName ?: pendingItem.mainUnit,
+                                                    altUnit = product?.AltUnit ?: pendingItem.altUnit
+                                                )
+                                                val mutable = selectedItems.toMutableList()
+                                                if (index != null) {
+                                                    mutable[index] = newItem
+                                                } else {
+                                                    mutable.add(newItem)
+                                                }
+                                                selectedItems = mutable
+                                                editingItemIndex = null
+                                                editingItem = null
+                                                showItemSheet = true
+                                            },
                                             onBack = {
                                                 editingItemIndex = null
                                                 editingItem = null
@@ -1233,7 +1303,7 @@ data class SaleScreen2(
                             selectedPricing?.Discount ?: editingItem?.discountPercentage ?: 0.0
                         val compDisc = selectedPricing?.CompoundDiscount ?: editingItem?.CD ?: ""
 
-                        val qty = selectedList.size.coerceAtLeast(1)
+                        val qty = selectedList.size.coerceAtLeast(1).toDouble()
 
                         val taxableAmt: Double
                         val gstAmt: Double
@@ -1462,7 +1532,7 @@ data class SaleScreen2(
                             selectedPricing?.Discount ?: editingItem?.discountPercentage ?: 0.0
                         val compDisc = selectedPricing?.CompoundDiscount ?: editingItem?.CD ?: ""
 
-                        val qty = selectedList.size.coerceAtLeast(1)
+                        val qty = selectedList.size.coerceAtLeast(1).toDouble()
 
                         val taxableAmt: Double
                         val gstAmt: Double
@@ -1649,7 +1719,7 @@ data class SaleScreen2(
                             selectedPricing?.Discount ?: editingItem?.discountPercentage ?: 0.0
                         val compDisc = selectedPricing?.CompoundDiscount ?: editingItem?.CD ?: ""
 
-                        val qty = selectedList.size.coerceAtLeast(1)
+                        val qty = selectedList.size.coerceAtLeast(1).toDouble()
 
                         val taxableAmt: Double
                         val gstAmt: Double
@@ -1802,7 +1872,7 @@ data class SaleScreen2(
                             } catch (e: Exception) {
                                 0.0
                             }
-                            val qty = pending.qty.toIntOrNull()?.coerceAtLeast(1) ?: 1
+                            val qty = pending.qty.toDoubleOrNull()?.coerceAtLeast(0.01) ?: 1.0
 
                             val factor = prod?.ConFactor ?: 1.0
                             val conTypeVal = prod?.ConType ?: 1.0
@@ -1878,7 +1948,7 @@ data class SaleScreen2(
                             } catch (e: Exception) {
                                 0.0
                             }
-                            val qty = pending.qty.toIntOrNull()?.coerceAtLeast(1) ?: 1
+                            val qty = pending.qty.toDoubleOrNull()?.coerceAtLeast(0.01) ?: 1.0
 
                             val factor = prod?.ConFactor ?: 1.0
                             val conTypeVal = prod?.ConType ?: 1.0
@@ -1995,7 +2065,7 @@ data class SaleScreen2(
                             } catch (e: Exception) {
                                 0.0
                             }
-                            val qty = pending.qty.toIntOrNull()?.coerceAtLeast(1) ?: 1
+                            val qty = pending.qty.toDoubleOrNull()?.coerceAtLeast(0.01) ?: 1.0
 
                             val factor = prod?.ConFactor ?: 1.0
                             val conTypeVal = prod?.ConType ?: 1.0
@@ -2099,7 +2169,7 @@ data class SaleScreen2(
                             selectedPricing?.Discount ?: editingItem?.discountPercentage ?: 0.0
                         val compDisc = selectedPricing?.CompoundDiscount ?: editingItem?.CD ?: ""
 
-                        val qty = selectedList.size.coerceAtLeast(1)
+                        val qty = selectedList.size.coerceAtLeast(1).toDouble()
 
                         val taxableAmt: Double
                         val gstAmt: Double
@@ -2207,7 +2277,7 @@ data class SaleScreen2(
                             selectedPricing?.Discount ?: editingItem?.discountPercentage ?: 0.0
                         val compDisc = selectedPricing?.CompoundDiscount ?: editingItem?.CD ?: ""
 
-                        val qty = selectedList.size.coerceAtLeast(1)
+                        val qty = selectedList.size.coerceAtLeast(1).toDouble()
 
                         val taxableAmt: Double
                         val gstAmt: Double
@@ -2313,7 +2383,7 @@ data class SaleScreen2(
                             selectedPricing?.Discount ?: editingItem?.discountPercentage ?: 0.0
                         val compDisc = selectedPricing?.CompoundDiscount ?: editingItem?.CD ?: ""
 
-                        val qty = selectedList.size.coerceAtLeast(1)
+                        val qty = selectedList.size.coerceAtLeast(1).toDouble()
 
                         val taxableAmt: Double
                         val gstAmt: Double

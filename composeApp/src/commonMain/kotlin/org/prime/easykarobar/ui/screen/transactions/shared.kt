@@ -181,7 +181,7 @@ fun TransactionBottomSheet(
     itemContent: @Composable ((String) -> Unit)? = null
 )
 {
-    var query by remember { mutableStateOf("") }
+    var query by remember(showBottomSheet) { mutableStateOf("") }
 
 
     val filteredList = remember(list, query) {
@@ -352,7 +352,7 @@ fun TransactionBottomSheetThree(
     itemContent: @Composable ((String) -> Unit)? = null
 )
 {
-    var query by remember { mutableStateOf("") }
+    var query by remember(showBottomSheet) { mutableStateOf("") }
 
 
     val filteredList = remember(list, query) {
@@ -522,7 +522,7 @@ fun TransactionOneBottomSheet(
     itemContent: @Composable ((String) -> Unit)? = null
 )
 {
-    var query by remember { mutableStateOf("") }
+    var query by remember(showBottomSheet) { mutableStateOf("") }
 
 
     val filteredList = remember(list, query) {
@@ -692,7 +692,7 @@ fun TransactionLedgerBottomSheet(
     title: String = "Select Account",
     itemContent: @Composable ((LedgerMaster) -> Unit)? = null
 ) {
-    var query by remember { mutableStateOf("") }
+    var query by remember(showBottomSheet) { mutableStateOf("") }
 
     val filteredList = remember(list, query) {
         smartSearch(
@@ -859,7 +859,7 @@ fun TransactionSundryBottomSheet(
     title: String = "Select Account",
     itemContent: @Composable ((SundryItem) -> Unit)? = null
 ) {
-    var query by remember { mutableStateOf("") }
+    var query by remember(showBottomSheet) { mutableStateOf("") }
 
     val filteredList = remember(list, query) {
         smartSearch(
