@@ -78,6 +78,7 @@ object OrderRepository {
             val res = KtorClient.client.post("$BASE_URL/Transactions/listOfDistributorOrders.php") {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
+                //guid after save, send mobile number (guid)
                 setBody(
                     ListRequest(SharedPrefs.DistributorData.get()?.ledger_GUID.toString(), orderId)
                 )

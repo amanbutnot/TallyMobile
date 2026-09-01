@@ -347,7 +347,7 @@ object CategoryShoppingScreen : Screen {
                     if (debouncedSearchQuery.isBlank()) {
                         items(
                             items = screenData.sliders,
-                            key = { it.ID }
+                        //    key = { it.ID }
                         ) { master ->
                             var images by remember(master.ID) { mutableStateOf<List<SLIDE_IMG>>(emptyList()) }
                             LaunchedEffect(master.ID) {
@@ -373,7 +373,7 @@ object CategoryShoppingScreen : Screen {
                         }
                         items(
                             items = screenData.banners,
-                            key = { it.ID }
+                         //   key = { it.ID }
                         ) { banner ->
                             Surface(
                                 modifier = Modifier
@@ -404,7 +404,7 @@ object CategoryShoppingScreen : Screen {
 
                         items(
                             items = featureProductsByFeature.keys.toList(),
-                            key = { it.CODE }
+                       //     key = { it.CODE }
                         ) { feature ->
                             val featureProducts = featureProductsByFeature[feature].orEmpty()
                             if (featureProducts.isNotEmpty()) {
@@ -460,7 +460,7 @@ object CategoryShoppingScreen : Screen {
 
                     items(
                         items = filteredCategories,
-                        key = { it.GUID ?: it.Name.orEmpty() }
+                   //     key = { it.GUID ?: it.Name.orEmpty() }
                     ) { category ->
                         val products = productsByCategoryId[category.GUID?.toDouble()].orEmpty()
                         if (products.isNotEmpty()) {

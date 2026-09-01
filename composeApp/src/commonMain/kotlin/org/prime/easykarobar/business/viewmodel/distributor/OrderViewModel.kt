@@ -41,6 +41,14 @@ class OrderViewModel : ViewModel() {
 
 
     fun createOrder(createOrderRequest: CreateOrderRequest) {
+        if (SharedPrefs.RegisteredNumber.get() == "6969696969") {
+            _createOrderState.value = CreateOrderState(
+                success = false,
+                isLoading = false,
+                message = "Guests can't order please create your account or login"
+            )
+            return
+        }
         viewModelScope.launch {
             _createOrderState.value = _createOrderState.value.copy(isLoading = true)
             val res = OrderRepository.createNewOrder(createOrderRequest)

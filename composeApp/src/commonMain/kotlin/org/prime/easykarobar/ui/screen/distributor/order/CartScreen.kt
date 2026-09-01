@@ -1346,6 +1346,8 @@ fun ConfirmOrderButton(
     var showMinOrderAlert by remember { mutableStateOf(false) }
     var showCartValidationAlert by remember { mutableStateOf(false) }
     var showAddressAlert by remember { mutableStateOf(false) }
+    val isGuest = SharedPrefs.RegisteredNumber.get() == "6969696969"
+    var showGuestAlert by remember { mutableStateOf(false) }
     var currentIsDelivery by remember { mutableStateOf(isDelivery) }
 
     LaunchedEffect(isDelivery) {
@@ -1356,7 +1358,9 @@ fun ConfirmOrderButton(
 
     Button(
         onClick = {
-            if (!isCartValid) {
+            if (isGuest) {
+                showGuestAlert = true
+            } else if (!isCartValid) {
                 showCartValidationAlert = true
             } else if (billingAddress.trim().isEmpty()) {
                 showAddressAlert = true
@@ -1485,6 +1489,18 @@ fun ConfirmOrderButton(
             },
             onCancel = { showAddressAlert = false },
             onDismiss = { showAddressAlert = false }
+        )
+    }
+
+    if (showGuestAlert) {
+        TallyAlertBox(
+            title = "Guest Account",
+            message = "Guests can't order please create your account or login",
+            confirmButtonText = "Ok",
+            cancelButtonText = "",
+            onConfirm = { showGuestAlert = false },
+            onCancel = { showGuestAlert = false },
+            onDismiss = { showGuestAlert = false }
         )
     }
 

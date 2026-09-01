@@ -23,6 +23,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -86,6 +87,12 @@ data class DispatchInfoScreen(val mobile: String) : Screen {
 
         BackHandler(true) {
 
+        }
+
+        LaunchedEffect(Unit) {
+            if (mobile == "6969696969" || SharedPrefs.RegisteredNumber.get() == "6969696969") {
+                nav.replaceAll(Dashboard)
+            }
         }
 
         EasyMartRefreshableBox(nav = nav) {
@@ -320,6 +327,7 @@ data class DispatchInfoScreen(val mobile: String) : Screen {
                                     accountViewModel.createAccount(account) {
                                         if (accountViewModel.dataState.value.success) {
                                             accountViewModel.dataState.value.data?.ledger_guid?.let { guid ->
+                                                println("we are saving ledger guid of new account which is $guid")
                                                 SharedPrefs.BillingGuid.save(guid)
                                             }
                                         }

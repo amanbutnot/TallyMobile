@@ -194,9 +194,10 @@ data class MasterAddScreen(val number: String) : Screen {
                             }
                         }
 
+                        val isGuest = number == "6969696969" || SharedPrefs.RegisteredNumber.get() == "6969696969"
                         val exists = db.ledgerPricingQueries.existsByMobile(number).executeAsOne() > 0
                         println("Exists by mobile: $exists, Dispatch saved: ${SharedPrefs.DispatchInfo.isSaved()}")
-                        if (!exists && !SharedPrefs.DispatchInfo.isSaved()) {
+                        if (!isGuest && !exists && !SharedPrefs.DispatchInfo.isSaved()) {
                             nav.replaceAll(DispatchInfoScreen(number))
                             return@listAccount
                         }

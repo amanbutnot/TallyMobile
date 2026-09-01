@@ -1,9 +1,11 @@
 package org.prime.easykarobar.ui.screen.easymart
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -22,8 +24,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -54,7 +58,14 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.jetbrains.compose.resources.painterResource
 import org.prime.easykarobar.BuildKonfig
 import org.prime.easykarobar.business.viewmodel.AuthViewModel
+import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.getDeviceId
+import org.prime.easykarobar.data.model.CompanyList
+import org.prime.easykarobar.data.model.LoginRequest
+import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.screen.auth.SelectCompanyScreen
 import org.prime.easykarobar.ui.screen.auth.VerifyOtpScreen
+import org.prime.easykarobar.ui.screen.startup.GoogleDriveDownloadScreen
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
@@ -71,18 +82,82 @@ object EasyMartScreen : Screen {
 
         val authViewModel: AuthViewModel = viewModel { AuthViewModel() }
         val validateState by authViewModel.validateState
+        val authState by authViewModel.authState
+        val deviceId = getDeviceId()
 
         var phoneNumber by remember { mutableStateOf("") }
 
-        if (validateState.isLoading) {
+        fun performGuestLogin() {
+            val guestNumber = "6969696969"
+            SharedPrefs.IsEasyMart.save(true)
+            SharedPrefs.RegisteredNumber.save(guestNumber)
+            authViewModel.userLogin(
+                LoginRequest(
+                    Username = BuildKonfig.USERNAME,
+                    Password = BuildKonfig.PASSWORD,
+                    DeviceId = deviceId,
+                    CompanyID = BuildKonfig.STORE_ID.toIntOrNull() ?: 0,
+                    RegisteredNumber = BuildKonfig.REGISTERED_NUMBER
+                ),
+                onSuccess = {
+                    SharedPrefs.LoginData.save(
+                        SharedPrefs.LoginDataModel(
+                            username = BuildKonfig.USERNAME,
+                            password = BuildKonfig.PASSWORD,
+                            list = CompanyList(emptyList()),
+                        )
+                    )
+                    navigator.replaceAll(GoogleDriveDownloadScreen(guestNumber))
+                },
+                onListSuccess = { companyList ->
+                    SharedPrefs.LoginInfo.save(BuildKonfig.USERNAME)
+                    SharedPrefs.LoginData.save(
+                        SharedPrefs.LoginDataModel(
+                            username = BuildKonfig.USERNAME,
+                            password = BuildKonfig.PASSWORD,
+                            list = companyList,
+                        )
+                    )
+                    try {
+                        val db = DatabaseHolder.instance
+                        val result = db.ledgerPricingQueries.selectChangePrice(guestNumber).executeAsOneOrNull()
+                        if (result != null) {
+                            SharedPrefs.ChangePrice.save(result.L6 ?: 0.0)
+                        } else {
+                            val savedGst = SharedPrefs.DispatchInfo.getGst()
+                            if (!savedGst.isNullOrBlank()) {
+                                SharedPrefs.ChangePrice.save(102.0)
+                            } else {
+                                SharedPrefs.ChangePrice.save(101.0)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                    navigator.push(
+                        SelectCompanyScreen(
+                            BuildKonfig.USERNAME,
+                            BuildKonfig.PASSWORD,
+                            companyList,
+                            guestNumber
+                        )
+                    )
+                }
+            )
+        }
+
+        if (validateState.isLoading || authState.isLoading) {
             TallyLoadingDialog(text = "Processing...")
         }
 
-        if (validateState.error != null) {
+        if (validateState.error != null || authState.error != null) {
             TallyResultDialog(
-                message = validateState.message ?: "Error Occurred",
-                onDone = { authViewModel.clearValidateMessage() },
-                isSuccess = validateState.success,
+                message = validateState.error ?: authState.error ?: "Error Occurred",
+                onDone = {
+                    authViewModel.clearValidateMessage()
+                    authViewModel.clearError()
+                },
+                isSuccess = validateState.success || authState.success,
                 confirmText = "Ok"
             )
         }
@@ -241,9 +316,10 @@ object EasyMartScreen : Screen {
 
                         Button(
                             onClick = {
-                                if (phoneNumber.length == 10) {
+                                if (phoneNumber == "6969696969") {
+                                    performGuestLogin()
+                                } else if (phoneNumber.length == 10) {
                                     val otp = (100_000..999_999).random()
-                                    //  authViewModel.validateMobile(username = phoneNumber) {
                                     authViewModel.sendOtp(
                                         number = phoneNumber,
                                         message = "Your login OTP is $otp. Please do not share it with anyone.",
@@ -256,7 +332,6 @@ object EasyMartScreen : Screen {
                                                 )
                                             )
                                         })
-                                    // }
                                 }
                             },
                             modifier = Modifier
@@ -275,6 +350,48 @@ object EasyMartScreen : Screen {
                                 "Get OTP",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold
+                                )
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            HorizontalDivider(
+                                modifier = Modifier.weight(1f),
+                                color = colors.outlineVariant.copy(alpha = 0.5f)
+                            )
+                            Text(
+                                text = "  OR  ",
+                                style = MaterialTheme.typography.labelMedium.copy(color = colors.onSurfaceVariant)
+                            )
+                            HorizontalDivider(
+                                modifier = Modifier.weight(1f),
+                                color = colors.outlineVariant.copy(alpha = 0.5f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedButton(
+                            onClick = {
+                                phoneNumber = "6969696969"
+                                performGuestLogin()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.5.dp, topColor)
+                        ) {
+                            Text(
+                                "Login as Guest",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = topColor
                                 )
                             )
                         }
