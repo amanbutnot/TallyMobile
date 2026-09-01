@@ -417,7 +417,7 @@ object CategoryShoppingScreen : Screen {
                                 ) {
                                     FeatureSection(
                                         title = feature.CODE,
-                                        products = featureProducts.take(8),
+                                        products = featureProducts.take(2),
                                         cartViewModel = cartViewModel,
                                         wishlistViewModel = wishlistViewModel,
                                         isTwoPerRow = isTwoPerRow,
@@ -426,7 +426,18 @@ object CategoryShoppingScreen : Screen {
                                         onItemClick = { item ->
                                             selectedProduct.value = item
                                             showProductInfo.value = true
-                                        }
+                                        },
+                                        onMoreClick = if (featureProducts.size > 2) {
+                                            {
+                                                handleBannerClick(
+                                                    feature = feature,
+                                                    nav = nav,
+                                                    urlProvider = urlProvider,
+                                                    showProductInfo = showProductInfo,
+                                                    selectedProduct = selectedProduct
+                                                )
+                                            }
+                                        } else null
                                     )
                                 }
                             }
@@ -709,7 +720,8 @@ object CategoryShoppingScreen : Screen {
         isTwoPerRow: Boolean,
         cartGuids: Set<String?>,
         wishlistGuids: Set<String?>,
-        onItemClick: (GetProductsForDis) -> Unit
+        onItemClick: (GetProductsForDis) -> Unit,
+        onMoreClick: (() -> Unit)? = null
     ) {
         if (products.isEmpty()) return
 
@@ -718,15 +730,33 @@ object CategoryShoppingScreen : Screen {
                 .fillMaxWidth()
                 .padding(vertical = 12.dp)
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                ),
-                color = Color(0xFF1A1C1E),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    ),
+                    color = Color(0xFF1A1C1E)
+                )
+                if (onMoreClick != null) {
+                    TextButton(onClick = onMoreClick) {
+                        Text(
+                            text = "More",
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                color = Color(0xFF004D40),
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                }
+            }
 
             val chunks =
                 remember(products, isTwoPerRow) { products.chunked(if (isTwoPerRow) 2 else 1) }

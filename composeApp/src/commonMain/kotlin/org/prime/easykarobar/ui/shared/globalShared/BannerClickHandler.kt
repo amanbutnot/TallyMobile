@@ -26,7 +26,8 @@ fun handleBannerClick(
     nav: Navigator,
     urlProvider: UriHandler,
     showProductInfo: MutableState<Boolean>,
-    selectedProduct: MutableState<GetProductsForDis?>
+    selectedProduct: MutableState<GetProductsForDis?>,
+    title: String? = null
 ) {
     val db = DatabaseHolder.instance
     when (c1) {
@@ -59,7 +60,7 @@ fun handleBannerClick(
 
             nav.pushEasyMart(
                 AllProductsPremiumScreen(
-                    categoryName = category?.Name ?: "Category",
+                    categoryName = title ?: category?.Name ?: "Category",
                     productCode = c2?.toDoubleOrNull(),
                     isTab = false
                 )
@@ -71,7 +72,7 @@ fun handleBannerClick(
             if (guids.isNotEmpty()) {
                 nav.pushEasyMart(
                     AllProductsPremiumScreen(
-                        categoryName = "Products",
+                        categoryName = title ?: "Products",
                         productGuids = guids,
                         isTab = false
                     )
@@ -98,7 +99,7 @@ fun handleBannerClick(
     showProductInfo: MutableState<Boolean>,
     selectedProduct: MutableState<GetProductsForDis?>
 ) {
-    handleBannerClick(feature.C1, feature.C2, nav, urlProvider, showProductInfo, selectedProduct)
+    handleBannerClick(feature.C1, feature.C2, nav, urlProvider, showProductInfo, selectedProduct, title = feature.CODE)
 }
 
 fun handleBannerClick(
