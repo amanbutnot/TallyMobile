@@ -49,6 +49,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
+import org.prime.easykarobar.BuildKonfig
 import org.prime.easykarobar.business.viewmodel.AuthViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
@@ -88,7 +89,8 @@ object Dashboard : Screen {
         val cartViewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
         val deviceId = getDeviceId()
 
-        val initialTab = if (userRole() == ROLE.DISTRIBUTOR || SharedPrefs.IsEasyMart.get()) DistributorHomeSubTab else HomeTab
+        val initialTab =
+            if (userRole() == ROLE.DISTRIBUTOR || SharedPrefs.IsEasyMart.get()) DistributorHomeSubTab else HomeTab
 
         TabNavigator(initialTab) { tabNavigator ->
             Scaffold(
@@ -148,15 +150,21 @@ object Dashboard : Screen {
                                                 DeviceId = deviceId
                                             ),
                                             onSuccess = {
-                                                nav.push(GoogleDriveDownloadScreen(loginData?.username ?: ""))
+                                                nav.push(
+                                                    GoogleDriveDownloadScreen(
+                                                        loginData?.username ?: ""
+                                                    )
+                                                )
                                             }, onListSuccess = { companyList ->
                                                 SharedPrefs.LoginInfo.save(
                                                     loginData?.username?.trim() ?: ""
                                                 )
                                                 SharedPrefs.LoginData.save(
                                                     SharedPrefs.LoginDataModel(
-                                                        username = loginData?.username?.trim() ?: "",
-                                                        password = loginData?.password?.trim() ?: "",
+                                                        username = loginData?.username?.trim()
+                                                            ?: "",
+                                                        password = loginData?.password?.trim()
+                                                            ?: "",
                                                         list = companyList,
                                                     )
                                                 )
@@ -187,7 +195,10 @@ object Dashboard : Screen {
                                                     containerColor = Color(0xFFE53935),
                                                     contentColor = Color.White
                                                 ) {
-                                                    val displayCount = if (count == count.toLong().toDouble()) count.toLong().toString() else count.toString()
+                                                    val displayCount = if (count == count.toLong()
+                                                            .toDouble()
+                                                    ) count.toLong()
+                                                        .toString() else count.toString()
                                                     Text(displayCount)
                                                 }
                                             }
@@ -227,31 +238,43 @@ object Dashboard : Screen {
                 },
                 bottomBar = {
                     val role = userRole()
-                    if (role == ROLE.ADMIN || role == ROLE.SALESMAN || role == ROLE.DISTRIBUTOR) {
-                        val tabs = if (role == ROLE.DISTRIBUTOR || SharedPrefs.IsEasyMart.get()) {
-                            val distributorTabs = mutableListOf<Tab>(
-                                DistributorHomeSubTab,
-                                DistributorCategorySubTab,
-                                WishlistTab
-                            )
-                            if (org.prime.easykarobar.BuildKonfig.STORE_ID.isEmpty()) {
-                                distributorTabs.add(DistributorReportSubTab)
+                    val isEasyMart = SharedPrefs.IsEasyMart.get()
+                    val isDistributor = role == ROLE.DISTRIBUTOR
+
+                    if (role == ROLE.ADMIN || role == ROLE.SALESMAN || isDistributor) {
+
+                        val tabs = if (isDistributor || isEasyMart) {
+                            buildList<Tab> {
+                                add(DistributorHomeSubTab)
+                                add(DistributorCategorySubTab)
+                                add(WishlistTab)
+
+                                if (BuildKonfig.STORE_ID.isEmpty()) {
+                                    add(DistributorReportSubTab)
+                                }
+
+                                if (isEasyMart) {
+                                    add(SettingsTab)
+                                    add(WhatsAppSupportTab)
+                                    add(CallSupportTab)
+                                }
                             }
-                            if (SharedPrefs.IsEasyMart.get()) {
-                                distributorTabs.add(SettingsTab)
-                                distributorTabs.add(WhatsAppSupportTab)
-                                distributorTabs.add(CallSupportTab)
-                            }
-                            distributorTabs
                         } else {
-                            listOf(HomeTab, MastersTab, TransactionTab, ReportingTab)
+                            listOf(
+                                HomeTab,
+                                MastersTab,
+                                TransactionTab,
+                                ReportingTab
+                            )
                         }
+
                         BottomTabBar(
                             tabs = tabs,
                             tabNavigator = tabNavigator
                         )
                     }
                 }
+
             ) { paddingValues ->
                 Box(modifier = Modifier.padding(paddingValues)) {
                     CurrentTab()

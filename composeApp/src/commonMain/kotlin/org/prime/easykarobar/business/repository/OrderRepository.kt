@@ -80,7 +80,10 @@ object OrderRepository {
                 header("Authorization", "Bearer $token")
                 //guid after save, send mobile number (guid)
                 setBody(
-                    ListRequest(SharedPrefs.DistributorData.get()?.ledger_GUID.toString(), orderId)
+                    ListRequest(
+                        SharedPrefs.DistributorData.get()?.ledger_GUID
+                            ?: SharedPrefs.BillingGuid.get() ?: "", orderId
+                    )
                 )
             }
             println(res.bodyAsText())

@@ -251,6 +251,12 @@ object SettingScreen : Screen {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     ProfileItem(
                                         Icons.Default.Store,
+                                        "Mobile Number",
+                                        SharedPrefs.DistributorData.get()?.ledger_GUID
+                                            ?: SharedPrefs.BillingGuid.get() ?: ""
+                                    )
+                                    ProfileItem(
+                                        Icons.Default.Store,
                                         "Store ID",
                                         SharedPrefs.User.get()?.ID.toString()
                                     )

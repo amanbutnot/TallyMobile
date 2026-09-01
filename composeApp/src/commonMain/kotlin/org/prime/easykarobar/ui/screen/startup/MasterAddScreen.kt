@@ -66,6 +66,12 @@ data class MasterAddScreen(val number: String) : Screen {
                         guid = dataState.ledger_guid.toString(),
                         panNo = dataState.itPan
                     )
+                    db.ledgerPricingQueries.insertLedgerPricing(
+                        guid = dataState.ledger_guid?.toLong() ?: 0L,
+                        name = dataState.name?.trim(),
+                        mobileno = dataState.mobileNo?.trim() ?: "",
+                        l6 = if (!dataState.gstNo.isNullOrBlank()) 101.0 else 102.0
+                    )
                     state.data?.data_items?.forEach { data ->
 
                         db.productsQueries.insertItem(

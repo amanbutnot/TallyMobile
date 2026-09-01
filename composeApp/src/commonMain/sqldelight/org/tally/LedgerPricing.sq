@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS LedgerPricing (
-GUID INTEGER NOT NULL ,
+    GUID INTEGER NOT NULL ,
     Name TEXT,
     MobileNo TEXT NOT NULL,
     L6 REAL
@@ -14,3 +14,17 @@ existsByMobile:
 SELECT COUNT(*)
 FROM LedgerPricing
 WHERE MobileNo = :mobileno;
+
+insertLedgerPricing:
+INSERT OR REPLACE INTO LedgerPricing(
+    GUID,
+    Name,
+    MobileNo,
+    L6
+)
+VALUES(
+    :guid,
+    :name,
+    :mobileno,
+    :l6
+);
