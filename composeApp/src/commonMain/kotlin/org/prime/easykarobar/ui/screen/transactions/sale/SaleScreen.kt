@@ -244,6 +244,33 @@ data class InvoiceItem(
     val total: Double get() = price * qty
 }
 
+fun getEffectivePrices(
+    mainPrice: Double,
+    altPrice: Double?,
+    conFactor: Double?,
+    conType: Double?,
+    isSale: Boolean
+): Pair<Double, Double?> {
+    val factor = conFactor ?: 1.0
+    val cType = conType ?: 1.0
+    var calcMain = mainPrice
+    var calcAlt = altPrice
+
+    if (calcAlt != null && calcAlt != 0.0) {
+        if (calcMain == 0.0) {
+            calcMain = if (cType == 1.0) calcAlt * factor else if (factor > 0.0) calcAlt / factor else calcAlt
+        }
+    } else {
+        if (calcMain != 0.0) {
+            calcAlt = if (cType == 1.0) calcMain / factor else calcMain * factor
+        } else {
+            calcAlt = 0.0
+        }
+    }
+
+    return Pair(calcMain, calcAlt)
+}
+
 
 enum class TaxType {
     INCLUSIVE, EXTRA, VOUCHER
@@ -525,8 +552,12 @@ data class SaleScreen(
                             return@launch
                         }
 
-                        val listPrice =
+                        val rawListPrice =
                             if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
+                        val rawAltPrice = product.SalesPriceAlt
+                        val factor = product.ConFactor ?: 1.0
+                        val conTypeVal = product.ConType ?: 1.0
+                        val (listPrice, salesPriceAlt) = getEffectivePrices(rawListPrice, rawAltPrice, factor, conTypeVal, isSale)
                         val discount =
                             if (isSale) product.SaleDisc ?: 0.0 else product.PurcDisc ?: 0.0
                         val price = listPrice - (listPrice * discount / 100.0)
@@ -566,12 +597,10 @@ data class SaleScreen(
                             }
                         }
 
-                        val factor = product.ConFactor ?: 1.0
-                        val conTypeVal = product.ConType ?: 1.0
                         val calculatedAltQty = if (conTypeVal == 1.0) {
-                            qty.toDouble() * factor
+                            qty * factor
                         } else {
-                            qty.toDouble() / factor
+                            qty / factor
                         }
 
                         withContext(Dispatchers.Main) {
@@ -1220,12 +1249,18 @@ data class SaleScreen(
                                             0.0
                                         }
 
+                                        val rawMain = if (pendingItem.listPrice == 0.0)
+                                            if (isSale) product?.SalesPrice ?: 0.0
+                                            else product?.PurcPrice ?: 0.0
+                                        else pendingItem.listPrice
+                                        val rawAlt = pendingItem.salesPriceAlt ?: product?.SalesPriceAlt
+                                        val cFactor = product?.ConFactor ?: pendingItem.conFactor
+                                        val cType = product?.ConType ?: pendingItem.conType
+                                        val (effMain, effAlt) = getEffectivePrices(rawMain, rawAlt, cFactor, cType, isSale)
+
                                         ExpandedItemEditor1(
                                             name = product?.Name ?: pendingItem.name,
-                                            defaultListPrice = if (pendingItem.listPrice == 0.0)
-                                                if (isSale) product?.SalesPrice ?: 0.0
-                                                else product?.PurcPrice ?: 0.0
-                                            else pendingItem.listPrice,
+                                            defaultListPrice = effMain,
                                             initialQuantity = pendingItem.qty,
                                             initialDiscount = pendingItem.CD.ifBlank { pendingItem.discountPercentage.toString() },
                                             taxType = taxType,
@@ -1236,10 +1271,10 @@ data class SaleScreen(
                                             mainUnit = product?.UnitName ?: pendingItem.mainUnit
                                             ?: "",
                                             altUnit = product?.AltUnit ?: pendingItem.altUnit,
-                                            conFactor = product?.ConFactor ?: pendingItem.conFactor,
-                                            conType = product?.ConType ?: pendingItem.conType,
-                                            salesPriceAlt = product?.SalesPriceAlt,
-                                            purcPriceAlt = product?.PurcPriceAlt,
+                                            conFactor = cFactor,
+                                            conType = cType,
+                                            salesPriceAlt = effAlt,
+                                            purcPriceAlt = product?.PurcPriceAlt ?: pendingItem.purcPriceAlt,
                                             isSale = isSale,
                                             gstPercentage = gst,
                                             onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers, cFactor, cType, sUnit, aQty ->
@@ -1257,8 +1292,8 @@ data class SaleScreen(
                                                         ?: pendingSelectedProductGUID
                                                         ?: pendingItem.guid,
                                                     gstPercentage = gstPercentage,
-                                                    salesPriceAlt = product?.SalesPriceAlt ?: pendingItem.salesPriceAlt,
-                                                    purcPriceAlt = product?.PurcPriceAlt ?: pendingItem.purcPriceAlt,
+                                                    salesPriceAlt = pendingItem.salesPriceAlt ?: product?.SalesPriceAlt,
+                                                    purcPriceAlt = pendingItem.purcPriceAlt ?: product?.PurcPriceAlt,
                                                     taxCategoryCode = product?.TaxCategoryCode?.toInt()
                                                         ?: pendingItem.taxCategoryCode,
                                                     itemdesc1 = itemDescs.getOrNull(0),
@@ -1332,8 +1367,8 @@ data class SaleScreen(
                                                         ?: pendingSelectedProductGUID
                                                         ?: pendingItem.guid,
                                                     gstPercentage = gstPercentage,
-                                                    salesPriceAlt = product?.SalesPriceAlt ?: pendingItem.salesPriceAlt,
-                                                    purcPriceAlt = product?.PurcPriceAlt ?: pendingItem.purcPriceAlt,
+                                                    salesPriceAlt = pendingItem.salesPriceAlt ?: product?.SalesPriceAlt,
+                                                    purcPriceAlt = pendingItem.purcPriceAlt ?: product?.PurcPriceAlt,
                                                     taxCategoryCode = product?.TaxCategoryCode?.toInt()
                                                         ?: pendingItem.taxCategoryCode,
                                                     itemdesc1 = itemDescs.getOrNull(0),
@@ -1894,7 +1929,11 @@ data class SaleScreen(
                         if (autoPricing != null) {
                             val prod = itemsList.find { it.Name == itemName.Name }
                             val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
-                            val listPrice = autoPricing.SalesPrice ?: 0.0
+                            val rawListPrice = autoPricing.SalesPrice ?: 0.0
+                            val rawAltPrice = autoPricing.SalesPriceAlt
+                            val factor = prod?.ConFactor ?: 1.0
+                            val conTypeVal = prod?.ConType ?: 1.0
+                            val (listPrice, salesPriceAlt) = getEffectivePrices(rawListPrice, rawAltPrice, factor, conTypeVal, isSale)
                             val discount = autoPricing.Disc ?: 0.0
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
@@ -1916,16 +1955,20 @@ data class SaleScreen(
                                 mainUnit = prod?.UnitName,
                                 altUnit = prod?.AltUnit,
                                 hsn = prod?.HSN,
-                                salesPriceAlt = autoPricing.SalesPriceAlt,
-                                purcPriceAlt = autoPricing.SalesPriceAlt
+                                salesPriceAlt = salesPriceAlt,
+                                purcPriceAlt = salesPriceAlt
                             )
                             showItemSheet = false
                         } else if (pricingLevel != 100.0 && pricingForProduct.isNotEmpty()) {
                             showProductPricingSheet = true
                         } else {
                             val prod = itemsList.find { it.Name == itemName.Name }
-                            val listPrice =
+                            val rawListPrice =
                                 if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
+                            val rawAltPrice = prod?.SalesPriceAlt
+                            val factor = prod?.ConFactor ?: 1.0
+                            val conTypeVal = prod?.ConType ?: 1.0
+                            val (listPrice, salesPriceAlt) = getEffectivePrices(rawListPrice, rawAltPrice, factor, conTypeVal, isSale)
                             val discount =
                                 if (isSale) prod?.SaleDisc ?: 0.0 else prod?.PurcDisc ?: 0.0
                             editingItem = InvoiceItem(
@@ -1948,7 +1991,7 @@ data class SaleScreen(
                                 mainUnit = prod?.UnitName,
                                 altUnit = prod?.AltUnit,
                                 hsn = prod?.HSN,
-                                salesPriceAlt = prod?.SalesPriceAlt,
+                                salesPriceAlt = salesPriceAlt,
                                 purcPriceAlt = prod?.PurcPriceAlt
                             )
                             showItemSheet = false
@@ -1984,7 +2027,11 @@ data class SaleScreen(
                             val prod = itemsList.find { it.Name == itemName.Name }
                             val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
 
-                            val listPrice = pricing.SalePrice
+                            val rawListPrice = pricing.SalePrice
+                            val rawAltPrice = pricing.SalesPriceAlt
+                            val factor = prod?.ConFactor ?: 1.0
+                            val conTypeVal = prod?.ConType ?: 1.0
+                            val (listPrice, salesPriceAlt) = getEffectivePrices(rawListPrice, rawAltPrice, factor, conTypeVal, isSale)
                             val discount = pricing.Discount
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
@@ -2010,8 +2057,8 @@ data class SaleScreen(
                                 mainUnit = prod?.UnitName,
                                 altUnit = prod?.AltUnit,
                                 hsn = prod?.HSN,
-                                salesPriceAlt = pricing.SalesPriceAlt ?: prod?.SalesPriceAlt,
-                                purcPriceAlt = pricing.SalesPriceAlt ?: prod?.PurcPriceAlt
+                                salesPriceAlt = salesPriceAlt,
+                                purcPriceAlt = salesPriceAlt
                             )
 
                             showItemSheet = false
@@ -3482,6 +3529,13 @@ fun ExpandedItemEditor1(
     onBack: () -> Unit,
 ) {
 
+    val factor = conFactor ?: 1.0
+    val cType = conType ?: 1.0
+    val rawAltPrice = if (isSale) salesPriceAlt else purcPriceAlt
+    val (effectiveMain, effectiveAlt) = remember(defaultListPrice, rawAltPrice, conFactor, conType, isSale) {
+        getEffectivePrices(defaultListPrice, rawAltPrice, conFactor, conType, isSale)
+    }
+
     var qtyN by remember {
         mutableStateOf(
             if (initialQuantity == 0.0 || initialQuantity == null) ""
@@ -3489,11 +3543,18 @@ fun ExpandedItemEditor1(
             else initialQuantity.toString()
         )
     }
-    var listPriceN by remember { mutableStateOf(defaultListPrice.formatToAmtDec()) }
+    var selectedUnit by remember { mutableStateOf(existingItem?.selectedUnit ?: mainUnit) }
+
+    val initialListPrice = if (selectedUnit == altUnit && effectiveAlt != null && effectiveAlt != 0.0) {
+        effectiveAlt
+    } else {
+        effectiveMain
+    }
+
+    var listPriceN by remember { mutableStateOf(initialListPrice.formatToAmtDec()) }
     var discountN by remember { mutableStateOf(initialDiscount.toString()) }
     var amountN by remember { mutableStateOf("") }
     var serialNumbers by remember { mutableStateOf(initialSerialNumbers) }
-    var selectedUnit by remember { mutableStateOf(existingItem?.selectedUnit ?: mainUnit) }
 
     var editMode by remember { mutableStateOf(PriceEditMode.LIST_PRICE) }
     var isAmountManuallyEdited by remember { mutableStateOf(false) }
@@ -3635,7 +3696,7 @@ fun ExpandedItemEditor1(
                     AssistChip(
                         onClick = {
                             if (selectedUnit != mainUnit) {
-                                val newPrice = defaultListPrice
+                                val newPrice = effectiveMain
 
                                 listPriceN =
                                     (kotlin.math.round(newPrice * 100.0) / 100.0).formatToAmtDec()
@@ -3650,8 +3711,8 @@ fun ExpandedItemEditor1(
                     AssistChip(
                         onClick = {
                             if (selectedUnit != altUnit) {
-                                val altPrice = if (isSale) salesPriceAlt else purcPriceAlt
-                                val newPrice = altPrice ?: defaultListPrice
+                                val altP = effectiveAlt ?: if (cType == 1.0) effectiveMain / factor else effectiveMain * factor
+                                val newPrice = if (altP != 0.0) altP else effectiveMain
 
                                 listPriceN =
                                     (kotlin.math.round(newPrice * 100.0) / 100.0).formatToAmtDec()
