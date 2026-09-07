@@ -371,6 +371,58 @@ data class SaleScreen(
         val scope = rememberCoroutineScope()
         var uniqueId by remember { mutableStateOf("") }
 
+        val userId = SharedPrefs.User.get()?.ID
+        val isSpecialUser = userId == 10184 || userId == 10335
+        var hamaliItem by remember { mutableStateOf<SundryItem?>(null) }
+
+        LaunchedEffect(selectedItems, oneState.data, isSpecialUser) {
+            if (!isSpecialUser) {
+                hamaliItem = null
+                return@LaunchedEffect
+            }
+            val existingHamali = oneState.data?.sundries?.find {
+                it.name.lowercase() == "hamali" || it.name.lowercase().contains("hamali")
+            }
+            if (existingHamali != null) {
+                hamaliItem = SundryItem(
+                    name = existingHamali.name,
+                    amount = existingHamali.amount,
+                    guid = existingHamali.guid,
+                    i1 = existingHamali.i1,
+                    i2 = existingHamali.i2,
+                    d2 = existingHamali.d2,
+                    rate = existingHamali.rate,
+                    srno = existingHamali.srno,
+                    percentValue = existingHamali.percentValue
+                )
+            } else {
+                val calculatedAmt = selectedItems.sumOf { item ->
+                    val unitName = item.selectedUnit ?: ""
+                    val qty = item.qty
+                    when (unitName.lowercase()) {
+                        "box", "tin" -> qty * 2.0
+                        "bag" -> qty * 5.0
+                        else -> 0.0
+                    }
+                }
+                if (calculatedAmt > 0.0) {
+                    hamaliItem = SundryItem(
+                        name = "Hamali",
+                        amount = calculatedAmt,
+                        rate = 2.0,
+                        percentValue = 0.0,
+                        srno = 1,
+                        guid = "",
+                        i1 = 1,
+                        i2 = 0,
+                        d2 = 0
+                    )
+                } else {
+                    hamaliItem = null
+                }
+            }
+        }
+
         var showDeleteDialog by remember { mutableStateOf(false) }
         var showEmptyBarcode by remember { mutableStateOf(false) }
         var displayItemName by remember { mutableStateOf("") }
@@ -768,7 +820,16 @@ data class SaleScreen(
                     )
                 }
                 // PRE-POPULATE SUNDRIES SECTION
-                selectedSundries = data.sundries.map { s ->
+                val userId = SharedPrefs.User.get()?.ID
+                val isSpecialUser = userId == 10184 || userId == 10335
+
+                selectedSundries = data.sundries.filter { s ->
+                    if (isSpecialUser) {
+                        s.name.lowercase() != "hamali" && !s.name.lowercase().contains("hamali")
+                    } else {
+                        true
+                    }
+                }.map { s ->
                     SundryItem(
                         name = s.name,
                         amount = s.amount,
@@ -876,7 +937,7 @@ data class SaleScreen(
                 ?: "default_name",
             date = selectedDate,
             items = selectedItems,
-            sundries = selectedSundries,
+            sundries = selectedSundries + listOfNotNull(hamaliItem),
             grandTotal = grandTotal,
             transportDetails = org.prime.easykarobar.ui.printing.TransportDetails(
                 transportName = transportName,
@@ -910,7 +971,7 @@ data class SaleScreen(
                 ?: "default_name",
             date = selectedDate,
             items = selectedItems,
-            sundries = selectedSundries,
+            sundries = selectedSundries + listOfNotNull(hamaliItem),
             grandTotal = grandTotal,
             transportDetails = org.prime.easykarobar.ui.printing.TransportDetails(
                 transportName = transportName,
@@ -1454,6 +1515,31 @@ data class SaleScreen(
 
                                     if (selectedItems.isNotEmpty()) {
                                         SubtotalRow("Subtotal", itemsTotal)
+                                    }
+                                }
+                            }
+
+                            if (isSpecialUser && hamaliItem != null && hamaliItem!!.amount > 0.0) {
+                                SectionCard(
+                                    title = "HAMALI",
+                                    count = 1
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = hamaliItem!!.name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = hamaliItem!!.amount.formatToAmtDec(),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
                                     }
                                 }
                             }
@@ -2347,7 +2433,7 @@ data class SaleScreen(
                                     billing_address = "",
                                     taxType = if (taxType == TaxType.EXTRA) 1 else 2,
                                     items = billingItems,
-                                    sundries = selectedSundries,
+                                    sundries = selectedSundries + listOfNotNull(hamaliItem),
                                     TranDate = selectedDate,
                                     Narration = narration,
                                     TransactionID = tranId,
