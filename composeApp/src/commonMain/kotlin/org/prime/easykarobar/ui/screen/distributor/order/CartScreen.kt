@@ -192,6 +192,7 @@ private fun CartContent(
 
     val user = SharedPrefs.User.get()
     val userProfileAddress = listOfNotNull(
+        user?.C3,
         user?.AddressLine1,
         user?.AddressLine2,
         user?.City,
@@ -200,7 +201,7 @@ private fun CartContent(
     ).map { it.trim() }.filter { it.isNotBlank() }.joinToString(", ").takeIf { it.isNotBlank() }
         ?: (SharedPrefs.DispatchInfo.getAddress() ?: "")
 
-    var billingAddress by remember { mutableStateOf(SharedPrefs.DispatchInfo.getAddress() ?: "") }
+    var billingAddress by remember { mutableStateOf(userProfileAddress) }
     var deliveryDay by remember { mutableStateOf("Today") }
     var startTime by remember { mutableStateOf("") }
     var endTime by remember { mutableStateOf("") }
@@ -388,19 +389,45 @@ private fun CartContent(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                TallyTextField(
-                    value = billingAddress,
-                    onValueChange = { billingAddress = it },
-                    placeholder = "Address *",
-                    isPassword = false,
-                    singleLine = false,
-                    maxLines = 2,
-                    minLines = 2,
-                    isNumber = false,
-                    label = "Address",
-                    modifier = Modifier.fillMaxWidth()
-                        .focusRequester(focusRequester = focusRequester)
-                )
+                if (isDelivery) {
+                    TallyTextField(
+                        value = billingAddress,
+                        onValueChange = { billingAddress = it },
+                        placeholder = "Address *",
+                        isPassword = false,
+                        singleLine = false,
+                        maxLines = 2,
+                        minLines = 2,
+                        isNumber = false,
+                        label = "Address",
+                        modifier = Modifier.fillMaxWidth()
+                            .focusRequester(focusRequester = focusRequester)
+                    )
+                } else {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Pickup Address",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                letterSpacing = 0.6.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = billingAddress.ifBlank { "No pickup address available" },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -1024,7 +1051,8 @@ fun CartSummary(
     }
 
     val deliveryConfigs = remember { getDeliveryChargeConfigs() }
-    val deliveryCharge = if (isDelivery) calculateDeliveryCharge(totalDiscountedPrice, deliveryConfigs) else 0.0
+    val deliveryCharge =
+        if (isDelivery) calculateDeliveryCharge(totalDiscountedPrice, deliveryConfigs) else 0.0
     val minOrderAmount = deliveryConfigs.minOfOrNull { it.minAmount } ?: 0.0
     val isBelowMinOrder = totalDiscountedPrice < minOrderAmount
 
@@ -1338,7 +1366,8 @@ fun ConfirmOrderButton(
     }
 
     val deliveryConfigs = remember { getDeliveryChargeConfigs() }
-    val deliveryCharge = if (isDelivery) calculateDeliveryCharge(totalDiscountedPrice, deliveryConfigs) else 0.0
+    val deliveryCharge =
+        if (isDelivery) calculateDeliveryCharge(totalDiscountedPrice, deliveryConfigs) else 0.0
     val minOrderAmount = deliveryConfigs.minOfOrNull { it.minAmount } ?: 0.0
     val isBelowMinOrder = totalDiscountedPrice < minOrderAmount
 
@@ -1648,10 +1677,12 @@ fun ConfirmOrderButton(
 
                 orderViewModel.createOrder(
                     CreateOrderRequest(
-                        billing_guid = SharedPrefs.BillingGuid.get() ?: SharedPrefs.DistributorData.get()?.ledger_GUID.toString(),
+                        billing_guid = SharedPrefs.BillingGuid.get()
+                            ?: SharedPrefs.DistributorData.get()?.ledger_GUID.toString(),
                         remarks = finalRemarks,
                         billing_name = SharedPrefs.DispatchInfo.getName().toString(),
-                        billing_address = if (isDelivery) billingAddress else (SharedPrefs.DispatchInfo.getAddress() ?: ""),
+                        billing_address = if (isDelivery) billingAddress else (SharedPrefs.DispatchInfo.getAddress()
+                            ?: ""),
                         pickup_address = if (!isDelivery) billingAddress else null,
                         total_amt = finalTotal.toString(),
                         items = itemsList,
