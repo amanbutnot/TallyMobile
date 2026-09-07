@@ -1834,7 +1834,7 @@ data class SaleScreen(
                                 purcPriceAlt = autoPricing.SalesPriceAlt
                             )
                             showItemSheet = false
-                        } else if (pricingForProduct.isNotEmpty()) {
+                        } else if (pricingLevel != 100.0 && pricingForProduct.isNotEmpty()) {
                             showProductPricingSheet = true
                         } else {
                             val prod = itemsList.find { it.Name == itemName.Name }

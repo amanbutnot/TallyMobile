@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AccountModel(
+    val id:Int?=null,
     val name: String? = null,
     val alias: String? = null,
     val printName: String? = null,

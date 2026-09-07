@@ -1924,7 +1924,7 @@ data class SaleScreen2(
                                 purcPriceAlt = autoPricing.SalesPriceAlt
                             )
                             pendingItemsAfterMultiSelect = pendingItemsAfterMultiSelect.drop(1)
-                        } else if (pricing.isNotEmpty()) {
+                        } else if (pricingLevel != 100.0 && pricing.isNotEmpty()) {
                             selectedProductForPricing = pending.product.Name.orEmpty()
                             pendingSelectedProductGUID = pending.product.GUID
                             showProductPricingSheet = true

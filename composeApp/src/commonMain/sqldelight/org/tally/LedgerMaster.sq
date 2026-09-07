@@ -128,3 +128,5 @@ SELECT GUID
  SELECT * FROM LedgerMaster WHERE GUID = ?;
  selectByName:
  SELECT * FROM LedgerMaster WHERE Name = ?;
+ selectByMobile:
+ SELECT * FROM LedgerMaster WHERE TRIM(MobileNo) = TRIM(:mobileNo) LIMIT 1;

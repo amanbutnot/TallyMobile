@@ -15,6 +15,9 @@ SELECT COUNT(*)
 FROM LedgerPricing
 WHERE MobileNo = :mobileno;
 
+selectByMobile:
+SELECT * FROM LedgerPricing WHERE TRIM(MobileNo) = TRIM(:mobileno) LIMIT 1;
+
 insertLedgerPricing:
 INSERT OR REPLACE INTO LedgerPricing(
     GUID,

@@ -34,7 +34,7 @@ data class MasterAddScreen(val number: String) : Screen {
 
     @Composable
     override fun Content() {
-
+        println("we are listing the account")
         val db = DatabaseHolder.instance
         val viewmodel: AccountViewModel = viewModel { AccountViewModel() }
         val state by viewmodel.listState
@@ -42,12 +42,17 @@ data class MasterAddScreen(val number: String) : Screen {
 
         LaunchedEffect(Unit) {
             if (SharedPrefs.IsEasyMart.get()) {
-                SharedPrefs.IsEasyMart.saveLastCheckTime(kotlin.time.Clock.System.now().toEpochMilliseconds())
+                SharedPrefs.IsEasyMart.saveLastCheckTime(
+                    kotlin.time.Clock.System.now().toEpochMilliseconds()
+                )
             }
             viewmodel.listAccount {
                 state.data?.data?.forEach { dataState ->
+                    val idOrGuidStr = dataState.id?.toString() ?: dataState.ledger_guid?.takeIf { it.isNotBlank() && it != "null" }
+                    val idOrGuidLong = dataState.id?.toLong() ?: dataState.ledger_guid?.toLongOrNull() ?: 0L
+
                     db.ledgerMasterQueries.insertLedger(
-                        code = dataState.ledger_guid?.toLong(),
+                        code = idOrGuidLong,
                         name = dataState.name?.trim(),
                         alias = dataState.alias?.trim(),
                         groupName = dataState.parentGroupName,
@@ -63,11 +68,11 @@ data class MasterAddScreen(val number: String) : Screen {
                         email = dataState.email,
                         mobileNo = dataState.mobileNo,
                         alterId = 0,
-                        guid = dataState.ledger_guid.toString(),
+                        guid = idOrGuidStr ?: idOrGuidLong.toString(),
                         panNo = dataState.itPan
                     )
                     db.ledgerPricingQueries.insertLedgerPricing(
-                        guid = dataState.ledger_guid?.toLong() ?: 0L,
+                        guid = idOrGuidLong,
                         name = dataState.name?.trim(),
                         mobileno = dataState.mobileNo?.trim() ?: "",
                         l6 = if (!dataState.gstNo.isNullOrBlank()) 101.0 else 102.0
@@ -143,9 +148,9 @@ data class MasterAddScreen(val number: String) : Screen {
                                 billid = data.billId?.toDoubleOrNull(),
 
                                 //TODO: logic for sale me + purc me minus
-                                d1 = when (data.vchType?.toIntOrNull()?:3) {
+                                d1 = when (data.vchType?.toIntOrNull() ?: 3) {
                                     9 -> {
-                                        makeNegativeConditional( data.d1 ?:0.0)
+                                        makeNegativeConditional(data.d1 ?: 0.0)
                                     }
 
                                     3 -> {
@@ -157,15 +162,17 @@ data class MasterAddScreen(val number: String) : Screen {
                                     }
 
                                     10 -> {
-                                        makeNegativeConditional( data.d1 ?:0.0)
+                                        makeNegativeConditional(data.d1 ?: 0.0)
                                     }
 
                                     14 -> {
-                                        makeNegativeConditional( data.d1 ?:0.0)
+                                        makeNegativeConditional(data.d1 ?: 0.0)
                                     }
+
                                     19 -> {
-                                        makeNegativeConditional( data.d1 ?:0.0)
+                                        makeNegativeConditional(data.d1 ?: 0.0)
                                     }
+
                                     16 -> {
                                         data.d1?.absoluteValue
                                     }
@@ -187,25 +194,71 @@ data class MasterAddScreen(val number: String) : Screen {
                 if (SharedPrefs.IsEasyMart.get()) {
                     try {
                         val db = DatabaseHolder.instance
-                        val result = db.ledgerPricingQueries.selectChangePrice(number).executeAsOneOrNull()
-                        println("verify otp result $number $result")
-                        if (result != null) {
-                            SharedPrefs.ChangePrice.save(result.L6 ?: 0.0)
-                        } else {
-                            val savedGst = SharedPrefs.DispatchInfo.getGst()
-                            if (!savedGst.isNullOrBlank()) {
-                                SharedPrefs.ChangePrice.save(102.0)
-                            } else {
-                                SharedPrefs.ChangePrice.save(101.0)
+                        val targetMobile =
+                            number.ifBlank { SharedPrefs.RegisteredNumber.get().orEmpty() }
+                        val isGuest = targetMobile == "6969696969"
+
+                        if (!isGuest && targetMobile.isNotBlank()) {
+                            val targetLast10 = targetMobile.trim().takeLast(10)
+                            val matchedAccount = state.data?.data?.firstOrNull { acc ->
+                                val mobLast10 = acc.mobileNo?.trim()?.takeLast(10)
+                                val waLast10 = acc.whatsappNo?.trim()?.takeLast(10)
+                                (!mobLast10.isNullOrBlank() && mobLast10 == targetLast10) ||
+                                        (!waLast10.isNullOrBlank() && waLast10 == targetLast10)
+                            }
+
+                            if (matchedAccount != null) {
+                                val guidStr = matchedAccount.id?.toString() ?: matchedAccount.ledger_guid?.takeIf { it.isNotBlank() && it != "null" }
+                                if (!guidStr.isNullOrBlank()) {
+                                    println("Matched account in list_account for $targetMobile -> ledger_guid: $guidStr")
+                                    SharedPrefs.BillingGuid.save(guidStr)
+                                }
+                                val fullAddress = listOfNotNull(
+                                    matchedAccount.addressLine1,
+                                    matchedAccount.addressLine2,
+                                    matchedAccount.addressLine3,
+                                    matchedAccount.addressLine4
+                                ).map { it.trim() }.filter { it.isNotBlank() }.joinToString(", ")
+
+                                SharedPrefs.DispatchInfo.save(
+                                    name = matchedAccount.name?.trim().orEmpty(),
+                                    mobile = matchedAccount.mobileNo?.trim() ?: targetMobile,
+                                    address = fullAddress,
+                                    pincode = matchedAccount.pincode?.trim()
+                                        ?: SharedPrefs.DispatchInfo.getPincode() ?: "",
+                                    state = matchedAccount.state?.trim().orEmpty(),
+                                    gst = matchedAccount.gstNo?.trim().orEmpty()
+                                )
                             }
                         }
 
-                        val isGuest = number == "6969696969" || SharedPrefs.RegisteredNumber.get() == "6969696969"
-                        val exists = db.ledgerPricingQueries.existsByMobile(number).executeAsOne() > 0
+                        val exists =
+                            db.ledgerPricingQueries.existsByMobile(targetMobile).executeAsOne() > 0
                         println("Exists by mobile: $exists, Dispatch saved: ${SharedPrefs.DispatchInfo.isSaved()}")
                         if (!isGuest && !exists && !SharedPrefs.DispatchInfo.isSaved()) {
-                            nav.replaceAll(DispatchInfoScreen(number))
+                            nav.replaceAll(DispatchInfoScreen(targetMobile))
                             return@listAccount
+                        } else if (!isGuest) {
+                            SharedPrefs.DispatchInfo.syncFromLedger(targetMobile)
+                        } else {
+                            val pricing = db.ledgerPricingQueries.selectByMobile(targetMobile)
+                                .executeAsOneOrNull()
+                            println("verify otp result $targetMobile $pricing")
+                            if (pricing != null) {
+                                val l6 = pricing.L6 ?: 100.0
+                                if (l6 > 100.0) {
+                                    SharedPrefs.ChangePrice.save(l6)
+                                } else {
+                                    SharedPrefs.ChangePrice.save(100.0)
+                                }
+                            } else {
+                                val savedGst = SharedPrefs.DispatchInfo.getGst()
+                                if (!savedGst.isNullOrBlank()) {
+                                    SharedPrefs.ChangePrice.save(102.0)
+                                } else {
+                                    SharedPrefs.ChangePrice.save(101.0)
+                                }
+                            }
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()

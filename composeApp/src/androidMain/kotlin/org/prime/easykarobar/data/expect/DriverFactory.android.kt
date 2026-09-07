@@ -238,6 +238,19 @@ actual class DriverFactory(private val context: Context) {
                     );
                 """.trimIndent()
             )
+
+            ensureTable(
+                driver = driver,
+                tableName = "LedgerPricing",
+                createTableSql = """
+                    CREATE TABLE IF NOT EXISTS LedgerPricing (
+                        GUID INTEGER NOT NULL,
+                        Name TEXT,
+                        MobileNo TEXT NOT NULL,
+                        L6 REAL
+                    );
+                """.trimIndent()
+            )
         } catch (e: Exception) {
             println("❌ Error during manual migration: ${e.message}")
         }

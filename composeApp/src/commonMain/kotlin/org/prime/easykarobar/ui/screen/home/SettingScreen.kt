@@ -253,7 +253,7 @@ object SettingScreen : Screen {
                                         Icons.Default.Store,
                                         "Mobile Number",
                                         SharedPrefs.DistributorData.get()?.ledger_GUID
-                                            ?: SharedPrefs.BillingGuid.get() ?: ""
+                                            ?: SharedPrefs.DispatchInfo.getMobile() ?: ""
                                     )
                                     ProfileItem(
                                         Icons.Default.Store,

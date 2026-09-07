@@ -226,10 +226,15 @@ data class VerifyOtpScreen(
                                                     )
                                                     try {
                                                         val db = DatabaseHolder.instance
-                                                        val result = db.ledgerPricingQueries.selectChangePrice(number).executeAsOneOrNull()
-                                                        if (result != null) {
-                                                            SharedPrefs.ChangePrice.save(result.L6 ?: 0.0)
-                                                        }else{
+                                                        val pricing = db.ledgerPricingQueries.selectByMobile(number).executeAsOneOrNull()
+                                                        if (pricing != null) {
+                                                            val l6 = pricing.L6 ?: 100.0
+                                                            if (l6 > 100.0) {
+                                                                SharedPrefs.ChangePrice.save(l6)
+                                                            } else {
+                                                                SharedPrefs.ChangePrice.save(100.0)
+                                                            }
+                                                        } else {
                                                             val savedGst = SharedPrefs.DispatchInfo.getGst()
                                                             if (!savedGst.isNullOrBlank()) {
                                                                 SharedPrefs.ChangePrice.save(102.0)

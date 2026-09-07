@@ -81,8 +81,8 @@ object OrderRepository {
                 //guid after save, send mobile number (guid)
                 setBody(
                     ListRequest(
-                        SharedPrefs.DistributorData.get()?.ledger_GUID
-                            ?: SharedPrefs.BillingGuid.get() ?: "", orderId
+
+                        SharedPrefs.BillingGuid.get() ?: "", orderId
                     )
                 )
             }

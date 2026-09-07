@@ -188,6 +188,18 @@ private fun CartContent(
     var couponText by remember { mutableStateOf("") }
     var appliedCoupon by remember { mutableStateOf<Coupon?>(null) }
     var remarks by remember { mutableStateOf("") }
+    var isDelivery by remember { mutableStateOf(true) }
+
+    val user = SharedPrefs.User.get()
+    val userProfileAddress = listOfNotNull(
+        user?.AddressLine1,
+        user?.AddressLine2,
+        user?.City,
+        user?.State,
+        user?.Pincode
+    ).map { it.trim() }.filter { it.isNotBlank() }.joinToString(", ").takeIf { it.isNotBlank() }
+        ?: (SharedPrefs.DispatchInfo.getAddress() ?: "")
+
     var billingAddress by remember { mutableStateOf(SharedPrefs.DispatchInfo.getAddress() ?: "") }
     var deliveryDay by remember { mutableStateOf("Today") }
     var startTime by remember { mutableStateOf("") }
@@ -198,7 +210,13 @@ private fun CartContent(
     var pickupEndTime by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
 
-    var isDelivery by remember { mutableStateOf(true) }
+    LaunchedEffect(isDelivery) {
+        billingAddress = if (isDelivery) {
+            SharedPrefs.DispatchInfo.getAddress() ?: ""
+        } else {
+            userProfileAddress
+        }
+    }
 
     val availableCoupons = remember {
         try {
@@ -1006,7 +1024,7 @@ fun CartSummary(
     }
 
     val deliveryConfigs = remember { getDeliveryChargeConfigs() }
-    val deliveryCharge = calculateDeliveryCharge(totalDiscountedPrice, deliveryConfigs)
+    val deliveryCharge = if (isDelivery) calculateDeliveryCharge(totalDiscountedPrice, deliveryConfigs) else 0.0
     val minOrderAmount = deliveryConfigs.minOfOrNull { it.minAmount } ?: 0.0
     val isBelowMinOrder = totalDiscountedPrice < minOrderAmount
 
@@ -1320,7 +1338,7 @@ fun ConfirmOrderButton(
     }
 
     val deliveryConfigs = remember { getDeliveryChargeConfigs() }
-    val deliveryCharge = calculateDeliveryCharge(totalDiscountedPrice, deliveryConfigs)
+    val deliveryCharge = if (isDelivery) calculateDeliveryCharge(totalDiscountedPrice, deliveryConfigs) else 0.0
     val minOrderAmount = deliveryConfigs.minOfOrNull { it.minAmount } ?: 0.0
     val isBelowMinOrder = totalDiscountedPrice < minOrderAmount
 
@@ -1633,7 +1651,8 @@ fun ConfirmOrderButton(
                         billing_guid = SharedPrefs.BillingGuid.get() ?: SharedPrefs.DistributorData.get()?.ledger_GUID.toString(),
                         remarks = finalRemarks,
                         billing_name = SharedPrefs.DispatchInfo.getName().toString(),
-                        billing_address = billingAddress,
+                        billing_address = if (isDelivery) billingAddress else (SharedPrefs.DispatchInfo.getAddress() ?: ""),
+                        pickup_address = if (!isDelivery) billingAddress else null,
                         total_amt = finalTotal.toString(),
                         items = itemsList,
                         sundries = sundriesList,

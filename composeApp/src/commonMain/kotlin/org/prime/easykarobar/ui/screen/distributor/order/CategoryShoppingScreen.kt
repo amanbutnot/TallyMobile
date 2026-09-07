@@ -16,8 +16,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -83,6 +86,19 @@ import org.tally.SLIDE_IMG
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.category_placeholder
 import kotlin.time.Duration.Companion.milliseconds
+
+private val featureSectionPastelColors = listOf(
+    Color(0xFFFFF0F3), // Soft Pastel Rose
+    Color(0xFFEBF3FE), // Soft Pastel Sky Blue
+    Color(0xFFEAFAF1), // Soft Pastel Mint Green
+    Color(0xFFF4ECF7), // Soft Pastel Lavender
+    Color(0xFFFEF9E7), // Soft Pastel Warm Yellow
+    Color(0xFFE8F8F5), // Soft Pastel Cyan Aqua
+    Color(0xFFFDF2E9), // Soft Pastel Peach
+    Color(0xFFE8EAF6), // Soft Pastel Periwinkle
+    Color(0xFFFCE4EC), // Soft Pastel Blush Pink
+    Color(0xFFF1F8E9)  // Soft Pastel Sage Green
+)
 
 private data class ScreenData<Slide, Banner, Feature>(
     val sliders: List<Slide>,
@@ -332,179 +348,198 @@ object CategoryShoppingScreen : Screen {
                 )
             }
 
-            if (screenData.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Color(0xFFFF6D00))
-                }
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(bottom = 8.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    if (debouncedSearchQuery.isBlank()) {
-                        items(
-                            items = screenData.sliders,
-                        //    key = { it.ID }
-                        ) { master ->
-                            var images by remember(master.ID) { mutableStateOf<List<SLIDE_IMG>>(emptyList()) }
-                            LaunchedEffect(master.ID) {
-                                images = withContext(Dispatchers.IO) {
-                                    db.slide_MasterQueries.selectImagesBySlideId(master.ID)
-                                        .executeAsList()
-                                }
+            LazyColumn(
+                contentPadding = PaddingValues(bottom = 8.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                if (screenData.isLoading && debouncedSearchQuery.isBlank()) {
+                    // Skeleton placeholders for sliders and banners so top area is reserved and doesn't glitch out
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color.LightGray.copy(alpha = 0.3f))
+                        )
+                    }
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color.LightGray.copy(alpha = 0.3f))
+                        )
+                    }
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color.LightGray.copy(alpha = 0.3f))
+                        )
+                    }
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Color(0xFFFF6D00))
+                        }
+                    }
+                } else if (debouncedSearchQuery.isBlank()) {
+                    items(
+                        items = screenData.sliders,
+                    ) { master ->
+                        var images by remember(master.ID) { mutableStateOf<List<SLIDE_IMG>>(emptyList()) }
+                        LaunchedEffect(master.ID) {
+                            images = withContext(Dispatchers.IO) {
+                                db.slide_MasterQueries.selectImagesBySlideId(master.ID)
+                                    .executeAsList()
                             }
-                            if (images.isNotEmpty()) {
-                                AutoSlidingPager(
-                                    images = images,
-                                    onImageClick = { slide ->
+                        }
+                        if (images.isNotEmpty()) {
+                            AutoSlidingPager(
+                                images = images,
+                                onImageClick = { slide ->
+                                    handleBannerClick(
+                                        slideImg = slide,
+                                        nav = nav,
+                                        urlProvider = urlProvider,
+                                        showProductInfo = showProductInfo,
+                                        selectedProduct = selectedProduct
+                                    )
+                                }
+                            )
+                        }
+                    }
+                    items(
+                        items = screenData.banners,
+                    ) { banner ->
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            shadowElevation = 4.dp
+                        ) {
+                            AsyncImage(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp).clickable {
                                         handleBannerClick(
-                                            slideImg = slide,
+                                            banner = banner,
                                             nav = nav,
                                             urlProvider = urlProvider,
                                             showProductInfo = showProductInfo,
                                             selectedProduct = selectedProduct
                                         )
-                                    }
-                                )
-                            }
+                                    },
+                                model = banner.C10,
+                                onLoading = { Res.drawable.category_placeholder },
+                                contentDescription = null,
+                                contentScale = ContentScale.FillBounds
+                            )
                         }
-                        items(
-                            items = screenData.banners,
-                         //   key = { it.ID }
-                        ) { banner ->
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                shadowElevation = 4.dp
-                            ) {
-                                AsyncImage(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(180.dp).clickable {
-                                            handleBannerClick(
-                                                banner = banner,
-                                                nav = nav,
-                                                urlProvider = urlProvider,
-                                                showProductInfo = showProductInfo,
-                                                selectedProduct = selectedProduct
-                                            )
-                                        },
-                                    model = banner.C10,
-                                    onLoading = { Res.drawable.category_placeholder },
-                                    contentDescription = null,
-                                    contentScale = ContentScale.FillBounds
-                                )
-                            }
-                        }
+                    }
+                }
 
-                        items(
-                            items = featureProductsByFeature.keys.toList(),
-                       //     key = { it.CODE }
-                        ) { feature ->
-                            val featureProducts = featureProductsByFeature[feature].orEmpty()
-                            if (featureProducts.isNotEmpty()) {
-                                Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 6.dp),
-                                    color = Color.White,
-                                    shadowElevation = 1.dp
-                                ) {
-                                    FeatureSection(
-                                        title = feature.CODE,
-                                        products = featureProducts.take(2),
-                                        cartViewModel = cartViewModel,
-                                        wishlistViewModel = wishlistViewModel,
-                                        isTwoPerRow = isTwoPerRow,
-                                        cartGuids = cartGuids,
-                                        wishlistGuids = wishlistGuids,
-                                        onItemClick = { item ->
-                                            selectedProduct.value = item
-                                            showProductInfo.value = true
-                                        },
-                                        onMoreClick = if (featureProducts.size > 2) {
-                                            {
-                                                handleBannerClick(
-                                                    feature = feature,
-                                                    nav = nav,
-                                                    urlProvider = urlProvider,
-                                                    showProductInfo = showProductInfo,
-                                                    selectedProduct = selectedProduct
-                                                )
-                                            }
-                                        } else null
+                itemsIndexed(
+                    items = featureProductsByFeature.keys.toList(),
+                ) { index, feature ->
+                    val featureProducts = featureProductsByFeature[feature].orEmpty()
+                    if (featureProducts.isNotEmpty()) {
+                        val backgroundColor = featureSectionPastelColors[index % featureSectionPastelColors.size]
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp),
+                            color = backgroundColor,
+                            shadowElevation = 1.dp
+                        ) {
+                            FeatureSection(
+                                title = feature.CODE,
+                                products = featureProducts,
+                                cartViewModel = cartViewModel,
+                                wishlistViewModel = wishlistViewModel,
+                                isTwoPerRow = isTwoPerRow,
+                                cartGuids = cartGuids,
+                                wishlistGuids = wishlistGuids,
+                                onItemClick = { item ->
+                                    selectedProduct.value = item
+                                    showProductInfo.value = true
+                                }
+                            )
+                        }
+                    }
+                }
+
+                item(key = "categories_grid") {
+                    if (filteredCategories.isNotEmpty()) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Color.White,
+                            shadowElevation = 1.dp
+                        ) {
+                            CategoriesGrid(
+                                categories = filteredCategories,
+                                title = if (debouncedSearchQuery.isBlank()) "All Categories" else "Matching Categories",
+                                onCategoryClick = { category ->
+                                    nav.pushEasyMart(
+                                        AllProductsPremiumScreen(
+                                            categoryName = category.Name,
+                                            productCode = category.GUID?.toDouble() ?: 0.0,
+                                            isTab = false
+                                        )
                                     )
                                 }
-                            }
+                            )
                         }
                     }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
 
-                    item(key = "categories_grid") {
-                        if (filteredCategories.isNotEmpty()) {
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                color = Color.White,
-                                shadowElevation = 1.dp
-                            ) {
-                                CategoriesGrid(
-                                    categories = filteredCategories,
-                                    title = if (debouncedSearchQuery.isBlank()) "All Categories" else "Matching Categories",
-                                    onCategoryClick = { category ->
-                                        nav.pushEasyMart(
-                                            AllProductsPremiumScreen(
-                                                categoryName = category.Name,
-                                                productCode = category.GUID?.toDouble() ?: 0.0,
-                                                isTab = false
-                                            )
+                items(
+                    items = filteredCategories,
+                ) { category ->
+                    val products = productsByCategoryId[category.GUID?.toDouble()].orEmpty()
+                    if (products.isNotEmpty()) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp),
+                            color = Color.White,
+                            shadowElevation = 1.dp
+                        ) {
+                            CategoryProductSection(
+                                category = category,
+                                products = products.take(8),
+                                cartViewModel = cartViewModel,
+                                wishlistViewModel = wishlistViewModel,
+                                isTwoPerRow = isTwoPerRow,
+                                cartGuids = cartGuids,
+                                wishlistGuids = wishlistGuids,
+                                onItemClick = { item ->
+                                    selectedProduct.value = item
+                                    showProductInfo.value = true
+                                },
+                                onMoreClick = {
+                                    nav.pushEasyMart(
+                                        AllProductsPremiumScreen(
+                                            categoryName = category.Name,
+                                            productCode = category.GUID?.toDouble() ?: 0.0,
+                                            isTab = false
                                         )
-                                    }
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
-                    items(
-                        items = filteredCategories,
-                   //     key = { it.GUID ?: it.Name.orEmpty() }
-                    ) { category ->
-                        val products = productsByCategoryId[category.GUID?.toDouble()].orEmpty()
-                        if (products.isNotEmpty()) {
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                color = Color.White,
-                                shadowElevation = 1.dp
-                            ) {
-                                CategoryProductSection(
-                                    category = category,
-                                    products = products.take(8),
-                                    cartViewModel = cartViewModel,
-                                    wishlistViewModel = wishlistViewModel,
-                                    isTwoPerRow = isTwoPerRow,
-                                    cartGuids = cartGuids,
-                                    wishlistGuids = wishlistGuids,
-                                    onItemClick = { item ->
-                                        selectedProduct.value = item
-                                        showProductInfo.value = true
-                                    },
-                                    onMoreClick = {
-                                        nav.pushEasyMart(
-                                            AllProductsPremiumScreen(
-                                                categoryName = category.Name,
-                                                productCode = category.GUID?.toDouble() ?: 0.0,
-                                                isTab = false
-                                            )
-                                        )
-                                    }
-                                )
-                            }
+                                    )
+                                }
+                            )
                         }
                     }
                 }
@@ -720,8 +755,7 @@ object CategoryShoppingScreen : Screen {
         isTwoPerRow: Boolean,
         cartGuids: Set<String?>,
         wishlistGuids: Set<String?>,
-        onItemClick: (GetProductsForDis) -> Unit,
-        onMoreClick: (() -> Unit)? = null
+        onItemClick: (GetProductsForDis) -> Unit
     ) {
         if (products.isEmpty()) return
 
@@ -734,7 +768,7 @@ object CategoryShoppingScreen : Screen {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -745,53 +779,32 @@ object CategoryShoppingScreen : Screen {
                     ),
                     color = Color(0xFF1A1C1E)
                 )
-                if (onMoreClick != null) {
-                    TextButton(onClick = onMoreClick) {
-                        Text(
-                            text = "More",
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                color = Color(0xFF004D40),
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                }
             }
 
-            val chunks =
-                remember(products, isTwoPerRow) { products.chunked(if (isTwoPerRow) 2 else 1) }
+            Spacer(modifier = Modifier.height(8.dp))
+
             val premiumScreen = remember { AllProductsPremiumScreen(isTab = false) }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                chunks.forEach { rowItems ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        rowItems.forEach { product ->
-                            val isInCart = product.product_id in cartGuids
-                            val isInWishlist = product.product_id in wishlistGuids
+                items(products) { product ->
+                    val isInCart = product.product_id in cartGuids
+                    val isInWishlist = product.product_id in wishlistGuids
 
-                            Box(modifier = Modifier.weight(1f)) {
-                                premiumScreen.PremiumProductItem(
-                                    product = product,
-                                    cartViewModel = cartViewModel,
-                                    wishlistViewModel = wishlistViewModel,
-                                    isInCart = isInCart,
-                                    isInWishlist = isInWishlist,
-                                    isTwoPerRow = isTwoPerRow,
-                                    onClick = { onItemClick(product) }
-                                )
-                            }
-                        }
-                        if (rowItems.size < (if (isTwoPerRow) 2 else 1)) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
+                    Box(modifier = Modifier.width(125.dp)) {
+                        premiumScreen.PremiumProductItem(
+                            product = product,
+                            cartViewModel = cartViewModel,
+                            wishlistViewModel = wishlistViewModel,
+                            isInCart = isInCart,
+                            isInWishlist = isInWishlist,
+                            isTwoPerRow = true,
+                            onClick = { onItemClick(product) }
+                        )
                     }
                 }
             }

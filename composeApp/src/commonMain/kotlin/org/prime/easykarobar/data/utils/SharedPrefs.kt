@@ -5,6 +5,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.Distributor
 import org.prime.easykarobar.data.model.LoginResponse
@@ -481,6 +482,61 @@ object SharedPrefs {
 
         fun isSaved(): Boolean {
             return !getName().isNullOrBlank() && !getMobile().isNullOrBlank() && !getAddress().isNullOrBlank()
+        }
+
+        fun syncFromLedger(mobile: String) {
+            if (mobile.isBlank() || mobile == "6969696969") return
+            try {
+                val db = DatabaseHolder.instance
+                val ledger = db.ledgerMasterQueries.selectByMobile(mobile).executeAsOneOrNull()
+                val pricing = db.ledgerPricingQueries.selectByMobile(mobile).executeAsOneOrNull()
+
+                val guid = ledger?.GUID?.takeIf { it.isNotBlank() && it != "null" }
+                    ?: ledger?.Code?.takeIf { it > 0 }?.toString()
+                    ?: pricing?.GUID?.takeIf { it > 0 }?.toString()
+                if (!guid.isNullOrBlank() && guid != "null") {
+                    BillingGuid.save(guid)
+                }
+
+
+                val name = ledger?.Name?.trim() ?: pricing?.Name?.trim() ?: ""
+                val mobileNo = ledger?.MobileNo?.trim() ?: pricing?.MobileNo?.trim() ?: mobile
+                val fullAddress = listOfNotNull(
+                    ledger?.Address1,
+                    ledger?.Address2,
+                    ledger?.Address3,
+                    ledger?.Address4
+                ).map { it.trim() }.filter { it.isNotBlank() }.joinToString(", ")
+                val state = ledger?.State?.trim() ?: ""
+                val gst = ledger?.GSTIN?.trim() ?: ""
+                val pincode = getPincode() ?: ""
+
+                if (name.isNotBlank() || fullAddress.isNotBlank()) {
+                    save(
+                        name = name,
+                        mobile = mobileNo,
+                        address = fullAddress,
+                        pincode = pincode,
+                        state = state,
+                        gst = gst
+                    )
+                }
+
+                if (pricing != null) {
+                    val l6 = pricing.L6 ?: 100.0
+                    if (l6 > 100.0) {
+                        ChangePrice.save(l6)
+                    } else {
+                        ChangePrice.save(100.0)
+                    }
+                } else if (gst.isNotBlank()) {
+                    ChangePrice.save(102.0)
+                } else {
+                    ChangePrice.save(101.0)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
         fun clear() {

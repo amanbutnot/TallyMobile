@@ -120,9 +120,14 @@ object EasyMartScreen : Screen {
                     )
                     try {
                         val db = DatabaseHolder.instance
-                        val result = db.ledgerPricingQueries.selectChangePrice(guestNumber).executeAsOneOrNull()
-                        if (result != null) {
-                            SharedPrefs.ChangePrice.save(result.L6 ?: 0.0)
+                        val pricing = db.ledgerPricingQueries.selectByMobile(guestNumber).executeAsOneOrNull()
+                        if (pricing != null) {
+                            val l6 = pricing.L6 ?: 100.0
+                            if (l6 > 100.0) {
+                                SharedPrefs.ChangePrice.save(l6)
+                            } else {
+                                SharedPrefs.ChangePrice.save(100.0)
+                            }
                         } else {
                             val savedGst = SharedPrefs.DispatchInfo.getGst()
                             if (!savedGst.isNullOrBlank()) {

@@ -60,7 +60,7 @@ object AccountRepository {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
             }
-            println(response.bodyAsText())
+            println("we are listing the account" + response.bodyAsText())
             response.body()
         } catch (e: Exception) {
             print("Error Occurred: ${e.message}")

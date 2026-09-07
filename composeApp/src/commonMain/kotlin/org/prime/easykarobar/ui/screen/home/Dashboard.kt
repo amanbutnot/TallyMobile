@@ -37,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -53,13 +52,12 @@ import org.prime.easykarobar.BuildKonfig
 import org.prime.easykarobar.business.viewmodel.AuthViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
-import org.prime.easykarobar.data.expect.callPhone
 import org.prime.easykarobar.data.expect.getDeviceId
 import org.prime.easykarobar.data.model.LoginRequest
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.SelectCompanyScreen
 import org.prime.easykarobar.ui.screen.distributor.order.CartScreen
-import org.prime.easykarobar.ui.screen.home.tabs.CallSupportTab
+import org.prime.easykarobar.ui.screen.home.tabs.CustomerSupportTab
 import org.prime.easykarobar.ui.screen.home.tabs.DistributorCategorySubTab
 import org.prime.easykarobar.ui.screen.home.tabs.DistributorHomeSubTab
 import org.prime.easykarobar.ui.screen.home.tabs.DistributorReportSubTab
@@ -68,7 +66,6 @@ import org.prime.easykarobar.ui.screen.home.tabs.MastersTab
 import org.prime.easykarobar.ui.screen.home.tabs.ReportingTab
 import org.prime.easykarobar.ui.screen.home.tabs.SettingsTab
 import org.prime.easykarobar.ui.screen.home.tabs.TransactionTab
-import org.prime.easykarobar.ui.screen.home.tabs.WhatsAppSupportTab
 import org.prime.easykarobar.ui.screen.home.tabs.WishlistTab
 import org.prime.easykarobar.ui.screen.startup.GoogleDriveDownloadScreen
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
@@ -255,8 +252,7 @@ object Dashboard : Screen {
 
                                 if (isEasyMart) {
                                     add(SettingsTab)
-                                    add(WhatsAppSupportTab)
-                                    add(CallSupportTab)
+                                    add(CustomerSupportTab)
                                 }
                             }
                         } else {
@@ -289,7 +285,6 @@ fun BottomTabBar(
     tabs: List<Tab>,
     tabNavigator: TabNavigator
 ) {
-    val uriHandler = LocalUriHandler.current
     Row(
         modifier = Modifier.navigationBarsPadding()
             .padding(vertical = 8.dp)
@@ -301,11 +296,7 @@ fun BottomTabBar(
                 tab = tab,
                 selected = tabNavigator.current == tab,
                 onClick = {
-                    when (tab) {
-                        is WhatsAppSupportTab -> uriHandler.openUri("https://wa.me/919850228878")
-                        is CallSupportTab -> callPhone("9850228878")
-                        else -> tabNavigator.current = tab
-                    }
+                    tabNavigator.current = tab
                 }
             )
         }
