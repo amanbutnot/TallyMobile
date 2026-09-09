@@ -64,6 +64,9 @@ fun salesHtml(
     val qtyStartWidth = if (showTax) "40%" else "66%"
     val labelWidth = if (showTax) "40%" else "14%"
 
+    val splashSrc = org.prime.easykarobar.data.expect.getSplashImageBase64()
+    val splashImgTag = if (splashSrc.isNotBlank()) """<img src="$splashSrc" style="height:32px; width:32px; object-fit:contain;" />""" else ""
+
     val html = StringBuilder()
 
     html.append(
@@ -286,19 +289,29 @@ fun salesHtml(
 
     <!-- Company header -->
     <div class="header-center border-b">
-        <div class="title">$title</div>
-        <div class="company-name">${CompanyName()}</div>
-        <div class="company-info">
-            ${compInfo?.T3.clean()}<br>
-            Tel. : ${user?.Mobile.clean()} &nbsp; Email : ${user?.Email.clean()}
-        </div>
+        <table style="width:100%; border-collapse:collapse; border:none; table-layout:fixed;">
+            <tr>
+                <td style="width:15%; border:none;"></td>
+                <td style="width:70%; border:none; text-align:center; padding:0;">
+                    <div class="title">$title</div>
+                    <div class="company-name">${CompanyName()}</div>
+                    <div class="company-info">
+                        ${compInfo?.T3.clean()}<br>
+                        Tel. : ${user?.Mobile.clean()} &nbsp; Email : ${user?.Email.clean()}
+                    </div>
+                </td>
+                <td style="width:30%; border:none; text-align:right; vertical-align:top; padding:0;">
+                    $splashImgTag
+                </td>
+            </tr>
+        </table>
     </div>
 
     <!-- Invoice / Transport info -->
     <div class="info-section border-b">
         <div class="info-col border-r">
             <table class="info-table">
-                <tr><td class="label-cell">Invoice No.</td><td>: <b>${invoiceNo.clean()}</b></td></tr>
+                <tr><td class="label-cell">${name} No.</td><td>: <b>${invoiceNo.clean()}</b></td></tr>
                 <tr><td class="label-cell">Dated</td><td>: <b>${Tdate(date)}</b></td></tr>
                 <tr><td class="label-cell">Place of Supply</td><td>: ${partyDetails?.State.clean()}</td></tr>
                 <tr><td class="label-cell">Reverse Charge</td><td>: </td></tr>
