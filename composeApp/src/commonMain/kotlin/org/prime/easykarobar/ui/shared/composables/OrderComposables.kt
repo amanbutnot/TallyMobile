@@ -47,6 +47,7 @@ import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.ORDERSTATUS
 import org.prime.easykarobar.data.model.OrderItemList
 import org.prime.easykarobar.data.model.transactions.SundryItem
+import org.prime.easykarobar.ui.screen.distributor.order.SummaryRow
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 
 @Composable
@@ -303,26 +304,10 @@ fun OrderCard(
                             )
                         }
 
-                        if (hamaliFromItems > 0.0) {
-                            SummaryRow(
-                                label = "Hamali",
-                                value = hamaliFromItems.formatToAmtDec(),
-                                textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
-                            )
-                        }
-
-                        val coupons = sundries?.filter { it.name.lowercase() != "hamali" } ?: emptyList<SundryItem>()
-
-                        if (coupons.isEmpty()) {
-                            SummaryRow(
-                                label = "Coupon",
-                                value = "Not Applied",
-                                textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
-                            )
-                        } else {
-                            for (sundry in coupons) {
+                        if (!sundries.isNullOrEmpty()) {
+                            sundries.forEach { sundry ->
                                 SummaryRow(
-                                    label = "Coupon (${sundry.name})",
+                                    label = sundry.name,
                                     value = sundry.amount.formatToAmtDec(),
                                     textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
                                     valueColor = if (sundry.amount < 0)
@@ -331,6 +316,12 @@ fun OrderCard(
                                         MaterialTheme.colorScheme.onSurface
                                 )
                             }
+                        } else if (hamaliFromItems > 0.0) {
+                            SummaryRow(
+                                label = "Hamali",
+                                value = hamaliFromItems.formatToAmtDec(),
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))

@@ -1200,7 +1200,7 @@ fun CartSummary(
             if (appliedCoupon != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 SummaryRow(
-                    label = "Coupon (${appliedCoupon.code})",
+                    label = appliedCoupon.code,
                     value = "-${couponDiscount.formatToAmtDec()}",
                     textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
                     valueColor = MaterialTheme.colorScheme.primary
@@ -1626,6 +1626,9 @@ fun ConfirmOrderButton(
                     )
                 }
 
+                var totalHamaliAmount = 0.0
+                var totalHamaliRate = 0.0
+
                 products.forEach { cartItem ->
                     val unitName = cartItem.selectedUnit.value
                     val quantity = cartItem.quantity.value
@@ -1635,20 +1638,25 @@ fun ConfirmOrderButton(
                         else -> 0.0
                     }
                     if (rate > 0) {
-                        sundriesList.add(
-                            SundryItem(
-                                name = "hamali",
-                                amount = rate * quantity,
-                                rate = rate,
-                                percentValue = 0.0,
-                                srno = sundriesList.size + 1,
-                                guid = "",
-                                i1 = 0,
-                                i2 = 0,
-                                d2 = 0
-                            )
-                        )
+                        totalHamaliAmount += rate * quantity
+                        totalHamaliRate += rate
                     }
+                }
+
+                if (totalHamaliAmount > 0.0) {
+                    sundriesList.add(
+                        SundryItem(
+                            name = "hamali",
+                            amount = totalHamaliAmount,
+                            rate = totalHamaliRate,
+                            percentValue = 0.0,
+                            srno = sundriesList.size + 1,
+                            guid = "",
+                            i1 = 0,
+                            i2 = 0,
+                            d2 = 0
+                        )
+                    )
                 }
 
                 if (deliveryCharge > 0 && isDelivery) {

@@ -262,7 +262,8 @@ fun getEffectivePrices(
         }
     } else {
         if (calcMain != 0.0) {
-            calcAlt = if (cType == 1.0) calcMain / factor else calcMain * factor
+//            calcAlt = if (cType == 1.0) calcMain / factor else calcMain * factor
+            calcAlt = if (cType == 1.0) calcMain / factor else (1/factor) * calcMain
         } else {
             calcAlt = 0.0
         }
@@ -1922,6 +1923,8 @@ data class SaleScreen(
                         val pricingForProduct =
                             productPricingList.filter { it.GUID.toDouble() == itemName.GUID?.toDouble() }
 
+                        val isAdmin = SharedPrefs.User.get()?.role == "admin"
+
                         val autoPricing = if (pricingLevel != 100.0) {
                             pricingForProduct.find { it.Srno == pricingLevel.toLong() }
                         } else null
@@ -1959,8 +1962,9 @@ data class SaleScreen(
                                 purcPriceAlt = salesPriceAlt
                             )
                             showItemSheet = false
-                        } else if (pricingLevel != 100.0 && pricingForProduct.isNotEmpty()) {
+                        } else if ((pricingLevel != 100.0 || (isAdmin && pricingLevel == 100.0)) && pricingForProduct.isNotEmpty()) {
                             showProductPricingSheet = true
+                            showItemSheet = false
                         } else {
                             val prod = itemsList.find { it.Name == itemName.Name }
                             val rawListPrice =
@@ -2002,23 +2006,40 @@ data class SaleScreen(
                 ProductPricingBottomSheet(
                     show = showProductPricingSheet,
                     productName = selectedProductForPricing?.Name ?: "",
-                    pricingList = productPricingList.filter { it.GUID.toDouble() == selectedProductForPricing?.GUID?.toDouble() }
-                        .map {
-                            ProductPricing(
-                                Guid = it.GUID,
-                                ProductName = ('A'.code + (it.Srno - 101)).toInt().toChar()
-                                    .toString(),
-                                SerialNo = it.Srno.toString(),
-                                SalePrice = it.SalesPrice ?: 0.0,
-                                PurchasePrice = it.SalesPrice ?: 0.0,
-                                Discount = it.Disc ?: 0.0,
-                                CompoundDiscount = it.Disc.toString(),
-                                VchType = it.VchType.toInt(),
-                                SalesPriceAlt = it.SalesPriceAlt,
-                                MrpAlt = it.MrpAlt,
-                                DiscAlt = it.DiscAlt
-                            )
-                        },
+                    pricingList = run {
+                        val prod = itemsList.find { it.Name == selectedProductForPricing?.Name }
+                        val masterPricing = ProductPricing(
+                            Guid = prod?.GUID ?: "",
+                            ProductName = "Master",
+                            SerialNo = "Master",
+                            VchType = vchType,
+                            SalePrice = if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0,
+                            PurchasePrice = prod?.PurcPrice ?: 0.0,
+                            Discount = if (isSale) prod?.SaleDisc ?: 0.0 else prod?.PurcDisc ?: 0.0,
+                            CompoundDiscount = "",
+                            SalesPriceAlt = prod?.SalesPriceAlt,
+                            MrpAlt = null,
+                            DiscAlt = null
+                        )
+                        val otherPricing = productPricingList.filter { it.GUID.toDouble() == selectedProductForPricing?.GUID?.toDouble() }
+                            .map {
+                                ProductPricing(
+                                    Guid = it.GUID,
+                                    ProductName = ('A'.code + (it.Srno - 101)).toInt().toChar()
+                                        .toString(),
+                                    SerialNo = it.Srno.toString(),
+                                    SalePrice = it.SalesPrice ?: 0.0,
+                                    PurchasePrice = it.SalesPrice ?: 0.0,
+                                    Discount = it.Disc ?: 0.0,
+                                    CompoundDiscount = it.Disc.toString(),
+                                    VchType = it.VchType.toInt(),
+                                    SalesPriceAlt = it.SalesPriceAlt,
+                                    MrpAlt = it.MrpAlt,
+                                    DiscAlt = it.DiscAlt
+                                )
+                            }
+                        listOf(masterPricing) + otherPricing
+                    },
                     onSelect = { pricing: ProductPricing ->
                         showProductPricingSheet = false
                         selectedPricing = pricing
@@ -2248,12 +2269,16 @@ data class SaleScreen(
 
                         val calculatedAltQty =
                             if (currentUnit == altUnitName && altUnitName != null) {
-                                qty.toDouble()
+                                if (conTypeVal == 1.0) {
+                                    qty * factor
+                                } else {
+                                    qty * factor
+                                }
                             } else {
                                 if (conTypeVal == 1.0) {
-                                    qty.toDouble() * factor
+                                    qty * factor
                                 } else {
-                                    qty.toDouble() / factor
+                                    qty * factor
                                 }
                             }
 
