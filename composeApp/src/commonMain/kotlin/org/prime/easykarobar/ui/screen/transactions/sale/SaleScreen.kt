@@ -118,6 +118,7 @@ import org.prime.easykarobar.data.model.transactions.BillingItem
 import org.prime.easykarobar.data.model.transactions.InventoryVoucherRequest
 import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.model.transactions.TransportDetails
+import org.prime.easykarobar.data.utils.SaleOrderConfig
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.data.utils.showQtyToSalesman
 import org.prime.easykarobar.ui.printing.salesHtml
@@ -245,11 +246,7 @@ data class InvoiceItem(
 }
 
 fun getEffectivePrices(
-    mainPrice: Double,
-    altPrice: Double?,
-    conFactor: Double?,
-    conType: Double?,
-    isSale: Boolean
+    mainPrice: Double, altPrice: Double?, conFactor: Double?, conType: Double?, isSale: Boolean
 ): Pair<Double, Double?> {
     val factor = conFactor ?: 1.0
     val cType = conType ?: 1.0
@@ -258,12 +255,13 @@ fun getEffectivePrices(
 
     if (calcAlt != null && calcAlt != 0.0) {
         if (calcMain == 0.0) {
-            calcMain = if (cType == 1.0) calcAlt * factor else if (factor > 0.0) calcAlt / factor else calcAlt
+            calcMain =
+                if (cType == 1.0) calcAlt * factor else if (factor > 0.0) calcAlt / factor else calcAlt
         }
     } else {
         if (calcMain != 0.0) {
 //            calcAlt = if (cType == 1.0) calcMain / factor else calcMain * factor
-            calcAlt = if (cType == 1.0) calcMain / factor else (1/factor) * calcMain
+            calcAlt = if (cType == 1.0) calcMain / factor else (1 / factor) * calcMain
         } else {
             calcAlt = 0.0
         }
@@ -288,7 +286,9 @@ data class SaleScreen(
 ) : Screen {
 
     @OptIn(
-        ExperimentalMaterial3Api::class, InternalVoyagerApi::class, ExperimentalUuidApi::class,
+        ExperimentalMaterial3Api::class,
+        InternalVoyagerApi::class,
+        ExperimentalUuidApi::class,
         ExperimentalMaterial3ExpressiveApi::class
     )
     @Composable
@@ -364,8 +364,7 @@ data class SaleScreen(
                 val busyLedgers = db.bSMasterQueries.selectAll().executeAsList()
                 val items = getConfigItemMasters(db, vchType)
                 val groups = db.productGroupMasterQueries.selectAll(
-                    filterGroup = filterItemGroups(),
-                    groupCodes = itemGroupCodes()
+                    filterGroup = filterItemGroups(), groupCodes = itemGroupCodes()
                 ).executeAsList()
                 val pricing = db.productsPricingQueries.selectAll().executeAsList()
 
@@ -558,7 +557,9 @@ data class SaleScreen(
                         val rawAltPrice = product.SalesPriceAlt
                         val factor = product.ConFactor ?: 1.0
                         val conTypeVal = product.ConType ?: 1.0
-                        val (listPrice, salesPriceAlt) = getEffectivePrices(rawListPrice, rawAltPrice, factor, conTypeVal, isSale)
+                        val (listPrice, salesPriceAlt) = getEffectivePrices(
+                            rawListPrice, rawAltPrice, factor, conTypeVal, isSale
+                        )
                         val discount =
                             if (isSale) product.SaleDisc ?: 0.0 else product.PurcDisc ?: 0.0
                         val price = listPrice - (listPrice * discount / 100.0)
@@ -840,10 +841,19 @@ data class SaleScreen(
                         item_params = itm.item_parameter.map {
                             org.tally.GetProductStockList(
                                 MasterCode1 = itm.product_id.toDoubleOrNull(),
-                                MasterCode2 = null, Value1 = null,
-                                Value2 = null, Value3 = null, BCN = it, C1 = null,
-                                C2 = it, C3 = null, C4 = null, C5 = null,
-                                ProductName = itm.product_name, GodownName = null, GroupName = null
+                                MasterCode2 = null,
+                                Value1 = null,
+                                Value2 = null,
+                                Value3 = null,
+                                BCN = it,
+                                C1 = null,
+                                C2 = it,
+                                C3 = null,
+                                C4 = null,
+                                C5 = null,
+                                ProductName = itm.product_name,
+                                GodownName = null,
+                                GroupName = null
                             )
                         },
                         item_parameter = itm.item_parameter
@@ -946,9 +956,7 @@ data class SaleScreen(
 
         if (showEmptyBarcode) {
             TallyResultDialog(
-                message = "Item not found",
-                onDone = { showEmptyBarcode = false },
-                isSuccess = false
+                message = "Item not found", onDone = { showEmptyBarcode = false }, isSuccess = false
             )
         }
 
@@ -956,14 +964,9 @@ data class SaleScreen(
             name = name,
             partyName = selectedLedger,
             partyGuid = selectedLedgerGUID,
-            invoiceNo = oneState.data?.billed_vchno
-                ?.takeIf { it.isNotBlank() }
-                ?: oneState.data?.AutoVchNo
-                    ?.takeIf { it != 0 }
-                    ?.toString()
-                ?: state.data?.VoucherNumber
-                    ?.toString()
-                    ?.takeIf { it.isNotBlank() }
+            invoiceNo = oneState.data?.billed_vchno?.takeIf { it.isNotBlank() }
+                ?: oneState.data?.AutoVchNo?.takeIf { it != 0 }?.toString()
+                ?: state.data?.VoucherNumber?.toString()?.takeIf { it.isNotBlank() }
                 ?: "default_name",
             date = selectedDate,
             items = selectedItems,
@@ -983,21 +986,15 @@ data class SaleScreen(
                 Saddress4 = Saddress4,
                 SshipState = SshipState,
                 SgstIn = SgstIn
-            )
-        )
+            ))
 
         val slipHtmlContent = salesSlipHtml(
             name = name,
             partyName = selectedLedger,
             partyGuid = selectedLedgerGUID,
-            invoiceNo = oneState.data?.billed_vchno
-                ?.takeIf { it.isNotBlank() }
-                ?: oneState.data?.AutoVchNo
-                    ?.takeIf { it != 0 }
-                    ?.toString()
-                ?: state.data?.VoucherNumber
-                    ?.toString()
-                    ?.takeIf { it.isNotBlank() }
+            invoiceNo = oneState.data?.billed_vchno?.takeIf { it.isNotBlank() }
+                ?: oneState.data?.AutoVchNo?.takeIf { it != 0 }?.toString()
+                ?: state.data?.VoucherNumber?.toString()?.takeIf { it.isNotBlank() }
                 ?: "default_name",
             date = selectedDate,
             items = selectedItems,
@@ -1017,8 +1014,7 @@ data class SaleScreen(
                 Saddress4 = Saddress4,
                 SshipState = SshipState,
                 SgstIn = SgstIn
-            )
-        )
+            ))
 
         val menuList = buildList {
             if (enableUpdateButton || SharedPrefs.User.get()?.role == "admin") {
@@ -1036,9 +1032,8 @@ data class SaleScreen(
             onDownloadClick = {
                 scope.launch {
                     handlePdfAction(
-                        fileName = oneState.data?.billed_vchno
-                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
-                            ?: CompanyName(),
+                        fileName = oneState.data?.billed_vchno?.takeIf { it.isNotEmpty() }
+                            ?.replace("/", "_") ?: CompanyName(),
                         htmlContent = htmlContent,
                         action = PdfAction.Download,
                         onLoadingChange = { shareLoading = it })
@@ -1047,9 +1042,8 @@ data class SaleScreen(
             onDownloadSecondClick = {
                 scope.launch {
                     handlePdfAction(
-                        fileName = oneState.data?.billed_vchno
-                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
-                            ?: (CompanyName() + "_Slip"),
+                        fileName = oneState.data?.billed_vchno?.takeIf { it.isNotEmpty() }
+                            ?.replace("/", "_") ?: (CompanyName() + "_Slip"),
                         htmlContent = slipHtmlContent,
                         action = PdfAction.Download,
                         onLoadingChange = { shareLoading = it })
@@ -1059,9 +1053,8 @@ data class SaleScreen(
             onShareClick = {
                 scope.launch {
                     handlePdfAction(
-                        fileName = oneState.data?.billed_vchno
-                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
-                            ?: CompanyName(),
+                        fileName = oneState.data?.billed_vchno?.takeIf { it.isNotEmpty() }
+                            ?.replace("/", "_") ?: CompanyName(),
                         htmlContent = htmlContent,
                         action = PdfAction.Share,
                         onLoadingChange = { shareLoading = it })
@@ -1070,9 +1063,8 @@ data class SaleScreen(
             onShareSecondClick = {
                 scope.launch {
                     handlePdfAction(
-                        fileName = oneState.data?.billed_vchno
-                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
-                            ?: (CompanyName() + "_Slip"),
+                        fileName = oneState.data?.billed_vchno?.takeIf { it.isNotEmpty() }
+                            ?.replace("/", "_") ?: (CompanyName() + "_Slip"),
                         htmlContent = slipHtmlContent,
                         action = PdfAction.Share,
                         onLoadingChange = { shareLoading = it })
@@ -1095,9 +1087,8 @@ data class SaleScreen(
                         )
                     }
                     handlePdfAction(
-                        fileName = oneState.data?.billed_vchno
-                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
-                            ?: CompanyName(),
+                        fileName = oneState.data?.billed_vchno?.takeIf { it.isNotEmpty() }
+                            ?.replace("/", "_") ?: CompanyName(),
                         htmlContent = htmlContent,
                         headers = listOf(
                             "S No.",
@@ -1112,8 +1103,7 @@ data class SaleScreen(
                         ),
                         rows = excelRows,
                         action = PdfAction.DownloadExcel,
-                        onLoadingChange = { shareLoading = it }
-                    )
+                        onLoadingChange = { shareLoading = it })
                 }
             },
             menuItems = menuList,
@@ -1126,13 +1116,10 @@ data class SaleScreen(
                     }
                 } else {
                     Column(
-                        modifier = Modifier
-                            .padding(paddingValues)
-                            .fillMaxSize()
+                        modifier = Modifier.padding(paddingValues).fillMaxSize()
                     ) {
                         Column(
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp)
+                            modifier = Modifier.padding(horizontal = 16.dp)
                                 .verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
@@ -1175,9 +1162,7 @@ data class SaleScreen(
                             )
 
                             SectionCard(
-                                title = "ITEMS",
-                                count = selectedItems.size,
-                                headerAction = {
+                                title = "ITEMS", count = selectedItems.size, headerAction = {
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = Alignment.CenterVertically
@@ -1204,33 +1189,35 @@ data class SaleScreen(
                                             ),
                                             border = null
                                         )
-                                        AssistChip(
-                                            onClick = { showItemSheet = true },
-                                            enabled = editingItem == null,
-                                            label = {
-                                                Text(
-                                                    "Add Item",
-                                                    style = MaterialTheme.typography.labelLarge,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    Icons.Default.Add,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                            },
-                                            colors = AssistChipDefaults.assistChipColors(
-                                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                                labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                leadingIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                            ),
-                                            border = null
-                                        )
+                                        if (SaleOrderConfig.showAddItemInSaleOrder()) {
+                                            AssistChip(
+                                                onClick = { showItemSheet = true },
+                                                enabled = editingItem == null,
+                                                label = {
+                                                    Text(
+                                                        "Add Item",
+                                                        style = MaterialTheme.typography.labelLarge,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                },
+                                                leadingIcon = {
+                                                    Icon(
+                                                        Icons.Default.Add,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                },
+                                                colors = AssistChipDefaults.assistChipColors(
+                                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                    labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                    leadingIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                                ),
+                                                border = null
+                                            )
+
+                                        }
                                     }
-                                }
-                            ) {
+                                }) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     val pending = editingItem
 
@@ -1250,14 +1237,18 @@ data class SaleScreen(
                                             0.0
                                         }
 
-                                        val rawMain = if (pendingItem.listPrice == 0.0)
-                                            if (isSale) product?.SalesPrice ?: 0.0
+                                        val rawMain =
+                                            if (pendingItem.listPrice == 0.0) if (isSale) product?.SalesPrice
+                                                ?: 0.0
                                             else product?.PurcPrice ?: 0.0
-                                        else pendingItem.listPrice
-                                        val rawAlt = pendingItem.salesPriceAlt ?: product?.SalesPriceAlt
+                                            else pendingItem.listPrice
+                                        val rawAlt =
+                                            pendingItem.salesPriceAlt ?: product?.SalesPriceAlt
                                         val cFactor = product?.ConFactor ?: pendingItem.conFactor
                                         val cType = product?.ConType ?: pendingItem.conType
-                                        val (effMain, effAlt) = getEffectivePrices(rawMain, rawAlt, cFactor, cType, isSale)
+                                        val (effMain, effAlt) = getEffectivePrices(
+                                            rawMain, rawAlt, cFactor, cType, isSale
+                                        )
 
                                         ExpandedItemEditor1(
                                             name = product?.Name ?: pendingItem.name,
@@ -1275,7 +1266,8 @@ data class SaleScreen(
                                             conFactor = cFactor,
                                             conType = cType,
                                             salesPriceAlt = effAlt,
-                                            purcPriceAlt = product?.PurcPriceAlt ?: pendingItem.purcPriceAlt,
+                                            purcPriceAlt = product?.PurcPriceAlt
+                                                ?: pendingItem.purcPriceAlt,
                                             isSale = isSale,
                                             gstPercentage = gst,
                                             onAdd = { qty, unitPrice, discount, compoundDiscount, listPriceText, taxable, gstAmount, net, gstPercentage, itemDescs, additionalInfos, serialNumbers, cFactor, cType, sUnit, aQty ->
@@ -1293,8 +1285,10 @@ data class SaleScreen(
                                                         ?: pendingSelectedProductGUID
                                                         ?: pendingItem.guid,
                                                     gstPercentage = gstPercentage,
-                                                    salesPriceAlt = pendingItem.salesPriceAlt ?: product?.SalesPriceAlt,
-                                                    purcPriceAlt = pendingItem.purcPriceAlt ?: product?.PurcPriceAlt,
+                                                    salesPriceAlt = pendingItem.salesPriceAlt
+                                                        ?: product?.SalesPriceAlt,
+                                                    purcPriceAlt = pendingItem.purcPriceAlt
+                                                        ?: product?.PurcPriceAlt,
                                                     taxCategoryCode = product?.TaxCategoryCode?.toInt()
                                                         ?: pendingItem.taxCategoryCode,
                                                     itemdesc1 = itemDescs.getOrNull(0),
@@ -1328,7 +1322,8 @@ data class SaleScreen(
                                                             GroupName = null,
                                                             Value1 = 1.0,
                                                             Value2 = 0.0,
-                                                            Value3 = 0.0, MasterCode2 = ""
+                                                            Value3 = 0.0,
+                                                            MasterCode2 = ""
                                                         )
                                                     },
                                                     conFactor = cFactor,
@@ -1368,8 +1363,10 @@ data class SaleScreen(
                                                         ?: pendingSelectedProductGUID
                                                         ?: pendingItem.guid,
                                                     gstPercentage = gstPercentage,
-                                                    salesPriceAlt = pendingItem.salesPriceAlt ?: product?.SalesPriceAlt,
-                                                    purcPriceAlt = pendingItem.purcPriceAlt ?: product?.PurcPriceAlt,
+                                                    salesPriceAlt = pendingItem.salesPriceAlt
+                                                        ?: product?.SalesPriceAlt,
+                                                    purcPriceAlt = pendingItem.purcPriceAlt
+                                                        ?: product?.PurcPriceAlt,
                                                     taxCategoryCode = product?.TaxCategoryCode?.toInt()
                                                         ?: pendingItem.taxCategoryCode,
                                                     itemdesc1 = itemDescs.getOrNull(0),
@@ -1403,7 +1400,8 @@ data class SaleScreen(
                                                             GroupName = null,
                                                             Value1 = 1.0,
                                                             Value2 = 0.0,
-                                                            Value3 = 0.0, MasterCode2 = ""
+                                                            Value3 = 0.0,
+                                                            MasterCode2 = ""
                                                         )
                                                     },
                                                     conFactor = cFactor,
@@ -1436,8 +1434,7 @@ data class SaleScreen(
                                             onCancel = {
                                                 editingItemIndex = null
                                                 editingItem = null
-                                            }
-                                        )
+                                            })
                                     }
 
                                     if (pending != null && editingItemIndex == null) {
@@ -1544,8 +1541,7 @@ data class SaleScreen(
                                                         pendingSelectedProductName = item.name
                                                         showParameterBottomSheet = true
                                                     }
-                                                }
-                                            )
+                                                })
                                         }
                                     }
 
@@ -1557,8 +1553,7 @@ data class SaleScreen(
 
                             if (isSpecialUser && hamaliItem != null && hamaliItem!!.amount > 0.0) {
                                 SectionCard(
-                                    title = "HAMALI",
-                                    count = 1
+                                    title = "HAMALI", count = 1
                                 ) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -1583,8 +1578,7 @@ data class SaleScreen(
                             SectionCard(
                                 title = if (isBusy()) "SUNDRIES" else "Ledgers",
                                 count = selectedSundries.size,
-                                headerAction = {}
-                            ) {
+                                headerAction = {}) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     var cumulativeTotal = itemsTotal
 
@@ -1635,8 +1629,7 @@ data class SaleScreen(
                                     ) {
                                         SmallAddButton(
                                             label = if (isBusy()) "Add More Sundry" else "Add More Ledger",
-                                            enabled =
-                                                selectedItems.isNotEmpty()
+                                            enabled = selectedItems.isNotEmpty()
 
                                         ) {
                                             showSundrySheet = true
@@ -1669,22 +1662,22 @@ data class SaleScreen(
                                     )
                                 }
                             }
-                            if (isBusy()) {
+                            if (isBusy() && SaleOrderConfig.showTransport()) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth()
                                         .padding(horizontal = 16.dp, vertical = 8.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
-                                )
-                                {
+                                ) {
                                     Text(
                                         text = "Transport Details",
                                         style = MaterialTheme.typography.titleSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     TextButton(
-                                        onClick = { showTransportDetails = !showTransportDetails }
-                                    ) {
+                                        onClick = {
+                                            showTransportDetails = !showTransportDetails
+                                        }) {
                                         Icon(
                                             imageVector = if (showTransportDetails) Icons.Default.RemoveCircleOutline
                                             else Icons.Default.AddCircleOutline,
@@ -1708,11 +1701,9 @@ data class SaleScreen(
                                 exit = fadeOut(animationSpec = tween(300)) + shrinkVertically(
                                     animationSpec = tween(300)
                                 )
-                            )
-                            {
+                            ) {
                                 ElevatedCard(
-                                    modifier = Modifier.fillMaxWidth()
-                                        .padding(horizontal = 16.dp)
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                                         .padding(bottom = 16.dp),
                                     colors = CardDefaults.elevatedCardColors(
                                         containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -1800,7 +1791,7 @@ data class SaleScreen(
                                     }
                                 }
                             }
-                            if (isBusy()) {
+                            if (isBusy() && SaleOrderConfig.showBilling()) {
                                 ShippingCard(
                                     showShippingDetails = SshowShippingDetails,
                                     onShowChange = { SshowShippingDetails = !SshowShippingDetails },
@@ -1878,20 +1869,21 @@ data class SaleScreen(
                                 bottomSheetState = rememberModalBottomSheetState(
                                     skipPartiallyExpanded = true
                                 ),
-                                title = "Bill by Bill", totalAmount = grandTotal,
+                                title = "Bill by Bill",
+                                totalAmount = grandTotal,
                                 isEdit = isEdit,
-                                uniqueId = uniqueId, vchType = vchType
+                                uniqueId = uniqueId,
+                                vchType = vchType
                             )
 
-                            if (isBusy()) {
+                            if (isBusy() && SaleOrderConfig.showOptionalFields()) {
                                 OptionalFieldCard(
                                     showOptionalField = showOptionalField,
                                     onShowChange = { showOptionalField = !showOptionalField },
                                     optionalFields = optionalFields,
                                     onFieldChange = { index, value ->
                                         optionalFields[index] = value
-                                    }
-                                )
+                                    })
                             }
                         }
                     }
@@ -1900,15 +1892,13 @@ data class SaleScreen(
                 SelectionSheet(
                     show = showLedgerSheet,
                     title = "Select Party Ledger",
-                    options = ledgerList
-                        .filter { it.L1 == 1.0 || it.L2 == 1.0 || it.L3 == 1.0 }
+                    options = ledgerList.filter { it.L1 == 1.0 || it.L2 == 1.0 || it.L3 == 1.0 }
                         .map { it.Name ?: "" },
                     onSelect = { selected ->
                         selectedLedger = selected
                         selectedLedgerGUID = ledgerList.find { l -> l.Name == selected }?.GUID ?: ""
                     },
-                    onDismiss = { showLedgerSheet = false }
-                )
+                    onDismiss = { showLedgerSheet = false })
                 SelectionSheetItem(
                     show = showItemSheet,
                     title = "Select Item",
@@ -1936,7 +1926,9 @@ data class SaleScreen(
                             val rawAltPrice = autoPricing.SalesPriceAlt
                             val factor = prod?.ConFactor ?: 1.0
                             val conTypeVal = prod?.ConType ?: 1.0
-                            val (listPrice, salesPriceAlt) = getEffectivePrices(rawListPrice, rawAltPrice, factor, conTypeVal, isSale)
+                            val (listPrice, salesPriceAlt) = getEffectivePrices(
+                                rawListPrice, rawAltPrice, factor, conTypeVal, isSale
+                            )
                             val discount = autoPricing.Disc ?: 0.0
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
@@ -1972,7 +1964,9 @@ data class SaleScreen(
                             val rawAltPrice = prod?.SalesPriceAlt
                             val factor = prod?.ConFactor ?: 1.0
                             val conTypeVal = prod?.ConType ?: 1.0
-                            val (listPrice, salesPriceAlt) = getEffectivePrices(rawListPrice, rawAltPrice, factor, conTypeVal, isSale)
+                            val (listPrice, salesPriceAlt) = getEffectivePrices(
+                                rawListPrice, rawAltPrice, factor, conTypeVal, isSale
+                            )
                             val discount =
                                 if (isSale) prod?.SaleDisc ?: 0.0 else prod?.PurcDisc ?: 0.0
                             editingItem = InvoiceItem(
@@ -2001,8 +1995,7 @@ data class SaleScreen(
                             showItemSheet = false
                         }
                     },
-                    onDismiss = { showItemSheet = false }
-                )
+                    onDismiss = { showItemSheet = false })
                 ProductPricingBottomSheet(
                     show = showProductPricingSheet,
                     productName = selectedProductForPricing?.Name ?: "",
@@ -2013,7 +2006,8 @@ data class SaleScreen(
                             ProductName = "Master",
                             SerialNo = "Master",
                             VchType = vchType,
-                            SalePrice = if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0,
+                            SalePrice = if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice
+                                ?: 0.0,
                             PurchasePrice = prod?.PurcPrice ?: 0.0,
                             Discount = if (isSale) prod?.SaleDisc ?: 0.0 else prod?.PurcDisc ?: 0.0,
                             CompoundDiscount = "",
@@ -2021,23 +2015,24 @@ data class SaleScreen(
                             MrpAlt = null,
                             DiscAlt = null
                         )
-                        val otherPricing = productPricingList.filter { it.GUID.toDouble() == selectedProductForPricing?.GUID?.toDouble() }
-                            .map {
-                                ProductPricing(
-                                    Guid = it.GUID,
-                                    ProductName = ('A'.code + (it.Srno - 101)).toInt().toChar()
-                                        .toString(),
-                                    SerialNo = it.Srno.toString(),
-                                    SalePrice = it.SalesPrice ?: 0.0,
-                                    PurchasePrice = it.SalesPrice ?: 0.0,
-                                    Discount = it.Disc ?: 0.0,
-                                    CompoundDiscount = it.Disc.toString(),
-                                    VchType = it.VchType.toInt(),
-                                    SalesPriceAlt = it.SalesPriceAlt,
-                                    MrpAlt = it.MrpAlt,
-                                    DiscAlt = it.DiscAlt
-                                )
-                            }
+                        val otherPricing =
+                            productPricingList.filter { it.GUID.toDouble() == selectedProductForPricing?.GUID?.toDouble() }
+                                .map {
+                                    ProductPricing(
+                                        Guid = it.GUID,
+                                        ProductName = ('A'.code + (it.Srno - 101)).toInt().toChar()
+                                            .toString(),
+                                        SerialNo = it.Srno.toString(),
+                                        SalePrice = it.SalesPrice ?: 0.0,
+                                        PurchasePrice = it.SalesPrice ?: 0.0,
+                                        Discount = it.Disc ?: 0.0,
+                                        CompoundDiscount = it.Disc.toString(),
+                                        VchType = it.VchType.toInt(),
+                                        SalesPriceAlt = it.SalesPriceAlt,
+                                        MrpAlt = it.MrpAlt,
+                                        DiscAlt = it.DiscAlt
+                                    )
+                                }
                         listOf(masterPricing) + otherPricing
                     },
                     onSelect = { pricing: ProductPricing ->
@@ -2052,7 +2047,9 @@ data class SaleScreen(
                             val rawAltPrice = pricing.SalesPriceAlt
                             val factor = prod?.ConFactor ?: 1.0
                             val conTypeVal = prod?.ConType ?: 1.0
-                            val (listPrice, salesPriceAlt) = getEffectivePrices(rawListPrice, rawAltPrice, factor, conTypeVal, isSale)
+                            val (listPrice, salesPriceAlt) = getEffectivePrices(
+                                rawListPrice, rawAltPrice, factor, conTypeVal, isSale
+                            )
                             val discount = pricing.Discount
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
@@ -2117,10 +2114,9 @@ data class SaleScreen(
                         } catch (e: Exception) {
                             0.0
                         }
-                        val pricePerUnit =
-                            if (total > 0) total / selectedList.size
-                            else if (selectedPricing != null) selectedPricing!!.SalePrice
-                            else (editingItem?.price ?: 0.0)
+                        val pricePerUnit = if (total > 0) total / selectedList.size
+                        else if (selectedPricing != null) selectedPricing!!.SalePrice
+                        else (editingItem?.price ?: 0.0)
 
                         val qty = selectedList.size.coerceAtLeast(1).toDouble()
 
@@ -2178,8 +2174,10 @@ data class SaleScreen(
                             net = netAmt,
                             guid = pendingSelectedProductGUID ?: editingItem?.guid ?: "",
                             gstPercentage = gstPct,
-                            salesPriceAlt = selectedPricing?.SalesPriceAlt ?: editingItem?.salesPriceAlt ?: prod?.SalesPriceAlt,
-                            purcPriceAlt = selectedPricing?.SalesPriceAlt ?: editingItem?.purcPriceAlt ?: prod?.PurcPriceAlt,
+                            salesPriceAlt = selectedPricing?.SalesPriceAlt
+                                ?: editingItem?.salesPriceAlt ?: prod?.SalesPriceAlt,
+                            purcPriceAlt = selectedPricing?.SalesPriceAlt
+                                ?: editingItem?.purcPriceAlt ?: prod?.PurcPriceAlt,
                             taxCategoryCode = taxCategoryCode.toInt(),
                             CD = selectedPricing?.CompoundDiscount ?: editingItem?.CD ?: "",
                             item_serial = selectedList,
@@ -2207,8 +2205,7 @@ data class SaleScreen(
                         editingItemIndex = null
                         pendingSelectedProductName = null
                         pendingSelectedProductGUID = null
-                    }
-                )
+                    })
                 ParameterSelectionBottomSheet(
                     productGuid = pendingSelectedProductGUID.toString(),
                     show = showParameterBottomSheet,
@@ -2231,9 +2228,8 @@ data class SaleScreen(
                         } catch (e: Exception) {
                             0.0
                         }
-                        val pricePerUnit =
-                            if (selectedPricing != null) selectedPricing!!.SalePrice
-                            else (editingItem?.price ?: 0.0)
+                        val pricePerUnit = if (selectedPricing != null) selectedPricing!!.SalePrice
+                        else (editingItem?.price ?: 0.0)
 
                         val qty = selectedList.size.coerceAtLeast(1).toDouble()
 
@@ -2294,8 +2290,10 @@ data class SaleScreen(
                             net = netAmt,
                             guid = pendingSelectedProductGUID ?: editingItem?.guid ?: "",
                             gstPercentage = gstPct,
-                            salesPriceAlt = selectedPricing?.SalesPriceAlt ?: editingItem?.salesPriceAlt ?: prod?.SalesPriceAlt,
-                            purcPriceAlt = selectedPricing?.SalesPriceAlt ?: editingItem?.purcPriceAlt ?: prod?.PurcPriceAlt,
+                            salesPriceAlt = selectedPricing?.SalesPriceAlt
+                                ?: editingItem?.salesPriceAlt ?: prod?.SalesPriceAlt,
+                            purcPriceAlt = selectedPricing?.SalesPriceAlt
+                                ?: editingItem?.purcPriceAlt ?: prod?.PurcPriceAlt,
                             taxCategoryCode = taxCategoryCode.toInt(),
                             CD = selectedPricing?.CompoundDiscount ?: editingItem?.CD ?: "",
                             item_serial = editingItem?.item_serial ?: emptyList(),
@@ -2325,8 +2323,7 @@ data class SaleScreen(
                         editingItemIndex = null
                         pendingSelectedProductName = null
                         pendingSelectedProductGUID = null
-                    }
-                )
+                    })
 
                 if (isBusy()) {
                     SelectionSheetThree(
@@ -2348,7 +2345,8 @@ data class SaleScreen(
                         onSelect = { item ->
                             if (!selectedSundries.any { it.name == item.name }) {
                                 val newItem = SundryItem(
-                                    item.name, 0.0,
+                                    item.name,
+                                    0.0,
                                     guid = item.guid,
                                     i1 = item.i1,
                                     i2 = item.i2,
@@ -2361,8 +2359,7 @@ data class SaleScreen(
                                 focusedSundryGuid = newItem.guid
                             }
                         },
-                        onDismiss = { showSundrySheet = false }
-                    )
+                        onDismiss = { showSundrySheet = false })
                 } else {
                     SelectionSheetTwo(
                         show = showSundrySheet,
@@ -2372,7 +2369,8 @@ data class SaleScreen(
                         onSelect = { sundryName, GUID ->
                             if (!selectedSundries.any { it.name == sundryName }) {
                                 val newItem = SundryItem(
-                                    sundryName, 0.0,
+                                    sundryName,
+                                    0.0,
                                     guid = GUID,
                                     i1 = 1,
                                     i2 = 0,
@@ -2385,8 +2383,7 @@ data class SaleScreen(
                                 focusedSundryGuid = GUID
                             }
                         },
-                        onDismiss = { showSundrySheet = false }
-                    )
+                        onDismiss = { showSundrySheet = false })
                 }
 
                 if (showResultDialog) {
@@ -2397,14 +2394,12 @@ data class SaleScreen(
                             nav.pop()
                         },
                         isSuccess = state.success,
-                        fileName = oneState.data?.billed_vchno
-                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
-                            ?: CompanyName(),
+                        fileName = oneState.data?.billed_vchno?.takeIf { it.isNotEmpty() }
+                            ?.replace("/", "_") ?: CompanyName(),
                         htmlContent = htmlContent,
                         onLoadingChange = { shareLoading = it },
-                        secondFileName = oneState.data?.billed_vchno
-                            ?.takeIf { it.isNotEmpty() }?.replace("/", "_")
-                            ?: (CompanyName() + "_Slip"),
+                        secondFileName = oneState.data?.billed_vchno?.takeIf { it.isNotEmpty() }
+                            ?.replace("/", "_") ?: (CompanyName() + "_Slip"),
                         secondHtmlContent = slipHtmlContent
                     )
                 }
@@ -2486,13 +2481,11 @@ data class SaleScreen(
                                         item.item_params.map {
                                             it.C2 ?: ""
                                         }
-                                    }
-                                )
+                                    })
                             }
                             println("selected date from sale invoice is $selectedDate")
                             println(
-                                "using my function " +
-                                        "selected date from sale invoice is ${selectedDate.yymmdd()}"
+                                "using my function " + "selected date from sale invoice is ${selectedDate.yymmdd()}"
                             )
                             viewmodel.createEditInventoryResponse(
                                 inventoryVoucherRequest = InventoryVoucherRequest(
@@ -2551,8 +2544,7 @@ data class SaleScreen(
                                         OptionalField20 = optionalFields[19],
                                     ),
                                     bills_collection = selectedReferences,
-                                ),
-                                onSuccess = {
+                                ), onSuccess = {
                                     scope.launch(Dispatchers.IO) {
                                         SharedPrefs.LastTaxType.save(vchType, taxType.ordinal)
                                         db.transaction {
@@ -2627,8 +2619,7 @@ data class SaleScreen(
                                             showResultDialog = true
                                         }
                                     }
-                                },
-                                url = if (isEdit) "updateInventory" else "addInventoryVch"
+                                }, url = if (isEdit) "updateInventory" else "addInventoryVch"
                             )
                         }
 
@@ -2682,8 +2673,7 @@ data class SaleScreen(
                         }
                     }
                 }
-            }
-        )
+            })
     }
 }
 
@@ -2829,8 +2819,7 @@ fun CompactItemCard(
                         QuantitySelector(
                             qty = item.qty,
                             onDecrease = { onQuantityChange((item.qty - 1.0).coerceAtLeast(0.01)) },
-                            onIncrease = { onQuantityChange(item.qty + 1.0) }
-                        )
+                            onIncrease = { onQuantityChange(item.qty + 1.0) })
                         Text(
                             text = "x ${formatTwo(item.price)}",
                             style = MaterialTheme.typography.bodyLarge,
@@ -3061,8 +3050,7 @@ fun SundryCard(
                                     fontWeight = FontWeight.SemiBold
                                 ),
                                 keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.Decimal,
-                                    imeAction = ImeAction.Done
+                                    keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done
                                 ),
                                 keyboardActions = KeyboardActions(
                                     onDone = {
@@ -3072,8 +3060,7 @@ fun SundryCard(
                                             isEditing = false
                                             focusManager.clearFocus()
                                         }
-                                    }
-                                ),
+                                    }),
                                 decorationBox = { innerTextField ->
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -3087,8 +3074,7 @@ fun SundryCard(
                                                     style = MaterialTheme.typography.bodyMedium.copy(
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
                                                             alpha = 0.5f
-                                                        ),
-                                                        textAlign = TextAlign.End
+                                                        ), textAlign = TextAlign.End
                                                     ),
                                                     modifier = Modifier.fillMaxWidth()
                                                 )
@@ -3104,8 +3090,7 @@ fun SundryCard(
                                             )
                                         }
                                     }
-                                }
-                            )
+                                })
                         }
                     }
                 }
@@ -3119,8 +3104,7 @@ fun SundryCard(
                                 isEditing = false
                                 focusManager.clearFocus()
                             }
-                        },
-                        modifier = Modifier.size(32.dp)
+                        }, modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Check,
@@ -3141,8 +3125,7 @@ fun SundryCard(
                             } else {
                                 onRemove()
                             }
-                        },
-                        modifier = Modifier.size(28.dp)
+                        }, modifier = Modifier.size(28.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -3164,8 +3147,7 @@ fun SundryCard(
                         )
                     }
                     IconButton(
-                        onClick = onRemove,
-                        modifier = Modifier.size(32.dp)
+                        onClick = onRemove, modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
@@ -3209,9 +3191,7 @@ fun SubtotalRow(label: String, amount: Double) {
 
 @Composable
 fun TaxTypeSelector(
-    selectedTaxType: TaxType,
-    onTaxTypeSelected: (TaxType) -> Unit,
-    isEditable: Boolean = true
+    selectedTaxType: TaxType, onTaxTypeSelected: (TaxType) -> Unit, isEditable: Boolean = true
 ) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -3314,9 +3294,11 @@ fun BorderedInput(
     }
 
     Box(
-        modifier = Modifier
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(6.dp))
-            .padding(horizontal = 8.dp, vertical = 6.dp)
+        modifier = Modifier.border(
+                1.dp,
+                MaterialTheme.colorScheme.outline,
+                RoundedCornerShape(6.dp)
+            ).padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
         BasicTextField(
             value = textFieldValue,
@@ -3335,8 +3317,7 @@ fun BorderedInput(
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface
             ),
             interactionSource = interactionSource,
             modifier = Modifier.fillMaxWidth()
@@ -3364,10 +3345,7 @@ fun TransactionItemBottomList(
 
     val filteredList = remember(list, query) {
         smartSearch(
-            list = list,
-            query = query,
-            selectors = listOf { it.Name }
-        )
+            list = list, query = query, selectors = listOf { it.Name })
     }
 
 
@@ -3451,8 +3429,7 @@ fun TransactionItemBottomList(
                         Surface(
                             modifier = Modifier.fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 4.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
+                                .clip(RoundedCornerShape(12.dp)).clickable {
                                     onSelected(item)
                                     onDismiss()
                                 },
@@ -3557,7 +3534,9 @@ fun ExpandedItemEditor1(
     val factor = conFactor ?: 1.0
     val cType = conType ?: 1.0
     val rawAltPrice = if (isSale) salesPriceAlt else purcPriceAlt
-    val (effectiveMain, effectiveAlt) = remember(defaultListPrice, rawAltPrice, conFactor, conType, isSale) {
+    val (effectiveMain, effectiveAlt) = remember(
+        defaultListPrice, rawAltPrice, conFactor, conType, isSale
+    ) {
         getEffectivePrices(defaultListPrice, rawAltPrice, conFactor, conType, isSale)
     }
 
@@ -3570,11 +3549,12 @@ fun ExpandedItemEditor1(
     }
     var selectedUnit by remember { mutableStateOf(existingItem?.selectedUnit ?: mainUnit) }
 
-    val initialListPrice = if (selectedUnit == altUnit && effectiveAlt != null && effectiveAlt != 0.0) {
-        effectiveAlt
-    } else {
-        effectiveMain
-    }
+    val initialListPrice =
+        if (selectedUnit == altUnit && effectiveAlt != null && effectiveAlt != 0.0) {
+            effectiveAlt
+        } else {
+            effectiveMain
+        }
 
     var listPriceN by remember { mutableStateOf(initialListPrice.formatToAmtDec()) }
     var discountN by remember { mutableStateOf(initialDiscount.toString()) }
@@ -3708,8 +3688,7 @@ fun ExpandedItemEditor1(
         color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
 
             if (altUnit != null && altUnit.isNotBlank() && altUnit != mainUnit) {
@@ -3736,7 +3715,8 @@ fun ExpandedItemEditor1(
                     AssistChip(
                         onClick = {
                             if (selectedUnit != altUnit) {
-                                val altP = effectiveAlt ?: if (cType == 1.0) effectiveMain / factor else effectiveMain * factor
+                                val altP = effectiveAlt
+                                    ?: if (cType == 1.0) effectiveMain / factor else effectiveMain * factor
                                 val newPrice = if (altP != 0.0) altP else effectiveMain
 
                                 listPriceN =
@@ -3757,14 +3737,11 @@ fun ExpandedItemEditor1(
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Qty")
                     BorderedInput(
-                        value = qtyN,
-                        keyboardType = KeyboardType.Decimal,
-                        onValueChange = {
+                        value = qtyN, keyboardType = KeyboardType.Decimal, onValueChange = {
                             isAmountManuallyEdited = false
                             editMode = PriceEditMode.LIST_PRICE
                             qtyN = it
-                        }
-                    )
+                        })
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
@@ -3776,8 +3753,7 @@ fun ExpandedItemEditor1(
                             isAmountManuallyEdited = false
                             editMode = PriceEditMode.LIST_PRICE
                             listPriceN = it
-                        }
-                    )
+                        })
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
@@ -3794,7 +3770,9 @@ fun ExpandedItemEditor1(
                             isAmountManuallyEdited = false
                             editMode = PriceEditMode.DISCOUNT
                             discountN = finalValue
-                        }, keyboardType = KeyboardType.Text, showPlus = true
+                        },
+                        keyboardType = KeyboardType.Text,
+                        showPlus = true
                     )
                 }
 
@@ -3807,8 +3785,7 @@ fun ExpandedItemEditor1(
                             isAmountManuallyEdited = true
                             editMode = PriceEditMode.AMOUNT
                             amountN = it
-                        }
-                    )
+                        })
                 }
             }
 
@@ -3837,8 +3814,7 @@ fun ExpandedItemEditor1(
                                 fontWeight = FontWeight.SemiBold
                             )
                             TextButton(
-                                onClick = { serialNumbers = emptyList() }
-                            ) {
+                                onClick = { serialNumbers = emptyList() }) {
                                 Text("Clear")
                             }
                         }
@@ -3861,8 +3837,7 @@ fun ExpandedItemEditor1(
                 TextButton(onClick = onCancel) { Text("Cancel") }
 
                 Button(
-                    enabled = isAddEnabled,
-                    onClick = {
+                    enabled = isAddEnabled, onClick = {
                         val factor = conFactor ?: 1.0
                         val calculatedAltQty = if (selectedUnit == altUnit) {
                             qtyValue
@@ -3893,15 +3868,13 @@ fun ExpandedItemEditor1(
                             selectedUnit,
                             calculatedAltQty
                         )
-                    }
-                ) {
+                    }) {
                     Text("Save")
                 }
 
                 if (onAddAndNew != null) {
                     OutlinedButton(
-                        enabled = isAddEnabled,
-                        onClick = {
+                        enabled = isAddEnabled, onClick = {
                             val factor = conFactor ?: 1.0
                             val calculatedAltQty = if (selectedUnit == altUnit) {
                                 qtyValue
@@ -3932,8 +3905,7 @@ fun ExpandedItemEditor1(
                                 selectedUnit,
                                 calculatedAltQty
                             )
-                        }
-                    ) {
+                        }) {
                         Text("Add New")
                     }
                 }
@@ -3995,9 +3967,7 @@ fun makeNegativeConditional(number: Double): Double {
 fun applyCompoundDiscount(basePrice: Double, compoundDiscountStr: String): Double {
     if (compoundDiscountStr.isBlank()) return basePrice
 
-    val parts = compoundDiscountStr.split("+")
-        .mapNotNull { it.trim().toDoubleOrNull() }
-        .take(5)
+    val parts = compoundDiscountStr.split("+").mapNotNull { it.trim().toDoubleOrNull() }.take(5)
 
     var result = basePrice
     for (discount in parts) {
@@ -4023,9 +3993,7 @@ fun ProductPricingBottomSheet(
             containerColor = MaterialTheme.colorScheme.surface,
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 32.dp)
+                modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)
             ) {
                 Text(
                     text = "Select Pricing for $productName",
@@ -4038,9 +4006,7 @@ fun ProductPricingBottomSheet(
                 LazyColumn {
                     items(pricingList) { pricing ->
                         ProductPricingItem(
-                            pricing = pricing,
-                            onSelect = { onSelect(pricing) }
-                        )
+                            pricing = pricing, onSelect = { onSelect(pricing) })
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             thickness = 0.5.dp,
@@ -4055,39 +4021,33 @@ fun ProductPricingBottomSheet(
 
 @Composable
 fun ProductPricingItem(
-    pricing: ProductPricing,
-    onSelect: () -> Unit
+    pricing: ProductPricing, onSelect: () -> Unit
 ) {
-    ListItem(
-        modifier = Modifier.clickable(onClick = onSelect),
-        headlineContent = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+    ListItem(modifier = Modifier.clickable(onClick = onSelect), headlineContent = {
+        Row(
+            modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = pricing.ProductName,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = formatTwo(pricing.SalePrice),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }, supportingContent = {
+        Column {
+            if (pricing.Discount > 0 || pricing.CompoundDiscount.isNotBlank()) {
                 Text(
-                    text = pricing.ProductName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold
+                    text = "Discount: ${if (pricing.CompoundDiscount.isNotBlank()) pricing.CompoundDiscount else "${pricing.Discount}%"}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
                 )
-                Text(
-                    text = formatTwo(pricing.SalePrice),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        },
-        supportingContent = {
-            Column {
-                if (pricing.Discount > 0 || pricing.CompoundDiscount.isNotBlank()) {
-                    Text(
-                        text = "Discount: ${if (pricing.CompoundDiscount.isNotBlank()) pricing.CompoundDiscount else "${pricing.Discount}%"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
             }
         }
-    )
+    })
 }
