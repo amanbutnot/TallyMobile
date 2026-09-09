@@ -393,7 +393,7 @@ data class SaleScreen2(
                     val listPrice =
                         if (isSale) product.SalesPrice ?: 0.0 else product.PurcPrice ?: 0.0
                     val discount = if (isSale) product.SaleDisc ?: 0.0 else product.PurcDisc ?: 0.0
-                    val price = listPrice - (listPrice * discount / 100.0)
+                    val price = calculateItemPrice(listPrice, discount)
                     val qty = barcodeQty.toDoubleOrNull() ?: 1.0
                     val gstPercentage = try {
                         db.taxCategoryMastQueries.selectTaxRate(
@@ -1949,7 +1949,7 @@ data class SaleScreen2(
                         if (autoPricing != null) {
                             val listPrice = autoPricing.SalesPrice ?: 0.0
                             val discount = autoPricing.Disc ?: 0.0
-                            val price = listPrice - (listPrice * discount / 100.0)
+                            val price = calculateItemPrice(listPrice, discount)
                             val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
                             val gstPct = try {
                                 db.taxCategoryMastQueries.selectTaxRate(
@@ -2024,7 +2024,7 @@ data class SaleScreen2(
                                 if (isSale) prod?.SalesPrice ?: 0.0 else prod?.PurcPrice ?: 0.0
                             val discount =
                                 if (isSale) prod?.SaleDisc ?: 0.0 else prod?.PurcDisc ?: 0.0
-                            val price = listPrice - (listPrice * discount / 100.0)
+                            val price = calculateItemPrice(listPrice, discount)
 
                             val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
                             val gstPct = try {
@@ -2137,11 +2137,7 @@ data class SaleScreen2(
                         } else {
                             val listPrice = if (isSale) pricing.SalePrice else pricing.PurchasePrice
                             val discount = pricing.Discount
-                            val price = if (pricing.CompoundDiscount.contains("+")) {
-                                applyCompoundDiscount(listPrice, pricing.CompoundDiscount)
-                            } else {
-                                listPrice - (listPrice * discount / 100.0)
-                            }
+                            val price = calculateItemPrice(listPrice, discount, pricing.CompoundDiscount.contains("+"), pricing.CompoundDiscount)
 
                             val taxCategoryCode = prod?.TaxCategoryCode ?: 0.0
                             val gstPct = try {

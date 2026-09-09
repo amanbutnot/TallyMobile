@@ -562,7 +562,7 @@ data class SaleScreen(
                         )
                         val discount =
                             if (isSale) product.SaleDisc ?: 0.0 else product.PurcDisc ?: 0.0
-                        val price = listPrice - (listPrice * discount / 100.0)
+                        val price = calculateItemPrice(listPrice, discount)
                         val qty = barcodeQty.toDoubleOrNull() ?: 1.0
 
                         val gstPercentage = try {
@@ -1932,7 +1932,7 @@ data class SaleScreen(
                             val discount = autoPricing.Disc ?: 0.0
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
-                                price = listPrice - (listPrice * discount / 100.0),
+                                price = calculateItemPrice(listPrice, discount),
                                 qty = 1.0,
                                 discountPercentage = discount,
                                 listPrice = listPrice,
@@ -1971,7 +1971,7 @@ data class SaleScreen(
                                 if (isSale) prod?.SaleDisc ?: 0.0 else prod?.PurcDisc ?: 0.0
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
-                                price = listPrice - (listPrice * discount / 100.0),
+                                price = calculateItemPrice(listPrice, discount),
                                 qty = 1.0,
                                 discountPercentage = discount,
                                 listPrice = listPrice,
@@ -2053,11 +2053,7 @@ data class SaleScreen(
                             val discount = pricing.Discount
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
-                                price = if (pricing.CompoundDiscount.contains("+")) {
-                                    applyCompoundDiscount(listPrice, pricing.CompoundDiscount)
-                                } else {
-                                    listPrice - (listPrice * discount / 100.0)
-                                },
+                                price = calculateItemPrice(listPrice, discount, pricing.CompoundDiscount.contains("+"), pricing.CompoundDiscount),
                                 qty = 1.0,
                                 discountPercentage = discount,
                                 listPrice = listPrice,
@@ -3634,13 +3630,12 @@ fun ExpandedItemEditor1(
         when (editMode) {
             PriceEditMode.LIST_PRICE, PriceEditMode.DISCOUNT -> {
                 val lp = listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
-
-                if (isCompoundDiscount) {
-                    applyCompoundDiscount(lp, discountN)
-                } else {
-                    val dis = discountN.trim().toDoubleOrNull() ?: 0.0
-                    lp - (lp * dis / 100.0)
-                }
+                calculateItemPrice(
+                    lp,
+                    discountN.trim().toDoubleOrNull() ?: 0.0,
+                    isCompoundDiscount,
+                    discountN
+                )
             }
 
             PriceEditMode.AMOUNT -> {
@@ -3757,22 +3752,31 @@ fun ExpandedItemEditor1(
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Disc %")
+                    Text(if (SaleOrderConfig.discountAsPer()) "Disc %" else "Discount")
                     BorderedInput(
                         value = discountN,
                         isEnabled = hasSalesmanPermission("D37"),
                         onValueChange = {
-                            val filtered = it.filter { c -> c.isDigit() || c == '.' || c == '+' }
+                            val isDiscAsPer = SaleOrderConfig.discountAsPer()
+                            val filtered = if (isDiscAsPer) {
+                                it.filter { c -> c.isDigit() || c == '.' || c == '+' }
+                            } else {
+                                it.filter { c -> c.isDigit() || c == '.' }
+                            }
 
-                            val parts = filtered.split("+").take(5)
-                            val finalValue = parts.joinToString("+")
+                            val finalValue = if (isDiscAsPer) {
+                                val parts = filtered.split("+").take(5)
+                                parts.joinToString("+")
+                            } else {
+                                filtered
+                            }
 
                             isAmountManuallyEdited = false
                             editMode = PriceEditMode.DISCOUNT
                             discountN = finalValue
                         },
                         keyboardType = KeyboardType.Text,
-                        showPlus = true
+                        showPlus = SaleOrderConfig.discountAsPer()
                     )
                 }
 
@@ -3974,6 +3978,23 @@ fun applyCompoundDiscount(basePrice: Double, compoundDiscountStr: String): Doubl
         result -= result * discount / 100.0
     }
     return result
+}
+
+fun calculateItemPrice(
+    listPrice: Double,
+    discount: Double,
+    isCompound: Boolean = false,
+    compoundDiscountStr: String? = null
+): Double {
+    return if (SaleOrderConfig.discountAsPer()) {
+        if (isCompound && !compoundDiscountStr.isNullOrBlank()) {
+            applyCompoundDiscount(listPrice, compoundDiscountStr)
+        } else {
+            listPrice - (listPrice * discount / 100.0)
+        }
+    } else {
+        listPrice - discount
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
