@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "823977335936",
+    "project_id": "easykarobar-b742d65a",
+    "storage_bucket": "easykarobar-b742d65a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:823977335936:android:ad0fdc384e8189c4249a65",
+        "android_client_info": {
+          "package_name": "org.prime.easykarobar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrkh1-6SXNGggon3j_omnwwQlVpMjPYho"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
