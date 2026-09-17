@@ -14,9 +14,10 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     id("app.cash.sqldelight") version "2.1.0"
     id("com.codingfeline.buildkonfig") version "0.22.0"
+    id("com.google.gms.google-services")
 }
 
-val brand = findProperty("brand")?.toString() ?: "easykarobar"
+val brand = findProperty("brand")?.toString() ?: "vimal"
 
 val brandConfigFile = rootProject.file("brands/$brand/config.json")
 val copyBrandResources by tasks.registering(Copy::class) {
@@ -68,6 +69,9 @@ kotlin {
             implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
 
             implementation("org.apache.poi:poi-ooxml:5.2.5")
+            implementation("com.google.firebase:firebase-bom:34.19.0")
+                implementation("com.google.firebase:firebase-messaging:25.0.0")
+
         }
 
         commonMain.dependencies {
@@ -137,8 +141,10 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
 
-        versionCode = 37
-        versionName = "1.9.998"
+//        versionCode = 43
+//        versionName = "2.1"
+        versionCode = 2
+        versionName = "1.1"
 
         resValue("string", "app_name", appName)
 
@@ -200,7 +206,7 @@ sqldelight {
 buildkonfig {
     packageName = "org.prime.easykarobar"
     objectName = "BuildKonfig"
-    
+
     defaultConfigs {
         buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "STORE_ID", brandConfig["storeId"]?.toString() ?: "")
         buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "STORE_NAME", brandConfig["storeName"]?.toString() ?: "")
