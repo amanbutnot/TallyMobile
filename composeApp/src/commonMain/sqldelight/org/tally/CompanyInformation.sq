@@ -51,6 +51,9 @@ CREATE TABLE CompanyInformation (
     D38 REAL,
     D39 REAL,
     D40 REAL,
+    C13 TEXT,
+    C14 TEXT,
+    C15 TEXT,
     GUID TEXT UNIQUE
 );
 
@@ -63,7 +66,7 @@ SELECT T2 FROM CompanyInformation;
 companyNameQuery:
 SELECT T1 FROM CompanyInformation;
 
-dashboardReportData:
+dashboardReceivable:
 SELECT
     1 AS RecType,
     SUM(D1) * -1 AS PenAmt,
@@ -74,17 +77,17 @@ WHERE BILLID IN (
     FROM Vouchers_BILLALLOCATIONS
     WHERE CM2 IN ('New Ref', 'Advance')
       AND D1 < 0
+      AND DATE <= :date
+      AND (:filterCm3 = 0 OR Vouchers_BILLALLOCATIONS.CM3 IN :cm3)
+      AND CM1 IN (
+          SELECT Name
+          FROM LedgerMaster
+          WHERE (:groupFilter = 0 OR GroupCode IN :groupCodes)
+            AND (:excludeFilter = 0 OR GUID NOT IN :guids)
+      )
+);
 
-
-AND DATE <= ?2 AND (:filterCm3 = 0 OR Vouchers_BILLALLOCATIONS.CM3 IN :cm3) AND CM1 IN (
-                                                                                    SELECT Name
-                                                                                   FROM LedgerMaster
-                                                                                    WHERE (:groupFilter = 0 OR GroupCode IN ?)
-                                                                                   AND (:excludeFilter = 0 OR GUID NOT IN ?)
-                                                                                   ))
-
-UNION ALL
-
+dashboardPayable:
 SELECT
     2 AS RecType,
     SUM(D1) AS PenAmt,
@@ -95,86 +98,85 @@ WHERE BILLID IN (
     FROM Vouchers_BILLALLOCATIONS
     WHERE CM2 IN ('New Ref', 'Advance')
       AND D1 > 0
+      AND DATE <= :date
+      AND (:filterCm3 = 0 OR Vouchers_BILLALLOCATIONS.CM3 IN :cm3)
+      AND CM1 IN (
+          SELECT Name
+          FROM LedgerMaster
+          WHERE (:groupFilter = 0 OR GroupCode IN :groupCodes)
+            AND (:excludeFilter = 0 OR GUID NOT IN :guids)
+      )
+);
 
-
-AND DATE <= ?2 AND (:filterCm3 = 0 OR Vouchers_BILLALLOCATIONS.CM3 IN :cm3) AND CM1 IN (
-                                                                                    SELECT Name
-                                                                                   FROM LedgerMaster
-                                                                                    WHERE (:groupFilter = 0 OR GroupCode IN ?)
-                                                                                   AND (:excludeFilter = 0 OR GUID NOT IN ?)
-                                                                                   ))
-
-UNION ALL
-
+dashboardSales:
 SELECT
     3 AS RecType,
     SUM(D1) * -1 AS Amt,
     'SalesRegister' AS RepType
 FROM Vouchers_Ledgers
 WHERE VchType = 'Sales'
- AND (:filterCm3 = 0 OR Vouchers_Ledgers.CM2 IN :cm3)
+  AND (:filterCm3 = 0 OR Vouchers_Ledgers.CM2 IN :cm3)
   AND CM1 IN (
-                                                SELECT Name
-                                                FROM LedgerMaster
-                                                WHERE (:groupFilter = 0 OR GroupCode IN ?)
-                                                  AND (:excludeFilter = 0 OR GUID NOT IN ?)
-                                            )
+      SELECT Name
+      FROM LedgerMaster
+      WHERE (:groupFilter = 0 OR GroupCode IN :groupCodes)
+        AND (:excludeFilter = 0 OR GUID NOT IN :guids)
+  )
   AND SRNO = 1
-  AND DATE >= ?1
-  AND DATE <= ?2
+  AND DATE >= :startDate
+  AND DATE <= :endDate;
 
-UNION ALL
-
+dashboardPurchase:
 SELECT
     4 AS RecType,
     SUM(D1) AS Amt,
     'PurchaseRegister' AS RepType
 FROM Vouchers_Ledgers
-WHERE VchType = 'Purchase' AND CM1 IN (
-                                                  SELECT Name
-                                                  FROM LedgerMaster
-                                                  WHERE (:groupFilter = 0 OR GroupCode IN ?)
-                                                    AND (:excludeFilter = 0 OR GUID NOT IN ?)
-                                              )
+WHERE VchType = 'Purchase'
+  AND CM1 IN (
+      SELECT Name
+      FROM LedgerMaster
+      WHERE (:groupFilter = 0 OR GroupCode IN :groupCodes)
+        AND (:excludeFilter = 0 OR GUID NOT IN :guids)
+  )
   AND SRNO = 1
-  AND DATE >= ?1
-  AND DATE <= ?2
+  AND DATE >= :startDate
+  AND DATE <= :endDate;
 
-UNION ALL
-
+dashboardReceipt:
 SELECT
     5 AS RecType,
     SUM(D1) AS Amt,
     'RcptRegister' AS RepType
 FROM Vouchers_Ledgers
 WHERE VchType = 'Receipt'
-AND (:filterCm3 = 0 OR Vouchers_Ledgers.CM2 IN :cm3)
-AND CM1 IN (
-                                                 SELECT Name
-                                                 FROM LedgerMaster
-                                                 WHERE (:groupFilter = 0 OR GroupCode IN ?)
-                                                   AND (:excludeFilter = 0 OR GUID NOT IN ?)
-                                             )
+  AND (:filterCm3 = 0 OR Vouchers_Ledgers.CM2 IN :cm3)
+  AND CM1 IN (
+      SELECT Name
+      FROM LedgerMaster
+      WHERE (:groupFilter = 0 OR GroupCode IN :groupCodes)
+        AND (:excludeFilter = 0 OR GUID NOT IN :guids)
+  )
   AND SRNO = 1
-  AND DATE >= ?1
-  AND DATE <= ?2
+  AND DATE >= :startDate
+  AND DATE <= :endDate;
 
-UNION ALL
-
+dashboardPayment:
 SELECT
     6 AS RecType,
     SUM(D1) * -1 AS Amt,
     'PymntRegister' AS RepType
 FROM Vouchers_Ledgers
-WHERE VchType = 'Payment' AND CM1 IN (
-                                                  SELECT Name
-                                                  FROM LedgerMaster
-                                                  WHERE (:groupFilter = 0 OR GroupCode IN ?)
-                                                    AND (:excludeFilter = 0 OR GUID NOT IN ?)
-                                              )
+WHERE VchType = 'Payment'
+  AND CM1 IN (
+      SELECT Name
+      FROM LedgerMaster
+      WHERE (:groupFilter = 0 OR GroupCode IN :groupCodes)
+        AND (:excludeFilter = 0 OR GUID NOT IN :guids)
+  )
   AND SRNO= 1
-  AND DATE >= ?1
-  AND DATE <= ?2;
+  AND DATE >= :startDate
+  AND DATE <= :endDate;
 
 getCompanyInformation:
 SELECT * FROM CompanyInformation LIMIT 1;

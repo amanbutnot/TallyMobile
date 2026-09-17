@@ -71,10 +71,13 @@ CREATE TABLE CompanyConfiguration (
 hideGroup:
 SELECT T2 FROM CompanyConfiguration WHERE GUID='1011';
 
+logoConfig:
+SELECT T4 AS Imgpath, C1 AS Logo_Height, C2 AS Logo_Width FROM CompanyConfiguration WHERE GUID = '1011';
+
 saleConfig:
 SELECT GUID AS T8 FROM GodownMaster WHERE Name IN (  SELECT T8 FROM CompanyConfiguration WHERE GUID = '1010_9');
 purchaseConfig:
 SELECT GUID  AS T8 FROM GodownMaster WHERE Name IN (  SELECT T8 FROM CompanyConfiguration WHERE GUID =  '1010_2');
 
 saleOrderConfig:
-SELECT * FROM CompanyConfiguration WHERE GUID = '9999';
+SELECT * FROM CompanyConfiguration WHERE GUID = :guid;

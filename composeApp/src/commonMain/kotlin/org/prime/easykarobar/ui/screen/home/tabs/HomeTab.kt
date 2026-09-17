@@ -69,6 +69,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -94,8 +95,13 @@ import dev.jordond.compass.geolocation.Geolocator
 import dev.jordond.compass.geolocation.GeolocatorResult
 import dev.jordond.compass.geolocation.Locator
 import dev.jordond.compass.geolocation.mobile.mobile
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.tally.LedgerMaster
+import org.tally.Products
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.IO
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.hasSalesmanPermission
@@ -132,6 +138,12 @@ import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 import org.prime.easykarobar.ui.shared.reportsShared.OutstandingDate
 import kotlin.math.absoluteValue
 
+data class DashboardReportItem(
+    val RecType: Long,
+    val PenAmt: Double?,
+    val RepType: String
+)
+
 object HomeTab : Tab {
     override val options: TabOptions
         @Composable get() {
@@ -154,29 +166,83 @@ object HomeTab : Tab {
         var showItemSearch by remember { mutableStateOf(false) }
         val nav = LocalNavigator.currentOrThrow.parent
 
+        val startDate = StartDate()
+        val currentDate = CurrentDate()
+        val filterCm3 = filterBroker()
+        val cm3 = configBroker()
+        val groupFilter = filterAGRPGroups()
+        val groupCodes = filterGroupCodes()
+        val excludeFilter = filterAccountGroups()
+        val guids = accountGroupCodes()
 
-        val reportList = queries.dashboardReportData(
-            StartDate(),
-            CurrentDate(),
-            filterCm3 = filterBroker(),
-            cm3 = configBroker(),
-            groupFilter = filterAGRPGroups(),
-            GroupCode = filterGroupCodes(),
-            excludeFilter = filterAccountGroups(),
-            GUID = accountGroupCodes(),
-            GroupCode_ = filterGroupCodes(),
-            GUID_ = accountGroupCodes(),
-            GroupCode__ = filterGroupCodes(),
-            GUID__ = accountGroupCodes(),
-            GroupCode___ = filterGroupCodes(),
-            GUID___ = accountGroupCodes(),
-            GroupCode____ = filterGroupCodes(),
-            GUID____ = accountGroupCodes(),
-            GroupCode_____ = filterGroupCodes(),
-            GUID_____ = accountGroupCodes()
-        ).executeAsList()
-        val ledgerList = getLedgerMasters(db)
-        val itemLedgerList = getItemMasters(db)
+        var reportList by remember { mutableStateOf<List<DashboardReportItem>>(emptyList()) }
+        var ledgerList by remember { mutableStateOf<List<LedgerMaster>>(emptyList()) }
+        var itemLedgerList by remember { mutableStateOf<List<Products>>(emptyList()) }
+
+        LaunchedEffect(Unit) {
+            withContext(Dispatchers.IO) {
+                val list = listOfNotNull(
+                    queries.dashboardReceivable(
+                        date = currentDate,
+                        filterCm3 = filterCm3,
+                        cm3 = cm3,
+                        groupFilter = groupFilter,
+                        groupCodes = groupCodes,
+                        excludeFilter = excludeFilter,
+                        guids = guids
+                    ).executeAsOneOrNull()?.let { DashboardReportItem(it.RecType, it.PenAmt, it.RepType) },
+                    queries.dashboardPayable(
+                        date = currentDate,
+                        filterCm3 = filterCm3,
+                        cm3 = cm3,
+                        groupFilter = groupFilter,
+                        groupCodes = groupCodes,
+                        excludeFilter = excludeFilter,
+                        guids = guids
+                    ).executeAsOneOrNull()?.let { DashboardReportItem(it.RecType, it.PenAmt, it.RepType) },
+                    queries.dashboardSales(
+                        startDate = startDate,
+                        endDate = currentDate,
+                        filterCm3 = filterCm3,
+                        cm3 = cm3,
+                        groupFilter = groupFilter,
+                        groupCodes = groupCodes,
+                        excludeFilter = excludeFilter,
+                        guids = guids
+                    ).executeAsOneOrNull()?.let { DashboardReportItem(it.RecType, it.Amt, it.RepType) },
+                    queries.dashboardPurchase(
+                        startDate = startDate,
+                        endDate = currentDate,
+                        groupFilter = groupFilter,
+                        groupCodes = groupCodes,
+                        excludeFilter = excludeFilter,
+                        guids = guids
+                    ).executeAsOneOrNull()?.let { DashboardReportItem(it.RecType, it.Amt, it.RepType) },
+                    queries.dashboardReceipt(
+                        startDate = startDate,
+                        endDate = currentDate,
+                        filterCm3 = filterCm3,
+                        cm3 = cm3,
+                        groupFilter = groupFilter,
+                        groupCodes = groupCodes,
+                        excludeFilter = excludeFilter,
+                        guids = guids
+                    ).executeAsOneOrNull()?.let { DashboardReportItem(it.RecType, it.Amt, it.RepType) },
+                    queries.dashboardPayment(
+                        startDate = startDate,
+                        endDate = currentDate,
+                        groupFilter = groupFilter,
+                        groupCodes = groupCodes,
+                        excludeFilter = excludeFilter,
+                        guids = guids
+                    ).executeAsOneOrNull()?.let { DashboardReportItem(it.RecType, it.Amt, it.RepType) }
+                )
+                reportList = list
+                ledgerList = getLedgerMasters(db)
+                itemLedgerList = getItemMasters(db)
+            }
+        }
+
         val filteredReportList =
             reportList.filter { report -> report.RecType !in listOf(4L, 6L) }.map { report ->
                 val newRepType = when (report.RecType) {
@@ -987,7 +1053,9 @@ fun CompanyInfoCard(
             )
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.clickable{
+                    println(SharedPrefs.Token.get())
+                }
             ) {
                 InfoRow(
                     icon = Icons.Default.DateRange, label = "Financial Year", value = financialYear
