@@ -7,3 +7,11 @@ import platform.UIKit.UIDevice
 actual fun getDeviceId(): String {
     return UIDevice.currentDevice.identifierForVendor?.UUIDString ?: ""
 }
+
+actual fun getDeviceIdString(): String {
+    return UIDevice.currentDevice.identifierForVendor?.UUIDString ?: ""
+}
+
+actual fun getDeviceName(): String {
+    return UIDevice.currentDevice.name
+}
