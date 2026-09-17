@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS SLIDE_MASTER (
     C7 TEXT,
     C8 TEXT,
     C9 TEXT,
-    C10 TEXT
+    C10 TEXT,
+    parent_guid TEXT
 );
 
 selectAll:
@@ -28,7 +29,8 @@ CREATE TABLE IF NOT EXISTS SLIDE_IMG (
     C7 TEXT,
     C8 TEXT,
     C9 TEXT,
-    C10 TEXT
+    C10 TEXT,
+    parent_guid TEXT
 );
 
 selectImagesBySlideId:

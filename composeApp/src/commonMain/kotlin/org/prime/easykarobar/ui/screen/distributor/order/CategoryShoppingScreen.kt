@@ -45,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -57,6 +58,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,6 +67,7 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.Dispatchers
@@ -72,6 +75,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
+import org.prime.easykarobar.TallyDatabase
 import org.prime.easykarobar.business.viewmodel.WishlistViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
@@ -82,9 +86,11 @@ import org.prime.easykarobar.ui.shared.globalShared.handleBannerClick
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
 import org.prime.easykarobar.ui.utils.pushEasyMart
+import org.tally.BANNER_MASTER
 import org.tally.GetProductsForDis
 import org.tally.ProductCategoriesForDis
 import org.tally.SLIDE_IMG
+import org.tally.SLIDE_MASTER
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.category_placeholder
 import kotlin.time.Duration.Companion.milliseconds
@@ -277,6 +283,30 @@ object CategoryShoppingScreen : Screen {
                     }
                 }
 
+            val topSliders = remember(screenData.sliders) {
+                screenData.sliders.filter { master -> isTopLevelSlider(master.parent_guid) }
+            }
+
+            val categorySlidersMap = remember(screenData.sliders, filteredCategories) {
+                filteredCategories.associateWith { category ->
+                    screenData.sliders.filter { master ->
+                        !isTopLevelSlider(master.parent_guid) && isMatchingCategoryGuid(master.parent_guid, category.GUID)
+                    }
+                }
+            }
+
+            val topBanners = remember(screenData.banners) {
+                screenData.banners.filter { banner -> isTopLevelSlider(banner.parent_guid) }
+            }
+
+            val categoryBannersMap = remember(screenData.banners, filteredCategories) {
+                filteredCategories.associateWith { category ->
+                    screenData.banners.filter { banner ->
+                        !isTopLevelSlider(banner.parent_guid) && isMatchingCategoryGuid(banner.parent_guid, category.GUID)
+                    }
+                }
+            }
+
             val featureProductsByFeature = remember(screenData.features, screenData.products) {
                 screenData.features.filter { it.C1 != "Open Link" }.associateWith { feature ->
                     when (feature.C1) {
@@ -409,7 +439,7 @@ object CategoryShoppingScreen : Screen {
                                 }
                             } else {
                                 Column {
-                                    screenData.sliders.forEach { master ->
+                                    topSliders.forEach { master ->
                                         var images by remember(master.ID) { mutableStateOf<List<SLIDE_IMG>>(emptyList()) }
                                         LaunchedEffect(master.ID) {
                                             images = withContext(Dispatchers.IO) {
@@ -431,7 +461,7 @@ object CategoryShoppingScreen : Screen {
                                             )
                                         }
                                     }
-                                    screenData.banners.forEach { banner ->
+                                    topBanners.forEach { banner ->
                                         Surface(
                                             modifier = Modifier
                                                 .fillMaxWidth()
@@ -524,7 +554,9 @@ object CategoryShoppingScreen : Screen {
                         items = filteredCategories,
                     ) { category ->
                         val products = productsByCategoryId[category.GUID?.toDouble()].orEmpty()
-                        if (products.isNotEmpty()) {
+                        val categorySliders = categorySlidersMap[category].orEmpty()
+                        val categoryBanners = categoryBannersMap[category].orEmpty()
+                        if (products.isNotEmpty() || categorySliders.isNotEmpty() || categoryBanners.isNotEmpty()) {
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -540,6 +572,13 @@ object CategoryShoppingScreen : Screen {
                                     isTwoPerRow = isTwoPerRow,
                                     cartGuids = cartGuids,
                                     wishlistGuids = wishlistGuids,
+                                    categorySliders = categorySliders,
+                                    categoryBanners = categoryBanners,
+                                    db = db,
+                                    nav = nav,
+                                    urlProvider = urlProvider,
+                                    showProductInfo = showProductInfo,
+                                    selectedProduct = selectedProduct,
                                     onItemClick = { item ->
                                         selectedProduct.value = item
                                         showProductInfo.value = true
@@ -684,10 +723,17 @@ object CategoryShoppingScreen : Screen {
         isTwoPerRow: Boolean,
         cartGuids: Set<String?>,
         wishlistGuids: Set<String?>,
+        categorySliders: List<SLIDE_MASTER> = emptyList(),
+        categoryBanners: List<BANNER_MASTER> = emptyList(),
+        db: TallyDatabase = DatabaseHolder.instance,
+        nav: Navigator,
+        urlProvider: UriHandler,
+        showProductInfo: MutableState<Boolean>,
+        selectedProduct: MutableState<GetProductsForDis?>,
         onItemClick: (GetProductsForDis) -> Unit,
         onMoreClick: () -> Unit
     ) {
-        if (products.isEmpty()) return
+        if (products.isEmpty() && categorySliders.isEmpty() && categoryBanners.isEmpty()) return
 
         Column(
             modifier = Modifier
@@ -709,50 +755,114 @@ object CategoryShoppingScreen : Screen {
                     ),
                     color = Color(0xFF1A1C1E)
                 )
-                TextButton(onClick = onMoreClick) {
-                    Text(
-                        text = "More",
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            color = Color(0xFF004D40),
-                            fontWeight = FontWeight.Bold
+                if (products.isNotEmpty()) {
+                    TextButton(onClick = onMoreClick) {
+                        Text(
+                            text = "More",
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                color = Color(0xFF004D40),
+                                fontWeight = FontWeight.Bold
+                            )
                         )
-                    )
+                    }
                 }
             }
 
-            val chunks =
-                remember(products, isTwoPerRow) { products.chunked(if (isTwoPerRow) 2 else 1) }
-            val premiumScreen = remember { AllProductsPremiumScreen(isTab = false) }
+            if (categorySliders.isNotEmpty() || categoryBanners.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                chunks.forEach { rowItems ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        rowItems.forEach { product ->
-                            val isInCart = product.product_id in cartGuids
-                            val isInWishlist = product.product_id in wishlistGuids
-
-                            Box(modifier = Modifier.weight(1f)) {
-                                premiumScreen.PremiumProductItem(
-                                    product = product,
-                                    cartViewModel = cartViewModel,
-                                    wishlistViewModel = wishlistViewModel,
-                                    isInCart = isInCart,
-                                    isInWishlist = isInWishlist,
-                                    isTwoPerRow = isTwoPerRow,
-                                    onClick = { onItemClick(product) }
+                categorySliders.forEach { master ->
+                    var images by remember(master.ID) { mutableStateOf<List<SLIDE_IMG>>(emptyList()) }
+                    LaunchedEffect(master.ID) {
+                        images = withContext(Dispatchers.IO) {
+                            db.slide_MasterQueries.selectImagesBySlideId(master.ID).executeAsList()
+                        }
+                    }
+                    if (images.isNotEmpty()) {
+                        AutoSlidingPager(
+                            images = images,
+                            onImageClick = { slide ->
+                                handleBannerClick(
+                                    slideImg = slide,
+                                    nav = nav,
+                                    urlProvider = urlProvider,
+                                    showProductInfo = showProductInfo,
+                                    selectedProduct = selectedProduct
                                 )
                             }
-                        }
-                        if (rowItems.size < (if (isTwoPerRow) 2 else 1)) {
-                            Spacer(modifier = Modifier.weight(1f))
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+
+                categoryBanners.forEach { banner ->
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        shadowElevation = 4.dp
+                    ) {
+                        AsyncImage(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                                .clickable {
+                                    handleBannerClick(
+                                        banner = banner,
+                                        nav = nav,
+                                        urlProvider = urlProvider,
+                                        showProductInfo = showProductInfo,
+                                        selectedProduct = selectedProduct
+                                    )
+                                },
+                            model = banner.C10,
+                            onLoading = { Res.drawable.category_placeholder },
+                            contentDescription = null,
+                            contentScale = ContentScale.FillBounds
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            } else if (products.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (products.isNotEmpty()) {
+                val chunks =
+                    remember(products, isTwoPerRow) { products.chunked(if (isTwoPerRow) 2 else 1) }
+                val premiumScreen = remember { AllProductsPremiumScreen(isTab = false) }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    chunks.forEach { rowItems ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            rowItems.forEach { product ->
+                                val isInCart = product.product_id in cartGuids
+                                val isInWishlist = product.product_id in wishlistGuids
+
+                                Box(modifier = Modifier.weight(1f)) {
+                                    premiumScreen.PremiumProductItem(
+                                        product = product,
+                                        cartViewModel = cartViewModel,
+                                        wishlistViewModel = wishlistViewModel,
+                                        isInCart = isInCart,
+                                        isInWishlist = isInWishlist,
+                                        isTwoPerRow = isTwoPerRow,
+                                        onClick = { onItemClick(product) }
+                                    )
+                                }
+                            }
+                            if (rowItems.size < (if (isTwoPerRow) 2 else 1)) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
                     }
                 }
@@ -892,5 +1002,23 @@ object CategoryShoppingScreen : Screen {
                 }
             }
         }
+    }
+
+    private fun isTopLevelSlider(parentGuid: String?): Boolean {
+        if (parentGuid.isNullOrBlank()) return true
+        val trimmed = parentGuid.trim()
+        if (trimmed == "0" || trimmed == "0.0") return true
+        val doubleVal = trimmed.toDoubleOrNull()
+        return doubleVal == 0.0
+    }
+
+    private fun isMatchingCategoryGuid(parentGuid: String?, categoryGuid: String?): Boolean {
+        if (parentGuid.isNullOrBlank() || categoryGuid.isNullOrBlank()) return false
+        val trimmedParent = parentGuid.trim()
+        val trimmedCategory = categoryGuid.trim()
+        if (trimmedParent.equals(trimmedCategory, ignoreCase = true)) return true
+        val parentDouble = trimmedParent.toDoubleOrNull()
+        val categoryDouble = trimmedCategory.toDoubleOrNull()
+        return parentDouble != null && categoryDouble != null && parentDouble == categoryDouble
     }
 }
