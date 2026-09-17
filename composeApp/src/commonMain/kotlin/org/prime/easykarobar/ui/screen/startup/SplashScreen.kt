@@ -31,6 +31,10 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.mohamedrejeb.calf.permissions.ExperimentalPermissionsApi
+import com.mohamedrejeb.calf.permissions.Permission
+import com.mohamedrejeb.calf.permissions.isGranted
+import com.mohamedrejeb.calf.permissions.rememberPermissionState
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import org.prime.easykarobar.BuildKonfig
@@ -47,14 +51,21 @@ import tallymobile.composeapp.generated.resources.splashImage
 import kotlin.time.Clock
 
 data class SplashScreen(val isRefreshing: Boolean = false) : Screen {
+    @OptIn(ExperimentalPermissionsApi::class)
     @Composable
     override fun Content() {
         val nav = LocalNavigator.currentOrThrow
         val colors = MaterialTheme.colorScheme
         val type = MaterialTheme.typography
         val isStoreIdFound = BuildKonfig.STORE_ID.isNotEmpty()
+        val notificationPermission = rememberPermissionState(
+            Permission.Notification
+        )
 
         LaunchedEffect(Unit) {
+            if(!notificationPermission.status.isGranted){
+            notificationPermission.launchPermissionRequest()
+            }
             if (SharedPrefs.IsEasyMart.get()) {
                 SharedPrefs.IsEasyMart.saveLastCheckTime(Clock.System.now().toEpochMilliseconds())
             }
