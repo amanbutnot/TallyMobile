@@ -15,6 +15,20 @@ data class LoginRequest(
 )
 
 @Serializable
+data class FirebaseTokenRequest(
+    val mobileNo: String,
+    val deviceId: String,
+    val deviceName: String,
+    val jwtToken: String,
+    val firebase_token: String? = null
+)
+
+@Serializable
+data class DeleteTokenRequest(
+    val deviceId: String
+)
+
+@Serializable
 data class CompanyList(
     val CompanyDetails: List<Company>
 )

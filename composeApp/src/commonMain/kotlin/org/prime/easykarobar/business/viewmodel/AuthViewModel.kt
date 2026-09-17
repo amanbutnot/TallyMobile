@@ -8,7 +8,11 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 import org.prime.easykarobar.business.repository.AuthRepository
+import org.prime.easykarobar.data.expect.getDeviceIdString
+import org.prime.easykarobar.data.expect.getDeviceName
+import org.prime.easykarobar.data.expect.getFirebaseToken
 import org.prime.easykarobar.data.model.CompanyList
+import org.prime.easykarobar.data.model.FirebaseTokenRequest
 import org.prime.easykarobar.data.model.ForgotResponse
 import org.prime.easykarobar.data.model.LoginRequest
 import org.prime.easykarobar.data.model.LoginResponse
@@ -160,6 +164,7 @@ class AuthViewModel : ViewModel() {
 
                             // Save username ONCE
                             SharedPrefs.LoginInfo.save(loginRequest.Username.trim())
+                            sendFirebaseToken(loginRequest.Username.trim())
 
                         } else {
 
@@ -224,6 +229,29 @@ class AuthViewModel : ViewModel() {
                     isLoading = false,
                     error = e.message ?: "Unexpected error"
                 )
+            }
+        }
+    }
+
+    fun sendFirebaseToken(mobileNo: String? = null) {
+        viewModelScope.launch {
+            try {
+                val fcmToken = getFirebaseToken() ?: ""
+                val username = mobileNo?.trim()?.takeIf { it.isNotBlank() }
+                    ?: SharedPrefs.LoginInfo.get()
+                    ?: ""
+                if (username.isNotBlank()) {
+                    val req = FirebaseTokenRequest(
+                        mobileNo = username,
+                        deviceId = getDeviceIdString(),
+                        deviceName = getDeviceName(),
+                        jwtToken = fcmToken,
+                        firebase_token = fcmToken
+                    )
+                    AuthRepository.sendFirebaseToken(req)
+                }
+            } catch (e: Exception) {
+                println("Failed to send firebase token: ${e.message}")
             }
         }
     }
