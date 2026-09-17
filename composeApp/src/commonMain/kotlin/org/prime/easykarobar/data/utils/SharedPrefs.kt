@@ -1,11 +1,17 @@
 package org.prime.easykarobar.data.utils
 
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.prime.easykarobar.business.repository.AuthRepository
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.getDeviceIdString
+import org.prime.easykarobar.data.expect.removeFirebaseToken
 import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.Distributor
 import org.prime.easykarobar.data.model.LoginResponse
@@ -20,6 +26,16 @@ object SharedPrefs {
         settings2.clear()
     }
     fun logout() {
+        val bearerToken = Token.get()
+        val deviceId = getDeviceIdString()
+        removeFirebaseToken()
+        FcmToken.clear()
+
+        if (!bearerToken.isNullOrBlank()) {
+            CoroutineScope(Dispatchers.Default).launch {
+                AuthRepository.deleteToken(bearerToken = bearerToken, deviceId = deviceId)
+            }
+        }
 
         // authentication
         Token.clear()
@@ -83,6 +99,21 @@ object SharedPrefs {
 
     object Token {
         private const val KEY = "token"
+        fun save(token: String) {
+            settings.putString(KEY, token)
+        }
+
+        fun get(): String? {
+            return settings.getStringOrNull(KEY)
+        }
+
+        fun clear() {
+            settings.remove(KEY)
+        }
+    }
+
+    object FcmToken {
+        private const val KEY = "fcm_token"
         fun save(token: String) {
             settings.putString(KEY, token)
         }
