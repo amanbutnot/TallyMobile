@@ -513,6 +513,25 @@ data class SaleScreen(
             }
         }
 
+        LaunchedEffect(SmobileNo) {
+            if (SmobileNo.isNotBlank()) {
+                val billingDet = db.billingDetQueries.selectByMobileNo(SmobileNo).executeAsOneOrNull()
+                if (billingDet != null) {
+                    SpartyName = billingDet.PartyName ?: SpartyName
+                    Saddress1 = billingDet.Address1 ?: Saddress1
+                    Saddress2 = billingDet.Address2 ?: Saddress2
+                    Saddress3 = billingDet.Address3 ?: Saddress3
+                    Saddress4 = billingDet.Address4 ?: Saddress4
+                    SshipState = billingDet.StateName ?: SshipState
+                    Semail = billingDet.Email ?: Semail
+                    SitPan = billingDet.ITPan ?: SitPan
+                    SgstIn = billingDet.GSTNo ?: SgstIn
+                    SselectedBilling = billingDet.TypeOfDealer ?: SselectedBilling
+                    SbillingShipping = true
+                }
+            }
+        }
+
         scannerLauncher = rememberBarcodeScanner { result ->
             demoBarcodeName = result.toString()
             when (result) {
@@ -562,7 +581,7 @@ data class SaleScreen(
                         )
                         val discount =
                             if (isSale) product.SaleDisc ?: 0.0 else product.PurcDisc ?: 0.0
-                        val price = calculateItemPrice(listPrice, discount)
+                        val price = calculateItemPrice(vchType, listPrice, discount)
                         val qty = barcodeQty.toDoubleOrNull() ?: 1.0
 
                         val gstPercentage = try {
@@ -1189,7 +1208,7 @@ data class SaleScreen(
                                             ),
                                             border = null
                                         )
-                                        if (SaleOrderConfig.showAddItemInSaleOrder()) {
+                                        if (SaleOrderConfig.showAddItemInSaleOrder(vchType)) {
                                             AssistChip(
                                                 onClick = { showItemSheet = true },
                                                 enabled = editingItem == null,
@@ -1252,6 +1271,7 @@ data class SaleScreen(
 
                                         ExpandedItemEditor1(
                                             name = product?.Name ?: pendingItem.name,
+                                            vchType = vchType,
                                             defaultListPrice = effMain,
                                             initialQuantity = pendingItem.qty,
                                             initialDiscount = pendingItem.CD.ifBlank { pendingItem.discountPercentage.toString() },
@@ -1662,7 +1682,7 @@ data class SaleScreen(
                                     )
                                 }
                             }
-                            if (isBusy() && SaleOrderConfig.showTransport()) {
+                            if (isBusy() && SaleOrderConfig.showTransport(vchType)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth()
                                         .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -1791,7 +1811,7 @@ data class SaleScreen(
                                     }
                                 }
                             }
-                            if (isBusy() && SaleOrderConfig.showBilling()) {
+                            if (isBusy() && SaleOrderConfig.showBilling(vchType)) {
                                 ShippingCard(
                                     showShippingDetails = SshowShippingDetails,
                                     onShowChange = { SshowShippingDetails = !SshowShippingDetails },
@@ -1876,7 +1896,7 @@ data class SaleScreen(
                                 vchType = vchType
                             )
 
-                            if (isBusy() && SaleOrderConfig.showOptionalFields()) {
+                            if (isBusy() && SaleOrderConfig.showOptionalFields(vchType)) {
                                 OptionalFieldCard(
                                     showOptionalField = showOptionalField,
                                     onShowChange = { showOptionalField = !showOptionalField },
@@ -1932,7 +1952,7 @@ data class SaleScreen(
                             val discount = autoPricing.Disc ?: 0.0
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
-                                price = calculateItemPrice(listPrice, discount),
+                                price = calculateItemPrice(vchType, listPrice, discount),
                                 qty = 1.0,
                                 discountPercentage = discount,
                                 listPrice = listPrice,
@@ -1971,7 +1991,7 @@ data class SaleScreen(
                                 if (isSale) prod?.SaleDisc ?: 0.0 else prod?.PurcDisc ?: 0.0
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
-                                price = calculateItemPrice(listPrice, discount),
+                                price = calculateItemPrice(vchType, listPrice, discount),
                                 qty = 1.0,
                                 discountPercentage = discount,
                                 listPrice = listPrice,
@@ -2053,7 +2073,7 @@ data class SaleScreen(
                             val discount = pricing.Discount
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
-                                price = calculateItemPrice(listPrice, discount, pricing.CompoundDiscount.contains("+"), pricing.CompoundDiscount),
+                                price = calculateItemPrice(vchType, listPrice, discount, pricing.CompoundDiscount.contains("+"), pricing.CompoundDiscount),
                                 qty = 1.0,
                                 discountPercentage = discount,
                                 listPrice = listPrice,
@@ -3472,6 +3492,7 @@ fun TransactionItemBottomList(
 @Composable
 fun ExpandedItemEditor1(
     name: String,
+    vchType: Int,
     defaultListPrice: Double,
     gstPercentage: Double,
     initialQuantity: Double? = 0.0,
@@ -3631,6 +3652,7 @@ fun ExpandedItemEditor1(
             PriceEditMode.LIST_PRICE, PriceEditMode.DISCOUNT -> {
                 val lp = listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0
                 calculateItemPrice(
+                    vchType,
                     lp,
                     discountN.trim().toDoubleOrNull() ?: 0.0,
                     isCompoundDiscount,
@@ -3752,12 +3774,12 @@ fun ExpandedItemEditor1(
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(if (SaleOrderConfig.discountAsPer()) "Disc %" else "Discount")
+                    Text(if (SaleOrderConfig.discountAsPer(vchType)) "Disc %" else "Discount")
                     BorderedInput(
                         value = discountN,
                         isEnabled = hasSalesmanPermission("D37"),
                         onValueChange = {
-                            val isDiscAsPer = SaleOrderConfig.discountAsPer()
+                            val isDiscAsPer = SaleOrderConfig.discountAsPer(vchType)
                             val filtered = if (isDiscAsPer) {
                                 it.filter { c -> c.isDigit() || c == '.' || c == '+' }
                             } else {
@@ -3776,7 +3798,7 @@ fun ExpandedItemEditor1(
                             discountN = finalValue
                         },
                         keyboardType = KeyboardType.Text,
-                        showPlus = SaleOrderConfig.discountAsPer()
+                        showPlus = SaleOrderConfig.discountAsPer(vchType)
                     )
                 }
 
@@ -3981,12 +4003,13 @@ fun applyCompoundDiscount(basePrice: Double, compoundDiscountStr: String): Doubl
 }
 
 fun calculateItemPrice(
+    vchType: Int,
     listPrice: Double,
     discount: Double,
     isCompound: Boolean = false,
     compoundDiscountStr: String? = null
 ): Double {
-    return if (SaleOrderConfig.discountAsPer()) {
+    return if (SaleOrderConfig.discountAsPer(vchType)) {
         if (isCompound && !compoundDiscountStr.isNullOrBlank()) {
             applyCompoundDiscount(listPrice, compoundDiscountStr)
         } else {

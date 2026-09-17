@@ -1,0 +1,26 @@
+CREATE TABLE BillingDet (
+    VCH_GUID REAL,
+    PartyName TEXT,
+    Address1 TEXT,
+    Address2 TEXT,
+    Address3 TEXT,
+    Address4 TEXT,
+    STNo TEXT,
+    CSTNo TEXT,
+    ECCCode TEXT,
+    ExciseRegNo TEXT,
+    Range TEXT,
+    Division TEXT,
+    Collectorate TEXT,
+    MobileNo TEXT,
+    Email TEXT,
+    DrugLicenseNo1 TEXT,
+    DrugLicenseNo2 TEXT,
+    ITPan TEXT,
+    StateName TEXT,
+    GSTNo TEXT,
+    TypeOfDealer TEXT
+);
+
+selectByMobileNo:
+SELECT * FROM BillingDet WHERE MobileNo = ? ORDER BY VCH_GUID DESC LIMIT 1;

@@ -220,17 +220,14 @@ fun salesSlipHtml(
     <table class="items">
         <thead>
         <tr>
-            <th style="width: 7%;">Sl</th>
-            <th style="width: 41%;">Product</th>
-            <th style="width: 18%;">Price</th>
-            <th style="width: 16%;" class="right">Disc(%)</th>
-            <th style="width: 18%;" class="right">Amt.</th>
+            <th colspan="5" style="font-weight: 700; text-align: left;">Product</th>
         </tr>
         <tr class="head2">
-            <th></th>
-            <th>Qty. &nbsp;&nbsp; Unit</th>
-            <th style="white-space: nowrap;">HSN Code</th>
-            <th colspan="2" class="right" style="text-align: right;">GST %</th>
+            <th style="width: 16%;">Qty</th>
+            <th style="width: 16%;">Unit</th>
+            <th style="width: 22%;" class="right">Rate</th>
+            <th style="width: 26%;" class="right">Amt</th>
+            <th style="width: 20%;" class="right">GST %</th>
         </tr>
         </thead>
 
@@ -244,35 +241,18 @@ fun salesSlipHtml(
             }
 
             val unit = item.selectedUnit.clean().ifBlank { item.mainUnit.clean() }
-            val qtyUnitText = if (unit.isNotBlank()) {
-                "${item.qty.absoluteValue.toDouble().formatToAmtDec()} &nbsp;&nbsp; $unit"
-            } else {
-                item.qty.absoluteValue.toDouble().formatToAmtDec()
-            }
-
-            val disc = when {
-                item.CD.isNotBlank() -> item.CD
-                item.discountPercentage != 0.0 -> item.discountPercentage.formatToAmtDec()
-                else -> "--"
-            }
-
-            val r1 = if (item.taxRate1 != 0.0) item.taxRate1 else item.gstPercentage / 2
-            val r2 = if (item.taxRate2 != 0.0) item.taxRate2 else item.gstPercentage / 2
-            val rateText = "${r1.formatToAmtDec()}%+${r2.formatToAmtDec()}%"
+            val qtyText = item.qty.absoluteValue.formatToAmtDec()
 
             """
         <tr class="item-main">
-            <td>${index + 1}</td>
-            <td>${item.name.clean()}</td>
-            <td class="right">${unitTaxable.formatToAmtDec()}</td>
-            <td class="right">$disc</td>
-            <td class="right">${item.net.formatToAmtDec()}</td>
+            <td colspan="5">${index + 1}. ${item.name.clean()}</td>
         </tr>
         <tr class="item-sub">
-            <td></td>
-            <td>$qtyUnitText</td>
-            <td>${item.hsn.clean()}</td>
-            <td colspan="2" class="right">$rateText</td>
+            <td>$qtyText</td>
+            <td>$unit</td>
+            <td class="right">${unitTaxable.formatToAmtDec()}</td>
+            <td class="right">${item.net.formatToAmtDec()}</td>
+            <td class="right">${item.gstPercentage.formatToAmtDec()}%</td>
         </tr>
             """.trimIndent()
         }.joinToString("\n")
@@ -291,7 +271,7 @@ fun salesSlipHtml(
 
     <table>
         <tr>
-            <td style="padding-left: 5mm;" class="bold">${totalQty.toDouble().formatToAmtDec()}</td>
+            <td style="padding-left: 5mm;" class="bold">${totalQty.formatToAmtDec()}</td>
             <td class="right bold">${grandTotal.formatToAmtDec()}</td>
         </tr>
     </table>

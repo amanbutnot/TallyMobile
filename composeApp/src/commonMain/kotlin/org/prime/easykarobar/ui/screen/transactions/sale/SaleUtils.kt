@@ -222,6 +222,15 @@ fun ShippingCard(
                     title = "Billing Shipping Details",
                 )
 
+                TallyTextField(
+                    value = mobileNo,
+                    onValueChange = onMobileChange,
+                    label = "Mobile No.",
+                    placeholder = "Enter Mobile no.",
+                    isPassword = false,
+                    isNumber = false,
+                    modifier = Modifier.fillMaxWidth()
+                )
 
                 TallyTextField(
                     value = partyName,
@@ -281,20 +290,7 @@ fun ShippingCard(
                     isError = false
                 )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    TallyTextField(
-                        value = mobileNo,
-                        onValueChange = onMobileChange,
-                        label = "Mobile No.",
-                        placeholder = "Enter Mobile no.",
-                        isPassword = false,
-                        isNumber = false,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+
 
                 TallyTextField(
                     value = email,

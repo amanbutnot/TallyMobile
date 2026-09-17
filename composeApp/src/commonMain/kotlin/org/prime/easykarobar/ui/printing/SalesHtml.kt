@@ -3,6 +3,7 @@ package org.prime.easykarobar.ui.printing
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
+import org.prime.easykarobar.data.expect.getSplashImageBase64
 import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.transactions.sale.InvoiceItem
@@ -64,8 +65,20 @@ fun salesHtml(
     val qtyStartWidth = if (showTax) "40%" else "66%"
     val labelWidth = if (showTax) "40%" else "14%"
 
-    val splashSrc = org.prime.easykarobar.data.expect.getSplashImageBase64()
-    val splashImgTag = if (splashSrc.isNotBlank()) """<img src="$splashSrc" style="height:32px; width:32px; object-fit:contain;" />""" else ""
+    val compConfig = db.companyConfigurationQueries.logoConfig().executeAsOneOrNull()
+    val heightVal = compConfig?.Logo_Height?.trim()?.takeIf { it.isNotBlank() }
+    val widthVal = compConfig?.Logo_Width?.trim()?.takeIf { it.isNotBlank() }
+
+    val cssHeight = if (heightVal != null) {
+        if (heightVal.any { it.isLetter() || it == '%' }) heightVal else "${heightVal}in"
+    } else "0.33in"
+
+    val cssWidth = if (widthVal != null) {
+        if (widthVal.any { it.isLetter() || it == '%' }) widthVal else "${widthVal}in"
+    } else "0.33in"
+
+    val splashSrc = getSplashImageBase64()
+    val splashImgTag = if (splashSrc.isNotBlank()) """<img src="$splashSrc" style="height:$cssHeight; width:$cssWidth; max-width:100%; object-fit:contain;" />""" else ""
 
     val html = StringBuilder()
 
@@ -291,8 +304,7 @@ fun salesHtml(
     <div class="header-center border-b">
         <table style="width:100%; border-collapse:collapse; border:none; table-layout:fixed;">
             <tr>
-                <td style="width:15%; border:none;"></td>
-                <td style="width:70%; border:none; text-align:center; padding:0;">
+                <td style="width:75%; border:none; text-align:center; padding:0 5px;">
                     <div class="title">$title</div>
                     <div class="company-name">${CompanyName()}</div>
                     <div class="company-info">
@@ -300,7 +312,7 @@ fun salesHtml(
                         Tel. : ${user?.Mobile.clean()} &nbsp; Email : ${user?.Email.clean()}
                     </div>
                 </td>
-                <td style="width:30%; border:none; text-align:right; vertical-align:top; padding:0;">
+                <td style="width:25%; border:none; text-align:right; vertical-align:middle; padding-right:6px; overflow:hidden;">
                     $splashImgTag
                 </td>
             </tr>
