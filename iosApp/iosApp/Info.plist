@@ -4,13 +4,9 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
-    <key>NSCameraUsageDescription</key>
-    <string>Camera permission is required to take pictures</string>
-    <key>NSContactsUsageDescription</key>
-    <string>Easy Karobar requires contacts access only if certain features are enabled.</string>
-
-    <key>NSBluetoothAlwaysUsageDescription</key>
-    <string>Easy Karobar uses Bluetooth for device-related functionality if needed only if certain features are enabled.</string>
-
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>
