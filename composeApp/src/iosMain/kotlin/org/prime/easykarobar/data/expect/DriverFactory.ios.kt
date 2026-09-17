@@ -142,6 +142,22 @@ actual class DriverFactory {
                 )
             )
 
+            ensureColumns(
+                driver = driver,
+                tableName = "SLIDE_MASTER",
+                columnsToAdd = listOf(
+                    "parent_guid" to "TEXT"
+                )
+            )
+
+            ensureColumns(
+                driver = driver,
+                tableName = "SLIDE_IMG",
+                columnsToAdd = listOf(
+                    "parent_guid" to "TEXT"
+                )
+            )
+
             ensureTable(
                 driver = driver,
                 tableName = "SLIDE_MASTER",
@@ -158,7 +174,8 @@ actual class DriverFactory {
                         C7 TEXT,
                         C8 TEXT,
                         C9 TEXT,
-                        C10 TEXT
+                        C10 TEXT,
+                        parent_guid TEXT
                     );
                 """.trimIndent()
             )
@@ -179,9 +196,18 @@ actual class DriverFactory {
                         C7 TEXT,
                         C8 TEXT,
                         C9 TEXT,
-                        C10 TEXT
+                        C10 TEXT,
+                        parent_guid TEXT
                     );
                 """.trimIndent()
+            )
+
+            ensureColumns(
+                driver = driver,
+                tableName = "BANNER_MASTER",
+                columnsToAdd = listOf(
+                    "parent_guid" to "TEXT"
+                )
             )
 
             ensureTable(
@@ -200,7 +226,8 @@ actual class DriverFactory {
                         C7 TEXT,
                         C8 TEXT,
                         C9 TEXT,
-                        C10 TEXT
+                        C10 TEXT,
+                        parent_guid TEXT
                     );
                 """.trimIndent()
             )
@@ -307,6 +334,50 @@ actual class DriverFactory {
                         Name TEXT,
                         MobileNo TEXT NOT NULL,
                         L6 REAL
+                    );
+                """.trimIndent()
+            )
+
+            ensureTable(
+                driver = driver,
+                tableName = "NotificationHistory",
+                createTableSql = """
+                    CREATE TABLE IF NOT EXISTS NotificationHistory (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        title TEXT NOT NULL,
+                        description TEXT NOT NULL,
+                        receivedAt INTEGER NOT NULL,
+                        isClicked INTEGER NOT NULL DEFAULT 0
+                    );
+                """.trimIndent()
+            )
+
+            ensureTable(
+                driver = driver,
+                tableName = "BillingDet",
+                createTableSql = """
+                    CREATE TABLE IF NOT EXISTS BillingDet (
+                        VCH_GUID REAL,
+                        PartyName TEXT,
+                        Address1 TEXT,
+                        Address2 TEXT,
+                        Address3 TEXT,
+                        Address4 TEXT,
+                        STNo TEXT,
+                        CSTNo TEXT,
+                        ECCCode TEXT,
+                        ExciseRegNo TEXT,
+                        Range TEXT,
+                        Division TEXT,
+                        Collectorate TEXT,
+                        MobileNo TEXT,
+                        Email TEXT,
+                        DrugLicenseNo1 TEXT,
+                        DrugLicenseNo2 TEXT,
+                        ITPan TEXT,
+                        StateName TEXT,
+                        GSTNo TEXT,
+                        TypeOfDealer TEXT
                     );
                 """.trimIndent()
             )
