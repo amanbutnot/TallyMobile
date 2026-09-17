@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MonetizationOn
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
@@ -265,6 +266,12 @@ object SettingScreen : Screen {
                                         "Last Synced from Software",
                                         compInfo.C8.toString()
                                     )
+                                    ProfileItem(
+                                        Icons.Default.Notifications,
+                                        "Notification History",
+                                        "View previous notifications",
+                                        onClick = { nav.pushEasyMart(NotificationHistoryScreen) }
+                                    )
                                     TallyToggleRow(
                                         checked = ProductLayout,
                                         onCheckedChange = {
@@ -320,6 +327,12 @@ object SettingScreen : Screen {
                                         Icons.Default.Store,
                                         "Store ID",
                                         SharedPrefs.User.get()?.ID.toString()
+                                    )
+                                    ProfileItem(
+                                        Icons.Default.Notifications,
+                                        "Notification History",
+                                        "View previous notifications",
+                                        onClick = { nav.pushEasyMart(NotificationHistoryScreen) }
                                     )
                                 }
 
