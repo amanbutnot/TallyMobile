@@ -17,7 +17,7 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-val brand = findProperty("brand")?.toString() ?: "vimal"
+val brand = findProperty("brand")?.toString() ?: "easykarobar"
 
 val brandConfigFile = rootProject.file("brands/$brand/config.json")
 val copyBrandResources by tasks.registering(Copy::class) {
