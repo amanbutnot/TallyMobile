@@ -83,6 +83,27 @@ actual class DriverFactory(private val context: Context) {
                 )
             )
 
+            ensureColumns(
+                driver = driver,
+                tableName = "SLIDE_MASTER",
+                columnsToAdd = listOf("parent_guid" to "TEXT")
+            )
+            ensureColumns(
+                driver = driver,
+                tableName = "SLIDE_IMG",
+                columnsToAdd = listOf("parent_guid" to "TEXT")
+            )
+            ensureColumns(
+                driver = driver,
+                tableName = "BANNER_MASTER",
+                columnsToAdd = listOf("parent_guid" to "TEXT")
+            )
+            ensureColumns(
+                driver = driver,
+                tableName = "FEATURES_MASTER",
+                columnsToAdd = listOf("parent_guid" to "TEXT")
+            )
+
             ensureTable(
                 driver = driver,
                 tableName = "SLIDE_MASTER",
@@ -99,7 +120,8 @@ actual class DriverFactory(private val context: Context) {
                         C7 TEXT,
                         C8 TEXT,
                         C9 TEXT,
-                        C10 TEXT
+                        C10 TEXT,
+                        parent_guid TEXT
                     );
                 """.trimIndent()
             )
@@ -120,7 +142,8 @@ actual class DriverFactory(private val context: Context) {
                         C7 TEXT,
                         C8 TEXT,
                         C9 TEXT,
-                        C10 TEXT
+                        C10 TEXT,
+                        parent_guid TEXT
                     );
                 """.trimIndent()
             )
@@ -141,7 +164,8 @@ actual class DriverFactory(private val context: Context) {
                         C7 TEXT,
                         C8 TEXT,
                         C9 TEXT,
-                        C10 TEXT
+                        C10 TEXT,
+                        parent_guid TEXT
                     );
                 """.trimIndent()
             )
@@ -185,7 +209,8 @@ actual class DriverFactory(private val context: Context) {
                         C7 TEXT,
                         C8 TEXT,
                         C9 TEXT,
-                        C10 TEXT
+                        C10 TEXT,
+                        parent_guid TEXT
                     );
                 """.trimIndent()
             )

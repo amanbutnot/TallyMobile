@@ -87,6 +87,7 @@ import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
 import org.prime.easykarobar.ui.utils.pushEasyMart
 import org.tally.BANNER_MASTER
+import org.tally.FEATURES_MASTER
 import org.tally.GetProductsForDis
 import org.tally.ProductCategoriesForDis
 import org.tally.SLIDE_IMG
@@ -322,6 +323,20 @@ object CategoryShoppingScreen : Screen {
                 }
             }
 
+            val topFeatureProductsByFeature = remember(featureProductsByFeature) {
+                featureProductsByFeature.filterKeys { feature ->
+                    isTopLevelSlider(feature.parent_guid)
+                }
+            }
+
+            val categoryFeaturesMap = remember(screenData.features, filteredCategories) {
+                filteredCategories.associateWith { category ->
+                    screenData.features.filter { feature ->
+                        !isTopLevelSlider(feature.parent_guid) && isMatchingCategoryGuid(feature.parent_guid, category.GUID)
+                    }
+                }
+            }
+
             val wishlistViewModel = nav.rememberNavigatorScreenModel { WishlistViewModel() }
             val wishlistState by wishlistViewModel.listState
             val wishlistGuids = remember(wishlistState.data) {
@@ -495,9 +510,9 @@ object CategoryShoppingScreen : Screen {
                     }
 
                     itemsIndexed(
-                        items = featureProductsByFeature.keys.toList(),
+                        items = topFeatureProductsByFeature.keys.toList(),
                     ) { index, feature ->
-                        val featureProducts = featureProductsByFeature[feature].orEmpty()
+                        val featureProducts = topFeatureProductsByFeature[feature].orEmpty()
                         if (featureProducts.isNotEmpty()) {
                             val backgroundColor =
                                 featureSectionPastelColors[index % featureSectionPastelColors.size]
@@ -556,7 +571,8 @@ object CategoryShoppingScreen : Screen {
                         val products = productsByCategoryId[category.GUID?.toDouble()].orEmpty()
                         val categorySliders = categorySlidersMap[category].orEmpty()
                         val categoryBanners = categoryBannersMap[category].orEmpty()
-                        if (products.isNotEmpty() || categorySliders.isNotEmpty() || categoryBanners.isNotEmpty()) {
+                        val categoryFeatures = categoryFeaturesMap[category].orEmpty()
+                        if (products.isNotEmpty() || categorySliders.isNotEmpty() || categoryBanners.isNotEmpty() || categoryFeatures.isNotEmpty()) {
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -574,6 +590,8 @@ object CategoryShoppingScreen : Screen {
                                     wishlistGuids = wishlistGuids,
                                     categorySliders = categorySliders,
                                     categoryBanners = categoryBanners,
+                                    categoryFeatures = categoryFeatures,
+                                    featureProductsByFeature = featureProductsByFeature,
                                     db = db,
                                     nav = nav,
                                     urlProvider = urlProvider,
@@ -725,6 +743,8 @@ object CategoryShoppingScreen : Screen {
         wishlistGuids: Set<String?>,
         categorySliders: List<SLIDE_MASTER> = emptyList(),
         categoryBanners: List<BANNER_MASTER> = emptyList(),
+        categoryFeatures: List<FEATURES_MASTER> = emptyList(),
+        featureProductsByFeature: Map<FEATURES_MASTER, List<GetProductsForDis>> = emptyMap(),
         db: TallyDatabase = DatabaseHolder.instance,
         nav: Navigator,
         urlProvider: UriHandler,
@@ -733,7 +753,7 @@ object CategoryShoppingScreen : Screen {
         onItemClick: (GetProductsForDis) -> Unit,
         onMoreClick: () -> Unit
     ) {
-        if (products.isEmpty() && categorySliders.isEmpty() && categoryBanners.isEmpty()) return
+        if (products.isEmpty() && categorySliders.isEmpty() && categoryBanners.isEmpty() && categoryFeatures.isEmpty()) return
 
         Column(
             modifier = Modifier
@@ -824,8 +844,36 @@ object CategoryShoppingScreen : Screen {
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
-            } else if (products.isNotEmpty()) {
+            } else if (products.isNotEmpty() || categoryFeatures.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (categoryFeatures.isNotEmpty()) {
+                categoryFeatures.forEachIndexed { index, feature ->
+                    val featureProducts = featureProductsByFeature[feature].orEmpty()
+                    if (featureProducts.isNotEmpty()) {
+                        val backgroundColor =
+                            featureSectionPastelColors[index % featureSectionPastelColors.size]
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp),
+                            color = backgroundColor,
+                            shadowElevation = 1.dp
+                        ) {
+                            FeatureSection(
+                                title = feature.CODE,
+                                products = featureProducts,
+                                cartViewModel = cartViewModel,
+                                wishlistViewModel = wishlistViewModel,
+                                isTwoPerRow = isTwoPerRow,
+                                cartGuids = cartGuids,
+                                wishlistGuids = wishlistGuids,
+                                onItemClick = onItemClick
+                            )
+                        }
+                    }
+                }
             }
 
             if (products.isNotEmpty()) {

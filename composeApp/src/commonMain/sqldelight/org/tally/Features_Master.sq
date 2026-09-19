@@ -10,15 +10,16 @@ CREATE TABLE IF NOT EXISTS FEATURES_MASTER (
     C7 TEXT,
     C8 TEXT,
     C9 TEXT,
-    C10 TEXT
+    C10 TEXT,
+    parent_guid TEXT
 );
 
 selectAll:
 SELECT * FROM FEATURES_MASTER;
 
 insertFeatures:
-INSERT OR REPLACE INTO FEATURES_MASTER (ID, CODE, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO FEATURES_MASTER (ID, CODE, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, parent_guid)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 deleteAll:
 DELETE FROM FEATURES_MASTER;
