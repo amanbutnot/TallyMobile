@@ -125,6 +125,7 @@ import org.prime.easykarobar.ui.printing.salesHtml
 import org.prime.easykarobar.ui.printing.salesSlipHtml
 import org.prime.easykarobar.ui.screen.home.tabs.InfoRow
 import org.prime.easykarobar.ui.screen.transactions.BillByBillModel
+import org.prime.easykarobar.ui.screen.transactions.SalesmanSelectionSection
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionBillBottomSheet
 import org.prime.easykarobar.ui.shared.composables.DownloadResultDialog
@@ -468,6 +469,9 @@ data class SaleScreen(
         var pincode by remember { mutableStateOf("") }
         var demoBarcodeName by remember { mutableStateOf("") }
         var gstRrDate by remember { mutableStateOf(CurrentDate()) }
+        var showSalesmanDetails by remember { mutableStateOf(false) }
+        var salesmanName by remember { mutableStateOf("") }
+        var salesmanGuid by remember { mutableStateOf("") }
         var SshowShippingDetails by remember { mutableStateOf(false) }
         var SbillingShipping by remember { mutableStateOf(false) }
         var SselectedBilling by remember { mutableStateOf("") }
@@ -515,7 +519,8 @@ data class SaleScreen(
 
         LaunchedEffect(SmobileNo) {
             if (SmobileNo.isNotBlank()) {
-                val billingDet = db.billingDetQueries.selectByMobileNo(SmobileNo).executeAsOneOrNull()
+                val billingDet =
+                    db.billingDetQueries.selectByMobileNo(SmobileNo).executeAsOneOrNull()
                 if (billingDet != null) {
                     SpartyName = billingDet.PartyName ?: SpartyName
                     Saddress1 = billingDet.Address1 ?: Saddress1
@@ -940,6 +945,11 @@ data class SaleScreen(
                 optionalFields[19] = data.other_info?.OptionalField20 ?: ""
                 SgstIn = data.other_info?.SgstIn ?: ""
                 SbillingShipping = data.other_info?.SbillingShipping ?: false
+                salesmanName = data.other_info?.salesmanName ?: ""
+                salesmanGuid = data.other_info?.salesmanGuid ?: ""
+                if (salesmanName.isNotEmpty() || salesmanGuid.isNotEmpty()) {
+                    showSalesmanDetails = true
+                }
                 data.bills_collection?.let {
                     selectedReferences = it
                 }
@@ -1845,6 +1855,18 @@ data class SaleScreen(
 
                             }
 
+                            if ((SharedPrefs.User.get()?.ID.toString()) == "10371") {
+                                SalesmanSelectionSection(
+                                    showSalesmanDetails = showSalesmanDetails,
+                                    onShowChange = { showSalesmanDetails = it },
+                                    salesmanName = salesmanName,
+                                    onSalesmanNameChange = { salesmanName = it },
+                                    onSalesmanGuidChange = { salesmanGuid = it },
+                                    db = db
+                                )
+
+                            }
+
                             if (vchType !in listOf(12, 13, 15)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth()
@@ -2073,7 +2095,13 @@ data class SaleScreen(
                             val discount = pricing.Discount
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
-                                price = calculateItemPrice(vchType, listPrice, discount, pricing.CompoundDiscount.contains("+"), pricing.CompoundDiscount),
+                                price = calculateItemPrice(
+                                    vchType,
+                                    listPrice,
+                                    discount,
+                                    pricing.CompoundDiscount.contains("+"),
+                                    pricing.CompoundDiscount
+                                ),
                                 qty = 1.0,
                                 discountPercentage = discount,
                                 listPrice = listPrice,
@@ -2558,6 +2586,8 @@ data class SaleScreen(
                                         OptionalField18 = optionalFields[17],
                                         OptionalField19 = optionalFields[18],
                                         OptionalField20 = optionalFields[19],
+                                        salesmanName = if (showSalesmanDetails) salesmanName else null,
+                                        salesmanGuid = if (showSalesmanDetails) salesmanGuid else null,
                                     ),
                                     bills_collection = selectedReferences,
                                 ), onSuccess = {
@@ -3311,10 +3341,10 @@ fun BorderedInput(
 
     Box(
         modifier = Modifier.border(
-                1.dp,
-                MaterialTheme.colorScheme.outline,
-                RoundedCornerShape(6.dp)
-            ).padding(horizontal = 8.dp, vertical = 6.dp)
+            1.dp,
+            MaterialTheme.colorScheme.outline,
+            RoundedCornerShape(6.dp)
+        ).padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
         BasicTextField(
             value = textFieldValue,

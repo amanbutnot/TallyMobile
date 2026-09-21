@@ -37,12 +37,12 @@ data class SundryItem(
 
 @Serializable
 data class TransportDetails(
-    val transportName: String,
-    val station: String,
-    val gstNum: String,
-    val vehicleNum: String,
-    val pincode: String,
-    val grDate: String,
+    val transportName: String = "",
+    val station: String = "",
+    val gstNum: String = "",
+    val vehicleNum: String = "",
+    val pincode: String = "",
+    val grDate: String = "",
 
     val SpartyName: String? = null,
     val SbillingShipping: Boolean? = null,
@@ -85,7 +85,9 @@ data class TransportDetails(
     val dispatch_state: String? = null,
     val dispatch_gst: String? = null,
 
-    )
+    val salesmanName: String? = null,
+    val salesmanGuid: String? = null,
+)
 
 
 @Serializable

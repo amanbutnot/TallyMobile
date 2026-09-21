@@ -25,7 +25,8 @@ data class TranRequest(
     val pdcDate: String? = null,
     val pdcType: String,
     val instrumentName: String,
-    val instrumentNumber: String
+    val instrumentNumber: String,
+    val other_info: TransportDetails? = null
 )
 
 @Serializable
@@ -70,5 +71,6 @@ data class TranListResponse(
     val instrumentNumber: String?=null,
     val CreatedAt: String,
     val status: String? = null,
-    val bills_collection: List<BillByBillModel>
+    val bills_collection: List<BillByBillModel>,
+    val other_info: TransportDetails? = null
 )

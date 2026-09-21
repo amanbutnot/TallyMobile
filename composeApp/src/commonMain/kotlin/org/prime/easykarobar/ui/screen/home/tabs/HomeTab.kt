@@ -96,12 +96,10 @@ import dev.jordond.compass.geolocation.GeolocatorResult
 import dev.jordond.compass.geolocation.Locator
 import dev.jordond.compass.geolocation.mobile.mobile
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
-import org.tally.LedgerMaster
-import org.tally.Products
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.coroutines.IO
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.hasSalesmanPermission
@@ -136,6 +134,8 @@ import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodes
 import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 import org.prime.easykarobar.ui.shared.reportsShared.OutstandingDate
+import org.tally.LedgerMaster
+import org.tally.Products
 import kotlin.math.absoluteValue
 
 data class DashboardReportItem(
@@ -1055,6 +1055,7 @@ fun CompanyInfoCard(
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.clickable{
                     println(SharedPrefs.Token.get())
+                    println(SharedPrefs.User.get())
                 }
             ) {
                 InfoRow(

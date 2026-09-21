@@ -96,68 +96,7 @@ actual class DriverFactory {
         )
 
         try {
-            ensureColumns(
-                driver = driver,
-                tableName = "Vouchers_StockItems",
-                columnsToAdd = listOf(
-                    "D5" to "REAL",
-                    "D6" to "REAL",
-                    "D7" to "REAL",
-                    "D8" to "REAL"
-                )
-            )
-            ensureColumns(
-                driver = driver,
-                tableName = "Products",
-                columnsToAdd = listOf(
-                    "L6" to "REAL",
-                    "PRICE1" to "REAL",
-                    "PRICE2" to "REAL",
-                    "PRICE3" to "REAL",
-                    "PRICE4" to "REAL",
-                    "PRICE5" to "REAL",
-                )
-            )
-
-            ensureColumns(
-                driver = driver,
-                tableName = "Products",
-                columnsToAdd = listOf(
-                    "N1" to "REAL",
-                    "AltUnit" to "TEXT",
-                    "ConFactor" to "REAL",
-                    "ConType" to "REAL",
-                    "SalesPriceAlt" to "REAL",
-                    "PurcPriceAlt" to "REAL"
-                )
-            )
-
-            ensureColumns(
-                driver = driver,
-                tableName = "Products_Pricing",
-                columnsToAdd = listOf(
-                    "SalesPriceAlt" to "REAL",
-                    "MrpAlt" to "REAL",
-                    "DiscAlt" to "REAL"
-                )
-            )
-
-            ensureColumns(
-                driver = driver,
-                tableName = "SLIDE_MASTER",
-                columnsToAdd = listOf(
-                    "parent_guid" to "TEXT"
-                )
-            )
-
-            ensureColumns(
-                driver = driver,
-                tableName = "SLIDE_IMG",
-                columnsToAdd = listOf(
-                    "parent_guid" to "TEXT"
-                )
-            )
-
+            // --- 1. ENSURE ALL TABLES EXIST FIRST ---
             ensureTable(
                 driver = driver,
                 tableName = "SLIDE_MASTER",
@@ -200,14 +139,6 @@ actual class DriverFactory {
                         parent_guid TEXT
                     );
                 """.trimIndent()
-            )
-
-            ensureColumns(
-                driver = driver,
-                tableName = "BANNER_MASTER",
-                columnsToAdd = listOf(
-                    "parent_guid" to "TEXT"
-                )
             )
 
             ensureTable(
@@ -381,6 +312,82 @@ actual class DriverFactory {
                     );
                 """.trimIndent()
             )
+
+            ensureTable(
+                driver = driver,
+                tableName = "salesman_master1",
+                createTableSql = """
+                    CREATE TABLE IF NOT EXISTS salesman_master1 (
+                        guid REAL,
+                        name TEXT
+                    );
+                """.trimIndent()
+            )
+
+            // --- 2. ENSURE ALL COLUMNS EXIST SECOND ---
+            ensureColumns(
+                driver = driver,
+                tableName = "Vouchers_StockItems",
+                columnsToAdd = listOf(
+                    "D5" to "REAL",
+                    "D6" to "REAL",
+                    "D7" to "REAL",
+                    "D8" to "REAL"
+                )
+            )
+            ensureColumns(
+                driver = driver,
+                tableName = "Products",
+                columnsToAdd = listOf(
+                    "L6" to "REAL",
+                    "PRICE1" to "REAL",
+                    "PRICE2" to "REAL",
+                    "PRICE3" to "REAL",
+                    "PRICE4" to "REAL",
+                    "PRICE5" to "REAL",
+                    "N1" to "REAL",
+                    "AltUnit" to "TEXT",
+                    "ConFactor" to "REAL",
+                    "ConType" to "REAL",
+                    "SalesPriceAlt" to "REAL",
+                    "PurcPriceAlt" to "REAL"
+                )
+            )
+
+            ensureColumns(
+                driver = driver,
+                tableName = "Products_Pricing",
+                columnsToAdd = listOf(
+                    "SalesPriceAlt" to "REAL",
+                    "MrpAlt" to "REAL",
+                    "DiscAlt" to "REAL"
+                )
+            )
+
+            ensureColumns(
+                driver = driver,
+                tableName = "SLIDE_MASTER",
+                columnsToAdd = listOf(
+                    "parent_guid" to "TEXT"
+                )
+            )
+
+            ensureColumns(
+                driver = driver,
+                tableName = "SLIDE_IMG",
+                columnsToAdd = listOf(
+                    "parent_guid" to "TEXT"
+                )
+            )
+
+            ensureColumns(
+                driver = driver,
+                tableName = "BANNER_MASTER",
+                columnsToAdd = listOf(
+                    "parent_guid" to "TEXT"
+                )
+            )
+
         } catch (e: Exception) {
             println("❌ Error during manual migration: ${e.message}")
         }
@@ -395,31 +402,24 @@ actual class DriverFactory {
         tableName: String,
         createTableSql: String
     ) {
-        driver.executeQuery(
-            identifier = null,
-            sql = "SELECT name FROM sqlite_master WHERE type='table' AND name='$tableName'",
-            mapper = { cursor ->
-                if (!cursor.next().value) {
-                    println("⚠️ $tableName table missing, creating it...")
-                    driver.execute(
-                        identifier = null,
-                        sql = createTableSql,
-                        parameters = 0
-                    )
-                } else {
-                    println("✔️ $tableName already exists")
-                }
-                QueryResult.Unit
-            },
-            parameters = 0
-        )
+        try {
+            driver.execute(
+                identifier = null,
+                sql = createTableSql,
+                parameters = 0
+            )
+            println("✔️ Table ensured: $tableName")
+        } catch (e: Exception) {
+            println("❌ Error ensuring table $tableName: ${e.message}")
+        }
     }
 
     private fun executeMigrationCommand(driver: SqlDriver, sql: String) {
         try {
             driver.execute(null, sql, 0)
+            println("✔️ Command executed: $sql")
         } catch (e: Exception) {
-            println("❌ Error during manual command execution: ${e.message}")
+            println("❌ Error executing command: ${e.message}")
         }
     }
 
@@ -428,36 +428,45 @@ actual class DriverFactory {
         tableName: String,
         columnsToAdd: List<Pair<String, String>>
     ) {
-        driver.executeQuery(
-            identifier = null,
-            sql = "PRAGMA table_info($tableName)",
-            mapper = { cursor ->
-                val existingColumns = mutableSetOf<String>()
+        try {
+            driver.executeQuery(
+                identifier = null,
+                sql = "PRAGMA table_info($tableName)",
+                mapper = { cursor ->
+                    val existingColumns = mutableSetOf<String>()
 
-                while (cursor.next().value) {
-                    cursor.getString(1)?.let { columnName ->
-                        existingColumns.add(columnName)
+                    while (cursor.next().value) {
+                        cursor.getString(1)?.let { columnName ->
+                            existingColumns.add(columnName)
+                        }
                     }
-                }
 
-                columnsToAdd.forEach { (name, type) ->
-                    if (!existingColumns.contains(name)) {
-                        println("⚠️ $name column missing in $tableName table, adding it...")
+                    columnsToAdd.forEach { (name, type) ->
+                        if (!existingColumns.contains(name)) {
+                            println("⚠️ $name column missing in $tableName table, adding it...")
 
-                        driver.execute(
-                            identifier = null,
-                            sql = "ALTER TABLE $tableName ADD COLUMN $name $type",
-                            parameters = 0
-                        )
-                    } else {
-                        println("✔️ $name already exists in $tableName")
+                            try {
+                                driver.execute(
+                                    identifier = null,
+                                    sql = "ALTER TABLE $tableName ADD COLUMN $name $type",
+                                    parameters = 0
+                                )
+                                println("✔️ Added column $name to $tableName")
+                            } catch (e: Exception) {
+                                println("❌ Failed to add column $name to $tableName: ${e.message}")
+                            }
+                        } else {
+                            println("✔️ Column $name already exists in $tableName")
+                        }
                     }
-                }
 
-                QueryResult.Unit
-            },
-            parameters = 0
-        )
+                    QueryResult.Unit
+                },
+                parameters = 0
+            )
+        } catch (e: Exception) {
+            println("❌ Error in ensureColumns for $tableName: ${e.message}")
+        }
     }
 }
 

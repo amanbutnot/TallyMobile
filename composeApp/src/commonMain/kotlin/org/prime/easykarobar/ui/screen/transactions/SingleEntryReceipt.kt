@@ -63,6 +63,7 @@ import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.hasSalesmanPermission
 import org.prime.easykarobar.data.model.transactions.TranListResponse
 import org.prime.easykarobar.data.model.transactions.TranRequest
+import org.prime.easykarobar.data.model.transactions.TransportDetails
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.printing.EntryTypesHtml
 import org.prime.easykarobar.ui.printing.entryTypesHtml
@@ -156,6 +157,11 @@ data class SingleEntryReceipt(
                 existingTransaction?.pdcDate ?: CurrentDate()
             )
         }
+        var showSalesmanDetails by rememberSaveable {
+            mutableStateOf(existingTransaction?.other_info?.salesmanName?.isNotEmpty() == true || existingTransaction?.other_info?.salesmanGuid?.isNotEmpty() == true)
+        }
+        var salesmanName by rememberSaveable { mutableStateOf(existingTransaction?.other_info?.salesmanName ?: "") }
+        var salesmanGuid by rememberSaveable { mutableStateOf(existingTransaction?.other_info?.salesmanGuid ?: "") }
         println(existingTransaction)
 
 
@@ -462,6 +468,17 @@ data class SingleEntryReceipt(
                             }
                         }
                     }
+                    if ((SharedPrefs.User.get()?.ID.toString()) == "10371") {
+                        SalesmanSelectionSection(
+                            showSalesmanDetails = showSalesmanDetails,
+                            onShowChange = { showSalesmanDetails = it },
+                            salesmanName = salesmanName,
+                            onSalesmanNameChange = { salesmanName = it },
+                            onSalesmanGuidChange = { salesmanGuid = it },
+                            db = db
+                        )
+                    }
+
 
                     if (vchType !in listOf(12, 13, 15)) {
                         Row(
@@ -541,6 +558,12 @@ data class SingleEntryReceipt(
                                         instrumentNumber = instrumentNo,
                                         pdcDate = if (showPdcDate) selectedPdcDate else null,
                                         pdcType = if (showPdcDate) PDCTYPE.PDC.name else PDCTYPE.REGULAR.name,
+                                        other_info = if (showSalesmanDetails && (salesmanName.isNotEmpty() || salesmanGuid.isNotEmpty())) {
+                                            TransportDetails(
+                                                salesmanName = salesmanName,
+                                                salesmanGuid = salesmanGuid
+                                            )
+                                        } else null,
                                     ), onSuccess = {
                                         db.transaction {
                                             selectedReferences.forEach {
@@ -650,6 +673,12 @@ data class SingleEntryReceipt(
                                         bills_collection = selectedReferences,
                                         pdcDate = if (showPdcDate) selectedPdcDate else null,
                                         pdcType = if (showPdcDate) PDCTYPE.PDC.name else PDCTYPE.REGULAR.name,
+                                        other_info = if (showSalesmanDetails && (salesmanName.isNotEmpty() || salesmanGuid.isNotEmpty())) {
+                                            TransportDetails(
+                                                salesmanName = salesmanName,
+                                                salesmanGuid = salesmanGuid
+                                            )
+                                        } else null,
                                     )
                                 )
                                 viewmodel.addSingleTran(
@@ -674,6 +703,12 @@ data class SingleEntryReceipt(
                                         bills_collection = selectedReferences,
                                         pdcDate = if (showPdcDate) selectedPdcDate else null,
                                         pdcType = if (showPdcDate) PDCTYPE.PDC.name else PDCTYPE.REGULAR.name,
+                                        other_info = if (showSalesmanDetails && (salesmanName.isNotEmpty() || salesmanGuid.isNotEmpty())) {
+                                            TransportDetails(
+                                                salesmanName = salesmanName,
+                                                salesmanGuid = salesmanGuid
+                                            )
+                                        } else null,
                                     ), onSuccess = {
                                         db.transaction {
                                             selectedReferences.forEach {
