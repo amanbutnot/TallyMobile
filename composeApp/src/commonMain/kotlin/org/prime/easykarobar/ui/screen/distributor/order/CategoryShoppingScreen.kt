@@ -549,6 +549,7 @@ object CategoryShoppingScreen : Screen {
 
                     itemsIndexed(
                         items = topFeatureProductsByFeature.keys.toList(),
+                        key = { _, feature -> feature.ID }
                     ) { index, feature ->
                         val featureProducts = topFeatureProductsByFeature[feature].orEmpty()
                         if (featureProducts.isNotEmpty()) {
@@ -673,6 +674,7 @@ object CategoryShoppingScreen : Screen {
 
                     items(
                         items = filteredCategories,
+                        key = { category -> category.GUID ?: category.hashCode() }
                     ) { category ->
                         val products = productsByCategoryId[category.GUID?.toDouble()].orEmpty()
                         val categorySliders = categorySlidersMap[category].orEmpty()
@@ -1122,7 +1124,10 @@ object CategoryShoppingScreen : Screen {
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                items(products) { product ->
+                items(
+                    items = products,
+                    key = { product -> product.product_id ?: product.hashCode() }
+                ) { product ->
                     val isInCart = product.product_id in cartGuids
                     val isInWishlist = product.product_id in wishlistGuids
 
