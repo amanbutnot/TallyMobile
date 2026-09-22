@@ -589,6 +589,9 @@ object CategoryShoppingScreen : Screen {
                                 CategoriesGrid(
                                     categories = filteredCategories,
                                     title = if (debouncedSearchQuery.isBlank()) "All Categories" else "Matching Categories",
+                                    onSeeAllClick = {
+                                        nav.pushEasyMart(SeeAllCategoriesScreen)
+                                    },
                                     onCategoryClick = { category ->
                                         nav.pushEasyMart(
                                             AllProductsPremiumScreen(
@@ -614,6 +617,9 @@ object CategoryShoppingScreen : Screen {
                                 SubcategoriesGrid(
                                     subcategories = filteredSubcategories,
                                     title = if (debouncedSearchQuery.isBlank()) "All Subcategories" else "Matching Subcategories",
+                                    onSeeAllClick = {
+                                        nav.pushEasyMart(SeeAllSubcategoriesScreen)
+                                    },
                                     onSubcategoryClick = { subcat ->
                                         coroutineScope.launch {
                                             val guids = withContext(Dispatchers.IO) {
@@ -649,6 +655,9 @@ object CategoryShoppingScreen : Screen {
                                 BrandsGrid(
                                     brands = filteredBrands,
                                     title = if (debouncedSearchQuery.isBlank()) "All Brands" else "Matching Brands",
+                                    onSeeAllClick = {
+                                        nav.pushEasyMart(SeeAllBrandsScreen)
+                                    },
                                     onBrandClick = { brand ->
                                         coroutineScope.launch {
                                             val guids = withContext(Dispatchers.IO) {
@@ -752,6 +761,7 @@ object CategoryShoppingScreen : Screen {
         getImageUrl: (T) -> String,
         cardBgColor: Color = Color.White,
         placeholder: DrawableResource = Res.drawable.category_placeholder,
+        onSeeAllClick: (() -> Unit)? = null,
         onItemClick: (T) -> Unit
     ) {
         Column(modifier = Modifier.padding(horizontal = 12.dp)) {
@@ -785,6 +795,23 @@ object CategoryShoppingScreen : Screen {
                     }
                 }
             }
+
+            if (onSeeAllClick != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                TextButton(
+                    onClick = onSeeAllClick,
+                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 8.dp)
+                ) {
+                    Text(
+                        text = "Show All",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            color = Color(0xFF004D40),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    )
+                }
+            }
         }
     }
 
@@ -792,15 +819,17 @@ object CategoryShoppingScreen : Screen {
     fun CategoriesGrid(
         categories: List<ProductCategoriesForDis>,
         title: String,
+        onSeeAllClick: (() -> Unit)? = null,
         onCategoryClick: (ProductCategoriesForDis) -> Unit
     ) {
         val userId = remember { SharedPrefs.User.get()?.ID.toString() }
         GenericGrid(
-            items = categories,
+            items = categories.take(9), // 3 rows * 3 items
             title = title,
             getName = { it.Name.orEmpty() },
             getImageUrl = { getCategoryImage(userId, it.GUID.toString()) },
             cardBgColor = Color.White,
+            onSeeAllClick = onSeeAllClick,
             onItemClick = onCategoryClick
         )
     }
@@ -809,15 +838,17 @@ object CategoryShoppingScreen : Screen {
     fun SubcategoriesGrid(
         subcategories: List<GetAllSubCategories>,
         title: String,
+        onSeeAllClick: (() -> Unit)? = null,
         onSubcategoryClick: (GetAllSubCategories) -> Unit
     ) {
         GenericGrid(
-            items = subcategories,
+            items = subcategories.take(9),
             title = title,
             getName = { it.CatName },
             getImageUrl = { "" },
             cardBgColor = Color.White,
             placeholder = Res.drawable.subcategory_placeholder,
+            onSeeAllClick = onSeeAllClick,
             onItemClick = onSubcategoryClick
         )
     }
@@ -826,15 +857,17 @@ object CategoryShoppingScreen : Screen {
     fun BrandsGrid(
         brands: List<GetBrandsForDis>,
         title: String,
+        onSeeAllClick: (() -> Unit)? = null,
         onBrandClick: (GetBrandsForDis) -> Unit
     ) {
         GenericGrid(
-            items = brands,
+            items = brands.take(9),
             title = title,
             getName = { it.Name.orEmpty() },
             getImageUrl = { "" },
             cardBgColor = Color.White,
             placeholder = Res.drawable.brand_placeholder,
+            onSeeAllClick = onSeeAllClick,
             onItemClick = onBrandClick
         )
     }
