@@ -73,7 +73,9 @@ import coil3.compose.AsyncImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.prime.easykarobar.TallyDatabase
 import org.prime.easykarobar.business.viewmodel.WishlistViewModel
@@ -88,12 +90,16 @@ import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
 import org.prime.easykarobar.ui.utils.pushEasyMart
 import org.tally.BANNER_MASTER
 import org.tally.FEATURES_MASTER
+import org.tally.GetAllSubCategories
+import org.tally.GetBrandsForDis
 import org.tally.GetProductsForDis
 import org.tally.ProductCategoriesForDis
 import org.tally.SLIDE_IMG
 import org.tally.SLIDE_MASTER
 import tallymobile.composeapp.generated.resources.Res
+import tallymobile.composeapp.generated.resources.brand_placeholder
 import tallymobile.composeapp.generated.resources.category_placeholder
+import tallymobile.composeapp.generated.resources.subcategory_placeholder
 import kotlin.time.Duration.Companion.milliseconds
 
 private val featureSectionPastelColors = listOf(
@@ -114,6 +120,8 @@ private data class ScreenData<Slide, Banner, Feature>(
     val banners: List<Banner>,
     val features: List<Feature>,
     val categories: List<ProductCategoriesForDis>,
+    val subcategories: List<GetAllSubCategories>,
+    val brands: List<GetBrandsForDis>,
     val products: List<GetProductsForDis>,
     val isLoading: Boolean = true
 )
@@ -230,6 +238,8 @@ object CategoryShoppingScreen : Screen {
                     banners = emptyList(),
                     features = emptyList(),
                     categories = emptyList(),
+                    subcategories = emptyList(),
+                    brands = emptyList(),
                     products = emptyList(),
                     isLoading = true
                 )
@@ -242,6 +252,12 @@ object CategoryShoppingScreen : Screen {
                         categories = db.productsQueries.productCategoriesForDis(
                             filterGroup = filterItemGroups(),
                             groupCodes = itemGroupCodes()
+                        ).executeAsList(),
+                        subcategories = db.product_CategoryQueries.getAllSubCategories().executeAsList(),
+                        brands = db.productsQueries.getBrandsForDis(
+                            filterGroup = filterItemGroups(),
+                            groupCodes = itemGroupCodes(),
+                            productCode = null
                         ).executeAsList(),
                         products = db.productsQueries.getProductsForDis(
                             filterGroup = filterItemGroups(),
@@ -280,6 +296,28 @@ object CategoryShoppingScreen : Screen {
                             val hasProducts =
                                 filteredProducts.any { it.category_id == category.GUID?.toDouble() }
                             nameMatches || hasProducts
+                        }
+                    }
+                }
+
+            val filteredSubcategories =
+                remember(screenData.subcategories, debouncedSearchQuery) {
+                    if (debouncedSearchQuery.isBlank()) {
+                        screenData.subcategories
+                    } else {
+                        screenData.subcategories.filter { subcat ->
+                            subcat.CatName.contains(debouncedSearchQuery, ignoreCase = true)
+                        }
+                    }
+                }
+
+            val filteredBrands =
+                remember(screenData.brands, debouncedSearchQuery) {
+                    if (debouncedSearchQuery.isBlank()) {
+                        screenData.brands
+                    } else {
+                        screenData.brands.filter { brand ->
+                            brand.Name?.contains(debouncedSearchQuery, ignoreCase = true) == true
                         }
                     }
                 }
@@ -565,6 +603,74 @@ object CategoryShoppingScreen : Screen {
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
+                    item(key = "subcategories_grid") {
+                        if (filteredSubcategories.isNotEmpty()) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                                color = Color(0xFFF4ECF7), // Soft Pastel Lavender
+                                shadowElevation = 1.dp
+                            ) {
+                                SubcategoriesGrid(
+                                    subcategories = filteredSubcategories,
+                                    title = if (debouncedSearchQuery.isBlank()) "All Subcategories" else "Matching Subcategories",
+                                    onSubcategoryClick = { subcat ->
+                                        coroutineScope.launch {
+                                            val guids = withContext(Dispatchers.IO) {
+                                                db.product_CategoryQueries.getMappingsByGroup(null)
+                                                    .executeAsList()
+                                                    .filter { it.CatName == subcat.CatName }
+                                                    .mapNotNull { it.product_id }
+                                            }
+                                            nav.pushEasyMart(
+                                                AllProductsPremiumScreen(
+                                                    categoryName = subcat.CatName,
+                                                    productGuids = guids,
+                                                    productCode = subcat.GroupCode,
+                                                    subCategoryCode = subcat.CatCode,
+                                                    isTab = false
+                                                )
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    item(key = "brands_grid") {
+                        if (filteredBrands.isNotEmpty()) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                                color = Color(0xFFEBF3FE), // Soft Pastel Sky Blue
+                                shadowElevation = 1.dp
+                            ) {
+                                BrandsGrid(
+                                    brands = filteredBrands,
+                                    title = if (debouncedSearchQuery.isBlank()) "All Brands" else "Matching Brands",
+                                    onBrandClick = { brand ->
+                                        coroutineScope.launch {
+                                            val guids = withContext(Dispatchers.IO) {
+                                                screenData.products
+                                                    .filter { it.brand_name == brand.Name }
+                                                    .mapNotNull { it.product_id }
+                                            }
+                                            nav.pushEasyMart(
+                                                AllProductsPremiumScreen(
+                                                    categoryName = brand.Name,
+                                                    productGuids = guids,
+                                                    brandName = brand.Name,
+                                                    isTab = false
+                                                )
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
                     items(
                         items = filteredCategories,
                     ) { category ->
@@ -637,12 +743,15 @@ object CategoryShoppingScreen : Screen {
     }
 
     @Composable
-    fun CategoriesGrid(
-        categories: List<ProductCategoriesForDis>,
+    fun <T> GenericGrid(
+        items: List<T>,
         title: String,
-        onCategoryClick: (ProductCategoriesForDis) -> Unit
+        getName: (T) -> String,
+        getImageUrl: (T) -> String,
+        cardBgColor: Color = Color.White,
+        placeholder: DrawableResource = Res.drawable.category_placeholder,
+        onItemClick: (T) -> Unit
     ) {
-        val userId = remember { SharedPrefs.User.get()?.ID.toString() }
         Column(modifier = Modifier.padding(horizontal = 12.dp)) {
             Text(
                 text = title,
@@ -650,26 +759,23 @@ object CategoryShoppingScreen : Screen {
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp
                 ),
-                modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp).clickable {
-                    println(SharedPrefs.ChangePrice.get().toString() + " change price;")
-                }
+                modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp)
             )
 
-            val chunks = remember(categories) { categories.chunked(3) }
+            val chunks = remember(items) { items.chunked(3) }
             chunks.forEach { rowItems ->
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    rowItems.forEach { category ->
-                        val imageUrl = remember(category.GUID, userId) {
-                            getCategoryImage(userId, category.GUID.toString())
-                        }
+                    rowItems.forEach { item ->
                         CategoryItem(
                             modifier = Modifier.weight(1f),
-                            name = category.Name.orEmpty(),
-                            imageUrl = imageUrl,
-                            onClick = { onCategoryClick(category) }
+                            name = getName(item),
+                            imageUrl = getImageUrl(item),
+                            cardBgColor = cardBgColor,
+                            placeholder = placeholder,
+                            onClick = { onItemClick(item) }
                         )
                     }
                     repeat(3 - rowItems.size) {
@@ -681,10 +787,63 @@ object CategoryShoppingScreen : Screen {
     }
 
     @Composable
+    fun CategoriesGrid(
+        categories: List<ProductCategoriesForDis>,
+        title: String,
+        onCategoryClick: (ProductCategoriesForDis) -> Unit
+    ) {
+        val userId = remember { SharedPrefs.User.get()?.ID.toString() }
+        GenericGrid(
+            items = categories,
+            title = title,
+            getName = { it.Name.orEmpty() },
+            getImageUrl = { getCategoryImage(userId, it.GUID.toString()) },
+            cardBgColor = Color.White,
+            onItemClick = onCategoryClick
+        )
+    }
+
+    @Composable
+    fun SubcategoriesGrid(
+        subcategories: List<GetAllSubCategories>,
+        title: String,
+        onSubcategoryClick: (GetAllSubCategories) -> Unit
+    ) {
+        GenericGrid(
+            items = subcategories,
+            title = title,
+            getName = { it.CatName },
+            getImageUrl = { "" },
+            cardBgColor = Color.White,
+            placeholder = Res.drawable.subcategory_placeholder,
+            onItemClick = onSubcategoryClick
+        )
+    }
+
+    @Composable
+    fun BrandsGrid(
+        brands: List<GetBrandsForDis>,
+        title: String,
+        onBrandClick: (GetBrandsForDis) -> Unit
+    ) {
+        GenericGrid(
+            items = brands,
+            title = title,
+            getName = { it.Name.orEmpty() },
+            getImageUrl = { "" },
+            cardBgColor = Color.White,
+            placeholder = Res.drawable.brand_placeholder,
+            onItemClick = onBrandClick
+        )
+    }
+
+    @Composable
     internal fun CategoryItem(
         modifier: Modifier = Modifier,
         name: String,
         imageUrl: String,
+        cardBgColor: Color = Color.White,
+        placeholder: DrawableResource = Res.drawable.category_placeholder,
         onClick: () -> Unit
     ) {
         Column(
@@ -700,7 +859,7 @@ object CategoryShoppingScreen : Screen {
                     .fillMaxWidth()
                     .aspectRatio(1f),
                 shape = RoundedCornerShape(16.dp),
-                color = Color.White,
+                color = cardBgColor,
                 border = null
             ) {
                 AsyncImage(
@@ -709,10 +868,10 @@ object CategoryShoppingScreen : Screen {
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(8.dp)
-                        .background(Color.White, RoundedCornerShape(12.dp)),
+                        .background(cardBgColor, RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Fit,
-                    fallback = painterResource(Res.drawable.category_placeholder),
-                    error = painterResource(Res.drawable.category_placeholder)
+                    fallback = painterResource(placeholder),
+                    error = painterResource(placeholder)
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))

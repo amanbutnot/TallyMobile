@@ -111,7 +111,9 @@ data class AllProductsPremiumScreen(
     val categoryName: String? = null,
     val productCode: Double? = null,
     val isTab: Boolean,
-    val productGuids: List<String>? = null
+    val productGuids: List<String>? = null,
+    val subCategoryCode: Double? = null,
+    val brandName: String? = null
 ) : Screen {
 
     @Composable
@@ -156,8 +158,8 @@ data class AllProductsPremiumScreen(
         var currentCategoryCode by remember { mutableStateOf(productCode) }
         var currentCategoryName by remember { mutableStateOf(categoryName ?: "All Products") }
         var currentProductGuids by remember { mutableStateOf(productGuids) }
-        var selectedCatNames by remember { mutableStateOf(setOf<String>()) }
-        var currentSubCategoryCode by remember { mutableStateOf<Double?>(null) }
+        var selectedCatNames by remember { mutableStateOf(if (brandName != null) setOf(brandName) else setOf<String>()) }
+        var currentSubCategoryCode by remember { mutableStateOf(subCategoryCode) }
 
         val categories = remember {
             db.productsQueries.productCategoriesForDis(

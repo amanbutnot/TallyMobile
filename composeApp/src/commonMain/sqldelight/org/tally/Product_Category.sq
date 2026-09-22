@@ -40,3 +40,9 @@ getMappingsByGroup:
 SELECT CAST(CAST(ProductCode AS INTEGER) AS TEXT) AS product_id, CatName
 FROM Product_Category
 WHERE (:groupCode IS NULL OR GroupCode = :groupCode);
+
+getAllSubCategories:
+SELECT DISTINCT CatName, CatCode, GroupCode
+FROM Product_Category
+WHERE CatName IS NOT NULL
+ORDER BY CatName;
