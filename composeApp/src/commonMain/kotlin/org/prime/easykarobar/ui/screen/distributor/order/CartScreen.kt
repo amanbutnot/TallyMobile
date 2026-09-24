@@ -754,7 +754,7 @@ private fun CartProductItem(
     val nav = LocalNavigator.currentOrThrow
     val viewModel = nav.rememberNavigatorScreenModel { CartViewModel() }
 
-    val selectedUnit = product.selectedUnit.value
+    val selectedUnit = product.getUnitName()
 
     val currentListPrice =
         if (selectedUnit == product.product.main_unit || product.product.alt_unit.isNullOrBlank()) {
@@ -1023,7 +1023,7 @@ fun CartSummary(
     val totalMrp = products.sumOf {
         val factor = it.product.con_factor ?: 1.0
         val conType = it.product.con_type ?: 1.0
-        val selectedUnit = it.selectedUnit.value
+        val selectedUnit = it.getUnitName()
 
         val mrp =
             if (it.product.MRP == 0.0) it.product.sales_price ?: 0.0 else it.product.MRP ?: 0.0
@@ -1039,7 +1039,7 @@ fun CartSummary(
 
 
     val totalDiscountedPrice = products.sumOf {
-        val selectedUnit = it.selectedUnit.value
+        val selectedUnit = it.getUnitName()
 
         val currentDiscountedPrice =
             if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
@@ -1059,7 +1059,7 @@ fun CartSummary(
     val totalSavings = (totalMrp - totalDiscountedPrice).toDouble()
 
     val totalGst = products.sumOf {
-        val selectedUnit = it.selectedUnit.value
+        val selectedUnit = it.getUnitName()
 
         val currentDiscountedPrice =
             if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
@@ -1076,7 +1076,7 @@ fun CartSummary(
     val totalBeforeCoupon = (totalDiscountedPrice + totalGst).toDouble()
 
     val totalHamali = products.sumOf { cartItem ->
-        val unitName = cartItem.selectedUnit.value
+        val unitName = cartItem.getUnitName()
         val quantity = cartItem.quantity.value
         when (unitName.lowercase()) {
             "box", "tin" -> quantity * 2.0
@@ -1327,7 +1327,7 @@ fun ConfirmOrderButton(
     isDelivery: Boolean = true, focusRequester: FocusRequester
 ) {
     val totalDiscountedPrice = products.sumOf {
-        val selectedUnit = it.selectedUnit.value
+        val selectedUnit = it.getUnitName()
 
         val currentDiscountedPrice =
             if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
@@ -1339,7 +1339,7 @@ fun ConfirmOrderButton(
     }
 
     val totalGst = products.sumOf {
-        val selectedUnit = it.selectedUnit.value
+        val selectedUnit = it.getUnitName()
 
         val currentDiscountedPrice =
             if (selectedUnit == it.product.main_unit || it.product.alt_unit.isNullOrBlank()) {
@@ -1356,7 +1356,7 @@ fun ConfirmOrderButton(
     val totalBeforeCoupon = (totalDiscountedPrice + totalGst)
 
     val totalHamali = products.sumOf { cartItem ->
-        val unitName = cartItem.selectedUnit.value
+        val unitName = cartItem.getUnitName()
         val quantity = cartItem.quantity.value
         when (unitName.lowercase()) {
             "box", "tin" -> quantity * 2.0
@@ -1557,7 +1557,7 @@ fun ConfirmOrderButton(
             val quantity = cartItem.quantity.value
             val factor = product.con_factor ?: 1.0
             val conType = product.con_type ?: 1.0
-            val selectedUnit = cartItem.selectedUnit.value
+            val selectedUnit = cartItem.getUnitName()
 
             val basePrice = product.sales_price?.toDouble() ?: 0.0
             val currentListPrice =
@@ -1630,7 +1630,7 @@ fun ConfirmOrderButton(
                 var totalHamaliRate = 0.0
 
                 products.forEach { cartItem ->
-                    val unitName = cartItem.selectedUnit.value
+                    val unitName = cartItem.getUnitName()
                     val quantity = cartItem.quantity.value
                     val rate = when (unitName.lowercase()) {
                         "box", "tin" -> 2.0
@@ -1982,6 +1982,16 @@ fun SummaryRow(
     }
 }
 
+fun CartItem.getUnitName(): String {
+    val unit = selectedUnit.value.trim()
+    if (unit.isNotBlank()) return unit
+    val mainUnit = product.main_unit?.trim().orEmpty()
+    if (mainUnit.isNotBlank()) return mainUnit
+    val altUnit = product.alt_unit?.trim().orEmpty()
+    if (altUnit.isNotBlank()) return altUnit
+    return "-"
+}
+
 data class CartSummaryItem(
     val productId: Int,
     val name: String,
@@ -1990,7 +2000,8 @@ data class CartSummaryItem(
     val discountedPrice: Double,
     val discountPercent: Double,
     val gstPercent: Double,
-    val quantity: Double
+    val quantity: Double,
+    val unitName: String = ""
 )
 
 fun CartItem.toSummaryItem(): CartSummaryItem {
@@ -2004,7 +2015,8 @@ fun CartItem.toSummaryItem(): CartSummaryItem {
         discountedPrice = p.discounted_price ?: 0.0,
         discountPercent = p.discount ?: 0.0,
         gstPercent = p.gst_tax_percentage ?: 0.0,
-        quantity = quantity.value
+        quantity = quantity.value,
+        unitName = getUnitName()
     )
 }
 
