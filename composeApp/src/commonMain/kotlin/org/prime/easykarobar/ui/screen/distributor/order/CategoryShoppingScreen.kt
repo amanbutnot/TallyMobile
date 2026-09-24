@@ -284,7 +284,7 @@ object CategoryShoppingScreen : Screen {
                 filteredProducts.groupBy { it.category_id?.toDouble() }
             }
             val filteredCategories =
-                remember(screenData.categories, debouncedSearchQuery, filteredProducts) {
+                remember(screenData.categories, debouncedSearchQuery, filteredProducts, screenData.subcategories) {
                     if (debouncedSearchQuery.isBlank()) {
                         screenData.categories
                     } else {
@@ -295,29 +295,11 @@ object CategoryShoppingScreen : Screen {
                             ) == true
                             val hasProducts =
                                 filteredProducts.any { it.category_id == category.GUID?.toDouble() }
-                            nameMatches || hasProducts
-                        }
-                    }
-                }
-
-            val filteredSubcategories =
-                remember(screenData.subcategories, debouncedSearchQuery) {
-                    if (debouncedSearchQuery.isBlank()) {
-                        screenData.subcategories
-                    } else {
-                        screenData.subcategories.filter { subcat ->
-                            subcat.CatName.contains(debouncedSearchQuery, ignoreCase = true)
-                        }
-                    }
-                }
-
-            val filteredBrands =
-                remember(screenData.brands, debouncedSearchQuery) {
-                    if (debouncedSearchQuery.isBlank()) {
-                        screenData.brands
-                    } else {
-                        screenData.brands.filter { brand ->
-                            brand.Name?.contains(debouncedSearchQuery, ignoreCase = true) == true
+                            val hasSubcat = screenData.subcategories.any { subcat ->
+                                isMatchingCategoryGuid(subcat.GroupCode?.toString(), category.GUID) &&
+                                        subcat.CatName.contains(debouncedSearchQuery, ignoreCase = true)
+                            }
+                            nameMatches || hasProducts || hasSubcat
                         }
                     }
                 }
@@ -607,18 +589,69 @@ object CategoryShoppingScreen : Screen {
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
-                    item(key = "subcategories_grid") {
-                        if (filteredSubcategories.isNotEmpty()) {
+                    items(
+                        items = filteredCategories,
+                        key = { category -> category.GUID ?: category.hashCode() }
+                    ) { category ->
+                        val products = productsByCategoryId[category.GUID?.toDouble()].orEmpty()
+                        val categorySliders = categorySlidersMap[category].orEmpty()
+                        val categoryBanners = categoryBannersMap[category].orEmpty()
+                        val categoryFeatures = categoryFeaturesMap[category].orEmpty()
+
+                        val categorySubcategories = remember(screenData.subcategories, category.GUID, debouncedSearchQuery) {
+                            screenData.subcategories.filter { subcat ->
+                                val matchesCategory = isMatchingCategoryGuid(subcat.GroupCode?.toString(), category.GUID)
+                                val matchesSearch = debouncedSearchQuery.isBlank() || subcat.CatName.contains(debouncedSearchQuery, ignoreCase = true)
+                                matchesCategory && matchesSearch
+                            }
+                        }
+
+                        val categoryBrandNames = remember(products) {
+                            products.mapNotNull { it.brand_name }.filter { it.isNotBlank() }.toSet()
+                        }
+                        val categoryBrands = remember(screenData.brands, categoryBrandNames, debouncedSearchQuery) {
+                            val matched = screenData.brands.filter { brand ->
+                                val matchesCategory = brand.Name in categoryBrandNames
+                                val matchesSearch = debouncedSearchQuery.isBlank() || brand.Name?.contains(debouncedSearchQuery, ignoreCase = true) == true
+                                matchesCategory && matchesSearch
+                            }
+                            val matchedNames = matched.mapNotNull { it.Name }.toSet()
+                            val missing = categoryBrandNames
+                                .filter { it !in matchedNames && (debouncedSearchQuery.isBlank() || it.contains(debouncedSearchQuery, ignoreCase = true)) }
+                                .map { GetBrandsForDis(Name = it) }
+                            matched + missing
+                        }
+
+                        if (products.isNotEmpty() || categorySliders.isNotEmpty() || categoryBanners.isNotEmpty() || categoryFeatures.isNotEmpty() || categorySubcategories.isNotEmpty() || categoryBrands.isNotEmpty()) {
                             Surface(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                                color = Color(0xFFF4ECF7), // Soft Pastel Lavender
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp),
+                                color = Color.White,
                                 shadowElevation = 1.dp
                             ) {
-                                SubcategoriesGrid(
-                                    subcategories = filteredSubcategories,
-                                    title = if (debouncedSearchQuery.isBlank()) "All Subcategories" else "Matching Subcategories",
-                                    onSeeAllClick = {
-                                        nav.pushEasyMart(SeeAllSubcategoriesScreen)
+                                CategoryProductSection(
+                                    category = category,
+                                    products = products.take(8),
+                                    categorySubcategories = categorySubcategories,
+                                    categoryBrands = categoryBrands,
+                                    cartViewModel = cartViewModel,
+                                    wishlistViewModel = wishlistViewModel,
+                                    isTwoPerRow = isTwoPerRow,
+                                    cartGuids = cartGuids,
+                                    wishlistGuids = wishlistGuids,
+                                    categorySliders = categorySliders,
+                                    categoryBanners = categoryBanners,
+                                    categoryFeatures = categoryFeatures,
+                                    featureProductsByFeature = featureProductsByFeature,
+                                    db = db,
+                                    nav = nav,
+                                    urlProvider = urlProvider,
+                                    showProductInfo = showProductInfo,
+                                    selectedProduct = selectedProduct,
+                                    onItemClick = { item ->
+                                        selectedProduct.value = item
+                                        showProductInfo.value = true
                                     },
                                     onSubcategoryClick = { subcat ->
                                         coroutineScope.launch {
@@ -638,25 +671,6 @@ object CategoryShoppingScreen : Screen {
                                                 )
                                             )
                                         }
-                                    }
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
-                    item(key = "brands_grid") {
-                        if (filteredBrands.isNotEmpty()) {
-                            Surface(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                                color = Color(0xFFEBF3FE), // Soft Pastel Sky Blue
-                                shadowElevation = 1.dp
-                            ) {
-                                BrandsGrid(
-                                    brands = filteredBrands,
-                                    title = if (debouncedSearchQuery.isBlank()) "All Brands" else "Matching Brands",
-                                    onSeeAllClick = {
-                                        nav.pushEasyMart(SeeAllBrandsScreen)
                                     },
                                     onBrandClick = { brand ->
                                         coroutineScope.launch {
@@ -674,49 +688,6 @@ object CategoryShoppingScreen : Screen {
                                                 )
                                             )
                                         }
-                                    }
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
-                    items(
-                        items = filteredCategories,
-                        key = { category -> category.GUID ?: category.hashCode() }
-                    ) { category ->
-                        val products = productsByCategoryId[category.GUID?.toDouble()].orEmpty()
-                        val categorySliders = categorySlidersMap[category].orEmpty()
-                        val categoryBanners = categoryBannersMap[category].orEmpty()
-                        val categoryFeatures = categoryFeaturesMap[category].orEmpty()
-                        if (products.isNotEmpty() || categorySliders.isNotEmpty() || categoryBanners.isNotEmpty() || categoryFeatures.isNotEmpty()) {
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                color = Color.White,
-                                shadowElevation = 1.dp
-                            ) {
-                                CategoryProductSection(
-                                    category = category,
-                                    products = products.take(8),
-                                    cartViewModel = cartViewModel,
-                                    wishlistViewModel = wishlistViewModel,
-                                    isTwoPerRow = isTwoPerRow,
-                                    cartGuids = cartGuids,
-                                    wishlistGuids = wishlistGuids,
-                                    categorySliders = categorySliders,
-                                    categoryBanners = categoryBanners,
-                                    categoryFeatures = categoryFeatures,
-                                    featureProductsByFeature = featureProductsByFeature,
-                                    db = db,
-                                    nav = nav,
-                                    urlProvider = urlProvider,
-                                    showProductInfo = showProductInfo,
-                                    selectedProduct = selectedProduct,
-                                    onItemClick = { item ->
-                                        selectedProduct.value = item
-                                        showProductInfo.value = true
                                     },
                                     onMoreClick = {
                                         nav.pushEasyMart(
@@ -764,17 +735,25 @@ object CategoryShoppingScreen : Screen {
         onSeeAllClick: (() -> Unit)? = null,
         onItemClick: (T) -> Unit
     ) {
-        Column(modifier = Modifier.padding(horizontal = 12.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp
-                ),
-                modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp)
-            )
+        if (items.isEmpty()) return
 
-            val chunks = remember(items) { items.chunked(3) }
+        Column(modifier = Modifier.padding(horizontal = 12.dp)) {
+            if (title.isNotEmpty()) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp
+                    ),
+                    modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp)
+                )
+            }
+
+            var isExpanded by remember { mutableStateOf(false) }
+            val maxItems = 9
+            val displayedItems = if (isExpanded || items.size <= maxItems) items else items.take(maxItems)
+
+            val chunks = remember(displayedItems) { displayedItems.chunked(3) }
             chunks.forEach { rowItems ->
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -796,7 +775,22 @@ object CategoryShoppingScreen : Screen {
                 }
             }
 
-            if (onSeeAllClick != null) {
+            if (items.size > maxItems) {
+                Spacer(modifier = Modifier.height(4.dp))
+                TextButton(
+                    onClick = { isExpanded = !isExpanded },
+                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 8.dp)
+                ) {
+                    Text(
+                        text = if (isExpanded) "Show Less" else "Show More",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            color = Color(0xFF004D40),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    )
+                }
+            } else if (onSeeAllClick != null) {
                 Spacer(modifier = Modifier.height(4.dp))
                 TextButton(
                     onClick = onSeeAllClick,
@@ -842,7 +836,7 @@ object CategoryShoppingScreen : Screen {
         onSubcategoryClick: (GetAllSubCategories) -> Unit
     ) {
         GenericGrid(
-            items = subcategories.take(9),
+            items = subcategories,
             title = title,
             getName = { it.CatName },
             getImageUrl = { "" },
@@ -861,7 +855,7 @@ object CategoryShoppingScreen : Screen {
         onBrandClick: (GetBrandsForDis) -> Unit
     ) {
         GenericGrid(
-            items = brands.take(9),
+            items = brands,
             title = title,
             getName = { it.Name.orEmpty() },
             getImageUrl = { "" },
@@ -930,6 +924,8 @@ object CategoryShoppingScreen : Screen {
     private fun CategoryProductSection(
         category: ProductCategoriesForDis,
         products: List<GetProductsForDis>,
+        categorySubcategories: List<GetAllSubCategories> = emptyList(),
+        categoryBrands: List<GetBrandsForDis> = emptyList(),
         cartViewModel: CartViewModel,
         wishlistViewModel: WishlistViewModel,
         isTwoPerRow: Boolean,
@@ -945,9 +941,11 @@ object CategoryShoppingScreen : Screen {
         showProductInfo: MutableState<Boolean>,
         selectedProduct: MutableState<GetProductsForDis?>,
         onItemClick: (GetProductsForDis) -> Unit,
+        onSubcategoryClick: (GetAllSubCategories) -> Unit = {},
+        onBrandClick: (GetBrandsForDis) -> Unit = {},
         onMoreClick: () -> Unit
     ) {
-        if (products.isEmpty() && categorySliders.isEmpty() && categoryBanners.isEmpty() && categoryFeatures.isEmpty()) return
+        if (products.isEmpty() && categorySliders.isEmpty() && categoryBanners.isEmpty() && categoryFeatures.isEmpty() && categorySubcategories.isEmpty() && categoryBrands.isEmpty()) return
 
         Column(
             modifier = Modifier
@@ -1038,7 +1036,7 @@ object CategoryShoppingScreen : Screen {
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
-            } else if (products.isNotEmpty() || categoryFeatures.isNotEmpty()) {
+            } else if (products.isNotEmpty() || categoryFeatures.isNotEmpty() || categorySubcategories.isNotEmpty() || categoryBrands.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
@@ -1068,6 +1066,40 @@ object CategoryShoppingScreen : Screen {
                         }
                     }
                 }
+            }
+
+            if (categorySubcategories.isNotEmpty()) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    color = Color(0xFFF4ECF7), // Soft Pastel Lavender
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    SubcategoriesGrid(
+                        subcategories = categorySubcategories,
+                        title = "Subcategories",
+                        onSubcategoryClick = onSubcategoryClick
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (categoryBrands.isNotEmpty()) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    color = Color(0xFFEBF3FE), // Soft Pastel Sky Blue
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    BrandsGrid(
+                        brands = categoryBrands,
+                        title = "Brands",
+                        onBrandClick = onBrandClick
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
             if (products.isNotEmpty()) {
