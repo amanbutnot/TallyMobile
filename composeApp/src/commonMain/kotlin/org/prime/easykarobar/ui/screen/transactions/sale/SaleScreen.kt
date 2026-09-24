@@ -1855,7 +1855,7 @@ data class SaleScreen(
 
                             }
 
-                            if ((SharedPrefs.User.get()?.ID.toString()) == "10371") {
+                            if ((SharedPrefs.User.get()?.ID.toString()) == "10371"  || SharedPrefs.User.get()?.ID.toString() == "10154") {
                                 SalesmanSelectionSection(
                                     showSalesmanDetails = showSalesmanDetails,
                                     onShowChange = { showSalesmanDetails = it },
