@@ -1,0 +1,16 @@
+CREATE TABLE SalesManMaster (
+    Code INTEGER,
+    Name TEXT,
+    MobileNo TEXT,
+    GUID REAL
+);
+
+selectAll:
+SELECT * FROM SalesManMaster ORDER BY Name;
+
+insertSalesman:
+INSERT OR REPLACE INTO SalesManMaster (Code, Name, MobileNo, GUID)
+VALUES (?, ?, ?, ?);
+
+deleteAll:
+DELETE FROM SalesManMaster;

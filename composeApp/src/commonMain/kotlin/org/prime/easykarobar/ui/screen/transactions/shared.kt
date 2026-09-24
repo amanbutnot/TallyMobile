@@ -1076,7 +1076,7 @@ fun SalesmanSelectionSection(
     ) {
         val salesmenFromDb = remember {
             try {
-                db.salesman_master1Queries.selectAll().executeAsList()
+                db.salesManMasterQueries.selectAll().executeAsList()
             } catch (e: Exception) {
                 emptyList()
             }
@@ -1094,9 +1094,9 @@ fun SalesmanSelectionSection(
         val options = remember(salesmenFromDb, targetSalesmen) {
             val map = mutableMapOf<String, String>()
             salesmenFromDb.forEach { s ->
-                val n = s.name
+                val n = s.Name
                 if (!n.isNullOrBlank()) {
-                    map[n] = s.guid?.let { g -> if (g % 1.0 == 0.0) g.toLong().toString() else g.toString() } ?: ""
+                    map[n] = s.GUID?.let { g -> if (g % 1.0 == 0.0) g.toLong().toString() else g.toString() } ?: ""
                 }
             }
             targetSalesmen.forEach { name ->

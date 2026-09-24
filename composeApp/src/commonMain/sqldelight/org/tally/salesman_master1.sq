@@ -1,14 +1,1 @@
-CREATE TABLE salesman_master1 (
-    guid REAL,
-    name TEXT
-);
-
-selectAll:
-SELECT * FROM salesman_master1 ORDER BY name;
-
-insertSalesman:
-INSERT OR REPLACE INTO salesman_master1 (guid, name)
-VALUES (?, ?);
-
-deleteAll:
-DELETE FROM salesman_master1;
+-- Replaced by SalesManMaster.sq

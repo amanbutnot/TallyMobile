@@ -315,11 +315,13 @@ actual class DriverFactory {
 
             ensureTable(
                 driver = driver,
-                tableName = "salesman_master1",
+                tableName = "SalesManMaster",
                 createTableSql = """
-                    CREATE TABLE IF NOT EXISTS salesman_master1 (
-                        guid REAL,
-                        name TEXT
+                    CREATE TABLE IF NOT EXISTS SalesManMaster (
+                        Code INTEGER,
+                        Name TEXT,
+                        MobileNo TEXT,
+                        GUID REAL
                     );
                 """.trimIndent()
             )
