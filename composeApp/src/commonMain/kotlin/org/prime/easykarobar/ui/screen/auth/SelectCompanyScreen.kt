@@ -51,6 +51,7 @@ import org.prime.easykarobar.business.viewmodel.AuthViewModel
 import org.prime.easykarobar.data.expect.getDeviceId
 import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.LoginRequest
+import org.prime.easykarobar.data.utils.MOBILE_VERSION
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.startup.GoogleDriveDownloadScreen
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
@@ -117,7 +118,7 @@ data class SelectCompanyScreen(
                                             Password = passwd,
                                             CompanyID = company.CompanyID, 
                                             DeviceId = deviceId,
-                                            RegisteredNumber = if (SharedPrefs.IsEasyMart.get()) BuildKonfig.REGISTERED_NUMBER else null
+                                            RegisteredNumber = if (SharedPrefs.IsEasyMart.get()) BuildKonfig.REGISTERED_NUMBER else null, mobile_version = MOBILE_VERSION.toString()
                                         ),
                                         onSuccess = {
 

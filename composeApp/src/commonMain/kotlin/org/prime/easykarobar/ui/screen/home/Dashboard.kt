@@ -54,6 +54,7 @@ import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.getDeviceId
 import org.prime.easykarobar.data.model.LoginRequest
+import org.prime.easykarobar.data.utils.MOBILE_VERSION
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.SelectCompanyScreen
 import org.prime.easykarobar.ui.screen.distributor.order.CartScreen
@@ -144,7 +145,7 @@ object Dashboard : Screen {
                                             LoginRequest(
                                                 Username = loginData?.username ?: "",
                                                 Password = loginData?.password ?: "",
-                                                DeviceId = deviceId
+                                                DeviceId = deviceId, mobile_version = MOBILE_VERSION.toString()
                                             ),
                                             onSuccess = {
                                                 nav.push(

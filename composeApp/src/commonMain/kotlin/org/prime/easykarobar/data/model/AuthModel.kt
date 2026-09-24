@@ -11,7 +11,8 @@ data class LoginRequest(
     val Password: String,
     val DeviceId: String,
     val CompanyID: Int? = null,
-    val RegisteredNumber: String? = null
+    val RegisteredNumber: String? = null,
+    val mobile_version:String
 )
 
 @Serializable

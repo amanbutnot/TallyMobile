@@ -42,6 +42,7 @@ import org.prime.easykarobar.business.viewmodel.AuthViewModel
 import org.prime.easykarobar.data.expect.getDeviceId
 import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.LoginRequest
+import org.prime.easykarobar.data.utils.MOBILE_VERSION
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.easymart.EasyMartScreen
 import org.prime.easykarobar.ui.screen.startup.GoogleDriveDownloadScreen
@@ -189,7 +190,7 @@ object LoginScreen : Screen {
                                 viewModel.userLogin(
                                     LoginRequest(
                                         Username = email,
-                                        Password = password, DeviceId = deviceId
+                                        Password = password, DeviceId = deviceId, mobile_version = MOBILE_VERSION.toString()
                                     ),
                                     onSuccess = {
                                         SharedPrefs.LoginData.save(

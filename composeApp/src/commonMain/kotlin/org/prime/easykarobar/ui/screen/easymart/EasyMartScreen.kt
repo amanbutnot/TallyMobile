@@ -62,6 +62,7 @@ import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.getDeviceId
 import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.LoginRequest
+import org.prime.easykarobar.data.utils.MOBILE_VERSION
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.SelectCompanyScreen
 import org.prime.easykarobar.ui.screen.auth.VerifyOtpScreen
@@ -97,7 +98,7 @@ object EasyMartScreen : Screen {
                     Password = BuildKonfig.PASSWORD,
                     DeviceId = deviceId,
                     CompanyID = BuildKonfig.STORE_ID.toIntOrNull() ?: 0,
-                    RegisteredNumber = BuildKonfig.REGISTERED_NUMBER
+                    RegisteredNumber = BuildKonfig.REGISTERED_NUMBER, mobile_version = MOBILE_VERSION.toString()
                 ),
                 onSuccess = {
                     SharedPrefs.LoginData.save(
