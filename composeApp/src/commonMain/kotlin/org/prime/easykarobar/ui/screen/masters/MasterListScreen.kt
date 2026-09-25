@@ -72,6 +72,31 @@ import org.tally.ProductGroupMaster
 import org.tally.ProductUnitMaster
 import org.tally.Products
 
+import io.ktor.client.request.forms.submitFormWithBinaryData
+import io.ktor.client.request.forms.formData
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import org.prime.easykarobar.data.utils.KtorClient
+import org.prime.easykarobar.BuildKonfig
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.readBytes
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.FileKitMode
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.FileKitCameraType
+import io.github.vinceglb.filekit.dialogs.FileKitCameraFacing
+import io.github.vinceglb.filekit.dialogs.openCameraPicker
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
+import androidx.compose.ui.graphics.Color
+import com.mohamedrejeb.calf.permissions.ExperimentalPermissionsApi
+import com.mohamedrejeb.calf.permissions.Permission
+import com.mohamedrejeb.calf.permissions.isGranted
+import com.mohamedrejeb.calf.permissions.rememberPermissionState
+
 data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -216,7 +241,7 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
                             }
                             println(item)
                             MasterListItem(index = index + 1, name = name, parentName = parent) {
-                                if (item is LedgerMaster || item is Products) {
+                                if (item is LedgerMaster || item is Products || (item is String && masterEnum == MasterEnums.SUBCATEGORIES) || item is GetAllBrands) {
                                     selectedItem.value = item
                                     showBottomSheet.value = true
                                 }
@@ -373,6 +398,26 @@ private fun BottomSheetContent(item: Any) {
                         modifier = Modifier.padding(bottom = 20.dp)
                     )
                 }
+                
+                is String -> {
+                    Text(
+                        text = "Subcategory Details",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(bottom = 20.dp)
+                    )
+                }
+                
+                is GetAllBrands -> {
+                    Text(
+                        text = "Brand Details",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(bottom = 20.dp)
+                    )
+                }
             }
         }
 
@@ -453,7 +498,28 @@ private fun BottomSheetContent(item: Any) {
                 item.MinSalesPrice?.let {
                     item { SheetRow(label = "Min Sales Price", value = it.formatToAmtDec()) }
                 }
-
+            }
+            
+            is String -> {
+                item {
+                    SectionHeader("Basic Information")
+                }
+                item { SheetRow(label = "Subcategory Name", value = item, isHighlighted = true) }
+                item {
+                    ImageUploadComponent(itemName = item, itemType = "Subcategory")
+                }
+            }
+            
+            is GetAllBrands -> {
+                item {
+                    SectionHeader("Basic Information")
+                }
+                item.Name?.let {
+                    item { SheetRow(label = "Brand Name", value = it, isHighlighted = true) }
+                }
+                item {
+                    ImageUploadComponent(itemName = item.Name ?: "", itemType = "Brand")
+                }
             }
         }
     }
@@ -533,5 +599,121 @@ private fun SheetRow(
                 modifier = Modifier.weight(2f)
             )
         }
+    }
+}
+
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+private fun ImageUploadComponent(itemName: String, itemType: String) {
+    val coroutineScope = rememberCoroutineScope()
+    var isUploading by remember { mutableStateOf(false) }
+    var uploadSuccess by remember { mutableStateOf<Boolean?>(null) }
+    
+    val cameraPermission = rememberPermissionState(Permission.Camera)
+    
+    val galleryLauncher = rememberFilePickerLauncher(
+        type = FileKitType.Image,
+        mode = FileKitMode.Single,
+        title = "Select Image"
+    ) { file: PlatformFile? ->
+        if (file != null) {
+            isUploading = true
+            coroutineScope.launch {
+                try {
+                    val bytes = file.readBytes()
+                    val folderName = if (itemType == "Brand") "Brands" else "ProductCategory"
+                    val success = uploadImage(bytes, itemName, folderName)
+                    uploadSuccess = success
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    uploadSuccess = false
+                } finally {
+                    isUploading = false
+                }
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (isUploading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Uploading image...")
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Button(onClick = { galleryLauncher.launch() }) {
+                    Text("From Gallery")
+                }
+                
+                Button(onClick = {
+                    if (cameraPermission.status.isGranted) {
+                        coroutineScope.launch {
+                            try {
+                                val file = FileKit.openCameraPicker(
+                                    type = FileKitCameraType.Photo,
+                                    cameraFacing = FileKitCameraFacing.Back
+                                )
+                                if (file != null) {
+                                    isUploading = true
+                                    val bytes = file.readBytes()
+                                    val folderName = if (itemType == "Brand") "Brands" else "ProductCategory"
+                                    val success = uploadImage(bytes, itemName, folderName)
+                                    uploadSuccess = success
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                uploadSuccess = false
+                            } finally {
+                                isUploading = false
+                            }
+                        }
+                    } else {
+                        cameraPermission.launchPermissionRequest()
+                    }
+                }) {
+                    Text("Open Camera")
+                }
+            }
+        }
+        
+        if (uploadSuccess != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = if (uploadSuccess == true) "Upload Successful!" else "Upload Failed. Try again.",
+                color = if (uploadSuccess == true) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+suspend fun uploadImage(fileBytes: ByteArray, itemName: String, folderName: String): Boolean {
+    return try {
+        val fileName = "${itemName.replace(" ", "_")}.jpg"
+        val response = KtorClient.client.submitFormWithBinaryData(
+            url = "https://easykarobar.in/Tokens/upload-base64-r2.php",
+            formData = formData {
+                append("folderName", folderName)
+                append("fileName", fileName)
+                append("storeId", BuildKonfig.STORE_ID)
+                append("image", fileBytes, Headers.build {
+                    append(HttpHeaders.ContentType, "image/jpeg")
+                    append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                })
+            }
+        )
+        response.status.value in 200..299
+    } catch (e: Exception) {
+        e.printStackTrace()
+        false
     }
 }
