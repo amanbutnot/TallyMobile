@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Groups2
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.ManageAccounts
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Warehouse
 import androidx.compose.material3.Card
@@ -48,6 +49,7 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.prime.easykarobar.data.enums.MasterEnums
 import org.prime.easykarobar.data.model.salesmanPermission
+import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.masters.MasterListScreen
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 
@@ -167,6 +169,24 @@ object MastersTab : Tab {
                     )
                 }
 
+            }
+
+            if (SharedPrefs.User.get()?.ID?.toString() == "10154" || SharedPrefs.User.get()?.ID?.toString() == "10335") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    MasterButton(
+                        Icons.Default.Category, "Subcategories", modifier = Modifier.weight(1f)
+                    ) {
+                        nav?.push(MasterListScreen(MasterEnums.SUBCATEGORIES))
+                    }
+                    MasterButton(
+                        Icons.Default.Star, "Brands", modifier = Modifier.weight(1f)
+                    ) {
+                        nav?.push(MasterListScreen(MasterEnums.BRANDS))
+                    }
+                }
             }
 
             if (showDeniedDialog) {

@@ -57,19 +57,20 @@ import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.agrpGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
+import org.tally.GetAllBrands
 import org.tally.GodownMaster
 import org.tally.LedgerGroupMaster
 import org.tally.LedgerMaster
 import org.tally.ProductGroupMaster
 import org.tally.ProductUnitMaster
 import org.tally.Products
-import org.prime.easykarobar.ui.shared.composables.smartSearch
 
 data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -113,6 +114,11 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
 
                 MasterEnums.ITEM_UNIT -> db.productUnitMasterQueries.selectAll().executeAsList()
                 MasterEnums.MATERIAL_CENTER -> db.godownMasterQueries.selectAll().executeAsList()
+                MasterEnums.SUBCATEGORIES -> db.product_CategoryQueries.getCatNamesByGroup(null)
+                    .executeAsList().filterNotNull()
+
+                MasterEnums.BRANDS -> db.productsQueries.getAllBrands().executeAsList()
+                    .filterNotNull()
             }
         }
         println("list in account groups are: ${allItems.value}")
@@ -203,7 +209,12 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                     ) {
                         itemsIndexed(filteredItems) { index, item ->
-                            val (name, parent) = getMasterItemData(item)
+                            val (name, parent) = if (masterEnum == MasterEnums.BRANDS) {
+                                (item as GetAllBrands).Name to ""
+                            } else {
+                                getMasterItemData(item)
+                            }
+                            println(item)
                             MasterListItem(index = index + 1, name = name, parentName = parent) {
                                 if (item is LedgerMaster || item is Products) {
                                     selectedItem.value = item
@@ -327,6 +338,7 @@ private fun getMasterItemData(item: Any): Pair<String?, String?> {
         is ProductGroupMaster -> item.Name to item.GroupName
         is ProductUnitMaster -> item.Name to null
         is GodownMaster -> item.Name to null
+        is String -> item to null
         else -> null to null
     }
 }
