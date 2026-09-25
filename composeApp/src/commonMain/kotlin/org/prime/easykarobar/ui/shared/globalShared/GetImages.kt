@@ -18,3 +18,7 @@ fun String.toValidUrl(): String {
         else -> "https://$value"
     }
 }
+
+fun getBrandImage(storeId: String, brandName: String): String {
+    return "https://easykarobar.in/assets/brands/${storeId}_${brandName.replace(" ", "_")}.webp"
+}

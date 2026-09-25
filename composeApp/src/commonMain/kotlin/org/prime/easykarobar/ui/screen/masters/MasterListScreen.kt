@@ -96,6 +96,14 @@ import com.mohamedrejeb.calf.permissions.ExperimentalPermissionsApi
 import com.mohamedrejeb.calf.permissions.Permission
 import com.mohamedrejeb.calf.permissions.isGranted
 import com.mohamedrejeb.calf.permissions.rememberPermissionState
+import coil3.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import org.prime.easykarobar.ui.shared.globalShared.getCategoryImage
+import org.prime.easykarobar.ui.shared.globalShared.getBrandImage
+import org.prime.easykarobar.data.utils.SharedPrefs
+import tallymobile.composeapp.generated.resources.Res
+import tallymobile.composeapp.generated.resources.category_placeholder
+import org.jetbrains.compose.resources.painterResource
 
 data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -505,6 +513,30 @@ private fun BottomSheetContent(item: Any) {
                     SectionHeader("Basic Information")
                 }
                 item { SheetRow(label = "Subcategory Name", value = item, isHighlighted = true) }
+                
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val storeId = SharedPrefs.User.get()?.ID.toString()
+                        val imageUrl = getCategoryImage(storeId, item)
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = "Subcategory Image",
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.LightGray.copy(alpha = 0.2f)),
+                            contentScale = ContentScale.Crop,
+                            fallback = painterResource(Res.drawable.category_placeholder),
+                            error = painterResource(Res.drawable.category_placeholder)
+                        )
+                    }
+                }
+                
                 item {
                     ImageUploadComponent(itemName = item, itemType = "Subcategory")
                 }
@@ -517,6 +549,30 @@ private fun BottomSheetContent(item: Any) {
                 item.Name?.let {
                     item { SheetRow(label = "Brand Name", value = it, isHighlighted = true) }
                 }
+                
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val storeId = SharedPrefs.User.get()?.ID.toString()
+                        val imageUrl = getBrandImage(storeId, item.Name ?: "")
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = "Brand Image",
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.LightGray.copy(alpha = 0.2f)),
+                            contentScale = ContentScale.Crop,
+                            fallback = painterResource(Res.drawable.category_placeholder),
+                            error = painterResource(Res.drawable.category_placeholder)
+                        )
+                    }
+                }
+                
                 item {
                     ImageUploadComponent(itemName = item.Name ?: "", itemType = "Brand")
                 }
