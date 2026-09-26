@@ -1621,7 +1621,7 @@ data class SaleScreen(
                                     }
                                 }
                             }
-                            if (currentUserId != "10371" || SaleOrderConfig.showAddItemInSaleOrder(vchType)) {
+                            if (SaleOrderConfig.showAddItemInSaleOrder(vchType)) {
                                 SectionCard(
                                     title = if (isBusy()) "SUNDRIES" else "Ledgers",
                                     count = selectedSundries.size,
