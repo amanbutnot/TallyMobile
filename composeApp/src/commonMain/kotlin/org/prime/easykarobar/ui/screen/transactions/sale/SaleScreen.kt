@@ -481,9 +481,11 @@ data class SaleScreen(
         var pincode by remember { mutableStateOf("") }
         var demoBarcodeName by remember { mutableStateOf("") }
         var gstRrDate by remember { mutableStateOf(CurrentDate()) }
-        var showSalesmanDetails by remember { mutableStateOf(false) }
+        val currentUserId = SharedPrefs.User.get()?.ID?.toString()
+        var showSalesmanDetails by remember { mutableStateOf(currentUserId == "10154") }
         var salesmanName by remember { mutableStateOf("") }
         var salesmanGuid by remember { mutableStateOf("") }
+        var showSalesmanErrorAlert by remember { mutableStateOf(false) }
         var SshowShippingDetails by remember { mutableStateOf(false) }
         var SbillingShipping by remember { mutableStateOf(false) }
         var SselectedBilling by remember { mutableStateOf("") }
@@ -959,7 +961,7 @@ data class SaleScreen(
                 SbillingShipping = data.other_info?.SbillingShipping ?: false
                 salesmanName = data.other_info?.salesmanName ?: ""
                 salesmanGuid = data.other_info?.salesmanGuid ?: ""
-                if (salesmanName.isNotEmpty() || salesmanGuid.isNotEmpty()) {
+                if (salesmanName.isNotEmpty() || salesmanGuid.isNotEmpty() || currentUserId == "10154") {
                     showSalesmanDetails = true
                 }
                 data.bills_collection?.let {
@@ -1204,6 +1206,7 @@ data class SaleScreen(
 
                             SectionCard(
                                 title = "ITEMS", count = selectedItems.size, headerAction = {
+                                    if (SaleOrderConfig.showAddItemInSaleOrder(vchType)) {
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = Alignment.CenterVertically
@@ -1230,7 +1233,7 @@ data class SaleScreen(
                                             ),
                                             border = null
                                         )
-                                        if (SaleOrderConfig.showAddItemInSaleOrder(vchType)) {
+
                                             AssistChip(
                                                 onClick = { showItemSheet = true },
                                                 enabled = editingItem == null,
@@ -1616,74 +1619,74 @@ data class SaleScreen(
                                     }
                                 }
                             }
+                            if (SaleOrderConfig.showAddItemInSaleOrder(vchType)) {
+                                SectionCard(
+                                    title = if (isBusy()) "SUNDRIES" else "Ledgers",
+                                    count = selectedSundries.size,
+                                    headerAction = {}) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        var cumulativeTotal = itemsTotal
 
-                            SectionCard(
-                                title = if (isBusy()) "SUNDRIES" else "Ledgers",
-                                count = selectedSundries.size,
-                                headerAction = {}) {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    var cumulativeTotal = itemsTotal
+                                        selectedSundries.forEachIndexed { index, sundry ->
+                                            SundryCard(
+                                                index = index,
+                                                sundry = sundry,
+                                                runningTotal = cumulativeTotal,
+                                                onAmountChange = { newAmount, rate, srno, valueToBeSent ->
+                                                    selectedSundries =
+                                                        selectedSundries.mapIndexed { i, it ->
+                                                            if (i == index) it.copy(
+                                                                amount = newAmount,
+                                                                rate = rate,
+                                                                srno = srno,
+                                                                percentValue = valueToBeSent
+                                                            ) else it
+                                                        }
+                                                },
+                                                onRemove = {
+                                                    selectedSundries = selectedSundries - sundry
+                                                },
+                                                shouldFocus = sundry.guid == focusedSundryGuid,
+                                                onFocusConsumed = { focusedSundryGuid = null },
+                                            )
 
-                                    selectedSundries.forEachIndexed { index, sundry ->
-                                        SundryCard(
-                                            index = index,
-                                            sundry = sundry,
-                                            runningTotal = cumulativeTotal,
-                                            onAmountChange = { newAmount, rate, srno, valueToBeSent ->
-                                                selectedSundries =
-                                                    selectedSundries.mapIndexed { i, it ->
-                                                        if (i == index) it.copy(
-                                                            amount = newAmount,
-                                                            rate = rate,
-                                                            srno = srno,
-                                                            percentValue = valueToBeSent
-                                                        ) else it
-                                                    }
-                                            },
-                                            onRemove = {
-                                                selectedSundries = selectedSundries - sundry
-                                            },
-                                            shouldFocus = sundry.guid == focusedSundryGuid,
-                                            onFocusConsumed = { focusedSundryGuid = null },
-                                        )
-
-                                        val sundryValue = if (sundry.i2 == 1) {
-                                            cumulativeTotal * (sundry.amount / 100.0)
-                                        } else {
-                                            sundry.amount
-                                        }
-
-                                        cumulativeTotal = if (isBusy()) {
-                                            when (sundry.i1) {
-                                                0 -> cumulativeTotal - sundryValue
-                                                1 -> cumulativeTotal + sundryValue
-                                                else -> cumulativeTotal + sundryValue
+                                            val sundryValue = if (sundry.i2 == 1) {
+                                                cumulativeTotal * (sundry.amount / 100.0)
+                                            } else {
+                                                sundry.amount
                                             }
-                                        } else {
-                                            cumulativeTotal + sundryValue
+
+                                            cumulativeTotal = if (isBusy()) {
+                                                when (sundry.i1) {
+                                                    0 -> cumulativeTotal - sundryValue
+                                                    1 -> cumulativeTotal + sundryValue
+                                                    else -> cumulativeTotal + sundryValue
+                                                }
+                                            } else {
+                                                cumulativeTotal + sundryValue
+                                            }
                                         }
-                                    }
 
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.Center,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        SmallAddButton(
-                                            label = if (isBusy()) "Add More Sundry" else "Add More Ledger",
-                                            enabled = selectedItems.isNotEmpty()
-
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            showSundrySheet = true
-                                        }
-                                    }
+                                            SmallAddButton(
+                                                label = if (isBusy()) "Add More Sundry" else "Add More Ledger",
+                                                enabled = selectedItems.isNotEmpty()
 
-                                    if (selectedSundries.isNotEmpty()) {
-                                        SubtotalRow("Subtotal", sundriesTotal)
+                                            ) {
+                                                showSundrySheet = true
+                                            }
+                                        }
+
+                                        if (selectedSundries.isNotEmpty()) {
+                                            SubtotalRow("Subtotal", sundriesTotal)
+                                        }
                                     }
                                 }
                             }
-
                             ElevatedCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.elevatedCardColors(
@@ -2491,6 +2494,10 @@ data class SaleScreen(
                         }
 
                         fun createO() {
+                            if (currentUserId == "10154" && (salesmanName.isBlank() || salesmanGuid.isBlank() || !showSalesmanDetails)) {
+                                showSalesmanErrorAlert = true
+                                return
+                            }
                             val billingItems = selectedItems.map { item ->
                                 val prod = itemsList.find { it.Name == item.name }
                                 BillingItem(
@@ -2683,7 +2690,9 @@ data class SaleScreen(
 
                         TallyButton(
                             onClick = {
-                                if (grandTotal < 0.0) {
+                                if (currentUserId == "10154" && (salesmanName.isBlank() || salesmanGuid.isBlank() || !showSalesmanDetails)) {
+                                    showSalesmanErrorAlert = true
+                                } else if (grandTotal < 0.0) {
                                     showWarningMessage = true
                                 } else {
                                     createO()
@@ -2727,6 +2736,20 @@ data class SaleScreen(
                                 },
                                 onCancel = { showWarningMessage = false },
                                 onDismiss = { showWarningMessage = false },
+                            )
+                        }
+
+                        if (showSalesmanErrorAlert) {
+                            TallyAlertBox(
+                                title = "Salesman Required",
+                                message = "Please select salesman details to proceed.",
+                                confirmButtonText = "OK",
+                                onConfirm = {
+                                    showSalesmanErrorAlert = false
+                                    showSalesmanDetails = true
+                                },
+                                onCancel = { showSalesmanErrorAlert = false },
+                                onDismiss = { showSalesmanErrorAlert = false },
                             )
                         }
                     }
