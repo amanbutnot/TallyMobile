@@ -198,21 +198,21 @@ fun TransactionBottomSheet(
     itemContent: @Composable ((String) -> Unit)? = null
 )
 {
+    if (!showBottomSheet) return
+
     var query by remember(showBottomSheet) { mutableStateOf("") }
 
 
     val filteredList = remember(list, query) {
-        smartSearch(
+        if (query.isBlank()) list
+        else smartSearch(
             list = list,
             query = query,
             selectors = listOf { it.first }
         )
     }
 
-
-
-    if (showBottomSheet) {
-        ModalBottomSheet(
+    ModalBottomSheet(
             onDismissRequest = { onDismiss() },
             sheetState = bottomSheetState,
             dragHandle = null,
@@ -355,7 +355,6 @@ fun TransactionBottomSheet(
             }
         }
     }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -369,21 +368,21 @@ fun TransactionBottomSheetThree(
     itemContent: @Composable ((String) -> Unit)? = null
 )
 {
+    if (!showBottomSheet) return
+
     var query by remember(showBottomSheet) { mutableStateOf("") }
 
 
     val filteredList = remember(list, query) {
-        smartSearch(
+        if (query.isBlank()) list
+        else smartSearch(
             list = list,
             query = query,
             selectors = listOf { it.first }
         )
     }
 
-
-
-    if (showBottomSheet) {
-        ModalBottomSheet(
+    ModalBottomSheet(
             onDismissRequest = { onDismiss() },
             sheetState = bottomSheetState,
             dragHandle = null,
@@ -525,7 +524,6 @@ fun TransactionBottomSheetThree(
             }
         }
     }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -539,21 +537,21 @@ fun TransactionOneBottomSheet(
     itemContent: @Composable ((String) -> Unit)? = null
 )
 {
+    if (!showBottomSheet) return
+
     var query by remember(showBottomSheet) { mutableStateOf("") }
 
 
     val filteredList = remember(list, query) {
-        smartSearch(
+        if (query.isBlank()) list
+        else smartSearch(
             list = list,
             query = query,
             selectors = listOf { it }
         )
     }
 
-
-
-    if (showBottomSheet) {
-        ModalBottomSheet(
+    ModalBottomSheet(
             onDismissRequest = { onDismiss() },
             sheetState = bottomSheetState,
             dragHandle = null,
@@ -695,7 +693,6 @@ fun TransactionOneBottomSheet(
             }
         }
     }
-}
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -709,18 +706,20 @@ fun TransactionLedgerBottomSheet(
     title: String = "Select Account",
     itemContent: @Composable ((LedgerMaster) -> Unit)? = null
 ) {
+    if (!showBottomSheet) return
+
     var query by remember(showBottomSheet) { mutableStateOf("") }
 
     val filteredList = remember(list, query) {
-        smartSearch(
+        if (query.isBlank()) list
+        else smartSearch(
             list = list,
             query = query,
             selectors = listOf { it.Name }
         )
     }
 
-    if (showBottomSheet) {
-        ModalBottomSheet(
+    ModalBottomSheet(
             onDismissRequest = { onDismiss() },
             sheetState = bottomSheetState,
             dragHandle = null,
@@ -862,7 +861,6 @@ fun TransactionLedgerBottomSheet(
             }
         }
     }
-}
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -876,18 +874,20 @@ fun TransactionSundryBottomSheet(
     title: String = "Select Account",
     itemContent: @Composable ((SundryItem) -> Unit)? = null
 ) {
+    if (!showBottomSheet) return
+
     var query by remember(showBottomSheet) { mutableStateOf("") }
 
     val filteredList = remember(list, query) {
-        smartSearch(
+        if (query.isBlank()) list
+        else smartSearch(
             list = list,
             query = query,
             selectors = listOf { it.name }
         )
     }
 
-    if (showBottomSheet) {
-        ModalBottomSheet(
+    ModalBottomSheet(
             onDismissRequest = { onDismiss() },
             sheetState = bottomSheetState,
             dragHandle = null,
@@ -1029,7 +1029,6 @@ fun TransactionSundryBottomSheet(
             }
         }
     }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -140,52 +140,27 @@ fun getLedgerMasters(db: TallyDatabase): List<LedgerMaster> {
     }
 }
 
-
 fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<ProductsWithConfig> {
     val perms = SharedPrefs.Permissions.get()
     val filterIGRP = perms?.FilterIGRP == "Y"
     val filterItems = perms?.FilterItems == "Y"
     val showZeroGroup = if (SharedPrefs.ShowZeroStock.get() == false) 1L else 0L
     val itemConfig = when (vchType) {
-
-        9, 3, 12, 26 -> {
-            SaleItemConfig()
-        }
-
-        13, 10, 2, 27 -> {
-            PurItemConfig()
-        }
-
-        else -> {
-            ""
-        }
+        9, 3, 12, 26 -> SaleItemConfig()
+        13, 10, 2, 27 -> PurItemConfig()
+        else -> ""
     }
 
-    println("ITEM CONFIG: $itemConfig")
-
-    val result = when {
-
+    return when {
         perms == null -> {
-            println("QUERY BRANCH: permissions == null")
-            println("QUERY: selectAllConfig")
-            println("PARAM applyN1Filter: $showZeroGroup")
-            println("PARAM compConfigFilter: $itemConfig")
-
             db.productsQueries.selectAllConfig(
                 applyN1Filter = showZeroGroup,
                 compConfigFilter = itemConfig,
                 mapper = ::mapToProductsWithConfig
             ).executeAsList()
         }
-
-        // Both filters active
         filterIGRP && filterItems -> {
-            println("QUERY BRANCH: BOTH FILTERS ACTIVE")
-
             val excludeGuids = perms.ConfigItems.parseToStringList()
-
-
-
             db.productsQueries.selectAllFilterAGRPConfig(
                 compConfigFilter = itemConfig,
                 GroupCode = filterItemGroupCodes(),
@@ -194,11 +169,8 @@ fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<ProductsWithConf
                 mapper = ::mapToProductsWithConfig
             ).executeAsList()
         }
-
-        // Only GroupCode filter
         filterIGRP -> {
             val groupCodes = filterItemGroupCodes()
-
             db.productsQueries.selectByGroupCodeConfig(
                 compConfigFilter = itemConfig,
                 GroupCode = groupCodes,
@@ -206,8 +178,6 @@ fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<ProductsWithConf
                 mapper = ::mapToProductsWithConfig
             ).executeAsList()
         }
-
-        // Only GUID exclusion
         filterItems -> {
             val excludeGuids = perms.ConfigItems.parseToStringList()
             db.productsQueries.selectExcludingGuidConfig(
@@ -217,8 +187,6 @@ fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<ProductsWithConf
                 mapper = ::mapToProductsWithConfig
             ).executeAsList()
         }
-
-        // No filters
         else -> {
             db.productsQueries.selectAllConfig(
                 applyN1Filter = showZeroGroup,
@@ -227,53 +195,37 @@ fun getConfigItemMasters(db: TallyDatabase, vchType: Int): List<ProductsWithConf
             ).executeAsList()
         }
     }
-    return result
 }
 
 fun getItemMasters(db: TallyDatabase): List<Products> {
     val perms = SharedPrefs.Permissions.get()
     val filterIGRP = perms?.FilterIGRP == "Y"
     val filterItems = perms?.FilterItems == "Y"
-    val showZeroGroup = if(SharedPrefs.ShowZeroStock.get() == false)1L else 0L
-
-    println(filterItems)
-    println(filterIGRP)
+    val showZeroGroup = if (SharedPrefs.ShowZeroStock.get() == false) 1L else 0L
 
     return when {
         perms == null -> {
-            db.productsQueries.selectAll(
-                applyN1Filter = showZeroGroup
-            )
-                .executeAsList()
+            db.productsQueries.selectAll(applyN1Filter = showZeroGroup).executeAsList()
         }
-        // Both filters active
         filterIGRP && filterItems -> {
             val excludeGuids = perms.ConfigItems.parseToStringList()
             db.productsQueries.selectAllFilterAGRP(filterItemGroupCodes(), excludeGuids, applyN1Filter = showZeroGroup)
                 .executeAsList()
         }
-
-        // Only GroupCode filter
         filterIGRP -> {
             db.productsQueries.selectByGroupCode(filterItemGroupCodes(), applyN1Filter = showZeroGroup)
                 .executeAsList()
         }
-
-        // Only GUID exclusion
         filterItems -> {
             val excludeGuids = perms.ConfigItems.parseToStringList()
             db.productsQueries.selectExcludingGuid(excludeGuids, applyN1Filter = showZeroGroup)
                 .executeAsList()
         }
-
-        // No filters
         else -> {
-            db.productsQueries.selectAll( applyN1Filter = showZeroGroup)
-                .executeAsList()
+            db.productsQueries.selectAll(applyN1Filter = showZeroGroup).executeAsList()
         }
     }
 }
-
 
 fun outstandingFilter(): String? {
     return if (SharedPrefs.Permissions.get()?.FilterBroker == "Y") {
@@ -282,7 +234,6 @@ fun outstandingFilter(): String? {
         null
     }
 }
-
 
 fun getProductStockItems(db: TallyDatabase): List<GetProductStockItemList> {
     val perms = SharedPrefs.Permissions.get()
@@ -300,25 +251,20 @@ fun getProductStockItems(db: TallyDatabase): List<GetProductStockItemList> {
             .executeAsList()
     }
 
+    val filterGroup = if (perms.FilterIGRP == "Y") 1L else 0L
     val filterExclude = if (perms.FilterItems == "Y") 1L else 0L
     val filterGodown = if (perms.FilterGodown == "Y") 1L else 0L
 
-    val excludeGuids =
-        if (filterExclude == 1L) perms.ConfigItems.parseToStringList() else emptyList()
-    val godownCodes =
-        if (filterGodown == 1L) perms.ConfigGodown.parseToStringList() else emptyList()
+    val groupCodes = if (filterGroup == 1L) itemGroupCodes() else emptyList()
+    val excludeGuids = if (filterExclude == 1L) perms.ConfigItems.parseToStringList() else emptyList()
+    val godownCodes = if (filterGodown == 1L) perms.ConfigGodown.parseToStringList() else emptyList()
 
-
-    println("-STOCK")
-    println("groupcodes : ${itemGroupCodes()}")
-    println("-godownCodes : $godownCodes")
-    println("-exclude GUID: $excludeGuids")
     return db.productStockQueries
         .getProductStockItemList(
-            groupCodes = itemGroupCodes(),
+            groupCodes = groupCodes,
             godownCodes = godownCodes,
             excludeGuids = excludeGuids,
-            filterGroup = filterItemGroups(),
+            filterGroup = filterGroup,
             filterExclude = filterExclude,
             filterGodown = filterGodown
         )
@@ -331,8 +277,7 @@ fun getProductSerialNo(
     godownName: String? = null
 ): List<SerialNoReport> {
     val perms = SharedPrefs.Permissions.get()
-    println("IS MAIN" + isMain)
-    println(godownName)
+
     if (perms == null) {
         return db.productSerialNoQueries
             .serialNoReport(
@@ -348,22 +293,23 @@ fun getProductSerialNo(
             .executeAsList()
     }
 
+    val filterGroup = if (perms.FilterIGRP == "Y") 1L else 0L
     val filterExclude = if (perms.FilterItems == "Y") 1L else 0L
     val filterGodown = if (perms.FilterGodown == "Y") 1L else 0L
 
-    val excludeGuids =
-        if (filterExclude == 1L) perms.ConfigItems.parseToStringList() else emptyList()
-    val godownCodes =
-        if (filterGodown == 1L) perms.ConfigGodown.parseToStringList() else emptyList()
+    val groupCodes = if (filterGroup == 1L) itemGroupCodes() else emptyList()
+    val excludeGuids = if (filterExclude == 1L) perms.ConfigItems.parseToStringList() else emptyList()
+    val godownCodes = if (filterGodown == 1L) perms.ConfigGodown.parseToStringList() else emptyList()
 
     return db.productSerialNoQueries
         .serialNoReport(
-            groupCodes = itemGroupCodes(),
+            groupCodes = groupCodes,
             godownCodes = godownCodes,
             excludeGuids = excludeGuids,
-            filterGroup = filterItemGroups(),
+            filterGroup = filterGroup,
             filterExclude = filterExclude,
-            filterGodown = filterGodown, filterSingle = if (isMain) 0L else 1L,
+            filterGodown = filterGodown,
+            filterSingle = if (isMain) 0L else 1L,
             includeSingle = godownName
         )
         .executeAsList()
@@ -375,8 +321,7 @@ fun getProductBatchNo(
     godownName: String? = null
 ): List<BatchNoReport> {
     val perms = SharedPrefs.Permissions.get()
-    println("IS MAIN" + isMain)
-    println(godownName)
+
     if (perms == null) {
         return db.productBatchNoQueries
             .batchNoReport(
@@ -392,64 +337,63 @@ fun getProductBatchNo(
             .executeAsList()
     }
 
+    val filterGroup = if (perms.FilterIGRP == "Y") 1L else 0L
     val filterExclude = if (perms.FilterItems == "Y") 1L else 0L
     val filterGodown = if (perms.FilterGodown == "Y") 1L else 0L
 
-    val excludeGuids =
-        if (filterExclude == 1L) perms.ConfigItems.parseToStringList() else emptyList()
-    val godownCodes =
-        if (filterGodown == 1L) perms.ConfigGodown.parseToStringList() else emptyList()
+    val groupCodes = if (filterGroup == 1L) itemGroupCodes() else emptyList()
+    val excludeGuids = if (filterExclude == 1L) perms.ConfigItems.parseToStringList() else emptyList()
+    val godownCodes = if (filterGodown == 1L) perms.ConfigGodown.parseToStringList() else emptyList()
 
     return db.productBatchNoQueries
         .batchNoReport(
-            groupCodes = itemGroupCodes(),
+            groupCodes = groupCodes,
             godownCodes = godownCodes,
             excludeGuids = excludeGuids,
-            filterGroup = filterItemGroups(),
+            filterGroup = filterGroup,
             filterExclude = filterExclude,
-            filterGodown = filterGodown, filterSingle = if (isMain) 0L else 1L,
+            filterGodown = filterGodown,
+            filterSingle = if (isMain) 0L else 1L,
             includeSingle = godownName
         )
         .executeAsList()
 }
 
-
 fun getProductParamStockItems(db: TallyDatabase): List<GetProductParamStockList> {
     val perms = SharedPrefs.Permissions.get()
-
-    val filterGroup = if (perms?.FilterIGRP == "Y") 1L else 0L
-    val filterExclude = if (perms?.FilterItems == "Y") 1L else 0L
-    val filterGodown = if (perms?.FilterGodown == "Y") 1L else 0L
-
-    val groupCodes = if (filterGroup == 1L) filterItemGroupCodes() else emptyList()
-    val excludeGuids =
-        if (filterExclude == 1L) perms?.ConfigItems.parseToStringList() else emptyList()
-    val godownCodes =
-        if (filterGodown == 1L) perms?.ConfigGodown.parseToDoubleList() else emptyList()
 
     if (perms == null) {
         return db.productParamStockQueries
             .getProductParamStockList(
                 productGuid = null,
                 filterParam1 = 0,
-                configParam1 = emptyList(), filterGroup = filterGroup,
-                groupCodes = groupCodes,
-                filterExclude = filterExclude,
-                excludeGuids = excludeGuids,
-                filterGodown = filterGodown,
-                godownCodes = godownCodes
+                configParam1 = emptyList(),
+                filterGroup = 0,
+                groupCodes = emptyList(),
+                filterExclude = 0,
+                excludeGuids = emptyList(),
+                filterGodown = 0,
+                godownCodes = emptyList()
             )
             .executeAsList()
     }
 
+    val filterGroup = if (perms.FilterIGRP == "Y") 1L else 0L
+    val filterExclude = if (perms.FilterItems == "Y") 1L else 0L
+    val filterGodown = if (perms.FilterGodown == "Y") 1L else 0L
     val filterParams = if (perms.FilterParam1 == "Y") 1L else 0L
+
+    val groupCodes = if (filterGroup == 1L) filterItemGroupCodes() else emptyList()
+    val excludeGuids = if (filterExclude == 1L) perms.ConfigItems.parseToStringList() else emptyList()
+    val godownCodes = if (filterGodown == 1L) perms.ConfigGodown.parseToDoubleList() else emptyList()
     val paramCodes = if (filterParams == 1L) perms.ConfigParam1.parseToStringList() else emptyList()
 
     return db.productParamStockQueries
         .getProductParamStockList(
             productGuid = null,
             filterParam1 = filterParams,
-            configParam1 = paramCodes, filterGroup = filterGroup,
+            configParam1 = paramCodes,
+            filterGroup = filterGroup,
             groupCodes = groupCodes,
             filterExclude = filterExclude,
             excludeGuids = excludeGuids,
@@ -458,7 +402,6 @@ fun getProductParamStockItems(db: TallyDatabase): List<GetProductParamStockList>
         )
         .executeAsList()
 }
-
 
 fun parseDate(date: String): LocalDate {
     val parts = date.split("-")

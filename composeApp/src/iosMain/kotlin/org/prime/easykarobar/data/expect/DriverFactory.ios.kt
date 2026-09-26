@@ -390,6 +390,8 @@ actual class DriverFactory {
                 )
             )
 
+            createIndexes(driver)
+
         } catch (e: Exception) {
             println("❌ Error during manual migration: ${e.message}")
         }
@@ -397,6 +399,32 @@ actual class DriverFactory {
         println("✔️ Driver created successfully, database path = $sqliterDbPath")
 
         return driver
+    }
+
+    private fun createIndexes(driver: SqlDriver) {
+        val indexes = listOf(
+            "CREATE INDEX IF NOT EXISTS idx_ps_mc1_mc2 ON ProductStock(MasterCode1, MasterCode2)",
+            "CREATE INDEX IF NOT EXISTS idx_products_guid ON Products(GUID)",
+            "CREATE INDEX IF NOT EXISTS idx_products_groupcode ON Products(GroupCode)",
+            "CREATE INDEX IF NOT EXISTS idx_products_name ON Products(Name)",
+            "CREATE INDEX IF NOT EXISTS idx_products_e4_e5 ON Products(E4, E5)",
+            "CREATE INDEX IF NOT EXISTS idx_ledger_guid ON LedgerMaster(GUID)",
+            "CREATE INDEX IF NOT EXISTS idx_ledger_groupcode ON LedgerMaster(GroupCode)",
+            "CREATE INDEX IF NOT EXISTS idx_ledger_name ON LedgerMaster(Name)",
+            "CREATE INDEX IF NOT EXISTS idx_ledger_group_guid ON LedgerGroupMaster(GUID)",
+            "CREATE INDEX IF NOT EXISTS idx_ledger_group_groupcode ON LedgerGroupMaster(GroupCode)",
+            "CREATE INDEX IF NOT EXISTS idx_product_group_guid ON ProductGroupMaster(GUID)",
+            "CREATE INDEX IF NOT EXISTS idx_product_group_groupcode ON ProductGroupMaster(GroupCode)",
+            "CREATE INDEX IF NOT EXISTS idx_products_pricing_guid ON Products_Pricing(GUID)",
+            "CREATE INDEX IF NOT EXISTS idx_bs_master_guid ON BSMaster(GUID)"
+        )
+        for (sql in indexes) {
+            try {
+                driver.execute(null, sql, 0)
+            } catch (e: Exception) {
+                println("Index creation warning: ${e.message}")
+            }
+        }
     }
 
     private fun ensureTable(

@@ -102,6 +102,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.internal.BackHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Contextual
@@ -360,14 +361,25 @@ data class SaleScreen(
 
         LaunchedEffect(Unit) {
             withContext(Dispatchers.IO) {
-                val info = db.companyInformationQueries.selectAll().executeAsOneOrNull()
-                val ledgers = getLedgerMasters(db)
-                val busyLedgers = db.bSMasterQueries.selectAll().executeAsList()
-                val items = getConfigItemMasters(db, vchType)
-                val groups = db.productGroupMasterQueries.selectAll(
-                    filterGroup = filterItemGroups(), groupCodes = itemGroupCodes()
-                ).executeAsList()
-                val pricing = db.productsPricingQueries.selectAll().executeAsList()
+                val groupCodes = if (filterItemGroups() == 1L) itemGroupCodes() else emptyList()
+
+                val infoDeferred = async { db.companyInformationQueries.selectAll().executeAsOneOrNull() }
+                val ledgersDeferred = async { getLedgerMasters(db) }
+                val busyLedgersDeferred = async { db.bSMasterQueries.selectAll().executeAsList() }
+                val itemsDeferred = async { getConfigItemMasters(db, vchType) }
+                val groupsDeferred = async {
+                    db.productGroupMasterQueries.selectAll(
+                        filterGroup = filterItemGroups(), groupCodes = groupCodes
+                    ).executeAsList()
+                }
+                val pricingDeferred = async { db.productsPricingQueries.selectAll().executeAsList() }
+
+                val info = infoDeferred.await()
+                val ledgers = ledgersDeferred.await()
+                val busyLedgers = busyLedgersDeferred.await()
+                val items = itemsDeferred.await()
+                val groups = groupsDeferred.await()
+                val pricing = pricingDeferred.await()
 
                 withContext(Dispatchers.Main) {
                     compInfo = info
@@ -384,12 +396,12 @@ data class SaleScreen(
         println("item list is in sale order $itemsList")
         var selectedGroups by remember { mutableStateOf<List<String>>(emptyList()) }
         val groupFilteredList = remember(itemsList, selectedGroups) {
-            val list = if (selectedGroups.isEmpty()) {
+            if (selectedGroups.isEmpty()) {
                 itemsList
             } else {
-                itemsList.filter { it.GroupName in getProductsGroupCodesByName(selectedGroups) }
+                val allowedGroupNames = getProductsGroupCodesByName(selectedGroups).toSet()
+                itemsList.filter { it.GroupName in allowedGroupNames }
             }
-            list.filter { (it.E4 ?: 0.0) != -1.0 && (it.E5 ?: 0.0) != -1.0 }
         }
 
         val viewmodel: InventoryVoucherViewModel = viewModel { InventoryVoucherViewModel() }
@@ -3382,6 +3394,8 @@ fun TransactionItemBottomList(
     title: String = "Select Account",
     itemContent: @Composable ((String) -> Unit)? = null
 ) {
+    if (!showBottomSheet) return
+
     val listState = rememberSaveable(
         saver = LazyListState.Saver
     ) {
@@ -3390,14 +3404,12 @@ fun TransactionItemBottomList(
     var query by remember(showBottomSheet) { mutableStateOf("") }
 
     val filteredList = remember(list, query) {
-        smartSearch(
+        if (query.isBlank()) list
+        else smartSearch(
             list = list, query = query, selectors = listOf { it.Name })
     }
 
-
-
-    if (showBottomSheet) {
-        ModalBottomSheet(
+    ModalBottomSheet(
             onDismissRequest = { onDismiss() },
             sheetState = bottomSheetState,
             dragHandle = null,
@@ -3514,7 +3526,6 @@ fun TransactionItemBottomList(
             }
         }
     }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ExpandedItemEditor1 — now with collapsible descriptions panel
