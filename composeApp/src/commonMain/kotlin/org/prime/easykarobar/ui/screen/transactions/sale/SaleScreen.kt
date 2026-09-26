@@ -482,7 +482,7 @@ data class SaleScreen(
         var demoBarcodeName by remember { mutableStateOf("") }
         var gstRrDate by remember { mutableStateOf(CurrentDate()) }
         val currentUserId = SharedPrefs.User.get()?.ID?.toString()
-        var showSalesmanDetails by remember { mutableStateOf(currentUserId == "10154") }
+        var showSalesmanDetails by remember { mutableStateOf(currentUserId == "10371") }
         var salesmanName by remember { mutableStateOf("") }
         var salesmanGuid by remember { mutableStateOf("") }
         var showSalesmanErrorAlert by remember { mutableStateOf(false) }
@@ -961,7 +961,7 @@ data class SaleScreen(
                 SbillingShipping = data.other_info?.SbillingShipping ?: false
                 salesmanName = data.other_info?.salesmanName ?: ""
                 salesmanGuid = data.other_info?.salesmanGuid ?: ""
-                if (salesmanName.isNotEmpty() || salesmanGuid.isNotEmpty() || currentUserId == "10154") {
+                if (salesmanName.isNotEmpty() || salesmanGuid.isNotEmpty() || currentUserId == "10371") {
                     showSalesmanDetails = true
                 }
                 data.bills_collection?.let {
@@ -1187,7 +1187,8 @@ data class SaleScreen(
                                         label = "Entry Date",
                                         selectedDate = selectedDate,
                                         onDateSelected = { selectedDate = it },
-                                        defaultDate = CurrentDate()
+                                        defaultDate = CurrentDate(),
+                                        enabled = (currentUserId != "10371")
                                     )
                                     SelectLedgerRow(
                                         selectedAccount = selectedLedger,
@@ -1206,34 +1207,36 @@ data class SaleScreen(
 
                             SectionCard(
                                 title = "ITEMS", count = selectedItems.size, headerAction = {
-                                    if (SaleOrderConfig.showAddItemInSaleOrder(vchType)) {
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        AssistChip(
-                                            onClick = { showGroupFilterSheet = true },
-                                            label = {
-                                                Text(
-                                                    "Group Filter",
-                                                    style = MaterialTheme.typography.labelLarge,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    Icons.Default.FilterList,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                            },
-                                            colors = AssistChipDefaults.assistChipColors(
-                                                labelColor = MaterialTheme.colorScheme.primary,
-                                                leadingIconContentColor = MaterialTheme.colorScheme.primary
-                                            ),
-                                            border = null
-                                        )
+                                        if (currentUserId != "10371") {
+                                            AssistChip(
+                                                onClick = { showGroupFilterSheet = true },
+                                                label = {
+                                                    Text(
+                                                        "Group Filter",
+                                                        style = MaterialTheme.typography.labelLarge,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                },
+                                                leadingIcon = {
+                                                    Icon(
+                                                        Icons.Default.FilterList,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                },
+                                                colors = AssistChipDefaults.assistChipColors(
+                                                    labelColor = MaterialTheme.colorScheme.primary,
+                                                    leadingIconContentColor = MaterialTheme.colorScheme.primary
+                                                ),
+                                                border = null
+                                            )
+                                        }
 
+                                        if (SaleOrderConfig.showAddItemInSaleOrder(vchType)) {
                                             AssistChip(
                                                 onClick = { showItemSheet = true },
                                                 enabled = editingItem == null,
@@ -1258,7 +1261,6 @@ data class SaleScreen(
                                                 ),
                                                 border = null
                                             )
-
                                         }
                                     }
                                 }) {
@@ -1619,7 +1621,7 @@ data class SaleScreen(
                                     }
                                 }
                             }
-                            if (SaleOrderConfig.showAddItemInSaleOrder(vchType)) {
+                            if (currentUserId != "10371" || SaleOrderConfig.showAddItemInSaleOrder(vchType)) {
                                 SectionCard(
                                     title = if (isBusy()) "SUNDRIES" else "Ledgers",
                                     count = selectedSundries.size,
@@ -2494,7 +2496,7 @@ data class SaleScreen(
                         }
 
                         fun createO() {
-                            if (currentUserId == "10154" && (salesmanName.isBlank() || salesmanGuid.isBlank() || !showSalesmanDetails)) {
+                            if (currentUserId == "10371" && (salesmanName.isBlank() || salesmanGuid.isBlank() || !showSalesmanDetails)) {
                                 showSalesmanErrorAlert = true
                                 return
                             }
@@ -2690,7 +2692,7 @@ data class SaleScreen(
 
                         TallyButton(
                             onClick = {
-                                if (currentUserId == "10154" && (salesmanName.isBlank() || salesmanGuid.isBlank() || !showSalesmanDetails)) {
+                                if (currentUserId == "10371" && (salesmanName.isBlank() || salesmanGuid.isBlank() || !showSalesmanDetails)) {
                                     showSalesmanErrorAlert = true
                                 } else if (grandTotal < 0.0) {
                                     showWarningMessage = true

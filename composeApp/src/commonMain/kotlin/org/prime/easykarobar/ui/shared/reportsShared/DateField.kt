@@ -49,6 +49,7 @@ fun TallyDatePickerRow(
     selectedDate: String,
     onDateSelected: (String) -> Unit,
     defaultDate: String,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     var showPicker by remember { mutableStateOf(false) }
@@ -75,7 +76,11 @@ fun TallyDatePickerRow(
                 else
                     MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
             ),
-            onClick = { showPicker = true }
+            onClick = {
+                if (enabled) {
+                    showPicker = true
+                }
+            }
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
