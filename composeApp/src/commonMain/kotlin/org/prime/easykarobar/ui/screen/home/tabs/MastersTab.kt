@@ -171,7 +171,7 @@ object MastersTab : Tab {
 
             }
 
-            if (SharedPrefs.User.get()?.ID?.toString() == "10154") {
+            if (SharedPrefs.User.get()?.ID?.toString() == "10154" ||SharedPrefs.User.get()?.ID?.toString() == "10335" ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)

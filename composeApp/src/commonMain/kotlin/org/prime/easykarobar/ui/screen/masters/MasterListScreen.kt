@@ -22,8 +22,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -39,10 +41,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,60 +56,57 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import coil3.compose.AsyncImage
+import com.mohamedrejeb.calf.permissions.ExperimentalPermissionsApi
+import com.mohamedrejeb.calf.permissions.Permission
+import com.mohamedrejeb.calf.permissions.isGranted
+import com.mohamedrejeb.calf.permissions.rememberPermissionState
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.dialogs.FileKitCameraFacing
+import io.github.vinceglb.filekit.dialogs.FileKitCameraType
+import io.github.vinceglb.filekit.dialogs.FileKitMode
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
+import io.github.vinceglb.filekit.dialogs.openCameraPicker
+import io.github.vinceglb.filekit.readBytes
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import org.jetbrains.compose.resources.painterResource
 import org.prime.easykarobar.data.enums.MasterEnums
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.model.salesmanPermission
+import org.prime.easykarobar.data.utils.KtorClient
+import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.agrpGroupCodes
 import org.prime.easykarobar.ui.shared.globalShared.filterAGRPGroups
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
+import org.prime.easykarobar.ui.shared.globalShared.getBrandImage
+import org.prime.easykarobar.ui.shared.globalShared.getCategoryImage
 import org.prime.easykarobar.ui.shared.globalShared.getItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.tally.GetAllBrands
+import org.tally.GetSubCategory
 import org.tally.GodownMaster
 import org.tally.LedgerGroupMaster
 import org.tally.LedgerMaster
 import org.tally.ProductGroupMaster
 import org.tally.ProductUnitMaster
 import org.tally.Products
-
-import io.ktor.client.request.forms.submitFormWithBinaryData
-import io.ktor.client.request.forms.formData
-import io.ktor.http.Headers
-import io.ktor.http.HttpHeaders
-import org.prime.easykarobar.data.utils.KtorClient
-import org.prime.easykarobar.BuildKonfig
-import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
-import io.github.vinceglb.filekit.PlatformFile
-import io.github.vinceglb.filekit.readBytes
-import io.github.vinceglb.filekit.dialogs.FileKitType
-import io.github.vinceglb.filekit.dialogs.FileKitMode
-import io.github.vinceglb.filekit.FileKit
-import io.github.vinceglb.filekit.dialogs.FileKitCameraType
-import io.github.vinceglb.filekit.dialogs.FileKitCameraFacing
-import io.github.vinceglb.filekit.dialogs.openCameraPicker
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Button
-import androidx.compose.ui.graphics.Color
-import com.mohamedrejeb.calf.permissions.ExperimentalPermissionsApi
-import com.mohamedrejeb.calf.permissions.Permission
-import com.mohamedrejeb.calf.permissions.isGranted
-import com.mohamedrejeb.calf.permissions.rememberPermissionState
-import coil3.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
-import org.prime.easykarobar.ui.shared.globalShared.getCategoryImage
-import org.prime.easykarobar.ui.shared.globalShared.getBrandImage
-import org.prime.easykarobar.data.utils.SharedPrefs
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.category_placeholder
-import org.jetbrains.compose.resources.painterResource
 
+@Serializable
 data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -147,11 +149,10 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
 
                 MasterEnums.ITEM_UNIT -> db.productUnitMasterQueries.selectAll().executeAsList()
                 MasterEnums.MATERIAL_CENTER -> db.godownMasterQueries.selectAll().executeAsList()
-                MasterEnums.SUBCATEGORIES -> db.product_CategoryQueries.getCatNamesByGroup(null)
-                    .executeAsList().filterNotNull()
+                MasterEnums.SUBCATEGORIES -> db.product_CategoryQueries.getSubCategory(null)
+                    .executeAsList()
 
                 MasterEnums.BRANDS -> db.productsQueries.getAllBrands().executeAsList()
-                    .filterNotNull()
             }
         }
         println("list in account groups are: ${allItems.value}")
@@ -242,14 +243,10 @@ data class MasterListScreen(val masterEnum: MasterEnums) : Screen {
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                     ) {
                         itemsIndexed(filteredItems) { index, item ->
-                            val (name, parent) = if (masterEnum == MasterEnums.BRANDS) {
-                                (item as GetAllBrands).Name to ""
-                            } else {
-                                getMasterItemData(item)
-                            }
+                            val (name, parent) = getMasterItemData(item)
                             println(item)
                             MasterListItem(index = index + 1, name = name, parentName = parent) {
-                                if (item is LedgerMaster || item is Products || (item is String && masterEnum == MasterEnums.SUBCATEGORIES) || item is GetAllBrands) {
+                                if (item is LedgerMaster || item is Products || item is GetSubCategory || item is GetAllBrands) {
                                     selectedItem.value = item
                                     showBottomSheet.value = true
                                 }
@@ -371,7 +368,8 @@ private fun getMasterItemData(item: Any): Pair<String?, String?> {
         is ProductGroupMaster -> item.Name to item.GroupName
         is ProductUnitMaster -> item.Name to null
         is GodownMaster -> item.Name to null
-        is String -> item to null
+        is GetSubCategory -> item.CatName to null
+        is GetAllBrands -> item.Name to null
         else -> null to null
     }
 }
@@ -406,8 +404,8 @@ private fun BottomSheetContent(item: Any) {
                         modifier = Modifier.padding(bottom = 20.dp)
                     )
                 }
-                
-                is String -> {
+
+                is GetSubCategory -> {
                     Text(
                         text = "Subcategory Details",
                         style = MaterialTheme.typography.headlineSmall,
@@ -416,7 +414,7 @@ private fun BottomSheetContent(item: Any) {
                         modifier = Modifier.padding(bottom = 20.dp)
                     )
                 }
-                
+
                 is GetAllBrands -> {
                     Text(
                         text = "Brand Details",
@@ -507,13 +505,15 @@ private fun BottomSheetContent(item: Any) {
                     item { SheetRow(label = "Min Sales Price", value = it.formatToAmtDec()) }
                 }
             }
-            
-            is String -> {
+
+            is GetSubCategory -> {
+                val subName = item.CatName ?: ""
+                val subCode = item.CatCode?.toLong()?.toString() ?: ""
                 item {
                     SectionHeader("Basic Information")
                 }
-                item { SheetRow(label = "Subcategory Name", value = item, isHighlighted = true) }
-                
+                item { SheetRow(label = "Subcategory Name", value = subName, isHighlighted = true) }
+
                 item {
                     Box(
                         modifier = Modifier
@@ -522,7 +522,7 @@ private fun BottomSheetContent(item: Any) {
                         contentAlignment = Alignment.Center
                     ) {
                         val storeId = SharedPrefs.User.get()?.ID.toString()
-                        val imageUrl = getCategoryImage(storeId, item)
+                        val imageUrl = getCategoryImage(storeId, subCode)
                         AsyncImage(
                             model = imageUrl,
                             contentDescription = "Subcategory Image",
@@ -536,20 +536,22 @@ private fun BottomSheetContent(item: Any) {
                         )
                     }
                 }
-                
+
                 item {
-                    ImageUploadComponent(itemName = item, itemType = "Subcategory")
+                    ImageUploadComponent(id = subCode, itemType = "Subcategory")
                 }
             }
-            
+
             is GetAllBrands -> {
+                val brandName = item.Name ?: ""
+                val brandCode = item.Code?.toLong()?.toString() ?: ""
                 item {
                     SectionHeader("Basic Information")
                 }
                 item.Name?.let {
                     item { SheetRow(label = "Brand Name", value = it, isHighlighted = true) }
                 }
-                
+
                 item {
                     Box(
                         modifier = Modifier
@@ -558,7 +560,7 @@ private fun BottomSheetContent(item: Any) {
                         contentAlignment = Alignment.Center
                     ) {
                         val storeId = SharedPrefs.User.get()?.ID.toString()
-                        val imageUrl = getBrandImage(storeId, item.Name ?: "")
+                        val imageUrl = getBrandImage(storeId, brandCode.ifEmpty { brandName })
                         AsyncImage(
                             model = imageUrl,
                             contentDescription = "Brand Image",
@@ -572,9 +574,9 @@ private fun BottomSheetContent(item: Any) {
                         )
                     }
                 }
-                
+
                 item {
-                    ImageUploadComponent(itemName = item.Name ?: "", itemType = "Brand")
+                    ImageUploadComponent(id = brandCode.ifEmpty { brandName }, itemType = "Brand")
                 }
             }
         }
@@ -660,13 +662,13 @@ private fun SheetRow(
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-private fun ImageUploadComponent(itemName: String, itemType: String) {
+private fun ImageUploadComponent(id: String, itemType: String) {
     val coroutineScope = rememberCoroutineScope()
     var isUploading by remember { mutableStateOf(false) }
     var uploadSuccess by remember { mutableStateOf<Boolean?>(null) }
-    
+
     val cameraPermission = rememberPermissionState(Permission.Camera)
-    
+
     val galleryLauncher = rememberFilePickerLauncher(
         type = FileKitType.Image,
         mode = FileKitMode.Single,
@@ -678,7 +680,7 @@ private fun ImageUploadComponent(itemName: String, itemType: String) {
                 try {
                     val bytes = file.readBytes()
                     val folderName = if (itemType == "Brand") "Brands" else "ProductCategory"
-                    val success = uploadImage(bytes, itemName, folderName)
+                    val success = uploadImage(bytes, id, folderName)
                     uploadSuccess = success
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -709,7 +711,7 @@ private fun ImageUploadComponent(itemName: String, itemType: String) {
                 Button(onClick = { galleryLauncher.launch() }) {
                     Text("From Gallery")
                 }
-                
+
                 Button(onClick = {
                     if (cameraPermission.status.isGranted) {
                         coroutineScope.launch {
@@ -721,8 +723,9 @@ private fun ImageUploadComponent(itemName: String, itemType: String) {
                                 if (file != null) {
                                     isUploading = true
                                     val bytes = file.readBytes()
-                                    val folderName = if (itemType == "Brand") "Brands" else "ProductCategory"
-                                    val success = uploadImage(bytes, itemName, folderName)
+                                    val folderName =
+                                        if (itemType == "Brand") "Brands" else "ProductCategory"
+                                    val success = uploadImage(bytes, id, folderName)
                                     uploadSuccess = success
                                 }
                             } catch (e: Exception) {
@@ -740,7 +743,7 @@ private fun ImageUploadComponent(itemName: String, itemType: String) {
                 }
             }
         }
-        
+
         if (uploadSuccess != null) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -752,21 +755,22 @@ private fun ImageUploadComponent(itemName: String, itemType: String) {
     }
 }
 
-suspend fun uploadImage(fileBytes: ByteArray, itemName: String, folderName: String): Boolean {
+suspend fun uploadImage(fileBytes: ByteArray, id: String, folderName: String): Boolean {
     return try {
-        val fileName = "${itemName.replace(" ", "_")}.jpg"
+        val fileName = "$id.jpg"
         val response = KtorClient.client.submitFormWithBinaryData(
             url = "https://easykarobar.in/Tokens/upload-base64-r2.php",
             formData = formData {
                 append("folderName", folderName)
                 append("fileName", fileName)
-                append("storeId", BuildKonfig.STORE_ID)
+                append("storeId", SharedPrefs.User.get()?.ID.toString())
                 append("image", fileBytes, Headers.build {
                     append(HttpHeaders.ContentType, "image/jpeg")
                     append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
                 })
             }
         )
+        println("token upload response is ${response.bodyAsText()}")
         response.status.value in 200..299
     } catch (e: Exception) {
         e.printStackTrace()

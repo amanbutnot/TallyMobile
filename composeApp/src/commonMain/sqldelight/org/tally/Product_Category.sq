@@ -13,7 +13,7 @@ SELECT
     CatName,
     CatCode
 FROM Product_Category
-WHERE GroupCode = :groupCode
+WHERE (:groupCode IS NULL OR GroupCode = :groupCode)
 GROUP BY CatName, CatCode
 ORDER BY CatName;
 
