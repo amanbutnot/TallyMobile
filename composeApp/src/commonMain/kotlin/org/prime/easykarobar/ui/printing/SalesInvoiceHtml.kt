@@ -61,6 +61,19 @@ fun salesInvoiceHtml(
     val qtyStartWidth = if (showTax) "45%" else "71%"
     val labelWidth = if (showTax) "35%" else "9%"
 
+    val computedLoginUsername = user?.FirstName?.clean()?.takeIf { it.isNotBlank() }
+        ?: SharedPrefs.LoginData.get()?.username?.clean()
+        ?: SharedPrefs.LoginInfo.get()
+        ?: ""
+
+    val salesman = transportDetails.salesmanName?.clean() ?: ""
+
+    val userId = user?.ID
+    val isSpecialUser = userId == 10371 || userId == 10184 || userId == 10335
+
+    val userNameRow = if (isSpecialUser) "<tr><td class=\"label-cell\">User Name</td><td>: <b>${computedLoginUsername.clean()}</b></td></tr>" else ""
+    val salesmanRow = if (isSpecialUser) "<tr><td class=\"label-cell\">Salesman</td><td>: <b>${salesman.clean()}</b></td></tr>" else ""
+
     val html = StringBuilder()
 
     html.append(
@@ -285,6 +298,8 @@ fun salesInvoiceHtml(
             <table class="info-table">
                 <tr><td class="label-cell">Invoice No.</td><td>: <b>$invoiceNo</b></td></tr>
                 <tr><td class="label-cell">Dated</td><td>: <b>${Tdate(date)}</b></td></tr>
+                $userNameRow
+                $salesmanRow
                 <tr><td class="label-cell">Place of Supply</td><td>: ${partyDetails?.State ?: ""}</td></tr>
                 <tr><td class="label-cell">Reverse Charge</td><td>: </td></tr>
                 <tr><td class="label-cell">GR/RR No.</td><td>: ${transportDetails.gstRrNo}</td></tr>

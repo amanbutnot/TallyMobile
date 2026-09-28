@@ -1028,8 +1028,11 @@ data class SaleScreen(
                 Saddress3 = Saddress3,
                 Saddress4 = Saddress4,
                 SshipState = SshipState,
-                SgstIn = SgstIn
-            ))
+                SgstIn = SgstIn,
+                salesmanName = salesmanName
+            ),
+            salesmanName = salesmanName
+        )
 
         val slipHtmlContent = salesSlipHtml(
             name = name,
@@ -1056,7 +1059,8 @@ data class SaleScreen(
                 Saddress3 = Saddress3,
                 Saddress4 = Saddress4,
                 SshipState = SshipState,
-                SgstIn = SgstIn
+                SgstIn = SgstIn,
+                salesmanName = salesmanName
             ))
 
         val menuList = buildList {

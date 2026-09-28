@@ -24,13 +24,31 @@ fun salesHtml(
     grandTotal: Double,
     transportDetails: TransportDetails,
     showTax: Boolean = true,
-    isIgst: Boolean? = null
+    isIgst: Boolean? = null,
+    salesmanName: String? = null,
+    loginUsername: String? = null
 ): String {
     val db = DatabaseHolder.instance
     val compInfo = db.companyInformationQueries.getCompanyInformation().executeAsOneOrNull()
     val partyDetails = db.ledgerMasterQueries.selectByName(partyName).executeAsOneOrNull()
     println("party detail is $partyDetails and guid is $partyGuid and name is $partyName")
     val user = SharedPrefs.User.get()
+
+    val usernameToPrint = loginUsername?.clean()?.takeIf { it.isNotBlank() }
+        ?: user?.FirstName?.clean()?.takeIf { it.isNotBlank() }
+        ?: SharedPrefs.LoginData.get()?.username?.clean()
+        ?: SharedPrefs.LoginInfo.get()
+        ?: ""
+
+    val salesman = salesmanName?.clean()?.takeIf { it.isNotBlank() }
+        ?: transportDetails.salesmanName?.clean()?.takeIf { it.isNotBlank() }
+        ?: ""
+
+    val userId = user?.ID
+    val isSpecialUser = userId == 10371 || userId == 10184 || userId == 10335
+
+    val userNameRow = if (isSpecialUser) "<tr><td class=\"label-cell\">User Name</td><td>: <b>${usernameToPrint.clean()}</b></td></tr>" else ""
+    val salesmanRow = if (isSpecialUser) "<tr><td class=\"label-cell\">Salesman</td><td>: <b>${salesman.clean()}</b></td></tr>" else ""
 
     val isIgst = isIgst ?: (user?.State.clean() != partyDetails?.State.clean() &&
             partyDetails?.State.clean().isNotBlank() &&
@@ -325,6 +343,8 @@ fun salesHtml(
             <table class="info-table">
                 <tr><td class="label-cell">${name} No.</td><td>: <b>${invoiceNo.clean()}</b></td></tr>
                 <tr><td class="label-cell">Dated</td><td>: <b>${Tdate(date)}</b></td></tr>
+                $userNameRow
+                $salesmanRow
                 <tr><td class="label-cell">Place of Supply</td><td>: ${partyDetails?.State.clean()}</td></tr>
                 <tr><td class="label-cell">Reverse Charge</td><td>: </td></tr>
                 <tr><td class="label-cell">GR/RR No.</td><td>: ${transportDetails.gstRrNo.clean()}</td></tr>
@@ -612,7 +632,8 @@ data class TransportDetails(
     val Saddress3: String? = null,
     val Saddress4: String? = null,
     val SshipState: String? = null,
-    val SgstIn: String? = null
+    val SgstIn: String? = null,
+    val salesmanName: String? = null
 )
 
 

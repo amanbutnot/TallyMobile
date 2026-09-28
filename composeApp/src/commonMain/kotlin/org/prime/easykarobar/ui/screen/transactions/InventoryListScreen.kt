@@ -531,7 +531,8 @@ data class InventoryListScreen(
             Saddress3 = details?.Saddress3,
             Saddress4 = details?.Saddress4,
             SshipState = details?.SshipState,
-            SgstIn = details?.SgstIn
+            SgstIn = details?.SgstIn,
+            salesmanName = details?.salesmanName
         )
     }
 }
