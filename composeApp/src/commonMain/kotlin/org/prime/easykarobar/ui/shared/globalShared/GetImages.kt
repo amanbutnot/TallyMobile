@@ -1,7 +1,7 @@
 package org.prime.easykarobar.ui.shared.globalShared
 
 fun getCategoryImage(storeId: String, guid: String): String {
-    return "https://easykarobar.in/assets/category/${storeId}_${guid}.webp"
+    return "https://images.easykarobar.in/stores/$storeId/ProductCategory/$guid.jpg"
 }
 
 fun getProductImage(storeId: String, guid: String): String {
@@ -17,4 +17,8 @@ fun String.toValidUrl(): String {
 
         else -> "https://$value"
     }
+}
+
+fun getBrandImage(storeId: String, brandCode: String): String {
+    return "https://images.easykarobar.in/stores/$storeId/Brands/$brandCode.jpg"
 }
