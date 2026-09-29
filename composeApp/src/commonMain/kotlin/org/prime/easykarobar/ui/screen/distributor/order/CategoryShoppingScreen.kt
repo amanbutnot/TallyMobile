@@ -326,8 +326,12 @@ object CategoryShoppingScreen : Screen {
                 }
             }
 
-            val featureProductsByFeature = remember(screenData.features, screenData.products) {
-                screenData.features.filter { it.C1 != "Open Link" }.associateWith { feature ->
+            val topFeatures = remember(screenData.features) {
+                screenData.features.filter { it.C1 != "Open Link" && isTopLevelSlider(it.parent_guid) }
+            }
+
+            val topFeatureProductsMap = remember(topFeatures, screenData.products) {
+                topFeatures.associateWith { feature ->
                     when (feature.C1) {
                         "Open Item" -> screenData.products.filter { it.product_id == feature.C2 }
                         "Open Item Group" -> screenData.products.filter { it.category_id == feature.C2?.toDoubleOrNull() }
@@ -337,6 +341,26 @@ object CategoryShoppingScreen : Screen {
                         }
 
                         else -> emptyList()
+                    }
+                }
+            }
+
+            val categoryFeaturesMap = remember(screenData.features, filteredCategories, screenData.products) {
+                filteredCategories.associateWith { category ->
+                    val featuresForCat = screenData.features.filter { feature ->
+                        feature.C1 != "Open Link" && !isTopLevelSlider(feature.parent_guid) && isMatchingCategoryGuid(feature.parent_guid, category.GUID)
+                    }
+                    featuresForCat.associateWith { feature ->
+                        when (feature.C1) {
+                            "Open Item" -> screenData.products.filter { it.product_id == feature.C2 }
+                            "Open Item Group" -> screenData.products.filter { it.category_id == feature.C2?.toDoubleOrNull() }
+                            "Select items" -> {
+                                val guids = feature.C2?.split(",")?.map { it.trim() } ?: emptyList()
+                                screenData.products.filter { it.product_id in guids }
+                            }
+
+                            else -> emptyList()
+                        }
                     }
                 }
             }
@@ -515,9 +539,9 @@ object CategoryShoppingScreen : Screen {
                     }
 
                     itemsIndexed(
-                        items = featureProductsByFeature.keys.toList(),
+                        items = topFeatureProductsMap.keys.toList(),
                     ) { index, feature ->
-                        val featureProducts = featureProductsByFeature[feature].orEmpty()
+                        val featureProducts = topFeatureProductsMap[feature].orEmpty()
                         if (featureProducts.isNotEmpty()) {
                             val backgroundColor =
                                 featureSectionPastelColors[index % featureSectionPastelColors.size]
@@ -592,7 +616,8 @@ object CategoryShoppingScreen : Screen {
                                 productCode = catCode
                             ).executeAsList()
                         }
-                        if (products.isNotEmpty() || categorySliders.isNotEmpty() || categoryBanners.isNotEmpty() || subCategories.isNotEmpty() || brands.isNotEmpty()) {
+                        val categoryFeatures = categoryFeaturesMap[category].orEmpty()
+                        if (products.isNotEmpty() || categorySliders.isNotEmpty() || categoryBanners.isNotEmpty() || categoryFeatures.isNotEmpty() || subCategories.isNotEmpty() || brands.isNotEmpty()) {
                             CategoryProductSection(
                                 category = category,
                                 products = products.take(8),
@@ -603,6 +628,7 @@ object CategoryShoppingScreen : Screen {
                                 wishlistGuids = wishlistGuids,
                                 categorySliders = categorySliders,
                                 categoryBanners = categoryBanners,
+                                categoryFeatures = categoryFeatures,
                                 subCategories = subCategories,
                                 brands = brands,
                                 db = db,
@@ -755,6 +781,7 @@ object CategoryShoppingScreen : Screen {
         wishlistGuids: Set<String?>,
         categorySliders: List<SLIDE_MASTER> = emptyList(),
         categoryBanners: List<BANNER_MASTER> = emptyList(),
+        categoryFeatures: Map<FEATURES_MASTER, List<GetProductsForDis>> = emptyMap(),
         subCategories: List<GetSubCategory> = emptyList(),
         brands: List<GetBrandsForDis> = emptyList(),
         db: TallyDatabase = DatabaseHolder.instance,
@@ -864,6 +891,38 @@ object CategoryShoppingScreen : Screen {
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+
+                // 2.5 Features (if exist)
+                if (categoryFeatures.isNotEmpty()) {
+                    categoryFeatures.entries.forEachIndexed { index, (feature, featureProducts) ->
+                        if (featureProducts.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            val backgroundColor = featureSectionPastelColors[index % featureSectionPastelColors.size]
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                color = backgroundColor,
+                                shape = RoundedCornerShape(12.dp),
+                                shadowElevation = 1.dp
+                            ) {
+                                FeatureSection(
+                                    title = feature.CODE,
+                                    products = featureProducts,
+                                    cartViewModel = cartViewModel,
+                                    wishlistViewModel = wishlistViewModel,
+                                    isTwoPerRow = isTwoPerRow,
+                                    cartGuids = cartGuids,
+                                    wishlistGuids = wishlistGuids,
+                                    onItemClick = { item ->
+                                        selectedProduct.value = item
+                                        showProductInfo.value = true
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
 
