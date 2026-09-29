@@ -49,9 +49,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,7 +63,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.State
+import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
+import cafe.adriel.voyager.core.model.screenModelScope
+import kotlinx.coroutines.launch
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
@@ -89,6 +91,7 @@ import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
 import org.prime.easykarobar.ui.utils.pushEasyMart
 import org.tally.BANNER_MASTER
+import org.tally.FEATURES_MASTER
 import org.tally.GetBrandsForDis
 import org.tally.GetProductsForDis
 import org.tally.GetSubCategory
@@ -114,14 +117,52 @@ private val featureSectionPastelColors = listOf(
     Color(0xFFF1F8E9)  // Soft Pastel Sage Green
 )
 
-private data class ScreenData<Slide, Banner, Feature>(
-    val sliders: List<Slide>,
-    val banners: List<Banner>,
-    val features: List<Feature>,
-    val categories: List<ProductCategoriesForDis>,
-    val products: List<GetProductsForDis>,
+data class ScreenData(
+    val sliders: List<SLIDE_MASTER> = emptyList(),
+    val banners: List<BANNER_MASTER> = emptyList(),
+    val features: List<FEATURES_MASTER> = emptyList(),
+    val categories: List<ProductCategoriesForDis> = emptyList(),
+    val products: List<GetProductsForDis> = emptyList(),
     val isLoading: Boolean = true
 )
+
+class CategoryShoppingScreenModel : ScreenModel {
+    private val _screenData = mutableStateOf<ScreenData>(ScreenData())
+    val screenData: State<ScreenData> = _screenData
+
+    var firstVisibleItemIndex: Int = 0
+    var firstVisibleItemScrollOffset: Int = 0
+
+    init {
+        loadData()
+    }
+
+    fun loadData() {
+        screenModelScope.launch {
+            val db = DatabaseHolder.instance
+            val data = withContext(Dispatchers.IO) {
+                ScreenData(
+                    sliders = db.slide_MasterQueries.selectAll().executeAsList(),
+                    banners = db.banner_MasterQueries.selectAll().executeAsList(),
+                    features = db.features_MasterQueries.selectAll().executeAsList(),
+                    categories = db.productsQueries.productCategoriesForDis(
+                        filterGroup = filterItemGroups(),
+                        groupCodes = itemGroupCodes()
+                    ).executeAsList(),
+                    products = db.productsQueries.getProductsForDis(
+                        filterGroup = filterItemGroups(),
+                        groupCodes = itemGroupCodes(),
+                        productCode = null,
+                        changePrice = SharedPrefs.ChangePrice.get(),
+                        mapper = ::GetProductsForDis
+                    ).executeAsList(),
+                    isLoading = false
+                )
+            }
+            _screenData.value = data
+        }
+    }
+}
 
 object CategoryShoppingScreen : Screen {
 
@@ -229,36 +270,8 @@ object CategoryShoppingScreen : Screen {
                 debouncedSearchQuery = searchQuery
             }
 
-            val screenData by produceState(
-                initialValue = ScreenData(
-                    sliders = emptyList(),
-                    banners = emptyList(),
-                    features = emptyList(),
-                    categories = emptyList(),
-                    products = emptyList(),
-                    isLoading = true
-                )
-            ) {
-                value = withContext(Dispatchers.IO) {
-                    ScreenData(
-                        sliders = db.slide_MasterQueries.selectAll().executeAsList(),
-                        banners = db.banner_MasterQueries.selectAll().executeAsList(),
-                        features = db.features_MasterQueries.selectAll().executeAsList(),
-                        categories = db.productsQueries.productCategoriesForDis(
-                            filterGroup = filterItemGroups(),
-                            groupCodes = itemGroupCodes()
-                        ).executeAsList(),
-                        products = db.productsQueries.getProductsForDis(
-                            filterGroup = filterItemGroups(),
-                            groupCodes = itemGroupCodes(),
-                            productCode = null,
-                            changePrice = SharedPrefs.ChangePrice.get(),
-                            mapper = ::GetProductsForDis
-                        ).executeAsList(),
-                        isLoading = false
-                    )
-                }
-            }
+            val screenModel = nav.rememberNavigatorScreenModel { CategoryShoppingScreenModel() }
+            val screenData by screenModel.screenData
 
             val filteredProducts = remember(screenData.products, debouncedSearchQuery) {
                 if (debouncedSearchQuery.isBlank()) {
@@ -394,12 +407,13 @@ object CategoryShoppingScreen : Screen {
                         shape = RoundedCornerShape(12.dp)
                     )
                 }
-                val listState = rememberLazyListState()
-                val coroutineScope = rememberCoroutineScope()
-                LaunchedEffect(screenData.isLoading) {
-                    if (!screenData.isLoading) {
-                        listState.scrollToItem(0)
-                    }
+                val listState = rememberLazyListState(
+                    initialFirstVisibleItemIndex = screenModel.firstVisibleItemIndex,
+                    initialFirstVisibleItemScrollOffset = screenModel.firstVisibleItemScrollOffset
+                )
+                LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+                    screenModel.firstVisibleItemIndex = listState.firstVisibleItemIndex
+                    screenModel.firstVisibleItemScrollOffset = listState.firstVisibleItemScrollOffset
                 }
                 LazyColumn(
                     state = listState,
