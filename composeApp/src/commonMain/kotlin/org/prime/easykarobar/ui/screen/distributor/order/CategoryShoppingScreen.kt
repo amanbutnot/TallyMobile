@@ -879,8 +879,8 @@ object CategoryShoppingScreen : Screen {
                                             AllProductsPremiumScreen(
                                                 categoryName = subName,
                                                 productCode = catCode,
-                                                isTab = false,
-                                                productGuids = db.product_CategoryQueries.getProductGuidsBySubCategory(sub.CatCode).executeAsList().mapNotNull { it.ProductCode?.toString() }
+                                                subCategoryCode = sub.CatCode,
+                                                isTab = false
                                             )
                                         )
                                     },
@@ -945,6 +945,7 @@ object CategoryShoppingScreen : Screen {
                                             AllProductsPremiumScreen(
                                                 categoryName = brandName,
                                                 productCode = catCode,
+                                                brandName = brandName,
                                                 isTab = false
                                             )
                                         )
