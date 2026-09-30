@@ -53,7 +53,7 @@ import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getBrandImage
-import org.prime.easykarobar.ui.shared.globalShared.getCategoryImage
+import org.prime.easykarobar.ui.shared.globalShared.getSubCategoryImage
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.utils.pushEasyMart
 import org.tally.GetAllSubCategories
@@ -194,7 +194,7 @@ object SeeAllSubcategoriesScreen : Screen {
                             getName = { it.CatName },
                             getImageUrl = { subcat ->
                                 val subCode = subcat.CatCode?.toLong()?.toString() ?: ""
-                                getCategoryImage(userId, subCode)
+                                getSubCategoryImage(userId, subCode)
                             },
                             placeholderRes = Res.drawable.subcategory_placeholder,
                             onItemClick = { subcat ->
@@ -350,7 +350,7 @@ object SeeAllCategoriesScreen : Screen {
                         SeeAllGrid(
                             items = categories,
                             getName = { it.Name.orEmpty() },
-                            getImageUrl = { getCategoryImage(userId, it.GUID.toString()) },
+                            getImageUrl = { getSubCategoryImage(userId, it.GUID.toString()) },
                             placeholderRes = Res.drawable.category_placeholder,
                             onItemClick = { category ->
                                 nav.pushEasyMart(
