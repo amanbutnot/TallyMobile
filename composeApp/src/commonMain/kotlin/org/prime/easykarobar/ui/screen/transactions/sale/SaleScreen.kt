@@ -3894,6 +3894,68 @@ fun ExpandedItemEditor1(
                 SummaryCell("Net", netAmount, highlight = true)
             }
 
+            val isUser10371 = SharedPrefs.User.get()?.ID?.toString() == "10371"
+            if (isUser10371) {
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Item Descriptions & Additional Info",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    TextButton(
+                        onClick = { showDescriptions = !showDescriptions }) {
+                        Icon(
+                            imageVector = if (showDescriptions) Icons.Default.RemoveCircleOutline
+                            else Icons.Default.AddCircleOutline,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (showDescriptions) "Remove" else "Add",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                }
+
+                AnimatedVisibility(
+                    visible = showDescriptions,
+                    enter = fadeIn(animationSpec = tween(300)) + expandVertically(
+                        animationSpec = tween(300)
+                    ),
+                    exit = fadeOut(animationSpec = tween(300)) + shrinkVertically(
+                        animationSpec = tween(300)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Column {
+                            Text("Additional Info", style = MaterialTheme.typography.labelSmall)
+                            BorderedInput(
+                                value = additionalInfos.getOrNull(0) ?: "",
+                                onValueChange = { additionalInfos[0] = it }
+                            )
+                        }
+                        for (i in 0 until 20) {
+                            Column {
+                                Text("Item Desc ${i + 1}", style = MaterialTheme.typography.labelSmall)
+                                BorderedInput(
+                                    value = itemDescs.getOrNull(i) ?: "",
+                                    onValueChange = { itemDescs[i] = it }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             if (serialNumbers.isNotEmpty()) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),

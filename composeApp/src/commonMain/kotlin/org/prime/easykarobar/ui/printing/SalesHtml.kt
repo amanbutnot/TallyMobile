@@ -458,11 +458,28 @@ fun salesHtml(
                     "</span>"
         } else ""
 
+        val isUser10371 = user?.ID == 10371
+        val descList = if (isUser10371) {
+            listOfNotNull(
+                item.itemdesc1, item.itemdesc2, item.itemdesc3, item.itemdesc4, item.itemdesc5,
+                item.itemdesc6, item.itemdesc7, item.itemdesc8, item.itemdesc9, item.itemdesc10,
+                item.itemdesc11, item.itemdesc12, item.itemdesc13, item.itemdesc14, item.itemdesc15,
+                item.itemdesc16, item.itemdesc17, item.itemdesc18, item.itemdesc19, item.itemdesc20,
+                item.additionalinfo
+            ).map { it.clean() }.filter { it.isNotBlank() }
+        } else emptyList()
+
+        val itemDescriptionsHtml = if (descList.isNotEmpty()) {
+            "<br/><span style='font-size:7.5pt; color:#555;'>" +
+                    descList.joinToString("<br/>") +
+                    "</span>"
+        } else ""
+
         html.append(
             """
             <tr>
                 <td class="center">${index + 1}.</td>
-                <td><b>${item.name.clean()}</b>$serials</td>
+                <td><b>${item.name.clean()}</b>$serials$itemDescriptionsHtml</td>
                 <td class="center">${item.hsn.clean()}</td>
                 <td class="center">${item.qty.absoluteValue.formatToQtyDec()}</td>
                 <td class="center">${item.selectedUnit.clean()}</td>
