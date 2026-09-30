@@ -3,13 +3,13 @@ package org.prime.easykarobar.ui.printing
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
-import org.prime.easykarobar.data.expect.getSplashImageBase64
 import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.transactions.sale.InvoiceItem
 import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.isBusy
+import org.prime.easykarobar.ui.shared.globalShared.toValidUrl
 import kotlin.math.absoluteValue
 
 
@@ -95,8 +95,12 @@ fun salesHtml(
         if (widthVal.any { it.isLetter() || it == '%' }) widthVal else "${widthVal}in"
     } else "0.33in"
 
-    val splashSrc = getSplashImageBase64()
-    val splashImgTag = if (splashSrc.isNotBlank()) """<img src="$splashSrc" style="height:$cssHeight; width:$cssWidth; max-width:100%; object-fit:contain;" />""" else ""
+    val logoImgPath = compConfig?.Imgpath?.trim()?.takeIf { it.isNotBlank() }
+    val logoSrc = if (logoImgPath != null) {
+        if (logoImgPath.startsWith("data:image", true)) logoImgPath
+        else logoImgPath.toValidUrl()
+    } else ""
+    val logoImgTag = if (logoSrc.isNotBlank()) """<img src="$logoSrc" style="height:$cssHeight; width:$cssWidth; max-width:100%; object-fit:contain;" />""" else ""
 
     val html = StringBuilder()
 
@@ -331,7 +335,7 @@ fun salesHtml(
                     </div>
                 </td>
                 <td style="width:25%; border:none; text-align:right; vertical-align:middle; padding-right:6px; overflow:hidden;">
-                    $splashImgTag
+                    $logoImgTag
                 </td>
             </tr>
         </table>
