@@ -28,8 +28,8 @@ fun salesSlipHtml(
     val user = SharedPrefs.User.get()
 
     val isIgst = isIgst ?: (user?.State.clean() != partyDetails?.State.clean() &&
-                partyDetails?.State.clean().isNotBlank() &&
-                user?.State.clean().isNotBlank())
+            partyDetails?.State.clean().isNotBlank() &&
+            user?.State.clean().isNotBlank())
 
     val title = if (name == "Sale Invoice") "TAX INVOICE" else name.uppercase()
 
@@ -220,14 +220,14 @@ fun salesSlipHtml(
     <table class="items">
         <thead>
         <tr>
-            <th colspan="5" style="font-weight: 700; text-align: left;">Product</th>
+            <th colspan="5" class="bold" style="font-weight: 700;">Product</th>
         </tr>
         <tr class="head2">
             <th style="width: 16%;">Qty</th>
-            <th style="width: 16%;">Unit</th>
-            <th style="width: 22%;" class="right">Rate</th>
-            <th style="width: 26%;" class="right">Amt</th>
-            <th style="width: 20%;" class="right">GST %</th>
+            <th style="width: 20%;">Unit</th>
+            <th style="width: 24%;">Rate</th>
+            <th style="width: 22%;" class="right">Amt</th>
+            <th style="width: 18%;" class="right">GST %</th>
         </tr>
         </thead>
 
@@ -240,8 +240,9 @@ fun salesSlipHtml(
                 0.0
             }
 
-            val unit = item.selectedUnit.clean().ifBlank { item.mainUnit.clean() }
-            val qtyText = item.qty.absoluteValue.formatToAmtDec()
+            // Qty and unit are separate variables, each printed in its own column
+            val qtyText = item.qty.absoluteValue.toDouble().formatToAmtDec()
+            val unitText = item.selectedUnit.clean().ifBlank { item.mainUnit.clean() }
 
             """
         <tr class="item-main">
@@ -249,10 +250,10 @@ fun salesSlipHtml(
         </tr>
         <tr class="item-sub">
             <td>$qtyText</td>
-            <td>$unit</td>
-            <td class="right">${unitTaxable.formatToAmtDec()}</td>
+            <td>$unitText</td>
+            <td>${unitTaxable.formatToAmtDec()}</td>
             <td class="right">${item.net.formatToAmtDec()}</td>
-            <td class="right">${item.gstPercentage.formatToAmtDec()}%</td>
+            <td class="right bold">${item.gstPercentage.formatToAmtDec()}%</td>
         </tr>
             """.trimIndent()
         }.joinToString("\n")
@@ -271,7 +272,7 @@ fun salesSlipHtml(
 
     <table>
         <tr>
-            <td style="padding-left: 5mm;" class="bold">${totalQty.formatToAmtDec()}</td>
+            <td style="padding-left: 5mm;" class="bold">${totalQty.toDouble().formatToAmtDec()}</td>
             <td class="right bold">${grandTotal.formatToAmtDec()}</td>
         </tr>
     </table>
@@ -362,4 +363,3 @@ private fun amountToWords(amount: Double): String {
 
     return "$wholeWords$decimalWords Only"
 }
-
