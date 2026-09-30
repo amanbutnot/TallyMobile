@@ -1029,7 +1029,8 @@ data class SaleScreen(
                 Saddress4 = Saddress4,
                 SshipState = SshipState,
                 SgstIn = SgstIn,
-                salesmanName = salesmanName
+                salesmanName = salesmanName,
+                SmobileNo = SmobileNo
             ),
             salesmanName = salesmanName
         )
@@ -1060,7 +1061,8 @@ data class SaleScreen(
                 Saddress4 = Saddress4,
                 SshipState = SshipState,
                 SgstIn = SgstIn,
-                salesmanName = salesmanName
+                salesmanName = salesmanName,
+                SmobileNo = SmobileNo
             ))
 
         val menuList = buildList {

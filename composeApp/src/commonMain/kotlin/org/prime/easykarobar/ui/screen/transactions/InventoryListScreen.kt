@@ -532,7 +532,9 @@ data class InventoryListScreen(
             Saddress4 = details?.Saddress4,
             SshipState = details?.SshipState,
             SgstIn = details?.SgstIn,
-            salesmanName = details?.salesmanName
+            salesmanName = details?.salesmanName,
+            SmobileNo = details?.SmobileNo,
+            dispatch_mobile = details?.dispatch_mobile
         )
     }
 }

@@ -77,6 +77,15 @@ fun salesHtml(
         ).map { it.clean() }.filter { it.isNotBlank() }.joinToString("<br>")
     }
 
+    val discountAmountVal = items.sumOf { (it.listPrice * it.qty.absoluteValue) - it.taxable }
+    val shippingDetailsOrMobile = transportDetails.SmobileNo?.clean()?.takeIf { it.isNotBlank() }
+        ?: transportDetails.dispatch_mobile?.clean()?.takeIf { it.isNotBlank() }
+        ?: partyDetails?.MobileNo?.clean()?.takeIf { it.isNotBlank() }
+        ?: discountAmountVal.takeIf { it > 0.0 }?.formatToAmtDec()
+        ?: ""
+
+    val mobileLine = if (shippingDetailsOrMobile.isNotBlank()) "<br><b>Mobile &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : $shippingDetailsOrMobile</b>" else ""
+
     val title = if (name == "Sale Invoice") "TAX INVOICE" else name.uppercase()
     val colSpan = if (showTax) (if (isIgst) 9 else 11) else 7
 
@@ -384,6 +393,7 @@ fun salesHtml(
             <b>${shippedToName.clean()}</b><br>
             $shippedToAddress<br>
             <b>GSTIN / UIN &nbsp;&nbsp;&nbsp; : ${shippedToGstin.clean()}</b>
+            $mobileLine
         </div>
     </div>
 
@@ -637,7 +647,9 @@ data class TransportDetails(
     val Saddress4: String? = null,
     val SshipState: String? = null,
     val SgstIn: String? = null,
-    val salesmanName: String? = null
+    val salesmanName: String? = null,
+    val SmobileNo: String? = null,
+    val dispatch_mobile: String? = null
 )
 
 
