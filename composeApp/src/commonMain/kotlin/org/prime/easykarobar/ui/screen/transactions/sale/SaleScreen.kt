@@ -3934,43 +3934,45 @@ fun ExpandedItemEditor1(
             ) {
                 TextButton(onClick = onCancel) { Text("Cancel") }
 
-                Button(
-                    enabled = isAddEnabled, onClick = {
-                        val factor = conFactor ?: 1.0
-                        val calculatedAltQty = if (selectedUnit == altUnit) {
-                            qtyValue
-                        } else {
-                            if (conType == 1.0) {
-                                qtyValue * factor
+                if (SaleOrderConfig.showAddItemInSaleOrder(vchType)) {
+                    Button(
+                        enabled = isAddEnabled, onClick = {
+                            val factor = conFactor ?: 1.0
+                            val calculatedAltQty = if (selectedUnit == altUnit) {
+                                qtyValue
                             } else {
-                                qtyValue / factor
+                                if (conType == 1.0) {
+                                    qtyValue * factor
+                                } else {
+                                    qtyValue / factor
+                                }
                             }
-                        }
 
-                        onAdd(
-                            qtyValue,
-                            unitPrice,
-                            if (isCompoundDiscount) 0.0 else discountN.trim().toDoubleOrNull()
-                                ?: 0.0,
-                            if (isCompoundDiscount) discountN else null,
-                            listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0,
-                            taxableAmount,
-                            gstAmount,
-                            netAmount,
-                            gstPercentage,
-                            itemDescs.map { it.ifBlank { null } },
-                            additionalInfos.map { it.ifBlank { null } },
-                            serialNumbers,
-                            conFactor,
-                            conType,
-                            selectedUnit,
-                            calculatedAltQty
-                        )
-                    }) {
-                    Text("Save")
+                            onAdd(
+                                qtyValue,
+                                unitPrice,
+                                if (isCompoundDiscount) 0.0 else discountN.trim().toDoubleOrNull()
+                                    ?: 0.0,
+                                if (isCompoundDiscount) discountN else null,
+                                listPriceN.replace(",", "").trim().toDoubleOrNull() ?: 0.0,
+                                taxableAmount,
+                                gstAmount,
+                                netAmount,
+                                gstPercentage,
+                                itemDescs.map { it.ifBlank { null } },
+                                additionalInfos.map { it.ifBlank { null } },
+                                serialNumbers,
+                                conFactor,
+                                conType,
+                                selectedUnit,
+                                calculatedAltQty
+                            )
+                        }) {
+                        Text("Save")
+                    }
                 }
 
-                if (onAddAndNew != null) {
+                if (onAddAndNew != null && SaleOrderConfig.showAddItemInSaleOrder(vchType)) {
                     OutlinedButton(
                         enabled = isAddEnabled, onClick = {
                             val factor = conFactor ?: 1.0
