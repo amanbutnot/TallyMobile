@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonGroupDefaults
@@ -44,7 +43,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,11 +77,8 @@ import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
-import org.prime.easykarobar.ui.shared.globalShared.CompanyName
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.getNameFromGUID
-import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
-import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 
 data class InventoryListScreen(
     val startDate: String,
@@ -139,6 +134,8 @@ data class InventoryListScreen(
                     InvoiceItem(
                         name = itm.product_name,
                         price = itm.price.toDoubleOrNull() ?: 0.0,
+                        selectedUnit = itm.selectedUnit,
+                        mainUnit = itm.selectedUnit,
                         listPrice = itm.list_price.toDoubleOrNull() ?: 0.0,
                         qty = itm.quantity,
                         discountPercentage = itm.discount_percent.toDoubleOrNull() ?: 0.0,
