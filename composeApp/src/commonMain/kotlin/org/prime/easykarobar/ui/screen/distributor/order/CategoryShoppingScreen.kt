@@ -86,6 +86,7 @@ import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getBrandImage
 import org.prime.easykarobar.ui.shared.globalShared.getCategoryImage
+import org.prime.easykarobar.ui.shared.globalShared.getSubCategoryImage
 import org.prime.easykarobar.ui.shared.globalShared.handleBannerClick
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
@@ -943,7 +944,7 @@ object CategoryShoppingScreen : Screen {
                         items(subCategories) { sub ->
                             val subCode = sub.CatCode?.toLong()?.toString() ?: ""
                             val subName = sub.CatName.orEmpty()
-                            val imageUrl = getCategoryImage(userId, subCode)
+                            val imageUrl = getSubCategoryImage(userId, subCode)
                             Column(
                                 modifier = Modifier
                                     .width(76.dp)
