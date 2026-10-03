@@ -28,6 +28,8 @@ import androidx.compose.material.icons.filled.Balance
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.Moped
 import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.PendingActions
 import androidx.compose.material.icons.filled.Person
@@ -67,6 +69,9 @@ import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.prime.easykarobar.data.model.salesmanPermission
+import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.screen.delivery.AddDeliveryScreen
+import org.prime.easykarobar.ui.screen.delivery.DeliveryListScreen
 import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.screen.reports.godown.GodownClosingStockListScreen
 import org.prime.easykarobar.ui.screen.reports.godown.MCBatchNoReport
@@ -161,6 +166,17 @@ object ReportingTab : Tab {
                     )
                 )
             )
+            if (SharedPrefs.User.get()?.ID?.toString() == "10154") {
+                add(
+                    ReportGroup(
+                        "Delivery",
+                        listOf(
+                            Report.AddDelivery,
+                            Report.DeliveryList
+                        )
+                    )
+                )
+            }
         }
 
         Column(
@@ -415,6 +431,8 @@ object ReportingTab : Tab {
                                     }
 
                                     Report.Order -> nav?.push(OrderReportSelectScreen)
+                                    Report.AddDelivery -> nav?.push(AddDeliveryScreen)
+                                    Report.DeliveryList -> nav?.push(DeliveryListScreen)
                                 }
                             }
                         )
@@ -522,4 +540,6 @@ sealed class Report(val title: String, val icon: ImageVector) {
     object SalesmanWise : Report("Salesman Target", Icons.Default.Person)
     object SalesmanGroupWise : Report("Salesman Group Wise Target", Icons.Default.Person4)
     object Order : Report("Order Report", Icons.AutoMirrored.Filled.ReceiptLong)
+    object AddDelivery : Report("ADD DELIVERY", Icons.Default.LocalShipping)
+    object DeliveryList : Report("DELIVERY LIST", Icons.Default.Moped)
 }

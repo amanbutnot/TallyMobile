@@ -70,6 +70,8 @@ import org.prime.easykarobar.data.expect.deleteDbFile
 import org.prime.easykarobar.data.utils.MOBILE_VERSION
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.OnBoardingScreen
+import org.prime.easykarobar.ui.screen.delivery.CreateDeliveryManScreen
+import org.prime.easykarobar.ui.screen.delivery.ListDeliveryManScreen
 import org.prime.easykarobar.ui.screen.distributor.CreateDistributorScreen
 import org.prime.easykarobar.ui.screen.distributor.ListDistributorScreen
 import org.prime.easykarobar.ui.screen.distributor.order.MyOrdersScreen
@@ -214,7 +216,40 @@ object SettingScreen : Screen {
 
                             }
 
-                            // Distributor Management Section
+                            if (SharedPrefs.User.get()?.ID?.toString() == "10154") {
+                                Spacer(modifier = Modifier.height(20.dp))
+                                Text(
+                                    text = "Delivery Personnel Management",
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                    color = colors.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                                )
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    ManagementCard(
+                                        icon = Icons.Default.Add,
+                                        label = "Create",
+                                        subtitle = "Delivery Man",
+                                        containerColor = colors.primaryContainer,
+                                        contentColor = colors.onPrimaryContainer,
+                                        onClick = { nav.push(CreateDeliveryManScreen()) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    ManagementCard(
+                                        icon = Icons.AutoMirrored.Filled.List,
+                                        label = "List",
+                                        subtitle = "Delivery Man",
+                                        containerColor = colors.primary,
+                                        contentColor = colors.onPrimary,
+                                        onClick = { nav.push(ListDeliveryManScreen) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
 
 
                             Spacer(modifier = Modifier.height(20.dp))
