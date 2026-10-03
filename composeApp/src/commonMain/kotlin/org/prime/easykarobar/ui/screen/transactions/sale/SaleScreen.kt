@@ -3903,7 +3903,7 @@ fun ExpandedItemEditor1(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Item Descriptions & Additional Info",
+                        text = "Item Descriptions",
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -3996,7 +3996,7 @@ fun ExpandedItemEditor1(
             ) {
                 TextButton(onClick = onCancel) { Text("Cancel") }
 
-                if (SaleOrderConfig.showAddItemInSaleOrder(vchType)) {
+           //     if (SaleOrderConfig.showAddItemInSaleOrder(vchType)) {
                     Button(
                         enabled = isAddEnabled, onClick = {
                             val factor = conFactor ?: 1.0
@@ -4032,7 +4032,7 @@ fun ExpandedItemEditor1(
                         }) {
                         Text("Save")
                     }
-                }
+             //   }
 
                 if (onAddAndNew != null && SaleOrderConfig.showAddItemInSaleOrder(vchType)) {
                     OutlinedButton(
