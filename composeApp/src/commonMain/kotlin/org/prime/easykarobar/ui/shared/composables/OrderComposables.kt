@@ -264,7 +264,7 @@ fun OrderCard(
                         }
 
                         val hamaliFromItems = items.sumOf { item ->
-                            when (item.UnitName.lowercase()) {
+                            when (item.selectedUnit.lowercase()) {
                                 "box", "tin" -> item.quantity * 2.0
                                 "bag" -> item.quantity * 5.0
                                 else -> 0.0
@@ -620,7 +620,7 @@ fun OrderItemRow(item: OrderItemList, serialNumber: Int) {
                     )
                     ItemDetailChip(
                         label = "Unit",
-                        value = item.UnitName,
+                        value = item.selectedUnit,
                         color = MaterialTheme.colorScheme.secondary
                     )
                 }

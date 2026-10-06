@@ -39,6 +39,7 @@ fun salesSlipHtml(
     val totalSavings = items.sumOf {
         (it.listPrice * it.qty.absoluteValue) - it.taxable
     }.coerceAtLeast(0.0)
+    println("ITEMS AREALSKFDJ: $items")
 
     return """
 <!DOCTYPE html>

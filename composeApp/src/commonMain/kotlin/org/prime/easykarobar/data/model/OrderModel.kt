@@ -99,7 +99,7 @@ data class OrderItemList(
     val total_amt: String,
     val taxType: Int,
     val UnitCode: String,
-    val UnitName: String
+    val selectedUnit: String
 )
 
 @Serializable
