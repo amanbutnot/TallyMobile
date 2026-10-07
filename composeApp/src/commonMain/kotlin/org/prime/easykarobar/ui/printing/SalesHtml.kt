@@ -87,7 +87,9 @@ fun salesHtml(
     val mobileLine = if (shippingDetailsOrMobile.isNotBlank()) "<br><b>Mobile &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : $shippingDetailsOrMobile</b>" else ""
 
     val title = if (name == "Sale Invoice") "TAX INVOICE" else name.uppercase()
-    val colSpan = if (showTax) (if (isIgst) 9 else 11) else 7
+    val isSpecialUser10335 = userId == 10335
+    val colSpan = (if (showTax) (if (isIgst) 9 else 11) else 7) + if (isSpecialUser10335) 1 else 0
+    val descriptionWidth = if (showTax) (if (isSpecialUser10335) 19 else 28) else (if (isSpecialUser10335) 45 else 54)
 
     val qtyStartWidth = if (showTax) "40%" else "66%"
     val labelWidth = if (showTax) "40%" else "14%"
@@ -110,6 +112,41 @@ fun salesHtml(
         else logoImgPath.toValidUrl()
     } else ""
     val logoImgTag = if (logoSrc.isNotBlank()) """<img src="$logoSrc" style="height:$cssHeight; width:$cssWidth; max-width:100%; object-fit:contain;" />""" else ""
+
+    val companyHeaderTable = if (logoImgTag.isNotBlank()) {
+        """
+        <table style="width:100%; border-collapse:collapse; border:none; table-layout:fixed;">
+            <tr>
+                <td style="width:75%; border:none; text-align:center; padding:0 5px;">
+                    <div class="title">$title</div>
+                    <div class="company-name">${CompanyName()}</div>
+                    <div class="company-info">
+                        ${compInfo?.T3.clean()}<br>
+                        Tel. : ${user?.Mobile.clean()} &nbsp; Email : ${user?.Email.clean()}
+                    </div>
+                </td>
+                <td style="width:25%; border:none; text-align:right; vertical-align:middle; padding-right:6px; overflow:hidden;">
+                    $logoImgTag
+                </td>
+            </tr>
+        </table>
+        """.trimIndent()
+    } else {
+        """
+        <table style="width:100%; border-collapse:collapse; border:none; table-layout:fixed;">
+            <tr>
+                <td style="width:100%; border:none; text-align:center; padding:0 5px;">
+                    <div class="title">$title</div>
+                    <div class="company-name">${CompanyName()}</div>
+                    <div class="company-info">
+                        ${compInfo?.T3.clean()}<br>
+                        Tel. : ${user?.Mobile.clean()} &nbsp; Email : ${user?.Email.clean()}
+                    </div>
+                </td>
+            </tr>
+        </table>
+        """.trimIndent()
+    }
 
     val html = StringBuilder()
 
@@ -333,21 +370,7 @@ fun salesHtml(
 
     <!-- Company header -->
     <div class="header-center border-b">
-        <table style="width:100%; border-collapse:collapse; border:none; table-layout:fixed;">
-            <tr>
-                <td style="width:75%; border:none; text-align:center; padding:0 5px;">
-                    <div class="title">$title</div>
-                    <div class="company-name">${CompanyName()}</div>
-                    <div class="company-info">
-                        ${compInfo?.T3.clean()}<br>
-                        Tel. : ${user?.Mobile.clean()} &nbsp; Email : ${user?.Email.clean()}
-                    </div>
-                </td>
-                <td style="width:25%; border:none; text-align:right; vertical-align:middle; padding-right:6px; overflow:hidden;">
-                    $logoImgTag
-                </td>
-            </tr>
-        </table>
+        $companyHeaderTable
     </div>
 
     <!-- Invoice / Transport info -->
@@ -403,10 +426,11 @@ fun salesHtml(
             <thead>
                 <tr>
                     <th style="width:3%">S.N.</th>
-                    <th style="width:${if (showTax) 28 else 54}%">Description of Goods</th>
+                    <th style="width:${descriptionWidth}%">Description of Goods</th>
                     <th style="width:9%">HSN/SAC Code</th>
                     <th style="width:7%">Qty.</th>
                     <th style="width:5%">Unit</th>
+                    ${if (isSpecialUser10335) """<th style="width:9%">MRP</th>""" else ""}
                     <th style="width:9%">Price</th>
                     ${if (showTax) {
                         if (isIgst) """
@@ -458,8 +482,8 @@ fun salesHtml(
                     "</span>"
         } else ""
 
-        val isUser10371 = user?.ID == 10371
-        val descList = if (isUser10371) {
+        val isSpecialUserForDesc = userId == 10371
+        val descList = if (isSpecialUserForDesc) {
             listOfNotNull(
                 item.itemdesc1, item.itemdesc2, item.itemdesc3, item.itemdesc4, item.itemdesc5,
                 item.itemdesc6, item.itemdesc7, item.itemdesc8, item.itemdesc9, item.itemdesc10,
@@ -475,6 +499,15 @@ fun salesHtml(
                     "</span>"
         } else ""
 
+        val productObj = if (isSpecialUser10335 && item.mrp == 0.0) {
+            db.productsQueries.selectAll(0).executeAsList().find { it.GUID == item.guid || it.Name == item.name }
+        } else null
+        val itemMrp = if (item.mrp > 0.0) item.mrp else (productObj?.MRP ?: 0.0)
+
+        val mrpCell = if (isSpecialUser10335) {
+            """<td class="right">${if (itemMrp > 0.0) itemMrp.formatToAmtDec() else ""}</td>"""
+        } else ""
+
         html.append(
             """
             <tr>
@@ -483,6 +516,7 @@ fun salesHtml(
                 <td class="center">${item.hsn.clean()}</td>
                 <td class="center">${item.qty.absoluteValue.formatToQtyDec()}</td>
                 <td class="center">${item.selectedUnit.clean()}</td>
+                $mrpCell
                 <td class="right">${unitTaxable.formatToAmtDec()}</td>
                 $taxCells
                 <td class="right"><b>${item.net.formatToAmtDec()}</b></td>

@@ -243,6 +243,7 @@ data class InvoiceItem(
     val purcPriceAlt: Double? = null,
     val mrpAlt: Double? = null,
     val discountAlt: Double? = null,
+    val mrp: Double = 0.0,
 ) {
     val total: Double get() = price * qty
 }
@@ -645,6 +646,8 @@ data class SaleScreen(
 
                         withContext(Dispatchers.Main) {
                             showQtyPopup = false
+                            val prodForMrp = itemsList.find { it.Name == product.Name || it.GUID == product.GUID }
+                            val isUser10371 = SharedPrefs.User.get()?.ID == 10371
                             selectedItems = selectedItems + InvoiceItem(
                                 name = product.Name.orEmpty(),
                                 price = price,
@@ -666,7 +669,12 @@ data class SaleScreen(
                                 altUnit = product.AltUnit,
                                 hsn = product.HSN,
                                 salesPriceAlt = product.SalesPriceAlt,
-                                purcPriceAlt = product.PurcPriceAlt
+                                purcPriceAlt = product.PurcPriceAlt,
+                                mrp = prodForMrp?.MRP ?: product.MRP ?: 0.0,
+                                itemdesc1 = if (isUser10371) prodForMrp?.Desc1?.takeIf { !it.isNullOrBlank() } else null,
+                                itemdesc2 = if (isUser10371) prodForMrp?.Desc2?.takeIf { !it.isNullOrBlank() } else null,
+                                itemdesc3 = if (isUser10371) prodForMrp?.Desc3?.takeIf { !it.isNullOrBlank() } else null,
+                                itemdesc4 = if (isUser10371) prodForMrp?.Desc4?.takeIf { !it.isNullOrBlank() } else null
                             )
 
                             displayItemName = product.Name.orEmpty()
@@ -819,7 +827,8 @@ data class SaleScreen(
                 narration = data.Narration.toString()
                 taxType = if (data.taxType == 1) TaxType.EXTRA else TaxType.INCLUSIVE
                 selectedItems = data.items.map { itm ->
-                    val prodFromDb = itemsList.find { it.ID == itm.product_id.toLongOrNull() }
+                    val prodFromDb = itemsList.find { it.ID == itm.product_id.toLongOrNull() || it.Name == itm.product_name }
+                    val isUser10371 = SharedPrefs.User.get()?.ID == 10371
                     InvoiceItem(
                         name = itm.product_name,
                         price = itm.price.toDouble(),
@@ -833,11 +842,12 @@ data class SaleScreen(
                         taxCategoryCode = 0,
                         salesPriceAlt = prodFromDb?.SalesPriceAlt,
                         purcPriceAlt = prodFromDb?.PurcPriceAlt,
+                        mrp = prodFromDb?.MRP ?: 0.0,
                         // Restore descriptions
-                        itemdesc1 = itm.itemdesc1,
-                        itemdesc2 = itm.itemdesc2,
-                        itemdesc3 = itm.itemdesc3,
-                        itemdesc4 = itm.itemdesc4,
+                        itemdesc1 = if (isUser10371) (prodFromDb?.Desc1?.takeIf { !it.isNullOrBlank() } ?: itm.itemdesc1) else itm.itemdesc1,
+                        itemdesc2 = if (isUser10371) (prodFromDb?.Desc2?.takeIf { !it.isNullOrBlank() } ?: itm.itemdesc2) else itm.itemdesc2,
+                        itemdesc3 = if (isUser10371) (prodFromDb?.Desc3?.takeIf { !it.isNullOrBlank() } ?: itm.itemdesc3) else itm.itemdesc3,
+                        itemdesc4 = if (isUser10371) (prodFromDb?.Desc4?.takeIf { !it.isNullOrBlank() } ?: itm.itemdesc4) else itm.itemdesc4,
                         itemdesc5 = itm.itemdesc5,
                         CD = itm.CD,
                         itemdesc6 = itm.itemdesc6,
@@ -1344,10 +1354,10 @@ data class SaleScreen(
                                                         ?: product?.PurcPriceAlt,
                                                     taxCategoryCode = product?.TaxCategoryCode?.toInt()
                                                         ?: pendingItem.taxCategoryCode,
-                                                    itemdesc1 = itemDescs.getOrNull(0),
-                                                    itemdesc2 = itemDescs.getOrNull(1),
-                                                    itemdesc3 = itemDescs.getOrNull(2),
-                                                    itemdesc4 = itemDescs.getOrNull(3),
+                                                    itemdesc1 = product?.Desc1?.takeIf { !it.isNullOrBlank() } ?: itemDescs.getOrNull(0),
+                                                    itemdesc2 = product?.Desc2?.takeIf { !it.isNullOrBlank() } ?: itemDescs.getOrNull(1),
+                                                    itemdesc3 = product?.Desc3?.takeIf { !it.isNullOrBlank() } ?: itemDescs.getOrNull(2),
+                                                    itemdesc4 = product?.Desc4?.takeIf { !it.isNullOrBlank() } ?: itemDescs.getOrNull(3),
                                                     itemdesc5 = itemDescs.getOrNull(4),
                                                     itemdesc6 = itemDescs.getOrNull(5),
                                                     itemdesc7 = itemDescs.getOrNull(6),
@@ -1422,10 +1432,10 @@ data class SaleScreen(
                                                         ?: product?.PurcPriceAlt,
                                                     taxCategoryCode = product?.TaxCategoryCode?.toInt()
                                                         ?: pendingItem.taxCategoryCode,
-                                                    itemdesc1 = itemDescs.getOrNull(0),
-                                                    itemdesc2 = itemDescs.getOrNull(1),
-                                                    itemdesc3 = itemDescs.getOrNull(2),
-                                                    itemdesc4 = itemDescs.getOrNull(3),
+                                                    itemdesc1 = product?.Desc1?.takeIf { !it.isNullOrBlank() } ?: itemDescs.getOrNull(0),
+                                                    itemdesc2 = product?.Desc2?.takeIf { !it.isNullOrBlank() } ?: itemDescs.getOrNull(1),
+                                                    itemdesc3 = product?.Desc3?.takeIf { !it.isNullOrBlank() } ?: itemDescs.getOrNull(2),
+                                                    itemdesc4 = product?.Desc4?.takeIf { !it.isNullOrBlank() } ?: itemDescs.getOrNull(3),
                                                     itemdesc5 = itemDescs.getOrNull(4),
                                                     itemdesc6 = itemDescs.getOrNull(5),
                                                     itemdesc7 = itemDescs.getOrNull(6),

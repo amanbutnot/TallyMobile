@@ -26,6 +26,22 @@ fun salesSlipHtml(
     val compInfo = db.companyInformationQueries.getCompanyInformation().executeAsOneOrNull()
     val partyDetails = db.ledgerMasterQueries.selectByName(partyName).executeAsOneOrNull()
     val user = SharedPrefs.User.get()
+    val is10335 = user?.ID == 10335
+
+    val productHeader = if (is10335) {
+        """
+        <tr>
+            <th colspan="4" class="bold" style="font-weight: 700;">Product</th>
+            <th class="bold right" style="font-weight: 700; font-size: 9.5pt;">MRP</th>
+        </tr>
+        """.trimIndent()
+    } else {
+        """
+        <tr>
+            <th colspan="5" class="bold" style="font-weight: 700;">Product</th>
+        </tr>
+        """.trimIndent()
+    }
 
     val isIgst = isIgst ?: (user?.State.clean() != partyDetails?.State.clean() &&
             partyDetails?.State.clean().isNotBlank() &&
@@ -220,9 +236,7 @@ fun salesSlipHtml(
 
     <table class="items">
         <thead>
-        <tr>
-            <th colspan="5" class="bold" style="font-weight: 700;">Product</th>
-        </tr>
+        $productHeader
         <tr class="head2">
             <th style="width: 16%;">Qty</th>
             <th style="width: 20%;">Unit</th>
@@ -245,6 +259,17 @@ fun salesSlipHtml(
             val qtyText = item.qty.absoluteValue.toDouble().formatToAmtDec()
             val unitText = item.selectedUnit.clean().ifBlank { item.mainUnit.clean() }
 
+            val productObj = if (is10335 && item.mrp == 0.0) {
+                db.productsQueries.selectAll(0).executeAsList().find { it.GUID == item.guid || it.Name == item.name }
+            } else null
+            val itemMrp = if (item.mrp > 0.0) item.mrp else (productObj?.MRP ?: 0.0)
+
+            val gstCell = if (is10335 && itemMrp > 0.0) {
+                """<td class="right bold">${itemMrp.formatToAmtDec()}<br/><span style="font-weight: normal; font-size: 9pt;">${item.gstPercentage.formatToAmtDec()}%</span></td>"""
+            } else {
+                """<td class="right bold">${item.gstPercentage.formatToAmtDec()}%</td>"""
+            }
+
             """
         <tr class="item-main">
             <td colspan="5">${index + 1}. ${item.name.clean()}</td>
@@ -254,7 +279,7 @@ fun salesSlipHtml(
             <td>$unitText</td>
             <td>${unitTaxable.formatToAmtDec()}</td>
             <td class="right">${item.net.formatToAmtDec()}</td>
-            <td class="right bold">${item.gstPercentage.formatToAmtDec()}%</td>
+            $gstCell
         </tr>
             """.trimIndent()
         }.joinToString("\n")
