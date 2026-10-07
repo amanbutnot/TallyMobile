@@ -39,7 +39,11 @@ CREATE TABLE Products (
     OF8 TEXT,
     OF9 REAL,
     OF10 REAL,
-    PRICE5 REAL
+    PRICE5 REAL,
+    Desc1 TEXT,
+    Desc2 TEXT,
+    Desc3 TEXT,
+    Desc4 TEXT
 );
 
 CREATE TABLE IF NOT EXISTS ProductMultyPricing (
@@ -507,7 +511,11 @@ SELECT
     Products.PurcPriceAlt,
     CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening,
     Products.E4,
-    Products.E5
+    Products.E5,
+    Products.Desc1,
+    Products.Desc2,
+    Products.Desc3,
+    Products.Desc4
 FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
@@ -553,7 +561,11 @@ SELECT
     Products.PurcPriceAlt,
     CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening,
     Products.E4,
-    Products.E5
+    Products.E5,
+    Products.Desc1,
+    Products.Desc2,
+    Products.Desc3,
+    Products.Desc4
 FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
@@ -598,7 +610,11 @@ SELECT
     Products.PurcPriceAlt,
     CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening,
     Products.E4,
-    Products.E5
+    Products.E5,
+    Products.Desc1,
+    Products.Desc2,
+    Products.Desc3,
+    Products.Desc4
 FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
@@ -643,7 +659,11 @@ SELECT
     Products.PurcPriceAlt,
     CAST(COALESCE(PS.Value1, 0.0) AS REAL) AS McOpening,
     Products.E4,
-    Products.E5
+    Products.E5,
+    Products.Desc1,
+    Products.Desc2,
+    Products.Desc3,
+    Products.Desc4
 FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
