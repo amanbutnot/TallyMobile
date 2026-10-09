@@ -87,7 +87,7 @@ fun salesHtml(
     val mobileLine = if (shippingDetailsOrMobile.isNotBlank()) "<br><b>Mobile &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : $shippingDetailsOrMobile</b>" else ""
 
     val title = if (name == "Sale Invoice") "TAX INVOICE" else name.uppercase()
-    val isSpecialUser10335 = userId == 10335
+    val isSpecialUser10335 = userId == 10335 || userId == 10154
     val colSpan = (if (showTax) (if (isIgst) 9 else 11) else 7) + if (isSpecialUser10335) 1 else 0
     val descriptionWidth = if (showTax) (if (isSpecialUser10335) 19 else 28) else (if (isSpecialUser10335) 45 else 54)
 
@@ -432,6 +432,7 @@ fun salesHtml(
                     <th style="width:5%">Unit</th>
                     ${if (isSpecialUser10335) """<th style="width:9%">MRP</th>""" else ""}
                     <th style="width:9%">Price</th>
+                    <th style="width:7%">Disc</th>
                     ${if (showTax) {
                         if (isIgst) """
                         <th style="width:10%">IGST Rate</th>
@@ -482,7 +483,7 @@ fun salesHtml(
                     "</span>"
         } else ""
 
-        val isSpecialUserForDesc = userId == 10371
+        val isSpecialUserForDesc = userId == 10371 || userId == 10154
         val descList = if (isSpecialUserForDesc) {
             listOfNotNull(
                 item.itemdesc1, item.itemdesc2, item.itemdesc3, item.itemdesc4, item.itemdesc5,
@@ -508,6 +509,13 @@ fun salesHtml(
             """<td class="right">${if (itemMrp > 0.0) itemMrp.formatToAmtDec() else ""}</td>"""
         } else ""
 
+        val discText = when {
+            item.CD.isNotBlank() -> item.CD
+            item.discountPercentage > 0.0 -> "${item.discountPercentage.formatToAmtDec()}%"
+            item.listPrice > item.price -> (item.listPrice - item.price).formatToAmtDec()
+            else -> ""
+        }
+
         html.append(
             """
             <tr>
@@ -518,6 +526,7 @@ fun salesHtml(
                 <td class="center">${item.selectedUnit.clean()}</td>
                 $mrpCell
                 <td class="right">${unitTaxable.formatToAmtDec()}</td>
+                <td class="center">$discText</td>
                 $taxCells
                 <td class="right"><b>${item.net.formatToAmtDec()}</b></td>
             </tr>""".trimIndent()

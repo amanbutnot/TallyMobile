@@ -8,6 +8,7 @@ import org.prime.easykarobar.ui.screen.transactions.TransactionBottomSheet
 import org.prime.easykarobar.ui.screen.transactions.TransactionOneBottomSheet
 import org.prime.easykarobar.ui.screen.transactions.TransactionSundryBottomSheet
 import org.prime.easykarobar.ui.shared.globalShared.ProductsWithConfig
+import org.tally.ProductGroupMaster
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -90,7 +91,8 @@ fun SelectionSheetItem(
     title: String,
     options: List<ProductsWithConfig>,
     onSelect: (ProductsWithConfig) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    productGroups: List<ProductGroupMaster> = emptyList()
 ) {
     TransactionItemBottomList(
         showBottomSheet = show,
@@ -101,6 +103,7 @@ fun SelectionSheetItem(
         },
         onDismiss = { onDismiss() },
         bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        title = title
+        title = title,
+        productGroups = productGroups
     )
 }

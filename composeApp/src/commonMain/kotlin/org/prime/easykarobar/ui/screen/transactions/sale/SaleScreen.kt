@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -28,7 +29,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import coil3.compose.AsyncImage
+import org.jetbrains.compose.resources.painterResource
+import tallymobile.composeapp.generated.resources.Res
+import tallymobile.composeapp.generated.resources.category_placeholder
+import org.prime.easykarobar.ui.shared.globalShared.getProductImage
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -82,6 +89,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
@@ -647,7 +655,8 @@ data class SaleScreen(
                         withContext(Dispatchers.Main) {
                             showQtyPopup = false
                             val prodForMrp = itemsList.find { it.Name == product.Name || it.GUID == product.GUID }
-                            val isUser10371 = SharedPrefs.User.get()?.ID == 10371
+                            val userId = SharedPrefs.User.get()?.ID
+                            val isUser10371 = userId == 10371 || userId == 10154
                             selectedItems = selectedItems + InvoiceItem(
                                 name = product.Name.orEmpty(),
                                 price = price,
@@ -828,7 +837,8 @@ data class SaleScreen(
                 taxType = if (data.taxType == 1) TaxType.EXTRA else TaxType.INCLUSIVE
                 selectedItems = data.items.map { itm ->
                     val prodFromDb = itemsList.find { it.ID == itm.product_id.toLongOrNull() || it.Name == itm.product_name }
-                    val isUser10371 = SharedPrefs.User.get()?.ID == 10371
+                    val userId = SharedPrefs.User.get()?.ID
+                    val isUser10371 = userId == 10371 || userId == 10154
                     InvoiceItem(
                         name = itm.product_name,
                         price = itm.price.toDouble(),
@@ -1978,6 +1988,7 @@ data class SaleScreen(
                     show = showItemSheet,
                     title = "Select Item",
                     options = groupFilteredList,
+                    productGroups = productGroups,
                     onSelect = { itemName ->
                         val currentLedger = ledgerList.find { it.GUID == selectedLedgerGUID }
                         val pricingLevel =
@@ -3402,13 +3413,17 @@ fun BorderedInput(
         BasicTextField(
             value = textFieldValue,
             onValueChange = { newValue ->
-                val filtered =
-                    newValue.text.filter { it.isDigit() || it == '.' || if (showPlus) it == '+' else it == '.' }
-                val dotCount = filtered.count { it == '.' }
-                val validText = if (dotCount > 1) {
-                    filtered.substringBefore('.') + "." + filtered.substringAfter('.')
-                        .replace(".", "")
-                } else filtered
+                val validText = if (keyboardType == KeyboardType.Text) {
+                    newValue.text
+                } else {
+                    val filtered =
+                        newValue.text.filter { it.isDigit() || it == '.' || if (showPlus) it == '+' else it == '.' }
+                    val dotCount = filtered.count { it == '.' }
+                    if (dotCount > 1) {
+                        filtered.substringBefore('.') + "." + filtered.substringAfter('.')
+                            .replace(".", "")
+                    } else filtered
+                }
                 textFieldValue = newValue.copy(text = validText)
                 onValueChange(validText)
             },
@@ -3433,9 +3448,12 @@ fun TransactionItemBottomList(
     onDismiss: () -> Unit,
     bottomSheetState: SheetState,
     title: String = "Select Account",
-    itemContent: @Composable ((String) -> Unit)? = null
+    itemContent: @Composable ((String) -> Unit)? = null,
+    productGroups: List<ProductGroupMaster> = emptyList()
 ) {
     if (!showBottomSheet) return
+
+    val isUser10154 = remember { SharedPrefs.User.get()?.ID?.toString() == "10154" }
 
     val listState = rememberSaveable(
         saver = LazyListState.Saver
@@ -3443,11 +3461,21 @@ fun TransactionItemBottomList(
         LazyListState()
     }
     var query by remember(showBottomSheet) { mutableStateOf("") }
+    var selectedCategory by remember(showBottomSheet) { mutableStateOf<String?>(null) }
 
     val filteredList = remember(list, query) {
         if (query.isBlank()) list
         else smartSearch(
             list = list, query = query, selectors = listOf { it.Name })
+    }
+
+    val categoryFilteredList = remember(filteredList, selectedCategory) {
+        if (selectedCategory.isNullOrBlank()) {
+            filteredList
+        } else {
+            val allowedGroupNames = getProductsGroupCodesByName(listOf(selectedCategory!!)).toSet()
+            filteredList.filter { it.GroupName in allowedGroupNames }
+        }
     }
 
     ModalBottomSheet(
@@ -3488,18 +3516,58 @@ fun TransactionItemBottomList(
                 Box(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                     TallySearchBar(searchQuery = query, onQueryChange = { query = it })
                 }
+                if (isUser10154 && productGroups.isNotEmpty()) {
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        item {
+                            AssistChip(
+                                onClick = { selectedCategory = null },
+                                label = { Text("All") },
+                                colors = if (selectedCategory == null) {
+                                    AssistChipDefaults.assistChipColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        labelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                } else {
+                                    AssistChipDefaults.assistChipColors()
+                                }
+                            )
+                        }
+                        items(productGroups) { group ->
+                            val isSelected = selectedCategory == group.Name
+                            AssistChip(
+                                onClick = {
+                                    selectedCategory = if (isSelected) null else group.Name
+                                },
+                                label = { Text(group.Name ?: "") },
+                                colors = if (isSelected) {
+                                    AssistChipDefaults.assistChipColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        labelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                } else {
+                                    AssistChipDefaults.assistChipColors()
+                                }
+                            )
+                        }
+                    }
+                }
                 LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f), state = listState) {
-                    if (query.isNotBlank()) {
+                    if (query.isNotBlank() || selectedCategory != null) {
                         item {
                             Text(
-                                text = "${filteredList.size} result${if (filteredList.size != 1) "s" else ""}",
+                                text = "${categoryFilteredList.size} result${if (categoryFilteredList.size != 1) "s" else ""}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                             )
                         }
                     }
-                    if (filteredList.isEmpty()) {
+                    if (categoryFilteredList.isEmpty()) {
                         item {
                             Box(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
@@ -3516,7 +3584,7 @@ fun TransactionItemBottomList(
                                         modifier = Modifier.padding(bottom = 8.dp)
                                     )
                                     Text(
-                                        text = if (query.isBlank()) "No items available" else "No results found",
+                                        text = if (query.isBlank() && selectedCategory == null) "No items available" else "No results found",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -3524,7 +3592,7 @@ fun TransactionItemBottomList(
                             }
                         }
                     }
-                    items(filteredList) { item ->
+                    items(categoryFilteredList) { item ->
                         Surface(
                             modifier = Modifier.fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 4.dp)
@@ -3539,26 +3607,47 @@ fun TransactionItemBottomList(
                                 if (itemContent != null) {
                                     itemContent(item.Name.toString())
                                 } else {
-                                    ListItem(modifier = Modifier.fillMaxWidth(), headlineContent = {
-                                        Text(
-                                            text = item.Name.toString(),
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }, trailingContent = {
-                                        if (showQtyToSalesman()) {
+                                    ListItem(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        leadingContent = if (isUser10154) {
+                                            {
+                                                AsyncImage(
+                                                    model = getProductImage(
+                                                        storeId = SharedPrefs.User.get()?.ID.toString(),
+                                                        guid = item.GUID.orEmpty()
+                                                    ),
+                                                    contentDescription = item.Name,
+                                                    modifier = Modifier
+                                                        .size(48.dp)
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)),
+                                                    contentScale = ContentScale.Crop,
+                                                    fallback = painterResource(Res.drawable.category_placeholder),
+                                                    error = painterResource(Res.drawable.category_placeholder)
+                                                )
+                                            }
+                                        } else null,
+                                        headlineContent = {
                                             Text(
-                                                text = item.McOpening.formatToQtyDec(),
-                                                style = MaterialTheme.typography.bodySmall,
+                                                text = item.Name.toString(),
+                                                style = MaterialTheme.typography.bodyLarge,
                                                 color = MaterialTheme.colorScheme.onSurface,
                                                 maxLines = 2,
                                                 overflow = TextOverflow.Ellipsis
                                             )
+                                        },
+                                        trailingContent = {
+                                            if (showQtyToSalesman()) {
+                                                Text(
+                                                    text = item.McOpening.formatToQtyDec(),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
                                         }
-                                    })
-
+                                    )
                                 }
                             }
                         }
@@ -3904,7 +3993,8 @@ fun ExpandedItemEditor1(
                 SummaryCell("Net", netAmount, highlight = true)
             }
 
-            val isUser10371 = SharedPrefs.User.get()?.ID?.toString() == "10371"
+            val userIdStr = SharedPrefs.User.get()?.ID?.toString()
+            val isUser10371 = userIdStr == "10371" || userIdStr == "10154"
             if (isUser10371) {
                 Row(
                     modifier = Modifier.fillMaxWidth()

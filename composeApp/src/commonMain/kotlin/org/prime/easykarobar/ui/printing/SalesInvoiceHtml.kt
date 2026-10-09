@@ -56,7 +56,7 @@ fun salesInvoiceHtml(
     }
 
     val title = if (name == "Sale Invoice") "TAX INVOICE" else name.uppercase()
-    val colSpan = if (showTax) (if (isIgst) 9 else 11) else 6 // SalesInvoiceHtml has one less column (Unit) in its original code? Let me check.
+    val colSpan = if (showTax) (if (isIgst) 10 else 12) else 7
 
     val qtyStartWidth = if (showTax) "45%" else "71%"
     val labelWidth = if (showTax) "35%" else "9%"
@@ -344,10 +344,11 @@ fun salesInvoiceHtml(
             <thead>
                 <tr>
                     <th style="width:3%">S.N.</th>
-                    <th style="width:${if (showTax) 33 else 59}%">Description of Goods</th>
+                    <th style="width:${if (showTax) 26 else 52}%">Description of Goods</th>
                     <th style="width:9%">HSN/SAC Code</th>
                     <th style="width:7%">Qty.</th>
                     <th style="width:9%">Price</th>
+                    <th style="width:7%">Disc</th>
                     ${if (showTax) {
                         if (isIgst) """
                         <th style="width:10%">IGST Rate</th>
@@ -397,6 +398,13 @@ fun salesInvoiceHtml(
                     "</span>"
         } else ""
 
+        val discText = when {
+            item.CD.isNotBlank() -> item.CD
+            item.discountPercentage > 0.0 -> "${item.discountPercentage.formatToAmtDec()}%"
+            item.listPrice > item.price -> (item.listPrice - item.price).formatToAmtDec()
+            else -> ""
+        }
+
         html.append(
             """
             <tr>
@@ -405,6 +413,7 @@ fun salesInvoiceHtml(
                 <td class="center">${item.hsn}</td>
                 <td class="center">${item.qty.absoluteValue.formatToQtyDec()}</td>
                 <td class="right">${unitTaxable.formatToAmtDec()}</td>
+                <td class="center">$discText</td>
                 $taxCells
                 <td class="right"><b>${item.net.formatToAmtDec()}</b></td>
             </tr>""".trimIndent()
