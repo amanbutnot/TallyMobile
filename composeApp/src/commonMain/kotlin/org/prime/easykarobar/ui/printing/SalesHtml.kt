@@ -509,9 +509,19 @@ fun salesHtml(
             """<td class="right">${if (itemMrp > 0.0) itemMrp.formatToAmtDec() else ""}</td>"""
         } else ""
 
+        val isDiscAsPer = org.prime.easykarobar.data.utils.SaleOrderConfig.discountAsPer(item.vchType)
         val discText = when {
-            item.CD.isNotBlank() -> item.CD
-            item.discountPercentage > 0.0 -> "${item.discountPercentage.formatToAmtDec()}%"
+            item.CD.isNotBlank() -> {
+                if (isDiscAsPer) {
+                    if (item.CD.endsWith("%")) item.CD else "${item.CD}%"
+                } else {
+                    item.CD
+                }
+            }
+            item.discountPercentage > 0.0 -> {
+                if (isDiscAsPer) "${item.discountPercentage.formatToAmtDec()}%"
+                else item.discountPercentage.formatToAmtDec()
+            }
             item.listPrice > item.price -> (item.listPrice - item.price).formatToAmtDec()
             else -> ""
         }

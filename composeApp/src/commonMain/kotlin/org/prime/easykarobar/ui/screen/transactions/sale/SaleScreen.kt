@@ -213,6 +213,7 @@ data class InvoiceItem(
     val taxAmt1: Double = 0.0,
     val taxAmt2: Double = 0.0,
     val guid: String = "",
+    val vchType: Int = 12,
     // Item descriptions
     val itemdesc1: String? = null,
     val CD: String,
@@ -1322,12 +1323,35 @@ data class SaleScreen(
                                             rawMain, rawAlt, cFactor, cType, isSale
                                         )
 
+                                        val isDiscAsPer = SaleOrderConfig.discountAsPer(vchType)
+                                        val initialDiscountVal = if (isDiscAsPer) {
+                                            if (pendingItem.CD.isNotBlank() && (pendingItem.CD.contains("+") || !pendingItem.CD.contains("."))) {
+                                                pendingItem.CD
+                                            } else if (pendingItem.discountPercentage > 0.0) {
+                                                pendingItem.discountPercentage.formatToAmtDec()
+                                            } else if (pendingItem.listPrice > 0.0 && pendingItem.price < pendingItem.listPrice) {
+                                                val pct = ((pendingItem.listPrice - pendingItem.price) / pendingItem.listPrice) * 100.0
+                                                (kotlin.math.round(pct * 100.0) / 100.0).formatToAmtDec()
+                                            } else {
+                                                pendingItem.CD.ifBlank { pendingItem.discountPercentage.toString() }
+                                            }
+                                        } else {
+                                            val diff = pendingItem.listPrice - pendingItem.price
+                                            if (diff > 0.0) {
+                                                diff.formatToAmtDec()
+                                            } else if (pendingItem.CD.isNotBlank()) {
+                                                pendingItem.CD
+                                            } else {
+                                                pendingItem.discountPercentage.formatToAmtDec()
+                                            }
+                                        }
+
                                         ExpandedItemEditor1(
                                             name = product?.Name ?: pendingItem.name,
                                             vchType = vchType,
                                             defaultListPrice = effMain,
                                             initialQuantity = pendingItem.qty,
-                                            initialDiscount = pendingItem.CD.ifBlank { pendingItem.discountPercentage.toString() },
+                                            initialDiscount = initialDiscountVal,
                                             taxType = taxType,
                                             existingItem = pendingItem,
                                             initialSerialNumbers = pendingItem.item_serial.map {
@@ -2529,13 +2553,15 @@ data class SaleScreen(
                             }
                             val billingItems = selectedItems.map { item ->
                                 val prod = itemsList.find { it.Name == item.name }
+                                val isDiscAsPer = SaleOrderConfig.discountAsPer(vchType)
                                 BillingItem(
                                     product_id = prod?.ID?.toString() ?: "",
                                     product_name = item.name,
                                     CD = item.CD,
                                     quantity = item.qty,
                                     list_price = item.listPrice,
-                                    discount_percent = item.discountPercentage,
+                                    discount_percent = if (isDiscAsPer) item.discountPercentage else 0.0,
+                                    discount_amt = if (!isDiscAsPer) item.discountPercentage else null,
                                     tax_rate1 = item.gstPercentage,
                                     tax_rate2 = 0.0,
                                     taxable = item.taxable,
