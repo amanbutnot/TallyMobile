@@ -31,11 +31,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import coil3.compose.AsyncImage
-import org.jetbrains.compose.resources.painterResource
-import tallymobile.composeapp.generated.resources.Res
-import tallymobile.composeapp.generated.resources.category_placeholder
-import org.prime.easykarobar.ui.shared.globalShared.getProductImage
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -89,9 +84,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
@@ -108,6 +103,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.internal.BackHandler
+import coil3.compose.AsyncImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.async
@@ -115,6 +111,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
+import org.jetbrains.compose.resources.painterResource
 import org.prime.easykarobar.business.viewmodel.transactions.InventoryVoucherViewModel
 import org.prime.easykarobar.data.expect.BarcodeScanResult
 import org.prime.easykarobar.data.expect.BarcodeScannerLauncher
@@ -155,6 +152,7 @@ import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getConfigItemMasters
 import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
+import org.prime.easykarobar.ui.shared.globalShared.getProductImage
 import org.prime.easykarobar.ui.shared.globalShared.getProductsGroupCodesByName
 import org.prime.easykarobar.ui.shared.globalShared.isBusy
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
@@ -171,6 +169,8 @@ import org.tally.LedgerMaster
 import org.tally.ProductGroupMaster
 import org.tally.Products_Pricing
 import org.tally.SerialNoEnterReportSale
+import tallymobile.composeapp.generated.resources.Res
+import tallymobile.composeapp.generated.resources.category_placeholder
 import kotlin.math.absoluteValue
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -2993,6 +2993,17 @@ fun CompactItemCard(
                     }
                     TextButton(onClick = onParameter) {
                         Text("Parameter${if (item.item_params.isNotEmpty()) " (${item.item_params.size})" else ""}")
+                    }
+                    val descCount = listOf(
+                        item.itemdesc1, item.itemdesc2, item.itemdesc3, item.itemdesc4,
+                        item.itemdesc5, item.itemdesc6, item.itemdesc7, item.itemdesc8,
+                        item.itemdesc9, item.itemdesc10, item.itemdesc11, item.itemdesc12,
+                        item.itemdesc13, item.itemdesc14, item.itemdesc15, item.itemdesc16,
+                        item.itemdesc17, item.itemdesc18, item.itemdesc19, item.itemdesc20,
+                        item.additionalinfo
+                    ).count { !it.isNullOrBlank() }
+                    TextButton(onClick = onEdit) {
+                        Text("Description${if (descCount > 0) " ($descCount)" else ""}")
                     }
                 }
             }
