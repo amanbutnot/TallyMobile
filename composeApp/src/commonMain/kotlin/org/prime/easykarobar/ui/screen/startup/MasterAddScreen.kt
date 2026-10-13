@@ -30,7 +30,7 @@ import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.screen.transactions.sale.makeNegativeConditional
 import kotlin.math.absoluteValue
 
-data class MasterAddScreen(val number: String) : Screen {
+data class MasterAddScreen(val number: String, val targetScreen: Screen? = null) : Screen {
 
     @Composable
     override fun Content() {
@@ -263,9 +263,9 @@ data class MasterAddScreen(val number: String) : Screen {
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
-                    nav.replaceAll(Dashboard)
+                    nav.replaceAll(targetScreen ?: Dashboard)
                 } else {
-                    nav.replaceAll(Dashboard)
+                    nav.replaceAll(targetScreen ?: Dashboard)
                 }
             }
         }
