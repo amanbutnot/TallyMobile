@@ -134,6 +134,18 @@ data class BillingItem(
     val item_parameter: List<String>
 )
 
+@Serializable
+data class StockJournalSaveRequest(
+    val vch_type: Int = 8,
+    val date: String,
+    val narration: String,
+    val produceLocation: String,
+    val consumeLocation: String,
+    val items: List<BillingItem>,
+    val items_2: List<BillingItem>,
+    val total_amt: Double
+)
+
 
 @Serializable
 data class InventoryVoucherResponse(

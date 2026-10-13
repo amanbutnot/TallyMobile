@@ -2887,11 +2887,12 @@ fun CompactItemCard(
     gstPercentage: Double,
     taxType: TaxType,
     onQuantityChange: (Double) -> Unit,
-    onSerialNo: () -> Unit,
-    onParameter: () -> Unit,
+    onSerialNo: () -> Unit = {},
+    onParameter: () -> Unit = {},
     onRemove: () -> Unit,
     onEdit: () -> Unit,
-    index: Int
+    index: Int,
+    showExtraButtons: Boolean = true
 ) {
     val displayedTotal = remember(item, gstPercentage, taxType) {
         val effectivePrice = if (item.CD.isNotBlank() && item.CD.contains("+")) {
@@ -2984,26 +2985,28 @@ fun CompactItemCard(
                         }
                     }
                 }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(onClick = onSerialNo) {
-                        Text("Serial No${if (item.item_serial.isNotEmpty()) " (${item.item_serial.size})" else ""}")
-                    }
-                    TextButton(onClick = onParameter) {
-                        Text("Parameter${if (item.item_params.isNotEmpty()) " (${item.item_params.size})" else ""}")
-                    }
-                    val descCount = listOf(
-                        item.itemdesc1, item.itemdesc2, item.itemdesc3, item.itemdesc4,
-                        item.itemdesc5, item.itemdesc6, item.itemdesc7, item.itemdesc8,
-                        item.itemdesc9, item.itemdesc10, item.itemdesc11, item.itemdesc12,
-                        item.itemdesc13, item.itemdesc14, item.itemdesc15, item.itemdesc16,
-                        item.itemdesc17, item.itemdesc18, item.itemdesc19, item.itemdesc20,
-                        item.additionalinfo
-                    ).count { !it.isNullOrBlank() }
-                    TextButton(onClick = onEdit) {
-                        Text("Description${if (descCount > 0) " ($descCount)" else ""}")
+                if (showExtraButtons) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(onClick = onSerialNo) {
+                            Text("Serial No${if (item.item_serial.isNotEmpty()) " (${item.item_serial.size})" else ""}")
+                        }
+                        TextButton(onClick = onParameter) {
+                            Text("Parameter${if (item.item_params.isNotEmpty()) " (${item.item_params.size})" else ""}")
+                        }
+                        val descCount = listOf(
+                            item.itemdesc1, item.itemdesc2, item.itemdesc3, item.itemdesc4,
+                            item.itemdesc5, item.itemdesc6, item.itemdesc7, item.itemdesc8,
+                            item.itemdesc9, item.itemdesc10, item.itemdesc11, item.itemdesc12,
+                            item.itemdesc13, item.itemdesc14, item.itemdesc15, item.itemdesc16,
+                            item.itemdesc17, item.itemdesc18, item.itemdesc19, item.itemdesc20,
+                            item.additionalinfo
+                        ).count { !it.isNullOrBlank() }
+                        TextButton(onClick = onEdit) {
+                            Text("Description${if (descCount > 0) " ($descCount)" else ""}")
+                        }
                     }
                 }
             }
@@ -4032,7 +4035,7 @@ fun ExpandedItemEditor1(
 
             val userIdStr = SharedPrefs.User.get()?.ID?.toString()
             val isUser10371 = userIdStr == "10371" || userIdStr == "10154"
-            if (isUser10371) {
+            if (isUser10371 && vchType != 8) {
                 Row(
                     modifier = Modifier.fillMaxWidth()
                         .padding(vertical = 4.dp),
@@ -4093,7 +4096,7 @@ fun ExpandedItemEditor1(
                 }
             }
 
-            if (serialNumbers.isNotEmpty()) {
+            if (serialNumbers.isNotEmpty() && vchType != 8) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.small,

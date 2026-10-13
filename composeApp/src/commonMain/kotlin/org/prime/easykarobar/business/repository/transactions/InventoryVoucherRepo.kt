@@ -23,7 +23,7 @@ object InventoryVoucherRepo {
     val client = KtorClient.client
 
     suspend fun createInventoryVch(
-        inventoryVoucherRequest: InventoryVoucherRequest,
+        inventoryVoucherRequest: Any,
         endpoint: String
     ): ApiResponse<InventoryVoucherResponse>? {
         val token = SharedPrefs.Token.get()

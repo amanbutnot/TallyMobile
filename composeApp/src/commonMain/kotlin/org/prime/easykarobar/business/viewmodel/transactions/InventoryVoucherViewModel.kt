@@ -28,7 +28,7 @@ class InventoryVoucherViewModel : ViewModel() {
 
 
     fun createEditInventoryResponse(
-        inventoryVoucherRequest: InventoryVoucherRequest,
+        inventoryVoucherRequest: Any,
         onSuccess: () -> Unit, url: String
     ) {
         viewModelScope.launch {

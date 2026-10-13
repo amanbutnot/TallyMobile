@@ -116,6 +116,7 @@ import org.prime.easykarobar.ui.screen.reports.outstanding.OutstandingReportScre
 import org.prime.easykarobar.ui.screen.reports.registers.RegisterReportScreen
 import org.prime.easykarobar.ui.screen.transactions.SingleEntryReceipt
 import org.prime.easykarobar.ui.screen.transactions.sale.SaleScreen
+import org.prime.easykarobar.ui.screen.transactions.sale.StockJournalScreen
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallySearchButton
@@ -666,6 +667,7 @@ fun ExpandableGrid() {
         "Credit Note" to Icons.Default.NoteAlt,
         "Sale Quotation" to Icons.Default.NoteAlt,
         "Purchase Quotation" to Icons.Default.NoteAlt,
+        "Stock Journal" to Icons.Default.Sync,
         //     "Account" to Icons.Default.AccountBox
     )
 
@@ -885,6 +887,9 @@ fun ExpandableGrid() {
                                         successBlock = {
                                             nav?.push(SaleScreen(item.first, vchType = 27))
                                         })
+                                    "Stock Journal" -> {
+                                        nav?.push(StockJournalScreen())
+                                    }
                                 }
                             })
                     }
