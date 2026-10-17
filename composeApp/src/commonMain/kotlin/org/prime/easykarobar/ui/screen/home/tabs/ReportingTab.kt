@@ -70,8 +70,8 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.data.utils.SharedPrefs
-import org.prime.easykarobar.ui.screen.delivery.AddDeliveryScreen
-import org.prime.easykarobar.ui.screen.delivery.DeliveryListScreen
+//import org.prime.easykarobar.ui.screen.delivery.AddDeliveryScreen
+//import org.prime.easykarobar.ui.screen.delivery.DeliveryListScreen
 import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.screen.reports.godown.GodownClosingStockListScreen
 import org.prime.easykarobar.ui.screen.reports.godown.MCBatchNoReport
@@ -431,8 +431,10 @@ object ReportingTab : Tab {
                                     }
 
                                     Report.Order -> nav?.push(OrderReportSelectScreen)
-                                    Report.AddDelivery -> nav?.push(AddDeliveryScreen)
-                                    Report.DeliveryList -> nav?.push(DeliveryListScreen)
+//                                    Report.AddDelivery -> nav?.push(AddDeliveryScreen)
+//                                    Report.DeliveryList -> nav?.push(DeliveryListScreen)
+                                    Report.AddDelivery -> {}
+                                    Report.DeliveryList -> {}
                                 }
                             }
                         )
