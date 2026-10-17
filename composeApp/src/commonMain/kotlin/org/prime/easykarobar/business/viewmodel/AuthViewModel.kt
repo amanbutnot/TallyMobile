@@ -11,6 +11,7 @@ import org.prime.easykarobar.business.repository.AuthRepository
 import org.prime.easykarobar.data.expect.getDeviceIdString
 import org.prime.easykarobar.data.expect.getDeviceName
 import org.prime.easykarobar.data.expect.getFirebaseToken
+import org.prime.easykarobar.data.expect.setupFcmSubscription
 import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.FirebaseTokenRequest
 import org.prime.easykarobar.data.model.ForgotResponse
@@ -187,6 +188,7 @@ class AuthViewModel : ViewModel() {
                         }
 
                         SharedPrefs.User.save(loginData)
+                        setupFcmSubscription(loginData.ID.toString())
 
                         _authState.value = AuthState(
                             success = true,

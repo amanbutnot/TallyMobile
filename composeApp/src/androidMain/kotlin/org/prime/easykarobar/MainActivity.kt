@@ -10,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import com.google.firebase.messaging.FirebaseMessaging
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.init
+import org.prime.easykarobar.data.expect.subscribeUserToFcmTopic
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.reports.ledger.LedgerReportFilterScreen
 import java.lang.ref.WeakReference
@@ -30,6 +31,7 @@ class MainActivity : ComponentActivity() {
             Log.d("FCMToken", "Current FCM Token: $token")
             if (!token.isNullOrBlank()) {
                 SharedPrefs.FcmToken.save(token)
+                subscribeUserToFcmTopic()
             }
         }
         createChannel(this)

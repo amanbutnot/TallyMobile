@@ -7,6 +7,7 @@ import androidx.core.content.ContextCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.subscribeUserToFcmTopic
 import org.prime.easykarobar.data.utils.SharedPrefs
 
 class MyFirebaseApplication : FirebaseMessagingService() {
@@ -15,6 +16,7 @@ class MyFirebaseApplication : FirebaseMessagingService() {
         println("Firebase token is $token")
         if (token.isNotBlank()) {
             SharedPrefs.FcmToken.save(token)
+            subscribeUserToFcmTopic()
         }
     }
 

@@ -17,3 +17,7 @@ actual fun removeFirebaseToken() {
 actual suspend fun getFirebaseToken(): String? {
     return SharedPrefs.FcmToken.get()
 }
+
+actual suspend fun setupFcmSubscription(topic: String): String? {
+    TODO("Not yet implemented")
+}

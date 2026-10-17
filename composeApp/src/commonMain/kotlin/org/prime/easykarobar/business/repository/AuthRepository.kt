@@ -15,6 +15,7 @@ import org.prime.easykarobar.data.model.FirebaseTokenRequest
 import org.prime.easykarobar.data.model.ForgotResponse
 import org.prime.easykarobar.data.model.LoginApiWrapper
 import org.prime.easykarobar.data.model.LoginRequest
+import org.prime.easykarobar.data.model.NotificationPayload
 import org.prime.easykarobar.data.model.RegisterRequest
 import org.prime.easykarobar.data.model.RegisterResponse
 import org.prime.easykarobar.data.model.ResetRequest
@@ -148,6 +149,42 @@ object AuthRepository {
             response.body()
         } catch (e: Exception) {
             println("Error deleting token: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun saveNotification(payload: NotificationPayload): ApiResponse<Nothing>? {
+        return try {
+            val token = SharedPrefs.Token.get()
+            val response = client.post("${BASE_URL}/Users/save_notification.php") {
+                contentType(ContentType.Application.Json)
+                if (!token.isNullOrBlank()) {
+                    header("Authorization", "Bearer $token")
+                }
+                setBody(payload)
+            }
+            println("Save notification request: $payload")
+            println("Save notification response: ${response.bodyAsText()}")
+            response.body()
+        } catch (e: Exception) {
+            println("Error saving notification: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun listNotifications(): ApiResponse<List<NotificationPayload>>? {
+        return try {
+            val token = SharedPrefs.Token.get()
+            val response = client.post("${BASE_URL}/Users/list_notifications.php") {
+                contentType(ContentType.Application.Json)
+                if (!token.isNullOrBlank()) {
+                    header("Authorization", "Bearer $token")
+                }
+            }
+            println("List notifications response: ${response.bodyAsText()}")
+            response.body()
+        } catch (e: Exception) {
+            println("Error listing notifications: ${e.message}")
             null
         }
     }

@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.NoteAlt
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
@@ -107,7 +108,9 @@ import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.attendance.AttendanceListScreen
 import org.prime.easykarobar.ui.screen.attendance.AttendanceScreen
+import org.prime.easykarobar.ui.screen.home.NotificationHistoryScreen
 import org.prime.easykarobar.ui.screen.home.ROLE
+import org.prime.easykarobar.ui.screen.home.SendNotificationScreen
 import org.prime.easykarobar.ui.screen.home.userRole
 import org.prime.easykarobar.ui.screen.masters.AccountAddScreen
 import org.prime.easykarobar.ui.screen.reports.ledger.ItemLedgerScreen
@@ -135,6 +138,7 @@ import org.prime.easykarobar.ui.shared.globalShared.getLedgerMasters
 import org.prime.easykarobar.ui.shared.globalShared.getPCGroupCodes
 import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 import org.prime.easykarobar.ui.shared.reportsShared.OutstandingDate
+import org.prime.easykarobar.ui.utils.pushEasyMart
 import org.tally.LedgerMaster
 import org.tally.Products
 import kotlin.math.absoluteValue
@@ -650,26 +654,35 @@ fun ExpandableGrid() {
     var showDeniedDialog by remember { mutableStateOf(false) }
 
 
-    val cardList = listOf(
-        "Sale Order" to Icons.Default.Description,
-        "Sale Invoice" to Icons.Default.ShoppingCart,
-        "Sale Return" to Icons.Default.ShoppingCart,
-        "Receipt" to Icons.Default.Receipt,
-        "Payment" to Icons.Default.Payment,
-        "Journal" to Icons.Default.AddShoppingCart,
-        "Purchase Order" to Icons.Default.AddShoppingCart,
-        "Purchase Invoice" to Icons.Default.ShoppingCart,
-        "Purchase Return" to Icons.Default.Receipt,
-        "Attendance" to Icons.Default.LocationOn,
-        "Check In/Out" to Icons.Default.LocationCity,
-        "Contra" to Icons.Default.Payment,
-        "Debit Note" to Icons.AutoMirrored.Filled.Note,
-        "Credit Note" to Icons.Default.NoteAlt,
-        "Sale Quotation" to Icons.Default.NoteAlt,
-        "Purchase Quotation" to Icons.Default.NoteAlt,
-        "Stock Journal" to Icons.Default.Sync,
-        //     "Account" to Icons.Default.AccountBox
-    )
+    val userId = SharedPrefs.User.get()?.ID
+    val isStore10154 = userId == 10154 || userId?.toString() == "10154"
+
+    val cardList = remember {
+        mutableListOf(
+            "Sale Order" to Icons.Default.Description,
+            "Sale Invoice" to Icons.Default.ShoppingCart,
+            "Sale Return" to Icons.Default.ShoppingCart,
+            "Receipt" to Icons.Default.Receipt,
+            "Payment" to Icons.Default.Payment,
+            "Journal" to Icons.Default.AddShoppingCart,
+            "Purchase Order" to Icons.Default.AddShoppingCart,
+            "Purchase Invoice" to Icons.Default.ShoppingCart,
+            "Purchase Return" to Icons.Default.Receipt,
+            "Attendance" to Icons.Default.LocationOn,
+            "Check In/Out" to Icons.Default.LocationCity,
+            "Contra" to Icons.Default.Payment,
+            "Debit Note" to Icons.AutoMirrored.Filled.Note,
+            "Credit Note" to Icons.Default.NoteAlt,
+            "Sale Quotation" to Icons.Default.NoteAlt,
+            "Purchase Quotation" to Icons.Default.NoteAlt,
+            "Stock Journal" to Icons.Default.Sync,
+        ).apply {
+            if (isStore10154) {
+                add("Send Notification" to Icons.Default.Notifications)
+                add("Notification History" to Icons.Default.Notifications)
+            }
+        }
+    }
 
     Column(
         modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -889,6 +902,12 @@ fun ExpandableGrid() {
                                         })
                                     "Stock Journal" -> {
                                         nav?.push(StockJournalScreen())
+                                    }
+                                    "Send Notification" -> {
+                                        nav?.push(SendNotificationScreen())
+                                    }
+                                    "Notification History" -> {
+                                        nav?.pushEasyMart(NotificationHistoryScreen)
                                     }
                                 }
                             })
