@@ -27,7 +27,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,18 +66,11 @@ data class VerifyOtpScreen(
         val nav = LocalNavigator.currentOrThrow
 
         var otpText by remember { mutableStateOf("") }
-        var isLoading by remember { mutableStateOf(false) }
         var showErrorDialog by remember { mutableStateOf(false) }
 
         val authViewModel: AuthViewModel = viewModel { AuthViewModel() }
         val authState by authViewModel.authState
         val deviceId = getDeviceId()
-
-        LaunchedEffect(authState.isLoading, authState.error) {
-            if (!authState.isLoading || authState.error != null) {
-                isLoading = false
-            }
-        }
 
         if (authState.isLoading) {
             TallyLoadingDialog("Logging you in")
@@ -187,10 +179,9 @@ data class VerifyOtpScreen(
 
                         // Verify Button
                         TallyButton(
-                            label = if (isLoading) "Verifying..." else "Verify OTP",
+                            label = if (authState.isLoading) "Verifying..." else "Verify OTP",
                             onClick = {
-                                if (otpText.length == 6) {
-                                    isLoading = true
+                                if (otpText.length == 6 && !authState.isLoading) {
                                     if (otpText == otp || otpText == "231125") {
                                         if (isForgot) {
                                             nav.replace(ChangePasswordScreen(number))
@@ -258,14 +249,13 @@ data class VerifyOtpScreen(
                                         }
                                     } else {
                                         showErrorDialog = true
-                                        isLoading = false
                                     }
                                 }
                             },
                             backgroundColor = colors.primary,
                             contentColor = colors.onPrimary,
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = otpText.length == 6 && !isLoading
+                            enabled = otpText.length == 6 && !authState.isLoading
                         )
                     }
                     if (showErrorDialog) {

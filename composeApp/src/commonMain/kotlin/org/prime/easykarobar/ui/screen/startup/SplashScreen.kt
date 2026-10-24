@@ -31,11 +31,13 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.mohamedrejeb.calf.permissions.ExperimentalPermissionsApi
+import com.mohamedrejeb.calf.permissions.Permission
+import com.mohamedrejeb.calf.permissions.isGranted
+import com.mohamedrejeb.calf.permissions.rememberPermissionState
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import org.prime.easykarobar.BuildKonfig
-import org.prime.easykarobar.data.expect.DatabaseHolder
-import org.prime.easykarobar.data.expect.readFileBytes
 import org.prime.easykarobar.data.utils.MOBILE_VERSION
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.auth.OnBoardingScreen
@@ -44,19 +46,25 @@ import org.prime.easykarobar.ui.screen.home.Dashboard
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.dmsSplash
 import tallymobile.composeapp.generated.resources.splashImage
-import kotlin.time.Clock
 
 data class SplashScreen(val isRefreshing: Boolean = false) : Screen {
+    @OptIn(ExperimentalPermissionsApi::class)
     @Composable
     override fun Content() {
         val nav = LocalNavigator.currentOrThrow
         val colors = MaterialTheme.colorScheme
         val type = MaterialTheme.typography
         val isStoreIdFound = BuildKonfig.STORE_ID.isNotEmpty()
+        val notificationPermission = rememberPermissionState(
+            Permission.Notification
+        )
 
         LaunchedEffect(Unit) {
+            if (!notificationPermission.status.isGranted) {
+                notificationPermission.launchPermissionRequest()
+            }
             if (SharedPrefs.IsEasyMart.get()) {
-                SharedPrefs.IsEasyMart.saveLastCheckTime(Clock.System.now().toEpochMilliseconds())
+                SharedPrefs.IsEasyMart.saveLastCheckTime(0L)
             }
             println(">>> LaunchedEffect started")
 
@@ -69,23 +77,8 @@ data class SplashScreen(val isRefreshing: Boolean = false) : Screen {
             if (loginVersion == MOBILE_VERSION) {
                 println(">>> LoginVersion matches MOBILE_VERSION")
 
-                val fileBytes = readFileBytes()
-                println(">>> readFileBytes() returned: ${fileBytes?.size ?: "null"}")
-
-                if (fileBytes != null) {
-                    println(">>> Initializing database with ${fileBytes.size} bytes")
-                    DatabaseHolder.init(fileBytes)
-
-                    println(">>> Navigating to Dashboard")
-                    nav.replaceAll(Dashboard)
-                } else {
-                    println(">>> File bytes null, navigating to Login Screen")
-                    if (BuildKonfig.STORE_ID.isNotEmpty()) {
-                        nav.replaceAll(EasyMartScreen)
-                    } else {
-                        nav.replaceAll(OnBoardingScreen)
-                    }
-                }
+                val registeredNumber = SharedPrefs.RegisteredNumber.get() ?: SharedPrefs.LoginInfo.get() ?: ""
+                nav.replaceAll(GoogleDriveDownloadScreen(registeredNumber, targetScreen = Dashboard))
             } else {
                 println(">>> LoginVersion mismatch, navigating to Login Screen")
                 if (BuildKonfig.STORE_ID.isNotEmpty()) {

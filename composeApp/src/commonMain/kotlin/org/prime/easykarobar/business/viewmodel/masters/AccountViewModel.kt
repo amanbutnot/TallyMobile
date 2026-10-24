@@ -86,7 +86,6 @@ class AccountViewModel : ViewModel() {
                     data = res,
                     message = res.message
                 )
-                onSuccess()
             } else {
                 println("error from viewmodel")
                 _listState.value = DataState(
@@ -95,6 +94,7 @@ class AccountViewModel : ViewModel() {
                     error = res?.message ?: "Error Occurred: Please try again."
                 )
             }
+            onSuccess()
         }
     }
 

@@ -1,22 +1,29 @@
 package org.prime.easykarobar.business.repository
 
 import io.ktor.client.call.body
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import org.prime.easykarobar.data.expect.getDeviceIdString
 import org.prime.easykarobar.data.model.ApiResponse
+import org.prime.easykarobar.data.model.DeleteTokenRequest
+import org.prime.easykarobar.data.model.FirebaseTokenRequest
 import org.prime.easykarobar.data.model.ForgotResponse
 import org.prime.easykarobar.data.model.LoginApiWrapper
 import org.prime.easykarobar.data.model.LoginRequest
+import org.prime.easykarobar.data.model.NotificationPayload
 import org.prime.easykarobar.data.model.RegisterRequest
 import org.prime.easykarobar.data.model.RegisterResponse
 import org.prime.easykarobar.data.model.ResetRequest
 import org.prime.easykarobar.data.model.WhatsAppSendResponse
 import org.prime.easykarobar.data.utils.BASE_URL
 import org.prime.easykarobar.data.utils.KtorClient
+import org.prime.easykarobar.data.utils.SharedPrefs
 
 object AuthRepository {
     val client = KtorClient.client
@@ -102,6 +109,83 @@ object AuthRepository {
             json.decodeFromString<WhatsAppSendResponse>(responseText)
         } catch (e: Exception) {
             println("Error Occurred: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun sendFirebaseToken(request: FirebaseTokenRequest): ApiResponse<JsonElement>? {
+        return try {
+            val token = SharedPrefs.Token.get()
+            val response = client.post("${BASE_URL}/Users/savefirebasetoken.php") {
+                contentType(ContentType.Application.Json)
+                if (!token.isNullOrBlank()) {
+                    header("Authorization", "Bearer $token")
+                }
+                setBody(request)
+            }
+            println("Sending Firebase Token request: $request")
+            println("Firebase Token response: ${response.bodyAsText()}")
+            response.body()
+        } catch (e: Exception) {
+            println("Error sending firebase token: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun deleteToken(bearerToken: String? = null, deviceId: String? = null): ApiResponse<JsonElement>? {
+        return try {
+            val token = bearerToken?.trim()?.takeIf { it.isNotBlank() } ?: SharedPrefs.Token.get()
+            if (token.isNullOrBlank()) return null
+            val devId = deviceId?.trim()?.takeIf { it.isNotBlank() } ?: getDeviceIdString()
+            val req = DeleteTokenRequest(
+                deviceId = devId
+            )
+            val response = client.post("${BASE_URL}/Users/deleteToken.php") {
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $token")
+                setBody(req)
+            }
+            println("Delete token request body: $req")
+            println("Delete token response: ${response.bodyAsText()}")
+            response.body()
+        } catch (e: Exception) {
+            println("Error deleting token: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun saveNotification(payload: NotificationPayload): ApiResponse<JsonElement>? {
+        return try {
+            val token = SharedPrefs.Token.get()
+            val response = client.post("${BASE_URL}/Users/save_notification.php") {
+                contentType(ContentType.Application.Json)
+                if (!token.isNullOrBlank()) {
+                    header("Authorization", "Bearer $token")
+                }
+                setBody(payload)
+            }
+            println("Save notification request: $payload")
+            println("Save notification response: ${response.bodyAsText()}")
+            response.body()
+        } catch (e: Exception) {
+            println("Error saving notification: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun listNotifications(): ApiResponse<List<NotificationPayload>>? {
+        return try {
+            val token = SharedPrefs.Token.get()
+            val response = client.post("${BASE_URL}/Users/list_notifications.php") {
+                contentType(ContentType.Application.Json)
+                if (!token.isNullOrBlank()) {
+                    header("Authorization", "Bearer $token")
+                }
+            }
+            println("List notifications response: ${response.bodyAsText()}")
+            response.body()
+        } catch (e: Exception) {
+            println("Error listing notifications: ${e.message}")
             null
         }
     }

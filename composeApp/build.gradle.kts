@@ -14,6 +14,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     id("app.cash.sqldelight") version "2.1.0"
     id("com.codingfeline.buildkonfig") version "0.22.0"
+    id("com.google.gms.google-services")
 }
 
 val brand = findProperty("brand")?.toString() ?: "vimal"
@@ -68,6 +69,7 @@ kotlin {
             implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
 
             implementation("org.apache.poi:poi-ooxml:5.2.5")
+            implementation("com.google.firebase:firebase-messaging:24.1.0")
         }
 
         commonMain.dependencies {
@@ -138,8 +140,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
 
 
-        versionCode = 10
-        versionName = "1.1.0"
+        versionCode = 14
+        versionName = "1.1.4"
 
         resValue("string", "app_name", appName)
 

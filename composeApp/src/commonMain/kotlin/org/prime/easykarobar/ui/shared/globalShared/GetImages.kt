@@ -12,6 +12,11 @@ fun getProductImage(storeId: String, guid: String): String {
     return "https://images.easykarobar.in/stores/${storeId}/t/$storeId$guid.webp?v=104"
 }
 
+fun getNotificationImage(storeId: String, title: String): String {
+    val sanitizedTitle = title.trim().replace(" ", "_")
+    return "https://images.easykarobar.in/stores/$storeId/Notification/$sanitizedTitle.jpg"
+}
+
 fun String.toValidUrl(): String {
     val value = trim()
 

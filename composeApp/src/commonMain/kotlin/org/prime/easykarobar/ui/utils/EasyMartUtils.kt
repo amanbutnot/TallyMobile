@@ -16,9 +16,7 @@ import kotlin.time.Clock
 fun shouldSyncEasyMart(): Boolean {
     if (!SharedPrefs.IsEasyMart.get()) return false
     val lastCheckTime = SharedPrefs.IsEasyMart.getLastCheckTime()
-    if (lastCheckTime == 0L) return false // Let it be saved once first or trigger immediately? 
-    // Actually, if it's 0, it means it was never saved. 
-    // The user said "take a time of first splashscreen or masteradd screen"
+    if (lastCheckTime == 0L) return true
     val currentTime = Clock.System.now().toEpochMilliseconds()
     return (currentTime - lastCheckTime) > 300000L // 5 minutes in ms
 }

@@ -1,0 +1,20 @@
+CREATE TABLE NotificationHistory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    receivedAt INTEGER NOT NULL,
+    isClicked INTEGER NOT NULL DEFAULT 0
+);
+
+insertNotification:
+INSERT INTO NotificationHistory (title, description, receivedAt)
+VALUES (?, ?, ?);
+
+getAllNotifications:
+SELECT * FROM NotificationHistory ORDER BY receivedAt DESC;
+
+markAsClicked:
+UPDATE NotificationHistory SET isClicked = 1 WHERE id = ?;
+
+clearHistory:
+DELETE FROM NotificationHistory;

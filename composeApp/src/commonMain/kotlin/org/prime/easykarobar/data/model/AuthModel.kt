@@ -11,7 +11,22 @@ data class LoginRequest(
     val Password: String,
     val DeviceId: String,
     val CompanyID: Int? = null,
-    val RegisteredNumber: String? = null
+    val RegisteredNumber: String? = null,
+    val mobile_version: String = (SharedPrefs.LoginVersion.get() ?: "").toString()
+)
+
+@Serializable
+data class FirebaseTokenRequest(
+    val mobileNo: String,
+    val deviceId: String,
+    val deviceName: String,
+    val jwtToken: String,
+    val firebase_token: String? = null
+)
+
+@Serializable
+data class DeleteTokenRequest(
+    val deviceId: String
 )
 
 @Serializable

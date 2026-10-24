@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "75767944653",
+    "project_id": "vimal-trading-company",
+    "storage_bucket": "vimal-trading-company.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:75767944653:android:fff583e2d73eda2acf6084",
+        "android_client_info": {
+          "package_name": "com.easykarobar.vimal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDTHOa_jIfLw7S_Ti-LgRx2qbGYTt753p4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

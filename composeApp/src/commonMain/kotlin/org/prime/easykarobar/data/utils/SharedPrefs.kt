@@ -6,6 +6,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.removeFirebaseToken
 import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.Distributor
 import org.prime.easykarobar.data.model.LoginResponse
@@ -20,6 +21,7 @@ object SharedPrefs {
         settings2.clear()
     }
     fun logout() {
+        removeFirebaseToken()
 
         // authentication
         Token.clear()
@@ -27,6 +29,7 @@ object SharedPrefs {
         Cart.clear()
         User.clear()
         BillingGuid.clear()
+        FcmToken.clear()
 
         // user related data
         DistributorData.clear()
@@ -83,6 +86,21 @@ object SharedPrefs {
 
     object Token {
         private const val KEY = "token"
+        fun save(token: String) {
+            settings.putString(KEY, token)
+        }
+
+        fun get(): String? {
+            return settings.getStringOrNull(KEY)
+        }
+
+        fun clear() {
+            settings.remove(KEY)
+        }
+    }
+
+    object FcmToken {
+        private const val KEY = "fcm_token"
         fun save(token: String) {
             settings.putString(KEY, token)
         }
@@ -465,20 +483,20 @@ object SharedPrefs {
         private const val KEY_GST = "dispatch_gst"
 
         fun save(name: String, mobile: String, address: String, pincode: String, state: String, gst: String) {
-            settings.putString(KEY_NAME, name)
-            settings.putString(KEY_MOBILE, mobile)
-            settings.putString(KEY_ADDRESS, address)
-            settings.putString(KEY_PINCODE, pincode)
-            settings.putString(KEY_STATE, state)
-            settings.putString(KEY_GST, gst)
+            settings2.putString(KEY_NAME, name)
+            settings2.putString(KEY_MOBILE, mobile)
+            settings2.putString(KEY_ADDRESS, address)
+            settings2.putString(KEY_PINCODE, pincode)
+            settings2.putString(KEY_STATE, state)
+            settings2.putString(KEY_GST, gst)
         }
 
-        fun getName(): String? = settings.getStringOrNull(KEY_NAME)
-        fun getMobile(): String? = settings.getStringOrNull(KEY_MOBILE)
-        fun getAddress(): String? = settings.getStringOrNull(KEY_ADDRESS)
-        fun getPincode(): String? = settings.getStringOrNull(KEY_PINCODE)
-        fun getState(): String? = settings.getStringOrNull(KEY_STATE)
-        fun getGst(): String? = settings.getStringOrNull(KEY_GST)
+        fun getName(): String? = settings2.getStringOrNull(KEY_NAME)
+        fun getMobile(): String? = settings2.getStringOrNull(KEY_MOBILE)
+        fun getAddress(): String? = settings2.getStringOrNull(KEY_ADDRESS)
+        fun getPincode(): String? = settings2.getStringOrNull(KEY_PINCODE)
+        fun getState(): String? = settings2.getStringOrNull(KEY_STATE)
+        fun getGst(): String? = settings2.getStringOrNull(KEY_GST)
 
         fun isSaved(): Boolean {
             return !getName().isNullOrBlank() && !getMobile().isNullOrBlank() && !getAddress().isNullOrBlank()
@@ -540,12 +558,12 @@ object SharedPrefs {
         }
 
         fun clear() {
-            settings.remove(KEY_NAME)
-            settings.remove(KEY_MOBILE)
-            settings.remove(KEY_ADDRESS)
-            settings.remove(KEY_PINCODE)
-            settings.remove(KEY_STATE)
-            settings.remove(KEY_GST)
+            settings2.remove(KEY_NAME)
+            settings2.remove(KEY_MOBILE)
+            settings2.remove(KEY_ADDRESS)
+            settings2.remove(KEY_PINCODE)
+            settings2.remove(KEY_STATE)
+            settings2.remove(KEY_GST)
         }
     }
 
