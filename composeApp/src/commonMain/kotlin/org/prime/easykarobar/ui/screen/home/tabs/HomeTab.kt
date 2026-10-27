@@ -655,7 +655,7 @@ fun ExpandableGrid() {
 
 
     val userId = SharedPrefs.User.get()?.ID
-    val isStore10154 = userId == 10154 || userId?.toString() == "10154"
+    val isStore10154 = userId == 10154 || userId?.toString() == "10154" || userId?.toString() == "10335"
 
     val cardList = remember {
         mutableListOf(

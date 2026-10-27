@@ -8,6 +8,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import org.prime.easykarobar.data.expect.getDeviceIdString
 import org.prime.easykarobar.data.model.ApiResponse
 import org.prime.easykarobar.data.model.DeleteTokenRequest
@@ -29,15 +30,17 @@ object AuthRepository {
 
     suspend fun userLogin(loginRequest: LoginRequest): LoginApiWrapper? {
         return try {
+            println("[WWWW] AuthRepository.userLogin request: $loginRequest")
             val response = client.post("${BASE_URL}/Users/LoginMulti.php") {
                 contentType(ContentType.Application.Json)
                 setBody(loginRequest)
             }
-            println(loginRequest)
-            println(response.bodyAsText())
-            response.body()
+            val responseText = response.bodyAsText()
+            println("[WWWW] AuthRepository.userLogin response: $responseText")
+            val json = Json { ignoreUnknownKeys = true }
+            json.decodeFromString<LoginApiWrapper>(responseText)
         } catch (e: Exception) {
-            print("Error Occurred: ${e.message}")
+            println("[WWWW] AuthRepository.userLogin error: ${e.message}")
             null
         }
     }
@@ -71,7 +74,7 @@ object AuthRepository {
         }
     }
 
-    suspend fun resetPassword(mobileNumber: String, newPass: String): ApiResponse<Nothing>? {
+    suspend fun resetPassword(mobileNumber: String, newPass: String): ApiResponse<JsonElement>? {
         return try {
             val response = client.post("${BASE_URL}/Users/update-password.php") {
                 contentType(ContentType.Application.Json)
@@ -112,7 +115,7 @@ object AuthRepository {
         }
     }
 
-    suspend fun sendFirebaseToken(request: FirebaseTokenRequest): ApiResponse<Nothing>? {
+    suspend fun sendFirebaseToken(request: FirebaseTokenRequest): ApiResponse<JsonElement>? {
         return try {
             val token = SharedPrefs.Token.get()
             val response = client.post("${BASE_URL}/Users/savefirebasetoken.php") {
@@ -131,7 +134,7 @@ object AuthRepository {
         }
     }
 
-    suspend fun deleteToken(bearerToken: String? = null, deviceId: String? = null): ApiResponse<Nothing>? {
+    suspend fun deleteToken(bearerToken: String? = null, deviceId: String? = null): ApiResponse<JsonElement>? {
         return try {
             val token = bearerToken?.trim()?.takeIf { it.isNotBlank() } ?: SharedPrefs.Token.get()
             if (token.isNullOrBlank()) return null
@@ -153,7 +156,7 @@ object AuthRepository {
         }
     }
 
-    suspend fun saveNotification(payload: NotificationPayload): ApiResponse<Nothing>? {
+    suspend fun saveNotification(payload: NotificationPayload): ApiResponse<JsonElement>? {
         return try {
             val token = SharedPrefs.Token.get()
             val response = client.post("${BASE_URL}/Users/save_notification.php") {

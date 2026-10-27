@@ -26,9 +26,11 @@ class GoogleDriveViewModel : ViewModel() {
             _driveState.value = ProfileState(isLoading = true)
 
             val res = GoogleDriveRepository.getDriveToken()
+            println("[WWWW] GoogleDriveViewModel: getDriveToken response statuscode=${res?.statuscode}, message=${res?.message}, hasToken=${res?.data?.access_token != null}")
 
             val token = res?.data?.access_token
             if (res?.statuscode == 200 && token != null) {
+                println("[WWWW] GoogleDriveViewModel: getDriveToken success!")
                 _driveState.value = ProfileState(
                     success = true,
                     isLoading = false,
@@ -37,6 +39,7 @@ class GoogleDriveViewModel : ViewModel() {
                 )
                 onSuccess(token)
             } else {
+                println("[WWWW] GoogleDriveViewModel: getDriveToken failed with error: ${res?.message}")
                 _driveState.value = ProfileState(
                     success = false,
                     isLoading = false,

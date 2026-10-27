@@ -4,6 +4,7 @@ import org.prime.easykarobar.TallyDatabase
 
 
 expect fun initializeDatabase(byteArray: ByteArray): TallyDatabase
+expect fun initializeDatabaseFromFile(filePath: String): TallyDatabase
 
 object DatabaseHolder {
     private var _instance: TallyDatabase? = null
@@ -25,5 +26,9 @@ object DatabaseHolder {
 
     fun init(byteArray: ByteArray) {
         _instance = initializeDatabase(byteArray)
+    }
+
+    fun init(filePath: String) {
+        _instance = initializeDatabaseFromFile(filePath)
     }
 }

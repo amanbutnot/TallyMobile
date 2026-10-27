@@ -59,6 +59,7 @@ import org.prime.easykarobar.business.viewmodel.GoogleDriveViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.deleteDbFile
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.ui.screen.home.Dashboard
 import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -93,9 +94,12 @@ data class GoogleDriveDownloadScreen(val number: String) : Screen {
             colors.primaryContainer
         }
 
-        // Handle download errors
-        LaunchedEffect(downloadState.error) {
-            downloadState.error?.let { error ->
+        val gDriveState = googleDriveViewModel.driveState
+
+        // Handle download or drive token errors
+        LaunchedEffect(downloadState.error, gDriveState.value.error) {
+            val err = downloadState.error ?: gDriveState.value.error
+            err?.let { error ->
                 errorMessage = error
                 showErrorDialog = true
             }
@@ -114,26 +118,38 @@ data class GoogleDriveDownloadScreen(val number: String) : Screen {
         }
 
         LaunchedEffect(Unit) {
+            println("[WWWW] GoogleDriveDownloadScreen: LaunchedEffect started. number=$number")
             val fileId = SharedPrefs.FileId.get()
             val storeId = BuildKonfig.STORE_ID
-            println("Store id is $storeId")
+            println("[WWWW] GoogleDriveDownloadScreen: storeId=$storeId, fileId=$fileId")
 
-            deleteDbFile()
+            try {
+                deleteDbFile()
+                println("[WWWW] GoogleDriveDownloadScreen: deleteDbFile() completed.")
+            } catch (e: Exception) {
+                println("[WWWW] GoogleDriveDownloadScreen: deleteDbFile error: ${e.message}")
+            }
+
             val destinationPath = getAppDatabaseDirectory()
+            println("[WWWW] GoogleDriveDownloadScreen: destinationPath=$destinationPath")
 
             val onDownloadSuccess: (String) -> Unit = { dbPath ->
+                println("[WWWW] GoogleDriveDownloadScreen: onDownloadSuccess triggered with dbPath=$dbPath")
                 isInitializing = true
                 scope.launch(Dispatchers.IO) {
                     try {
-                        val dbBytes = readDatabaseFile(dbPath)
-                        DatabaseHolder.init(byteArray = dbBytes)
+                        println("[WWWW] GoogleDriveDownloadScreen: Initializing database directly from file path: $dbPath")
+                        DatabaseHolder.init(filePath = dbPath)
+                        println("[WWWW] GoogleDriveDownloadScreen: DatabaseHolder initialized successfully from file")
                         val now = Clock.System.now().toEpochMilliseconds()
                         SharedPrefs.LastSync.save(now)
+                        println("[WWWW] GoogleDriveDownloadScreen: LastSync saved. Navigating to MasterAddScreen($number)")
                         withContext(Dispatchers.Main) {
                             nav.replaceAll(MasterAddScreen(number))
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
+                        println("[WWWW] GoogleDriveDownloadScreen: Error initializing database: ${e.message}")
                         errorMessage = "Failed to initialize database: ${e.message}"
                         withContext(Dispatchers.Main) {
                             showErrorDialog = true
@@ -147,19 +163,25 @@ data class GoogleDriveDownloadScreen(val number: String) : Screen {
                 val url = "https://easykarobar.in/database/$storeId.zip?filetime=${
                     Clock.System.now().toEpochMilliseconds().toInt()
                 }"
+                println("[WWWW] GoogleDriveDownloadScreen: storeId is not empty. Downloading from URL: $url")
                 downloadViewModel.downloadDatabaseFromUrl(
                     url = url,
                     destinationPath = destinationPath,
                     onSuccess = onDownloadSuccess
                 )
             } else {
-                if (fileId == null) {
-                    errorMessage = "File ID not found. Please try again."
-                    showErrorDialog = true
+                println("[WWWW] GoogleDriveDownloadScreen: storeId is empty.")
+                if (fileId.isNullOrBlank()) {
+                    println("[WWWW] GoogleDriveDownloadScreen: fileId is also null or blank. Skipping download and navigating to Dashboard.")
+                    withContext(Dispatchers.Main) {
+                        nav.replaceAll(Dashboard)
+                    }
                     return@LaunchedEffect
                 }
 
+                println("[WWWW] GoogleDriveDownloadScreen: fileId found ($fileId). Fetching Google Drive token...")
                 googleDriveViewModel.getDriveToken { accessToken ->
+                    println("[WWWW] GoogleDriveDownloadScreen: Google Drive token fetched successfully. Starting download and extract...")
                     downloadViewModel.downloadAndExtractDatabase(
                         fileId = fileId,
                         accessToken = accessToken,

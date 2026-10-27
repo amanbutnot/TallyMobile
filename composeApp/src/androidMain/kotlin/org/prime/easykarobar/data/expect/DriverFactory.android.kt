@@ -26,6 +26,11 @@ actual class DriverFactory(private val context: Context) {
             output.write(bytes)
         }
 
+        return createDriver()
+    }
+
+    actual fun createDriver(): SqlDriver {
+        val dbName = DB_FILE_NAME
         val driver = AndroidSqliteDriver(
             schema = TallyDatabase.Schema,
             context = context,

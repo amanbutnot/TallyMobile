@@ -70,6 +70,7 @@ object LoginScreen : Screen {
         val urlHandler = LocalUriHandler.current
 
         if (state.isLoading) {
+            println(state)
             TallyLoadingDialog("Logging you in")
         }
 
@@ -187,12 +188,14 @@ object LoginScreen : Screen {
                         TallyButton(
                             label = "Login",
                             onClick = {
+                                println("[WWWW] LoginScreen: Login button clicked for email/mobile: $email")
                                 viewModel.userLogin(
                                     LoginRequest(
                                         Username = email,
                                         Password = password, DeviceId = deviceId, mobile_version = MOBILE_VERSION.toString()
                                     ),
                                     onSuccess = {
+                                        println("[WWWW] LoginScreen: onSuccess callback invoked. Navigating to GoogleDriveDownloadScreen...")
                                         SharedPrefs.LoginData.save(
                                             SharedPrefs.LoginDataModel(
                                                 username = email.trim(),
@@ -200,8 +203,9 @@ object LoginScreen : Screen {
                                                 list = CompanyList(emptyList()),
                                             )
                                         )
-                                        nav.push(GoogleDriveDownloadScreen(email.trim()))
+                                        nav.replaceAll(GoogleDriveDownloadScreen(email.trim()))
                                     }, onListSuccess = { companyList ->
+                                        println("[WWWW] LoginScreen: onListSuccess callback invoked. Navigating to SelectCompanyScreen...")
                                         SharedPrefs.LoginInfo.save(email.trim())
                                         SharedPrefs.LoginData.save(
                                             SharedPrefs.LoginDataModel(

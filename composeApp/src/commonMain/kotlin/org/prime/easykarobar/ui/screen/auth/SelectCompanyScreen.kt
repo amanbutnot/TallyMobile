@@ -122,7 +122,7 @@ data class SelectCompanyScreen(
                                         ),
                                         onSuccess = {
 
-                                            nav.push(GoogleDriveDownloadScreen(number))
+                                            nav.replaceAll(GoogleDriveDownloadScreen(number))
                                         },
                                         onListSuccess = {}
                                     )

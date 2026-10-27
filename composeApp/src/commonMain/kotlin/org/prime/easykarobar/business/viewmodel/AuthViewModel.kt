@@ -4,6 +4,9 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -135,7 +138,7 @@ class AuthViewModel : ViewModel() {
         onSuccess: () -> Unit,
         onListSuccess: (CompanyList) -> Unit
     ) {
-
+        println("[WWWW] AuthViewModel.userLogin called with username: ${loginRequest.Username}")
         viewModelScope.launch {
 
             _authState.value = AuthState(isLoading = true)
@@ -143,13 +146,16 @@ class AuthViewModel : ViewModel() {
             try {
 
                 val res = AuthRepository.userLogin(loginRequest)
+                println("[WWWW] AuthViewModel.userLogin response statuscode: ${res?.statuscode}, message: ${res?.message}")
 
                 when (res?.statuscode) {
 
                     200 -> {
-
+                        println("[WWWW] AuthViewModel.userLogin status 200 received. Decoding LoginResponse...")
                         val loginData =
                             json.decodeFromJsonElement<LoginResponse>(res.data)
+
+                        println("[WWWW] AuthViewModel.userLogin decoded LoginResponse: ID=${loginData.ID}, tokenIsBlank=${loginData.token.isBlank()}, C9=${loginData.C9}")
 
                         if (loginData.token.isNotBlank() && loginData.C9.isNotBlank()) {
 
@@ -166,9 +172,10 @@ class AuthViewModel : ViewModel() {
                             // Save username ONCE
                             SharedPrefs.LoginInfo.save(loginRequest.Username.trim())
                             sendFirebaseToken(loginRequest.Username.trim())
+                            println("[WWWW] AuthViewModel.userLogin token and FileId saved successfully.")
 
                         } else {
-
+                            println("[WWWW] AuthViewModel.userLogin validation failed: token or C9 is blank!")
                             _authState.value = AuthState(
                                 success = false,
                                 isLoading = false,
@@ -188,7 +195,14 @@ class AuthViewModel : ViewModel() {
                         }
 
                         SharedPrefs.User.save(loginData)
-                        setupFcmSubscription(loginData.ID.toString())
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                setupFcmSubscription(loginData.ID.toString())
+                                println("[WWWW] FCM setup completed successfully for topic: ${loginData.ID}")
+                            } catch (e: Exception) {
+                                println("[WWWW] FCM setup error: ${e.message}")
+                            }
+                        }
 
                         _authState.value = AuthState(
                             success = true,
@@ -197,11 +211,12 @@ class AuthViewModel : ViewModel() {
                             data = loginData
                         )
 
+                        println("[WWWW] AuthViewModel.userLogin triggering onSuccess()")
                         onSuccess()
                     }
 
                     900 -> {
-
+                        println("[WWWW] AuthViewModel.userLogin status 900 (multiple companies) received.")
                         val companies =
                             json.decodeFromJsonElement<CompanyList>(res.data)
 
@@ -215,17 +230,19 @@ class AuthViewModel : ViewModel() {
                     }
 
                     else -> {
-
+                        println("[WWWW] AuthViewModel.userLogin unexpected statuscode: ${res?.statuscode}")
                         _authState.value = AuthState(
                             success = false,
                             isLoading = false,
-                            error = res?.message ?: "Unexpected error"
+                            error = res?.message ?: "Login failed",
+                            message = res?.message
                         )
                     }
                 }
 
             } catch (e: Exception) {
-
+                println("[WWWW] AuthViewModel.userLogin exception: ${e.message}")
+                e.printStackTrace()
                 _authState.value = AuthState(
                     success = false,
                     isLoading = false,

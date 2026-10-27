@@ -134,7 +134,7 @@ class SendNotificationScreen : Screen {
                 modifier = Modifier
                     .fillMaxSize()
                     .background(colors.surfaceContainerLowest)
-                    .padding(paddingValues)
+                    .padding(paddingValues).navigationBarsPadding()
             ) {
                 Column(
                     modifier = Modifier
