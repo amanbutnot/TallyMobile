@@ -9,6 +9,8 @@ import com.google.firebase.messaging.RemoteMessage
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.subscribeUserToFcmTopic
 import org.prime.easykarobar.data.utils.SharedPrefs
+import org.prime.easykarobar.data.model.NotificationPayload
+import kotlinx.serialization.json.Json
 
 class MyFirebaseApplication : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
@@ -81,15 +83,38 @@ class MyFirebaseApplication : FirebaseMessagingService() {
         }
 
         val timestamp = System.currentTimeMillis()
+        val data = message.data
+        val contentType = data["contentType"] ?: data["content_type"] ?: "desc"
+        val description = data["desc"] ?: data["body"] ?: data["message"] ?: data["description"] ?: body
+        val onClickAction = data["onClickAction"] ?: data["on_click_action"] ?: data["action"] ?: "nothing"
+        val entityName = data["entityName"] ?: data["entity_name"] ?: ""
+        val entityGuid = data["entityGuid"] ?: data["entity_guid"] ?: data["guid"] ?: data["id"] ?: data["store_id"] ?: ""
+        val imageUrl = data["imageUrl"] ?: data["image"] ?: ""
+        val hasImage = imageUrl.isNotBlank()
+
+        val payload = NotificationPayload(
+            title = title,
+            contentType = contentType,
+            description = description,
+            hasImage = hasImage,
+            imageUrl = imageUrl.ifBlank { null },
+            onClickAction = onClickAction,
+            entityGuid = entityGuid.ifBlank { null },
+            entityName = entityName.ifBlank { null },
+            timestamp = timestamp
+        )
+
+        val json = Json { ignoreUnknownKeys = true }
+        val payloadJson = json.encodeToString(payload)
 
         try {
             val db = DatabaseHolder.instance
             db.notificationHistoryQueries.insertNotification(
                 title,
-                body,
+                payloadJson,
                 timestamp
             )
-            println("FCM: Saved notification to database")
+            println("FCM: Saved notification payload JSON to database")
         } catch (e: Exception) {
             println("FCM: Error saving notification to database: ${e.message}")
         }
@@ -98,8 +123,12 @@ class MyFirebaseApplication : FirebaseMessagingService() {
             SharedPrefs.NotificationsList.add(
                 SharedPrefs.NotificationsList.SavedNotificationItem(
                     title = title,
-                    body = body,
-                    timestamp = timestamp
+                    body = description,
+                    timestamp = timestamp,
+                    contentType = contentType,
+                    onClickAction = onClickAction,
+                    entityGuid = entityGuid.ifBlank { null },
+                    entityName = entityName.ifBlank { null }
                 )
             )
             println("FCM: Saved notification to SharedPrefs list")

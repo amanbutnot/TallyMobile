@@ -12,7 +12,7 @@ enum class OnClickAction(val value: String, val displayName: String) {
 
     companion object {
         fun fromValue(value: String): OnClickAction {
-            return entries.find { it.value == value } ?: NOTHING
+            return entries.find { it.value.equals(value, ignoreCase = true) } ?: NOTHING
         }
     }
 }

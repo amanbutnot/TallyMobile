@@ -50,6 +50,8 @@ import org.prime.easykarobar.data.model.OnClickAction
 import org.prime.easykarobar.ui.screen.distributor.order.AllProductsPremiumScreen
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.utils.pushEasyMart
+import org.prime.easykarobar.data.utils.SharedPrefs
+import org.tally.GetProductsForDis
 import kotlin.time.Instant
 
 object NotificationHistoryScreen : Screen {
@@ -70,6 +72,7 @@ object NotificationHistoryScreen : Screen {
                 payloads = res.data.sortedByDescending { it.timestamp }
             } else {
                 // Fallback to local database if network fails
+                println("it went here")
                 val local = db.notificationHistoryQueries.getAllNotifications().executeAsList()
                 payloads = local.map { loc ->
                     runCatching {
@@ -160,59 +163,83 @@ object NotificationHistoryScreen : Screen {
     private fun NotificationPayloadItem(payload: NotificationPayload) {
         val colors = MaterialTheme.colorScheme
         val nav = LocalNavigator.currentOrThrow
+        val db = DatabaseHolder.instance
         
         val instant = Instant.fromEpochMilliseconds(payload.timestamp)
         val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
         val dateString = "${localDateTime.date} ${localDateTime.hour}:${localDateTime.minute.toString().padStart(2, '0')}"
         
+        val action = payload.onClickAction.trim().lowercase().replace('_', ' ').replace('-', ' ')
+        val guid = payload.entityGuid ?: ""
+        val name = payload.entityName ?: "Items"
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {
-                    val action = payload.onClickAction.trim().lowercase()
-                    val guid = payload.entityGuid ?: ""
-                    val name = payload.entityName ?: "Items"
-                    when (action) {
-                        "open item" -> {
-                            if (guid.isNotBlank()) {
-                                nav.pushEasyMart(
-                                    AllProductsPremiumScreen(
-                                        categoryName = name,
-                                        productGuids = listOf(guid),
-                                        isTab = false
+                .then(
+                    if (action != "nothing" && action.isNotBlank()) {
+                        Modifier.clickable {
+                            println("[WWWW] Notification clicked: action=$action, guid=$guid, name=$name, contentType=${payload.contentType}")
+                            when (action) {
+                                "open item", "open_item" -> {
+                                    if (guid.isNotBlank()) {
+                                        val product = db.productsQueries.getProductsByGuidsForDis(
+                                            guids = listOf(guid),
+                                            changePrice = SharedPrefs.ChangePrice.get(),
+                                            mapper = ::GetProductsForDis
+                                        ).executeAsOneOrNull()
+
+                                        nav.pushEasyMart(
+                                            AllProductsPremiumScreen(
+                                                categoryName = product?.product_name ?: name,
+                                                productGuids = listOf(guid),
+                                                isTab = false
+                                            )
+                                        )
+                                    }
+                                }
+                                "open item category", "open_item_category" -> {
+                                    val category = db.productsQueries.productCategoriesForDis(
+                                        filterGroup = 0L,
+                                        groupCodes = emptyList()
+                                    ).executeAsList().find { it.GUID == guid || it.GUID?.toDoubleOrNull() == guid.toDoubleOrNull() }
+
+                                    nav.pushEasyMart(
+                                        AllProductsPremiumScreen(
+                                            categoryName = category?.Name ?: name,
+                                            productCode = guid.toDoubleOrNull(),
+                                            isTab = false
+                                        )
                                     )
-                                )
+                                }
+                                "open item subcategory", "open_item_subcategory" -> {
+                                    val subCategory = db.product_CategoryQueries.getSubCategory(null).executeAsList()
+                                        .find { it.CatCode?.toString() == guid }
+
+                                    nav.pushEasyMart(
+                                        AllProductsPremiumScreen(
+                                            categoryName = subCategory?.CatName ?: name,
+                                            subCategoryCode = guid.toDoubleOrNull(),
+                                            isTab = false
+                                        )
+                                    )
+                                }
+                                "open brand", "open_brand" -> {
+                                    val brand = db.productsQueries.getAllBrands().executeAsList()
+                                        .find { it.Code?.toString() == guid || it.Name.equals(name, ignoreCase = true) }
+
+                                    nav.pushEasyMart(
+                                        AllProductsPremiumScreen(
+                                            categoryName = brand?.Name ?: name,
+                                            brandName = brand?.Name ?: name,
+                                            isTab = false
+                                        )
+                                    )
+                                }
                             }
                         }
-                        "open item category" -> {
-                            nav.pushEasyMart(
-                                AllProductsPremiumScreen(
-                                    categoryName = name,
-                                    productCode = guid.toDoubleOrNull(),
-                                    isTab = false
-                                )
-                            )
-                        }
-                        "open item subcategory" -> {
-                            nav.pushEasyMart(
-                                AllProductsPremiumScreen(
-                                    categoryName = name,
-                                    subCategoryCode = guid.toDoubleOrNull(),
-                                    isTab = false
-                                )
-                            )
-                        }
-                        "open brand" -> {
-                            nav.pushEasyMart(
-                                AllProductsPremiumScreen(
-                                    categoryName = name,
-                                    brandName = name,
-                                    isTab = false
-                                )
-                            )
-                        }
-                    }
-                },
+                    } else Modifier
+                ),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = colors.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -223,6 +250,20 @@ object NotificationHistoryScreen : Screen {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Content Type badge
+                val displayContentType = payload.contentType.ifBlank { "desc" }
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = colors.tertiaryContainer.copy(alpha = 0.6f),
+                    modifier = Modifier.wrapContentWidth()
+                ) {
+                    Text(
+                        text = "Content Type: $displayContentType",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                        color = colors.onTertiaryContainer,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

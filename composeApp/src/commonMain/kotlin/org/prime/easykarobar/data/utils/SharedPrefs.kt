@@ -589,7 +589,11 @@ object SharedPrefs {
         data class SavedNotificationItem(
             val title: String,
             val body: String,
-            val timestamp: Long
+            val timestamp: Long,
+            val contentType: String = "desc",
+            val onClickAction: String = "nothing",
+            val entityGuid: String? = null,
+            val entityName: String? = null
         )
 
         fun add(item: SavedNotificationItem) {
