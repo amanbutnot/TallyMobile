@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -22,6 +23,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.prime.easykarobar.business.viewmodel.masters.AccountViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.utils.SharedPrefs
@@ -39,6 +44,7 @@ data class MasterAddScreen(val number: String, val targetScreen: Screen? = null)
         val viewmodel: AccountViewModel = viewModel { AccountViewModel() }
         val state by viewmodel.listState
         val nav = LocalNavigator.currentOrThrow
+        val scope = rememberCoroutineScope()
 
         LaunchedEffect(Unit) {
             if (SharedPrefs.IsEasyMart.get()) {
@@ -47,225 +53,190 @@ data class MasterAddScreen(val number: String, val targetScreen: Screen? = null)
                 )
             }
             viewmodel.listAccount {
-                state.data?.data?.forEach { dataState ->
-                    val idOrGuidStr = dataState.id?.toString() ?: dataState.ledger_guid?.takeIf { it.isNotBlank() && it != "null" }
-                    val idOrGuidLong = dataState.id?.toLong() ?: dataState.ledger_guid?.toLongOrNull() ?: 0L
-
-                    db.ledgerMasterQueries.insertLedger(
-                        code = idOrGuidLong,
-                        name = dataState.name?.trim(),
-                        alias = dataState.alias?.trim(),
-                        groupName = dataState.parentGroupName,
-                        groupCode = dataState.parentGroupGuid?.toDoubleOrNull() ?: 0.0,
-                        opBal = dataState.openingBalance?.toDoubleOrNull() ?: 0.0,
-                        address1 = dataState.addressLine1,
-                        address2 = dataState.addressLine2,
-                        address3 = dataState.addressLine3,
-                        address4 = dataState.addressLine4,
-                        country = dataState.country,
-                        state = dataState.state,
-                        gstin = dataState.gstNo,
-                        email = dataState.email,
-                        mobileNo = dataState.mobileNo,
-                        alterId = 0,
-                        guid = idOrGuidStr ?: idOrGuidLong.toString(),
-                        panNo = dataState.itPan
-                    )
-                    db.ledgerPricingQueries.insertLedgerPricing(
-                        guid = idOrGuidLong,
-                        name = dataState.name?.trim(),
-                        mobileno = dataState.mobileNo?.trim() ?: "",
-                        l6 = if (!dataState.gstNo.isNullOrBlank()) 101.0 else 102.0
-                    )
-                    state.data?.data_items?.forEach { data ->
-
-                        db.productsQueries.insertItem(
-                            name = data.name,
-                            alias = data.alias,
-                            printName = data.printName,
-                            parentGroup = data.parentGroup,
-                            parentGroupGuid = data.parentGroupGuid.toDoubleOrNull()
-                                ?: 0.0,
-                            mainUnit = data.mainUnit,
-                            mainUnitGuid = data.mainUnitGuid.toDoubleOrNull()
-                                ?: 0.0,
-                            opQty = data.opQty.toDoubleOrNull() ?: 0.0,
-                            opAmount = data.opAmount.toDoubleOrNull() ?: 0.0,
-                            taxCategoryName = data.taxCategoryName,
-                            taxCategoryGuid = data.taxCategoryGuid.toDoubleOrNull()
-                                ?: 0.0,
-                            salePrice = data.salePrice.toDoubleOrNull() ?: 0.0,
-                            purchPrice = data.purchPrice?.toDoubleOrNull()
-                                ?: 0.0,
-                            mrp = data.mrp.toDoubleOrNull() ?: 0.0,
-                            minSalePrice = data.minSalePrice.toDoubleOrNull()
-                                ?: 0.0,
-                            selfValPrice = data.selfValPrice.toDoubleOrNull()
-                                ?: 0.0,
-                            saleDiscount = data.saleDiscount.toDoubleOrNull()
-                                ?: 0.0,
-                            purchDiscount = data.purchDiscount.toDoubleOrNull()
-                                ?: 0.0,
-                            product_guid = data.id.toString(),
-                            altUnit = data.altUnit,
-                            conFactor = data.conFactor.toDoubleOrNull() ?: 1.0,
-                            conType = when (data.conType) {
-                                "Main / Alt" -> 1.0
-                                "Alt / Main" -> 2.0
-                                else -> data.conType.toDoubleOrNull() ?: 1.0
-                            },
-                            salesPriceAlt = data.salePriceAlt?.toDoubleOrNull() ?: 0.0,
-                            purcPriceAlt = data.purchPriceAlt?.toDoubleOrNull() ?: 0.0
-                        )
-                    }
-                    state.data?.data_bills?.forEach { data ->
-                        db.transaction {
-
-
-                            db.voucherBillAllocationsQueries.insertBillAllocation(
-                                guid = data.uniqueID.toString(),
-
-                                vch_guid = data.uniqueID.toString(),
-
-                                vchtype = data.vchType,
-
-                                date = data.date,
-
-                                duedate = data.dueDate,
-
-                                billnumber = data.billNumber,
-
-                                // order matters more than you think later
-                                srno = data.SrNo?.toLong(),
-
-                                // you're already storing cm1 in data → don’t ignore it
-                                cm1 = data.cm1.toString(),
-
-                                cm2 = data.cm2.toString(), // still hardcoded, your call
-
-                                cm3 = "",
-
-                                billid = data.billId?.toDoubleOrNull(),
-
-                                //TODO: logic for sale me + purc me minus
-                                d1 = when (data.vchType?.toIntOrNull() ?: 3) {
-                                    9 -> {
-                                        makeNegativeConditional(data.d1 ?: 0.0)
-                                    }
-
-                                    3 -> {
-                                        data.d1
-                                    }
-
-                                    2 -> {
-                                        data.d1
-                                    }
-
-                                    10 -> {
-                                        makeNegativeConditional(data.d1 ?: 0.0)
-                                    }
-
-                                    14 -> {
-                                        makeNegativeConditional(data.d1 ?: 0.0)
-                                    }
-
-                                    19 -> {
-                                        makeNegativeConditional(data.d1 ?: 0.0)
-                                    }
-
-                                    16 -> {
-                                        data.d1?.absoluteValue
-                                    }
-
-                                    else -> {
-                                        data.d1?.absoluteValue
-                                    }
-                                },
-
-                                d2 = null,
-
-
-                                e2 = null
-                            )
-                        }
-
-                    }
-                }
-                if (SharedPrefs.IsEasyMart.get()) {
+                val responseData = state.data
+                scope.launch(Dispatchers.IO) {
                     try {
-                        val db = DatabaseHolder.instance
-                        val targetMobile =
-                            number.ifBlank { SharedPrefs.RegisteredNumber.get().orEmpty() }
-                        val isGuest = targetMobile == "6969696969"
+                        db.transaction {
+                            responseData?.data?.forEach { dataState ->
+                                val idOrGuidStr = dataState.id?.toString() ?: dataState.ledger_guid?.takeIf { it.isNotBlank() && it != "null" }
+                                val idOrGuidLong = dataState.id?.toLong() ?: dataState.ledger_guid?.toLongOrNull() ?: 0L
 
-                        if (!isGuest && targetMobile.isNotBlank()) {
-                            val targetLast10 = targetMobile.trim().takeLast(10)
-                            val matchedAccount = state.data?.data?.firstOrNull { acc ->
-                                val mobLast10 = acc.mobileNo?.trim()?.takeLast(10)
-                                val waLast10 = acc.whatsappNo?.trim()?.takeLast(10)
-                                (!mobLast10.isNullOrBlank() && mobLast10 == targetLast10) ||
-                                        (!waLast10.isNullOrBlank() && waLast10 == targetLast10)
+                                db.ledgerMasterQueries.insertLedger(
+                                    code = idOrGuidLong,
+                                    name = dataState.name?.trim(),
+                                    alias = dataState.alias?.trim(),
+                                    groupName = dataState.parentGroupName,
+                                    groupCode = dataState.parentGroupGuid?.toDoubleOrNull() ?: 0.0,
+                                    opBal = dataState.openingBalance?.toDoubleOrNull() ?: 0.0,
+                                    address1 = dataState.addressLine1,
+                                    address2 = dataState.addressLine2,
+                                    address3 = dataState.addressLine3,
+                                    address4 = dataState.addressLine4,
+                                    country = dataState.country,
+                                    state = dataState.state,
+                                    gstin = dataState.gstNo,
+                                    email = dataState.email,
+                                    mobileNo = dataState.mobileNo,
+                                    alterId = 0,
+                                    guid = idOrGuidStr ?: idOrGuidLong.toString(),
+                                    panNo = dataState.itPan
+                                )
+                                db.ledgerPricingQueries.insertLedgerPricing(
+                                    guid = idOrGuidLong,
+                                    name = dataState.name?.trim(),
+                                    mobileno = dataState.mobileNo?.trim() ?: "",
+                                    l6 = if (!dataState.gstNo.isNullOrBlank()) 101.0 else 102.0
+                                )
                             }
 
-                            if (matchedAccount != null) {
-                                val guidStr = matchedAccount.id?.toString() ?: matchedAccount.ledger_guid?.takeIf { it.isNotBlank() && it != "null" }
-                                if (!guidStr.isNullOrBlank()) {
-                                    println("Matched account in list_account for $targetMobile -> ledger_guid: $guidStr")
-                                    SharedPrefs.BillingGuid.save(guidStr)
-                                }
-                                val fullAddress = listOfNotNull(
-                                    matchedAccount.addressLine1,
-                                    matchedAccount.addressLine2,
-                                    matchedAccount.addressLine3,
-                                    matchedAccount.addressLine4
-                                ).map { it.trim() }.filter { it.isNotBlank() }.joinToString(", ")
+                            responseData?.data_items?.forEach { data ->
+                                db.productsQueries.insertItem(
+                                    name = data.name,
+                                    alias = data.alias,
+                                    printName = data.printName,
+                                    parentGroup = data.parentGroup,
+                                    parentGroupGuid = data.parentGroupGuid.toDoubleOrNull()
+                                        ?: 0.0,
+                                    mainUnit = data.mainUnit,
+                                    mainUnitGuid = data.mainUnitGuid.toDoubleOrNull()
+                                        ?: 0.0,
+                                    opQty = data.opQty.toDoubleOrNull() ?: 0.0,
+                                    opAmount = data.opAmount.toDoubleOrNull() ?: 0.0,
+                                    taxCategoryName = data.taxCategoryName,
+                                    taxCategoryGuid = data.taxCategoryGuid.toDoubleOrNull()
+                                        ?: 0.0,
+                                    salePrice = data.salePrice.toDoubleOrNull() ?: 0.0,
+                                    purchPrice = data.purchPrice?.toDoubleOrNull()
+                                        ?: 0.0,
+                                    mrp = data.mrp.toDoubleOrNull() ?: 0.0,
+                                    minSalePrice = data.minSalePrice.toDoubleOrNull()
+                                        ?: 0.0,
+                                    selfValPrice = data.selfValPrice.toDoubleOrNull()
+                                        ?: 0.0,
+                                    saleDiscount = data.saleDiscount.toDoubleOrNull()
+                                        ?: 0.0,
+                                    purchDiscount = data.purchDiscount.toDoubleOrNull()
+                                        ?: 0.0,
+                                    product_guid = data.id.toString(),
+                                    altUnit = data.altUnit,
+                                    conFactor = data.conFactor.toDoubleOrNull() ?: 1.0,
+                                    conType = when (data.conType) {
+                                        "Main / Alt" -> 1.0
+                                        "Alt / Main" -> 2.0
+                                        else -> data.conType.toDoubleOrNull() ?: 1.0
+                                    },
+                                    salesPriceAlt = data.salePriceAlt?.toDoubleOrNull() ?: 0.0,
+                                    purcPriceAlt = data.purchPriceAlt?.toDoubleOrNull() ?: 0.0
+                                )
+                            }
 
-                                SharedPrefs.DispatchInfo.save(
-                                    name = matchedAccount.name?.trim().orEmpty(),
-                                    mobile = matchedAccount.mobileNo?.trim() ?: targetMobile,
-                                    address = fullAddress,
-                                    pincode = matchedAccount.pincode?.trim()
-                                        ?: SharedPrefs.DispatchInfo.getPincode() ?: "",
-                                    state = matchedAccount.state?.trim().orEmpty(),
-                                    gst = matchedAccount.gstNo?.trim().orEmpty()
+                            responseData?.data_bills?.forEach { data ->
+                                db.voucherBillAllocationsQueries.insertBillAllocation(
+                                    guid = data.uniqueID.toString(),
+                                    vch_guid = data.uniqueID.toString(),
+                                    vchtype = data.vchType,
+                                    date = data.date,
+                                    duedate = data.dueDate,
+                                    billnumber = data.billNumber,
+                                    srno = data.SrNo?.toLong(),
+                                    cm1 = data.cm1.toString(),
+                                    cm2 = data.cm2.toString(),
+                                    cm3 = "",
+                                    billid = data.billId?.toDoubleOrNull(),
+                                    d1 = when (data.vchType?.toIntOrNull() ?: 3) {
+                                        9 -> makeNegativeConditional(data.d1 ?: 0.0)
+                                        3 -> data.d1
+                                        2 -> data.d1
+                                        10 -> makeNegativeConditional(data.d1 ?: 0.0)
+                                        14 -> makeNegativeConditional(data.d1 ?: 0.0)
+                                        19 -> makeNegativeConditional(data.d1 ?: 0.0)
+                                        16 -> data.d1?.absoluteValue
+                                        else -> data.d1?.absoluteValue
+                                    },
+                                    d2 = null,
+                                    e2 = null
                                 )
                             }
                         }
 
-                        val exists =
-                            db.ledgerPricingQueries.existsByMobile(targetMobile).executeAsOne() > 0
-                        println("Exists by mobile: $exists, Dispatch saved: ${SharedPrefs.DispatchInfo.isSaved()}")
-                        if (!isGuest && !exists && !SharedPrefs.DispatchInfo.isSaved()) {
-                            nav.replaceAll(DispatchInfoScreen(targetMobile))
-                            return@listAccount
-                        } else if (!isGuest) {
-                            SharedPrefs.DispatchInfo.syncFromLedger(targetMobile)
-                        } else {
-                            val pricing = db.ledgerPricingQueries.selectByMobile(targetMobile)
-                                .executeAsOneOrNull()
-                            println("verify otp result $targetMobile $pricing")
-                            if (pricing != null) {
-                                val l6 = pricing.L6 ?: 100.0
-                                if (l6 > 100.0) {
-                                    SharedPrefs.ChangePrice.save(l6)
-                                } else {
-                                    SharedPrefs.ChangePrice.save(100.0)
+                        withContext(Dispatchers.Main) {
+                            if (SharedPrefs.IsEasyMart.get()) {
+                                try {
+                                    val targetMobile = number.ifBlank { SharedPrefs.RegisteredNumber.get().orEmpty() }
+                                    val isGuest = targetMobile == "6969696969"
+
+                                    if (!isGuest && targetMobile.isNotBlank()) {
+                                        val targetLast10 = targetMobile.trim().takeLast(10)
+                                        val matchedAccount = responseData?.data?.firstOrNull { acc ->
+                                            val mobLast10 = acc.mobileNo?.trim()?.takeLast(10)
+                                            val waLast10 = acc.whatsappNo?.trim()?.takeLast(10)
+                                            (!mobLast10.isNullOrBlank() && mobLast10 == targetLast10) ||
+                                                    (!waLast10.isNullOrBlank() && waLast10 == targetLast10)
+                                        }
+
+                                        if (matchedAccount != null) {
+                                            val guidStr = matchedAccount.id?.toString() ?: matchedAccount.ledger_guid?.takeIf { it.isNotBlank() && it != "null" }
+                                            if (!guidStr.isNullOrBlank()) {
+                                                println("Matched account in list_account for $targetMobile -> ledger_guid: $guidStr")
+                                                SharedPrefs.BillingGuid.save(guidStr)
+                                            }
+                                            val fullAddress = listOfNotNull(
+                                                matchedAccount.addressLine1,
+                                                matchedAccount.addressLine2,
+                                                matchedAccount.addressLine3,
+                                                matchedAccount.addressLine4
+                                            ).map { it.trim() }.filter { it.isNotBlank() }.joinToString(", ")
+
+                                            SharedPrefs.DispatchInfo.save(
+                                                name = matchedAccount.name?.trim().orEmpty(),
+                                                mobile = matchedAccount.mobileNo?.trim() ?: targetMobile,
+                                                address = fullAddress,
+                                                pincode = matchedAccount.pincode?.trim()
+                                                    ?: SharedPrefs.DispatchInfo.getPincode() ?: "",
+                                                state = matchedAccount.state?.trim().orEmpty(),
+                                                gst = matchedAccount.gstNo?.trim().orEmpty()
+                                            )
+                                        }
+                                    }
+
+                                    val exists = db.ledgerPricingQueries.existsByMobile(targetMobile).executeAsOne() > 0
+                                    println("Exists by mobile: $exists, Dispatch saved: ${SharedPrefs.DispatchInfo.isSaved()}")
+                                    if (!isGuest && !exists && !SharedPrefs.DispatchInfo.isSaved()) {
+                                        nav.replaceAll(DispatchInfoScreen(targetMobile))
+                                        return@withContext
+                                    } else if (!isGuest) {
+                                        SharedPrefs.DispatchInfo.syncFromLedger(targetMobile)
+                                    } else {
+                                        val pricing = db.ledgerPricingQueries.selectByMobile(targetMobile)
+                                            .executeAsOneOrNull()
+                                        println("verify otp result $targetMobile $pricing")
+                                        if (pricing != null) {
+                                            val l6 = pricing.L6 ?: 100.0
+                                            if (l6 > 100.0) {
+                                                SharedPrefs.ChangePrice.save(l6)
+                                            } else {
+                                                SharedPrefs.ChangePrice.save(100.0)
+                                            }
+                                        } else {
+                                            val savedGst = SharedPrefs.DispatchInfo.getGst()
+                                            if (!savedGst.isNullOrBlank()) {
+                                                SharedPrefs.ChangePrice.save(102.0)
+                                            } else {
+                                                SharedPrefs.ChangePrice.save(101.0)
+                                            }
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
                                 }
+                                nav.replaceAll(targetScreen ?: Dashboard)
                             } else {
-                                val savedGst = SharedPrefs.DispatchInfo.getGst()
-                                if (!savedGst.isNullOrBlank()) {
-                                    SharedPrefs.ChangePrice.save(102.0)
-                                } else {
-                                    SharedPrefs.ChangePrice.save(101.0)
-                                }
+                                nav.replaceAll(targetScreen ?: Dashboard)
                             }
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
-                    nav.replaceAll(targetScreen ?: Dashboard)
-                } else {
-                    nav.replaceAll(targetScreen ?: Dashboard)
                 }
             }
         }

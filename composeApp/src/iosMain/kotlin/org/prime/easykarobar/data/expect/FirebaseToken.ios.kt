@@ -19,5 +19,5 @@ actual suspend fun getFirebaseToken(): String? {
 }
 
 actual suspend fun setupFcmSubscription(topic: String): String? {
-    TODO("Not yet implemented")
+    return getFirebaseToken()
 }

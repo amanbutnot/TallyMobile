@@ -4,6 +4,9 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -188,7 +191,7 @@ class AuthViewModel : ViewModel() {
                         }
 
                         SharedPrefs.User.save(loginData)
-                        viewModelScope.launch {
+                        CoroutineScope(Dispatchers.IO).launch {
                             try {
                                 setupFcmSubscription(loginData.ID.toString())
                             } catch (e: Exception) {
@@ -242,7 +245,7 @@ class AuthViewModel : ViewModel() {
     }
 
     fun sendFirebaseToken(mobileNo: String? = null) {
-        viewModelScope.launch {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
                 val fcmToken = getFirebaseToken() ?: ""
                 val username = mobileNo?.trim()?.takeIf { it.isNotBlank() }
@@ -259,6 +262,7 @@ class AuthViewModel : ViewModel() {
                     AuthRepository.sendFirebaseToken(req)
                 }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 println("Failed to send firebase token: ${e.message}")
             }
         }

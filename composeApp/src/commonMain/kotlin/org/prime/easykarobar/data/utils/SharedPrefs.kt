@@ -582,4 +582,31 @@ object SharedPrefs {
         }
     }
 
+    object NotificationsList {
+        private const val KEY = "saved_notifications_list"
+
+        @Serializable
+        data class SavedNotificationItem(
+            val title: String,
+            val body: String,
+            val timestamp: Long
+        )
+
+        fun add(item: SavedNotificationItem) {
+            val current = get().toMutableList()
+            current.add(0, item)
+            val json = Json.encodeToString(current)
+            settings.putString(KEY, json)
+        }
+
+        fun get(): List<SavedNotificationItem> {
+            val stored = settings.getStringOrNull(KEY) ?: return emptyList()
+            return runCatching { Json.decodeFromString<List<SavedNotificationItem>>(stored) }.getOrElse { emptyList() }
+        }
+
+        fun clear() {
+            settings.remove(KEY)
+        }
+    }
+
 }

@@ -268,12 +268,14 @@ data class AllProductsPremiumScreen(
                                 .padding(horizontal = 4.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            IconButton(onClick = { nav.pop() }) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
-                                    tint = Color.White
-                                )
+                            if (!isTab) {
+                                IconButton(onClick = { nav.pop() }) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Back",
+                                        tint = Color.White
+                                    )
+                                }
                             }
                             Text(
                                 text = currentCategoryName,
@@ -283,7 +285,9 @@ data class AllProductsPremiumScreen(
                                     letterSpacing = (-0.5).sp
                                 ),
                                 color = Color.White,
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .then(if (isTab) Modifier.padding(start = 12.dp) else Modifier),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )

@@ -140,8 +140,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
 
 
-        versionCode = 14
-        versionName = "1.1.4"
+        versionCode = 16
+        versionName = "1.1.6"
 
         resValue("string", "app_name", appName)
 

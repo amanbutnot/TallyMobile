@@ -37,19 +37,24 @@ class MyFirebaseApplication : FirebaseMessagingService() {
 
         val notification = message.notification
 
-        if (notification == null) {
-            println("FCM: notification is NULL")
-            println("FCM: No notification payload found")
+        val title = notification?.title
+            ?: message.data["title"]
+            ?: message.data["heading"]
+            ?: ""
+        val body = notification?.body
+            ?: message.data["body"]
+            ?: message.data["message"]
+            ?: message.data["description"]
+            ?: ""
+
+        if (title.isBlank() && body.isBlank()) {
+            println("FCM: Both notification and data payloads are empty/null")
             println("========== FCM onMessageReceived END ==========")
             return
         }
 
-        println("FCM: Notification payload exists")
-        println("FCM: Title = ${notification.title}")
-        println("FCM: Body = ${notification.body}")
-        println("FCM: Icon = ${notification.icon}")
-        println("FCM: Sound = ${notification.sound}")
-        println("FCM: Channel ID = ${notification.channelId}")
+        println("FCM: Title = $title")
+        println("FCM: Body = $body")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             println("FCM: Android 13+ detected")
@@ -75,19 +80,31 @@ class MyFirebaseApplication : FirebaseMessagingService() {
             println("FCM: Notification permission check not required")
         }
 
-        val title = notification.title ?: ""
-        val body = notification.body ?: ""
+        val timestamp = System.currentTimeMillis()
 
         try {
             val db = DatabaseHolder.instance
             db.notificationHistoryQueries.insertNotification(
                 title,
                 body,
-                System.currentTimeMillis()
+                timestamp
             )
             println("FCM: Saved notification to database")
         } catch (e: Exception) {
             println("FCM: Error saving notification to database: ${e.message}")
+        }
+
+        try {
+            SharedPrefs.NotificationsList.add(
+                SharedPrefs.NotificationsList.SavedNotificationItem(
+                    title = title,
+                    body = body,
+                    timestamp = timestamp
+                )
+            )
+            println("FCM: Saved notification to SharedPrefs list")
+        } catch (e: Exception) {
+            println("FCM: Error saving notification to SharedPrefs: ${e.message}")
         }
 
         println("FCM: Calling sendNotification()")

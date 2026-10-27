@@ -11,7 +11,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Print
+import org.prime.easykarobar.ui.screen.home.SavedNotificationsScreen
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
@@ -30,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -68,14 +71,23 @@ fun TallyScaffold(
                             fontWeight = FontWeight.Medium
                         )
                     )
-                }, actions = {
-                    if (showAddBar) {
-                        IconButton(onClick = { onAddClick() }) {
+                 }, actions = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { nav.push(SavedNotificationsScreen()) }) {
                             Icon(
-                                Icons.Default.Add,
-                                contentDescription = "Add",
+                                Icons.Default.Notifications,
+                                contentDescription = "Notifications",
                                 tint = colors.onSurface
                             )
+                        }
+                        if (showAddBar) {
+                            IconButton(onClick = { onAddClick() }) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = "Add",
+                                    tint = colors.onSurface
+                                )
+                            }
                         }
                     }
                 },
@@ -164,7 +176,14 @@ fun TallyReportScaffold(
                     }
                 },
                 actions = {
-                    Row {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { nav.push(SavedNotificationsScreen()) }) {
+                            Icon(
+                                Icons.Default.Notifications,
+                                contentDescription = "Notifications",
+                                tint = colors.onSurface
+                            )
+                        }
                         if (onFilterClick != null) {
                             IconButton(onClick = { onFilterClick() }) {
                                 Icon(Icons.Default.FilterList, "", tint = colors.onSurface)

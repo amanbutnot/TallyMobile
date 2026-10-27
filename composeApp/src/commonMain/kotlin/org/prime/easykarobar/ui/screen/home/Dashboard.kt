@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import org.prime.easykarobar.ui.screen.home.SavedNotificationsScreen
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -138,6 +140,15 @@ object Dashboard : Screen {
                             },
 
                             actions = {
+                                IconButton(onClick = {
+                                    nav.push(SavedNotificationsScreen())
+                                }) {
+                                    Icon(
+                                        Icons.Default.Notifications,
+                                        contentDescription = "Notifications",
+                                        tint = colors.onBackground
+                                    )
+                                }
                                 if (userRole() != ROLE.DISTRIBUTOR && !SharedPrefs.IsEasyMart.get()) {
                                     IconButton(onClick = {
                                         viewModel.userLogin(

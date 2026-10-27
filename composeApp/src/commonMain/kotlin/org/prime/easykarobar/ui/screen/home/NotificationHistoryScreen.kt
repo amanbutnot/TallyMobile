@@ -1,6 +1,7 @@
 package org.prime.easykarobar.ui.screen.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,7 +40,6 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
-import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.Json
@@ -47,7 +47,10 @@ import org.prime.easykarobar.business.repository.AuthRepository
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.model.NotificationPayload
 import org.prime.easykarobar.data.model.OnClickAction
+import org.prime.easykarobar.ui.screen.distributor.order.AllProductsPremiumScreen
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
+import org.prime.easykarobar.ui.utils.pushEasyMart
+import kotlin.time.Instant
 
 object NotificationHistoryScreen : Screen {
     private val json = Json { ignoreUnknownKeys = true }
@@ -156,13 +159,60 @@ object NotificationHistoryScreen : Screen {
     @Composable
     private fun NotificationPayloadItem(payload: NotificationPayload) {
         val colors = MaterialTheme.colorScheme
+        val nav = LocalNavigator.currentOrThrow
         
         val instant = Instant.fromEpochMilliseconds(payload.timestamp)
         val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
         val dateString = "${localDateTime.date} ${localDateTime.hour}:${localDateTime.minute.toString().padStart(2, '0')}"
         
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    val action = payload.onClickAction.trim().lowercase()
+                    val guid = payload.entityGuid ?: ""
+                    val name = payload.entityName ?: "Items"
+                    when (action) {
+                        "open item" -> {
+                            if (guid.isNotBlank()) {
+                                nav.pushEasyMart(
+                                    AllProductsPremiumScreen(
+                                        categoryName = name,
+                                        productGuids = listOf(guid),
+                                        isTab = false
+                                    )
+                                )
+                            }
+                        }
+                        "open item category" -> {
+                            nav.pushEasyMart(
+                                AllProductsPremiumScreen(
+                                    categoryName = name,
+                                    productCode = guid.toDoubleOrNull(),
+                                    isTab = false
+                                )
+                            )
+                        }
+                        "open item subcategory" -> {
+                            nav.pushEasyMart(
+                                AllProductsPremiumScreen(
+                                    categoryName = name,
+                                    subCategoryCode = guid.toDoubleOrNull(),
+                                    isTab = false
+                                )
+                            )
+                        }
+                        "open brand" -> {
+                            nav.pushEasyMart(
+                                AllProductsPremiumScreen(
+                                    categoryName = name,
+                                    brandName = name,
+                                    isTab = false
+                                )
+                            )
+                        }
+                    }
+                },
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = colors.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
