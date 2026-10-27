@@ -1,6 +1,7 @@
 package org.prime.easykarobar.ui.screen.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,15 +40,18 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
-import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.Json
 import org.prime.easykarobar.business.repository.AuthRepository
+import org.prime.easykarobar.data.enums.MasterEnums
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.model.NotificationPayload
 import org.prime.easykarobar.data.model.OnClickAction
+import org.prime.easykarobar.ui.screen.masters.MasterListScreen
+import org.prime.easykarobar.ui.screen.reports.productReport.ProductReportScreen
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
+import kotlin.time.Instant
 
 object NotificationHistoryScreen : Screen {
     private val json = Json { ignoreUnknownKeys = true }
@@ -155,14 +159,43 @@ object NotificationHistoryScreen : Screen {
 
     @Composable
     private fun NotificationPayloadItem(payload: NotificationPayload) {
+        val nav = LocalNavigator.currentOrThrow
         val colors = MaterialTheme.colorScheme
         
         val instant = Instant.fromEpochMilliseconds(payload.timestamp)
         val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
         val dateString = "${localDateTime.date} ${localDateTime.hour}:${localDateTime.minute.toString().padStart(2, '0')}"
         
+        val actionEnum = OnClickAction.fromValue(payload.onClickAction)
+
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (actionEnum != OnClickAction.NOTHING) {
+                        Modifier.clickable {
+                            when (actionEnum) {
+                                OnClickAction.OPEN_ITEM -> {
+                                    if (!payload.entityGuid.isNullOrBlank()) {
+                                        nav.push(ProductReportScreen(productGuid = payload.entityGuid, isMain = false))
+                                    } else {
+                                        nav.push(MasterListScreen(MasterEnums.ITEMS))
+                                    }
+                                }
+                                OnClickAction.OPEN_ITEM_CATEGORY -> {
+                                    nav.push(MasterListScreen(MasterEnums.ITEM_GROUP))
+                                }
+                                OnClickAction.OPEN_BRAND -> {
+                                    nav.push(MasterListScreen(MasterEnums.BRANDS))
+                                }
+                                OnClickAction.OPEN_ITEM_SUBCATEGORY -> {
+                                    nav.push(MasterListScreen(MasterEnums.SUBCATEGORIES))
+                                }
+                                OnClickAction.NOTHING -> {}
+                            }
+                        }
+                    } else Modifier
+                ),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = colors.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
