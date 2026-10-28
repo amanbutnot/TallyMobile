@@ -171,75 +171,72 @@ object NotificationHistoryScreen : Screen {
         
         val action = payload.onClickAction.trim().lowercase().replace('_', ' ').replace('-', ' ')
         val guid = payload.entityGuid ?: ""
+        val cleanGuid = guid.substringBefore(".")
         val name = payload.entityName ?: "Items"
 
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .then(
-                    if (action != "nothing" && action.isNotBlank()) {
-                        Modifier.clickable {
-                            println("[WWWW] Notification clicked: action=$action, guid=$guid, name=$name, contentType=${payload.contentType}")
-                            when (action) {
-                                "open item", "open_item" -> {
-                                    if (guid.isNotBlank()) {
-                                        val product = db.productsQueries.getProductsByGuidsForDis(
-                                            guids = listOf(guid),
-                                            changePrice = SharedPrefs.ChangePrice.get(),
-                                            mapper = ::GetProductsForDis
-                                        ).executeAsOneOrNull()
+                .clickable {
+                    println("[WWWW] Notification clicked: action=$action, guid=$guid, name=$name, contentType=${payload.contentType}")
+                    when (action) {
+                        "open item", "open_item" -> {
+                            if (guid.isNotBlank()) {
+                                val product = db.productsQueries.getProductsByGuidsForDis(
+                                    guids = listOf(guid),
+                                    changePrice = SharedPrefs.ChangePrice.get(),
+                                    mapper = ::GetProductsForDis
+                                ).executeAsOneOrNull()
 
-                                        nav.pushEasyMart(
-                                            AllProductsPremiumScreen(
-                                                categoryName = product?.product_name ?: name,
-                                                productGuids = listOf(guid),
-                                                isTab = false
-                                            )
-                                        )
-                                    }
-                                }
-                                "open item category", "open_item_category" -> {
-                                    val category = db.productsQueries.productCategoriesForDis(
-                                        filterGroup = 0L,
-                                        groupCodes = emptyList()
-                                    ).executeAsList().find { it.GUID == guid || it.GUID?.toDoubleOrNull() == guid.toDoubleOrNull() }
-
-                                    nav.pushEasyMart(
-                                        AllProductsPremiumScreen(
-                                            categoryName = category?.Name ?: name,
-                                            productCode = guid.toDoubleOrNull(),
-                                            isTab = false
-                                        )
+                                nav.pushEasyMart(
+                                    AllProductsPremiumScreen(
+                                        categoryName = product?.product_name ?: name,
+                                        productGuids = listOf(guid),
+                                        isTab = false
                                     )
-                                }
-                                "open item subcategory", "open_item_subcategory" -> {
-                                    val subCategory = db.product_CategoryQueries.getSubCategory(null).executeAsList()
-                                        .find { it.CatCode?.toString() == guid }
-
-                                    nav.pushEasyMart(
-                                        AllProductsPremiumScreen(
-                                            categoryName = subCategory?.CatName ?: name,
-                                            subCategoryCode = guid.toDoubleOrNull(),
-                                            isTab = false
-                                        )
-                                    )
-                                }
-                                "open brand", "open_brand" -> {
-                                    val brand = db.productsQueries.getAllBrands().executeAsList()
-                                        .find { it.Code?.toString() == guid || it.Name.equals(name, ignoreCase = true) }
-
-                                    nav.pushEasyMart(
-                                        AllProductsPremiumScreen(
-                                            categoryName = brand?.Name ?: name,
-                                            brandName = brand?.Name ?: name,
-                                            isTab = false
-                                        )
-                                    )
-                                }
+                                )
                             }
                         }
-                    } else Modifier
-                ),
+                        "open item category", "open_item_category" -> {
+                            val category = db.productsQueries.productCategoriesForDis(
+                                filterGroup = 0L,
+                                groupCodes = emptyList()
+                            ).executeAsList().find { it.GUID == guid || it.GUID?.toDoubleOrNull() == guid.toDoubleOrNull() }
+
+                            nav.pushEasyMart(
+                                AllProductsPremiumScreen(
+                                    categoryName = category?.Name ?: name,
+                                    productCode = guid.toDoubleOrNull(),
+                                    isTab = false
+                                )
+                            )
+                        }
+                        "open item subcategory", "open_item_subcategory" -> {
+                            val subCategory = db.product_CategoryQueries.getSubCategory(null).executeAsList()
+                                .find { it.CatCode?.toString() == guid || it.CatCode?.toString() == cleanGuid || it.CatCode?.toDouble() == guid.toDoubleOrNull() }
+
+                            nav.pushEasyMart(
+                                AllProductsPremiumScreen(
+                                    categoryName = subCategory?.CatName ?: name,
+                                    subCategoryCode = guid.toDoubleOrNull(),
+                                    isTab = false
+                                )
+                            )
+                        }
+                        "open brand", "open_brand" -> {
+                            val brand = db.productsQueries.getAllBrands().executeAsList()
+                                .find { it.Code?.toString() == guid || it.Code?.toString() == cleanGuid || it.Code?.toDouble() == guid.toDoubleOrNull() || it.Name.equals(name, ignoreCase = true) }
+
+                            nav.pushEasyMart(
+                                AllProductsPremiumScreen(
+                                    categoryName = brand?.Name ?: name,
+                                    brandName = brand?.Name ?: name,
+                                    isTab = false
+                                )
+                            )
+                        }
+                    }
+                },
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = colors.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -251,19 +248,19 @@ object NotificationHistoryScreen : Screen {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Content Type badge
-                val displayContentType = payload.contentType.ifBlank { "desc" }
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = colors.tertiaryContainer.copy(alpha = 0.6f),
-                    modifier = Modifier.wrapContentWidth()
-                ) {
-                    Text(
-                        text = "Content Type: $displayContentType",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                        color = colors.onTertiaryContainer,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
+//                val displayContentType = payload.contentType.ifBlank { "desc" }
+//                Surface(
+//                    shape = RoundedCornerShape(6.dp),
+//                    color = colors.tertiaryContainer.copy(alpha = 0.6f),
+//                    modifier = Modifier.wrapContentWidth()
+//                ) {
+//                    Text(
+//                        text = "Content Type: $displayContentType",
+//                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+//                        color = colors.onTertiaryContainer,
+//                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+//                    )
+//                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -304,48 +301,47 @@ object NotificationHistoryScreen : Screen {
                     )
                 }
 
-                if (payload.contentType == "desc") {
-                    if (!payload.description.isNullOrBlank()) {
-                        Text(
-                            text = payload.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = colors.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    if (!payload.imageUrl.isNullOrBlank()) {
-                        AsyncImage(
-                            model = payload.imageUrl,
-                            contentDescription = "Notification image",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(160.dp)
-                                .clip(RoundedCornerShape(12.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
+                val isImage = payload.contentType.equals("image", ignoreCase = true) || !payload.imageUrl.isNullOrBlank()
+                if (!isImage && !payload.description.isNullOrBlank()) {
+                    Text(
+                        text = payload.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant
+                    )
                 }
 
-                val actionEnum = OnClickAction.fromValue(payload.onClickAction)
-                if (actionEnum != OnClickAction.NOTHING) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = colors.secondaryContainer.copy(alpha = 0.6f),
-                        modifier = Modifier.wrapContentWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Action: ${actionEnum.displayName}" + if (!payload.entityName.isNullOrBlank()) " • ${payload.entityName}" else "",
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = colors.onSecondaryContainer
-                            )
-                        }
-                    }
+                if (!payload.imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = payload.imageUrl,
+                        contentDescription = "Notification image",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
                 }
+
+//                val actionEnum = OnClickAction.fromValue(payload.onClickAction)
+//                if (actionEnum != OnClickAction.NOTHING) {
+//                    Surface(
+//                        shape = RoundedCornerShape(8.dp),
+//                        color = colors.secondaryContainer.copy(alpha = 0.6f),
+//                        modifier = Modifier.wrapContentWidth()
+//                    ) {
+//                        Row(
+//                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+//                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+//                            verticalAlignment = Alignment.CenterVertically
+//                        ) {
+//                            Text(
+//                                text = "Action: ${actionEnum.displayName}" + if (!payload.entityName.isNullOrBlank()) " • ${payload.entityName}" else "",
+//                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+//                                color = colors.onSecondaryContainer
+//                            )
+//                        }
+//                    }
+//                }
             }
         }
     }

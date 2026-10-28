@@ -178,6 +178,7 @@ object AuthRepository {
             val token = SharedPrefs.Token.get()
             val response = client.post("${BASE_URL}/Users/list_notifications.php") {
                 contentType(ContentType.Application.Json)
+
                 if (!token.isNullOrBlank()) {
                     header("Authorization", "Bearer $token")
                 }

@@ -19,13 +19,35 @@ fun createChannel(context: Context) {
 
 
 @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-fun sendNotification(context: Context, title: String, body: String) {
+fun sendNotification(context: Context, title: String, body: String, imageUrl: String? = null) {
     createChannel(context)
-    val builder =
-        NotificationCompat.Builder(context, "default").setContentTitle(title).setContentText(body)
-            .setAutoCancel(true)
-            .setSmallIcon(org.prime.easykarobar.R.drawable.ic_launcher)
-            .build()
+    val builder = NotificationCompat.Builder(context, "default")
+        .setContentTitle(title)
+        .setContentText(body)
+        .setAutoCancel(true)
+        .setSmallIcon(org.prime.easykarobar.R.drawable.ic_launcher)
+
+    if (!imageUrl.isNullOrBlank()) {
+        try {
+            val url = java.net.URL(imageUrl)
+            val connection = url.openConnection() as java.net.HttpURLConnection
+            connection.doInput = true
+            connection.connect()
+            val input = connection.inputStream
+            val bitmap = android.graphics.BitmapFactory.decodeStream(input)
+            if (bitmap != null) {
+                builder.setStyle(
+                    NotificationCompat.BigPictureStyle()
+                        .bigPicture(bitmap)
+                        .bigLargeIcon(null as android.graphics.Bitmap?)
+                )
+            }
+        } catch (e: Exception) {
+            println("Error loading notification image for status bar: ${e.message}")
+        }
+    }
+
+    val notification = builder.build()
     val notifManager = NotificationManagerCompat.from(context)
-    notifManager.notify(1001, builder)
+    notifManager.notify(1001, notification)
 }

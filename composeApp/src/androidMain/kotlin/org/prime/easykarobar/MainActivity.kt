@@ -19,19 +19,24 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (!task.isSuccessful) {
-                Log.w("FCMToken", "Fetching FCM registration token failed", task.exception)
-                return@addOnCompleteListener
-            }
+        val cachedToken = SharedPrefs.FcmToken.get()
+        if (cachedToken.isNullOrBlank()) {
+            FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    Log.w("FCMToken", "Fetching FCM registration token failed", task.exception)
+                    return@addOnCompleteListener
+                }
 
-            // Get new FCM registration token
-            val token = task.result
-            Log.d("FCMToken", "Current FCM Token: $token")
-            if (!token.isNullOrBlank()) {
-                SharedPrefs.FcmToken.save(token)
-                subscribeUserToFcmTopic()
+                // Get new FCM registration token
+                val token = task.result
+                Log.d("FCMToken", "Current FCM Token: $token")
+                if (!token.isNullOrBlank()) {
+                    SharedPrefs.FcmToken.save(token)
+                    subscribeUserToFcmTopic()
+                }
             }
+        } else {
+            subscribeUserToFcmTopic()
         }
         createChannel(this)
         AppContextHolder.appContext = applicationContext

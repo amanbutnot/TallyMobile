@@ -17,13 +17,19 @@ actual fun removeFirebaseToken() {
                 Log.w("FCMToken", "Failed to delete FCM token", task.exception)
             }
         }
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
         Log.e("FCMToken", "Error removing FCM token", e)
     }
 }
 
 actual suspend fun getFirebaseToken(): String? = suspendCancellableCoroutine { continuation ->
     try {
+        val cached = SharedPrefs.FcmToken.get()
+        if (!cached.isNullOrBlank()) {
+            Log.d("FCMToken", "Using cached FCM token: $cached")
+            continuation.resume(cached)
+            return@suspendCancellableCoroutine
+        }
         Log.d("FCMToken", "Requesting Firebase messaging token...")
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (task.isSuccessful && task.result != null) {
@@ -37,14 +43,14 @@ actual suspend fun getFirebaseToken(): String? = suspendCancellableCoroutine { c
                 }
             } else {
                 Log.w("FCMToken", "Failed to fetch Firebase token", task.exception)
-                val cached = SharedPrefs.FcmToken.get()
-                Log.d("FCMToken", "Using cached FCM token: $cached")
+                val cachedToken = SharedPrefs.FcmToken.get()
+                Log.d("FCMToken", "Using cached FCM token: $cachedToken")
                 if (continuation.isActive) {
-                    continuation.resume(cached)
+                    continuation.resume(cachedToken)
                 }
             }
         }
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
         Log.e("FCMToken", "Exception getting Firebase token", e)
         val cached = SharedPrefs.FcmToken.get()
         if (continuation.isActive) {
@@ -63,7 +69,7 @@ actual suspend fun setupFcmSubscription(topic: String): String? {
         try {
             FirebaseMessaging.getInstance().subscribeToTopic(topic).await()
             Log.d("FCMToken", "Successfully subscribed to FCM topic: $topic")
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e("FCMToken", "Failed to subscribe to FCM topic: $topic", e)
         }
     } else {

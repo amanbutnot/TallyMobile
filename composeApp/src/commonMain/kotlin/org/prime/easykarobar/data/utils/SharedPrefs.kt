@@ -593,7 +593,8 @@ object SharedPrefs {
             val contentType: String = "desc",
             val onClickAction: String = "nothing",
             val entityGuid: String? = null,
-            val entityName: String? = null
+            val entityName: String? = null,
+            val imageUrl: String? = null
         )
 
         fun add(item: SavedNotificationItem) {

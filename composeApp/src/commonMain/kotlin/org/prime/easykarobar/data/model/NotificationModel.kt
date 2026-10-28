@@ -19,13 +19,13 @@ enum class OnClickAction(val value: String, val displayName: String) {
 
 @Serializable
 data class NotificationPayload(
-    val title: String,
-    val contentType: String,
-    val description: String?,
-    val hasImage: Boolean,
-    val imageUrl: String?,
-    val onClickAction: String,
-    val entityGuid: String?,
-    val entityName: String?,
-    val timestamp: Long
+    val title: String = "",
+    val contentType: String = "desc",
+    val description: String? = null,
+    val hasImage: Boolean = false,
+    val imageUrl: String? = null,
+    val onClickAction: String = "nothing",
+    val entityGuid: String? = null,
+    val entityName: String? = null,
+    val timestamp: Long = 0L
 )
