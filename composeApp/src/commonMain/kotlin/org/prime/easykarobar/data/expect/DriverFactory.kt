@@ -5,6 +5,7 @@ import org.prime.easykarobar.TallyDatabase
 
 expect class DriverFactory {
     fun createDriver(bytes: ByteArray): SqlDriver
+    fun openDriver(): SqlDriver
 }
 
 fun createDatabase(driverFactory: DriverFactory,byteArray: ByteArray): TallyDatabase {

@@ -4,6 +4,7 @@ import org.prime.easykarobar.TallyDatabase
 
 
 expect fun initializeDatabase(byteArray: ByteArray): TallyDatabase
+expect fun openDatabase(): TallyDatabase
 
 object DatabaseHolder {
     private var _instance: TallyDatabase? = null
@@ -14,13 +15,19 @@ object DatabaseHolder {
         }
 
     private fun tryAutoInit(): TallyDatabase {
-        val bytes = readFileBytes()
-        if (bytes != null) {
-            val db = initializeDatabase(bytes)
+        try {
+            val db = openDatabase()
             _instance = db
             return db
+        } catch (e: Exception) {
+            val bytes = readFileBytes()
+            if (bytes != null) {
+                val db = initializeDatabase(bytes)
+                _instance = db
+                return db
+            }
+            throw IllegalStateException("DatabaseHolder.instance has not been initialized. Please ensure the database is initialized before access.")
         }
-        throw IllegalStateException("DatabaseHolder.instance has not been initialized. Please ensure the database is initialized before access.")
     }
 
     fun init(byteArray: ByteArray) {

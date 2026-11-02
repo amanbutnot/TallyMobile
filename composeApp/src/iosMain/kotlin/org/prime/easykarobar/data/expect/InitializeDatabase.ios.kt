@@ -6,3 +6,8 @@ actual fun initializeDatabase(byteArray: ByteArray): TallyDatabase {
     val driver = DriverFactory().createDriver(byteArray)
     return TallyDatabase(driver)
 }
+
+actual fun openDatabase(): TallyDatabase {
+    val driver = DriverFactory().openDriver()
+    return TallyDatabase(driver)
+}
