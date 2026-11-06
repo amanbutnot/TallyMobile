@@ -87,6 +87,7 @@ import org.prime.easykarobar.ui.shared.globalShared.filterItemGroups
 import org.prime.easykarobar.ui.shared.globalShared.getBrandImage
 import org.prime.easykarobar.ui.shared.globalShared.getCategoryImage
 import org.prime.easykarobar.ui.shared.globalShared.getSubCategoryImage
+import org.prime.easykarobar.ui.shared.composables.smartSearch
 import org.prime.easykarobar.ui.shared.globalShared.handleBannerClick
 import org.prime.easykarobar.ui.shared.globalShared.itemGroupCodes
 import org.prime.easykarobar.ui.utils.EasyMartRefreshableBox
@@ -278,9 +279,11 @@ object CategoryShoppingScreen : Screen {
                 if (debouncedSearchQuery.isBlank()) {
                     screenData.products
                 } else {
-                    screenData.products.filter {
-                        it.product_name?.contains(debouncedSearchQuery, ignoreCase = true) == true
-                    }
+                    smartSearch(
+                        list = screenData.products,
+                        query = debouncedSearchQuery,
+                        selectors = listOf({ it.product_name }, { it.brand_name }, { it.product_description })
+                    )
                 }
             }
             val productsByCategoryId = remember(filteredProducts) {
@@ -291,14 +294,17 @@ object CategoryShoppingScreen : Screen {
                     if (debouncedSearchQuery.isBlank()) {
                         screenData.categories
                     } else {
-                        screenData.categories.filter { category ->
-                            val nameMatches = category.Name?.contains(
-                                debouncedSearchQuery,
-                                ignoreCase = true
-                            ) == true
-                            val hasProducts =
+                        val matchedCats = smartSearch(
+                            list = screenData.categories,
+                            query = debouncedSearchQuery,
+                            selectors = listOf { it.Name }
+                        )
+                        if (matchedCats.isNotEmpty()) {
+                            matchedCats
+                        } else {
+                            screenData.categories.filter { category ->
                                 filteredProducts.any { it.category_id == category.GUID?.toDouble() }
-                            nameMatches || hasProducts
+                            }
                         }
                     }
                 }
@@ -432,6 +438,7 @@ object CategoryShoppingScreen : Screen {
                         shape = RoundedCornerShape(12.dp)
                     )
                 }
+                val premiumScreen = remember { AllProductsPremiumScreen(isTab = false) }
                 val listState = rememberLazyListState(
                     initialFirstVisibleItemIndex = screenModel.firstVisibleItemIndex,
                     initialFirstVisibleItemScrollOffset = screenModel.firstVisibleItemScrollOffset
@@ -539,33 +546,35 @@ object CategoryShoppingScreen : Screen {
                         }
                     }
 
-                    itemsIndexed(
-                        items = topFeatureProductsMap.keys.toList(),
-                    ) { index, feature ->
-                        val featureProducts = topFeatureProductsMap[feature].orEmpty()
-                        if (featureProducts.isNotEmpty()) {
-                            val backgroundColor =
-                                featureSectionPastelColors[index % featureSectionPastelColors.size]
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                color = backgroundColor,
-                                shadowElevation = 1.dp
-                            ) {
-                                FeatureSection(
-                                    title = feature.CODE,
-                                    products = featureProducts,
-                                    cartViewModel = cartViewModel,
-                                    wishlistViewModel = wishlistViewModel,
-                                    isTwoPerRow = isTwoPerRow,
-                                    cartGuids = cartGuids,
-                                    wishlistGuids = wishlistGuids,
-                                    onItemClick = { item ->
-                                        selectedProduct.value = item
-                                        showProductInfo.value = true
-                                    }
-                                )
+                    if (debouncedSearchQuery.isBlank()) {
+                        itemsIndexed(
+                            items = topFeatureProductsMap.keys.toList(),
+                        ) { index, feature ->
+                            val featureProducts = topFeatureProductsMap[feature].orEmpty()
+                            if (featureProducts.isNotEmpty()) {
+                                val backgroundColor =
+                                    featureSectionPastelColors[index % featureSectionPastelColors.size]
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp),
+                                    color = backgroundColor,
+                                    shadowElevation = 1.dp
+                                ) {
+                                    FeatureSection(
+                                        title = feature.CODE,
+                                        products = featureProducts,
+                                        cartViewModel = cartViewModel,
+                                        wishlistViewModel = wishlistViewModel,
+                                        isTwoPerRow = isTwoPerRow,
+                                        cartGuids = cartGuids,
+                                        wishlistGuids = wishlistGuids,
+                                        onItemClick = { item ->
+                                            selectedProduct.value = item
+                                            showProductInfo.value = true
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -595,62 +604,107 @@ object CategoryShoppingScreen : Screen {
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
-                    items(
-                        items = filteredCategories,
-                    ) { category ->
-                        val products = productsByCategoryId[category.GUID?.toDouble()].orEmpty()
-                        val categorySliders = categorySlidersMap[category].orEmpty()
-                        val categoryBanners = categoryBannersMap[category].orEmpty()
-                        val subCategories = remember(category.GUID) {
-                            val catCode = category.GUID?.toDoubleOrNull()
-                            if (catCode != null) {
-                                db.product_CategoryQueries.getSubCategory(catCode).executeAsList()
-                            } else {
-                                emptyList()
+                    if (debouncedSearchQuery.isNotBlank()) {
+                        item(key = "search_results_header") {
+                            Text(
+                                text = "Search Results (${filteredProducts.size})",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                ),
+                                color = Color(0xFF1A1C1E),
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+                        val chunks = filteredProducts.chunked(if (isTwoPerRow) 2 else 1)
+                        items(chunks) { rowItems ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                rowItems.forEach { product ->
+                                    val isInCart = product.product_id in cartGuids
+                                    val isInWishlist = product.product_id in wishlistGuids
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        premiumScreen.PremiumProductItem(
+                                            product = product,
+                                            cartViewModel = cartViewModel,
+                                            wishlistViewModel = wishlistViewModel,
+                                            isInCart = isInCart,
+                                            isInWishlist = isInWishlist,
+                                            isTwoPerRow = isTwoPerRow,
+                                            onClick = {
+                                                selectedProduct.value = product
+                                                showProductInfo.value = true
+                                            }
+                                        )
+                                    }
+                                }
+                                if (rowItems.size < (if (isTwoPerRow) 2 else 1)) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
                             }
                         }
-                        val brands = remember(category.GUID) {
-                            val catCode = category.GUID?.toDoubleOrNull()
-                            db.productsQueries.getBrandsForDis(
-                                filterGroup = filterItemGroups(),
-                                groupCodes = itemGroupCodes(),
-                                productCode = catCode
-                            ).executeAsList()
-                        }
-                        val categoryFeatures = categoryFeaturesMap[category].orEmpty()
-                        if (products.isNotEmpty() || categorySliders.isNotEmpty() || categoryBanners.isNotEmpty() || categoryFeatures.isNotEmpty() || subCategories.isNotEmpty() || brands.isNotEmpty()) {
-                            CategoryProductSection(
-                                category = category,
-                                products = products.take(8),
-                                cartViewModel = cartViewModel,
-                                wishlistViewModel = wishlistViewModel,
-                                isTwoPerRow = isTwoPerRow,
-                                cartGuids = cartGuids,
-                                wishlistGuids = wishlistGuids,
-                                categorySliders = categorySliders,
-                                categoryBanners = categoryBanners,
-                                categoryFeatures = categoryFeatures,
-                                subCategories = subCategories,
-                                brands = brands,
-                                db = db,
-                                nav = nav,
-                                urlProvider = urlProvider,
-                                showProductInfo = showProductInfo,
-                                selectedProduct = selectedProduct,
-                                onItemClick = { item ->
-                                    selectedProduct.value = item
-                                    showProductInfo.value = true
-                                },
-                                onMoreClick = {
-                                    nav.pushEasyMart(
-                                        AllProductsPremiumScreen(
-                                            categoryName = category.Name,
-                                            productCode = category.GUID?.toDouble() ?: 0.0,
-                                            isTab = false
-                                        )
-                                    )
+                    } else {
+                        items(
+                            items = filteredCategories,
+                        ) { category ->
+                            val products = productsByCategoryId[category.GUID?.toDouble()].orEmpty()
+                            val categorySliders = categorySlidersMap[category].orEmpty()
+                            val categoryBanners = categoryBannersMap[category].orEmpty()
+                            val subCategories = remember(category.GUID) {
+                                val catCode = category.GUID?.toDoubleOrNull()
+                                if (catCode != null) {
+                                    db.product_CategoryQueries.getSubCategory(catCode).executeAsList()
+                                } else {
+                                    emptyList()
                                 }
-                            )
+                            }
+                            val brands = remember(category.GUID) {
+                                val catCode = category.GUID?.toDoubleOrNull()
+                                db.productsQueries.getBrandsForDis(
+                                    filterGroup = filterItemGroups(),
+                                    groupCodes = itemGroupCodes(),
+                                    productCode = catCode
+                                ).executeAsList()
+                            }
+                            val categoryFeatures = categoryFeaturesMap[category].orEmpty()
+                            if (products.isNotEmpty() || categorySliders.isNotEmpty() || categoryBanners.isNotEmpty() || categoryFeatures.isNotEmpty() || subCategories.isNotEmpty() || brands.isNotEmpty()) {
+                                CategoryProductSection(
+                                    category = category,
+                                    products = products.take(8),
+                                    cartViewModel = cartViewModel,
+                                    wishlistViewModel = wishlistViewModel,
+                                    isTwoPerRow = isTwoPerRow,
+                                    cartGuids = cartGuids,
+                                    wishlistGuids = wishlistGuids,
+                                    categorySliders = categorySliders,
+                                    categoryBanners = categoryBanners,
+                                    categoryFeatures = categoryFeatures,
+                                    subCategories = subCategories,
+                                    brands = brands,
+                                    db = db,
+                                    nav = nav,
+                                    urlProvider = urlProvider,
+                                    showProductInfo = showProductInfo,
+                                    selectedProduct = selectedProduct,
+                                    onItemClick = { item ->
+                                        selectedProduct.value = item
+                                        showProductInfo.value = true
+                                    },
+                                    onMoreClick = {
+                                        nav.pushEasyMart(
+                                            AllProductsPremiumScreen(
+                                                categoryName = category.Name,
+                                                productCode = category.GUID?.toDouble() ?: 0.0,
+                                                isTab = false
+                                            )
+                                        )
+                                    }
+                                )
+                            }
                         }
                     }
                 }
