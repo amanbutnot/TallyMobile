@@ -1014,6 +1014,20 @@ data class SaleScreen(
 
         val grandTotal = itemsTotal + sundriesTotal
 
+        val billedVchno = oneState.data?.billed_vchno
+        val autoVchNo = oneState.data?.AutoVchNo?.takeIf { it != 0 }?.toString()
+        val voucherNumber = state.data?.VoucherNumber?.toString()?.takeIf { it.isNotBlank() }
+
+        val isBilledVchnoValidForEdit = if (!isEdit) {
+            true
+        } else {
+            val isNotBlank = !billedVchno.isNullOrBlank()
+            val matchesAutoOrVoucher = (autoVchNo == null && voucherNumber == null) ||
+                (autoVchNo != null && billedVchno == autoVchNo) ||
+                (voucherNumber != null && billedVchno == voucherNumber)
+            isNotBlank && matchesAutoOrVoucher
+        }
+
         if (state.isLoading) {
             TallyLoadingDialog(if (isEdit) "Editing transaction" else "Creating transaction")
         }
@@ -2760,7 +2774,7 @@ data class SaleScreen(
                                     false
                                 } else {
                                     if (isEdit) {
-                                        enableUpdateButton && hasSalesmanPermission("ED$vchType")
+                                        enableUpdateButton && hasSalesmanPermission("ED$vchType") && isBilledVchnoValidForEdit
                                     } else {
                                         selectedLedger.isNotEmpty() && selectedItems.isNotEmpty()
                                     }
