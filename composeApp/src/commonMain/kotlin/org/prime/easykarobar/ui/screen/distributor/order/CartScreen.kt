@@ -1054,7 +1054,7 @@ fun CartSummary(
     val deliveryCharge =
         if (isDelivery) calculateDeliveryCharge(totalDiscountedPrice, deliveryConfigs) else 0.0
     val minOrderAmount = deliveryConfigs.minOfOrNull { it.minAmount } ?: 0.0
-    val isBelowMinOrder = totalDiscountedPrice < minOrderAmount
+    val isBelowMinOrder = isDelivery && (totalDiscountedPrice < minOrderAmount)
 
     val totalSavings = (totalMrp - totalDiscountedPrice).toDouble()
 
@@ -1369,7 +1369,7 @@ fun ConfirmOrderButton(
     val deliveryCharge =
         if (isDelivery) calculateDeliveryCharge(totalDiscountedPrice, deliveryConfigs) else 0.0
     val minOrderAmount = deliveryConfigs.minOfOrNull { it.minAmount } ?: 0.0
-    val isBelowMinOrder = totalDiscountedPrice < minOrderAmount
+    val isBelowMinOrder = isDelivery && (totalDiscountedPrice < minOrderAmount)
 
     val couponDiscount =
         if (appliedCoupon != null && totalDiscountedPrice >= appliedCoupon.minOrderValue) {
