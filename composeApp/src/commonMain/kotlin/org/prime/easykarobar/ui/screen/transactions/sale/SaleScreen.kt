@@ -1044,7 +1044,15 @@ data class SaleScreen(
             val matchesAutoOrVoucher = (autoVchNo == null && voucherNumber == null) ||
                 (autoVchNo != null && billedVchno == autoVchNo) ||
                 (voucherNumber != null && billedVchno == voucherNumber)
-            isBlank || matchesAutoOrVoucher
+            val result = isBlank || matchesAutoOrVoucher
+            println("[SALE MEOW] --- VALIDATION CHECK ---")
+            println("[SALE MEOW] isEdit: $isEdit")
+            println("[SALE MEOW] billedVchno: '$billedVchno' (isBlank: $isBlank)")
+            println("[SALE MEOW] autoVchNo: '$autoVchNo'")
+            println("[SALE MEOW] voucherNumber: '$voucherNumber'")
+            println("[SALE MEOW] matchesAutoOrVoucher: $matchesAutoOrVoucher")
+            println("[SALE MEOW] isBilledVchnoValidForEdit result: $result")
+            result
         }
 
         if (state.isLoading) {
@@ -2998,15 +3006,28 @@ data class SaleScreen(
                                 }
                             },
                             enabled = if (editingItem != null) {
+                                println("[SALE MEOW] Update button DISABLED: editingItem != null ($editingItem)")
                                 false
                             } else {
                                 if (viewmodel.dataState.value.isLoading) {
+                                    println("[SALE MEOW] Update button DISABLED: isLoading is true")
                                     false
                                 } else {
                                     if (isEdit) {
-                                        enableUpdateButton && hasSalesmanPermission("ED$vchType") && isBilledVchnoValidForEdit
+                                        val perm = hasSalesmanPermission("ED$vchType")
+                                        val canEditIfBlank = billedVchno.isNullOrBlank()
+                                        val updateAllowed = (enableUpdateButton || canEditIfBlank) && perm && isBilledVchnoValidForEdit
+                                        println("[SALE MEOW] Update button EDIT mode check:")
+                                        println("[SALE MEOW]   enableUpdateButton: $enableUpdateButton")
+                                        println("[SALE MEOW]   billedVchno.isNullOrBlank(): $canEditIfBlank")
+                                        println("[SALE MEOW]   hasSalesmanPermission('ED$vchType'): $perm")
+                                        println("[SALE MEOW]   isBilledVchnoValidForEdit: $isBilledVchnoValidForEdit")
+                                        println("[SALE MEOW]   -> FINAL UPDATE ENABLED: $updateAllowed")
+                                        updateAllowed
                                     } else {
-                                        selectedLedger.isNotEmpty() && selectedItems.isNotEmpty()
+                                        val createAllowed = selectedLedger.isNotEmpty() && selectedItems.isNotEmpty()
+                                        println("[SALE MEOW] Create button check: selectedLedger=${selectedLedger.isNotEmpty()}, selectedItems=${selectedItems.isNotEmpty()} -> $createAllowed")
+                                        createAllowed
                                     }
                                 }
                             },
