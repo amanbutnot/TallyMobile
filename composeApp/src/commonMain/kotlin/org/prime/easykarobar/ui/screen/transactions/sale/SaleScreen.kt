@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Search
@@ -104,6 +105,19 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.internal.BackHandler
 import coil3.compose.AsyncImage
+import com.mohamedrejeb.calf.permissions.ExperimentalPermissionsApi
+import com.mohamedrejeb.calf.permissions.Permission
+import com.mohamedrejeb.calf.permissions.isGranted
+import com.mohamedrejeb.calf.permissions.rememberPermissionState
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.ImageFormat
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.compressImage
+import io.github.vinceglb.filekit.dialogs.FileKitCameraFacing
+import io.github.vinceglb.filekit.dialogs.FileKitCameraType
+import io.github.vinceglb.filekit.dialogs.openCameraPicker
+import io.github.vinceglb.filekit.path
+import io.github.vinceglb.filekit.readBytes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.async
@@ -116,9 +130,11 @@ import org.prime.easykarobar.business.viewmodel.transactions.InventoryVoucherVie
 import org.prime.easykarobar.data.expect.BarcodeScanResult
 import org.prime.easykarobar.data.expect.BarcodeScannerLauncher
 import org.prime.easykarobar.data.expect.DatabaseHolder
+import org.prime.easykarobar.data.expect.createPdfFromHtml
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
 import org.prime.easykarobar.data.expect.rememberBarcodeScanner
+import org.prime.easykarobar.data.expect.sharePdf
 import org.prime.easykarobar.data.model.hasSalesmanPermission
 import org.prime.easykarobar.data.model.transactions.BillingItem
 import org.prime.easykarobar.data.model.transactions.InventoryVoucherRequest
@@ -171,6 +187,8 @@ import org.tally.Products_Pricing
 import org.tally.SerialNoEnterReportSale
 import tallymobile.composeapp.generated.resources.Res
 import tallymobile.composeapp.generated.resources.category_placeholder
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.math.absoluteValue
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -301,7 +319,8 @@ data class SaleScreen(
         ExperimentalMaterial3Api::class,
         InternalVoyagerApi::class,
         ExperimentalUuidApi::class,
-        ExperimentalMaterial3ExpressiveApi::class
+        ExperimentalMaterial3ExpressiveApi::class,
+        ExperimentalPermissionsApi::class
     )
     @Composable
     override fun Content() {
@@ -2755,6 +2774,217 @@ data class SaleScreen(
                                     }
                                 }, url = if (isEdit) "updateInventory" else "addInventoryVch"
                             )
+                        }
+
+                        val isUser10154 = remember { SharedPrefs.User.get()?.ID?.toString() == "10154" }
+                        val capturedImages = remember { mutableStateListOf<PlatformFile>() }
+                        var isGeneratingPdf by remember { mutableStateOf(false) }
+                        var generatedPdfPath by remember { mutableStateOf<String?>(null) }
+                        val cameraPermission = rememberPermissionState(Permission.Camera)
+
+                        @OptIn(ExperimentalEncodingApi::class)
+                        if (isUser10154 && !isEdit) {
+                            ElevatedCard(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "AI Bill Scanner",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = "Capture bill images to compile into PDF for AI scan",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Button(
+                                            onClick = {
+                                                if (cameraPermission.status.isGranted) {
+                                                    scope.launch {
+                                                        try {
+                                                            val file = FileKit.openCameraPicker(
+                                                                type = FileKitCameraType.Photo,
+                                                                cameraFacing = FileKitCameraFacing.Back
+                                                            )
+                                                            if (file != null) {
+                                                                capturedImages.add(file)
+                                                            }
+                                                        } catch (e: Exception) {
+                                                            e.printStackTrace()
+                                                        }
+                                                    }
+                                                } else {
+                                                    cameraPermission.launchPermissionRequest()
+                                                }
+                                            },
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.PhotoCamera,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("Capture")
+                                        }
+                                    }
+
+                                    if (capturedImages.isNotEmpty()) {
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(vertical = 4.dp),
+                                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                        )
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "Captured Images (${capturedImages.size})",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Medium,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+
+                                        LazyRow(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            modifier = Modifier.fillMaxWidth().height(80.dp)
+                                        ) {
+                                            items(capturedImages) { imgFile ->
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(80.dp)
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
+                                                ) {
+                                                    AsyncImage(
+                                                        model = imgFile.path,
+                                                        contentDescription = "Captured bill",
+                                                        modifier = Modifier.fillMaxSize(),
+                                                        contentScale = ContentScale.Crop
+                                                    )
+                                                    IconButton(
+                                                        onClick = { capturedImages.remove(imgFile) },
+                                                        modifier = Modifier
+                                                            .align(Alignment.TopEnd)
+                                                            .size(24.dp)
+                                                            .background(
+                                                                MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                                                RoundedCornerShape(12.dp)
+                                                            )
+                                                    ) {
+                                                        Icon(
+                                                            Icons.Default.Close,
+                                                            contentDescription = "Remove",
+                                                            modifier = Modifier.size(12.dp),
+                                                            tint = MaterialTheme.colorScheme.error
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        Button(
+                                            onClick = {
+                                                isGeneratingPdf = true
+                                                scope.launch(Dispatchers.IO) {
+                                                    try {
+                                                        val htmlBuilder = StringBuilder()
+                                                        htmlBuilder.append("<html><body style='text-align: center; margin: 0; padding: 20px;'>")
+                                                        for (file in capturedImages) {
+                                                            val bytes = file.readBytes()
+                                                            val compressedBytes = FileKit.compressImage(
+                                                                bytes = bytes,
+                                                                quality = 80,
+                                                                maxWidth = 1200,
+                                                                maxHeight = 1600,
+                                                                imageFormat = ImageFormat.JPEG
+                                                            )
+                                                            val base64Str = Base64.encode(compressedBytes)
+                                                            val dataUri = "data:image/jpeg;base64,$base64Str"
+                                                            htmlBuilder.append("<div style='page-break-after: always; margin-bottom: 20px;'>")
+                                                            htmlBuilder.append("<img src=\"$dataUri\" style=\"max-width: 100%; max-height: 90vh; object-fit: contain;\" />")
+                                                            htmlBuilder.append("</div>")
+                                                        }
+                                                        htmlBuilder.append("</body></html>")
+
+                                                        val pdfPath = createPdfFromHtml(htmlBuilder.toString(), "AIBillScan_")
+                                                        withContext(Dispatchers.Main) {
+                                                            generatedPdfPath = pdfPath
+                                                            isGeneratingPdf = false
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        e.printStackTrace()
+                                                        withContext(Dispatchers.Main) {
+                                                            isGeneratingPdf = false
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            modifier = Modifier.fillMaxWidth().height(44.dp),
+                                            enabled = !isGeneratingPdf,
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text(
+                                                if (isGeneratingPdf) "Generating PDF..." else "Generate PDF from (${capturedImages.size}) Images",
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                    }
+
+                                    generatedPdfPath?.let { path ->
+                                        Surface(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().padding(10.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = "PDF Ready for AI Scan",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        fontWeight = FontWeight.SemiBold
+                                                    )
+                                                    Text(
+                                                        text = "Compiled successfully",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                                OutlinedButton(
+                                                    onClick = { sharePdf(path) },
+                                                    shape = RoundedCornerShape(6.dp)
+                                                ) {
+                                                    Text("View / Share")
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         TallyButton(
