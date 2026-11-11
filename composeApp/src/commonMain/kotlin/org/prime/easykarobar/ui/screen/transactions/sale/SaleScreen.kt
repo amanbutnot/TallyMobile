@@ -1040,11 +1040,11 @@ data class SaleScreen(
         val isBilledVchnoValidForEdit = if (!isEdit) {
             true
         } else {
-            val isNotBlank = !billedVchno.isNullOrBlank()
+            val isBlank = billedVchno.isNullOrBlank()
             val matchesAutoOrVoucher = (autoVchNo == null && voucherNumber == null) ||
                 (autoVchNo != null && billedVchno == autoVchNo) ||
                 (voucherNumber != null && billedVchno == voucherNumber)
-            isNotBlank && matchesAutoOrVoucher
+            isBlank || matchesAutoOrVoucher
         }
 
         if (state.isLoading) {
