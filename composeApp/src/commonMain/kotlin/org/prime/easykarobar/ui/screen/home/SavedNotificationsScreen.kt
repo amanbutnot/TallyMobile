@@ -62,6 +62,7 @@ class SavedNotificationsScreen : Screen {
         var isLoading by remember { mutableStateOf(true) }
 
         LaunchedEffect(Unit) {
+            SharedPrefs.UnreadNotifications.clear()
             isLoading = true
             val res = AuthRepository.listNotifications()
             if (res?.statuscode == 200 && res.data != null) {

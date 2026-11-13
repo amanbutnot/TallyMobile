@@ -12,20 +12,28 @@ import androidx.core.app.NotificationManagerCompat
 fun createChannel(context: Context) {
     val ch = NotificationChannel(
         "default", "default_channel", NotificationManager.IMPORTANCE_DEFAULT
-    )
+    ).apply {
+        setShowBadge(true)
+        description = "Default notification channel"
+    }
     val notifManager = context.getSystemService(NotificationManager::class.java)
     notifManager.createNotificationChannel(ch)
 }
 
 
 @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-fun sendNotification(context: Context, title: String, body: String, imageUrl: String? = null) {
+fun sendNotification(context: Context, title: String, body: String, imageUrl: String? = null, notificationId: Int = System.currentTimeMillis().toInt()) {
     createChannel(context)
+
+    val unreadCount = org.prime.easykarobar.data.utils.SharedPrefs.UnreadNotifications.get().let { if (it > 0) it else 1 }
+
     val builder = NotificationCompat.Builder(context, "default")
         .setContentTitle(title)
         .setContentText(body)
         .setAutoCancel(true)
         .setSmallIcon(org.prime.easykarobar.R.drawable.ic_launcher)
+        .setBadgeIconType(NotificationCompat.BADGE_ICON_SMALL)
+        .setNumber(unreadCount)
 
     if (!imageUrl.isNullOrBlank()) {
         try {
@@ -49,5 +57,5 @@ fun sendNotification(context: Context, title: String, body: String, imageUrl: St
 
     val notification = builder.build()
     val notifManager = NotificationManagerCompat.from(context)
-    notifManager.notify(1001, notification)
+    notifManager.notify(notificationId, notification)
 }

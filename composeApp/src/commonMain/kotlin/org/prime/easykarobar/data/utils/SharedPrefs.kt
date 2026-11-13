@@ -614,4 +614,24 @@ object SharedPrefs {
         }
     }
 
+    object UnreadNotifications {
+        private const val KEY = "unread_notifications_count"
+
+        fun get(): Int {
+            return settings.getInt(KEY, 0)
+        }
+
+        fun set(count: Int) {
+            settings.putInt(KEY, count)
+        }
+
+        fun increment() {
+            set(get() + 1)
+        }
+
+        fun clear() {
+            set(0)
+        }
+    }
+
 }

@@ -17,6 +17,8 @@ import org.prime.easykarobar.ui.screen.home.SavedNotificationsScreen
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -28,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,7 +42,38 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.prime.easykarobar.data.utils.SharedPrefs
+
+@Composable
+private fun NotificationIconButton(nav: Navigator, tint: Color) {
+    val unreadCount = remember { mutableStateOf(SharedPrefs.UnreadNotifications.get()) }
+    LaunchedEffect(Unit) {
+        unreadCount.value = SharedPrefs.UnreadNotifications.get()
+    }
+    IconButton(onClick = {
+        SharedPrefs.UnreadNotifications.clear()
+        unreadCount.value = 0
+        nav.push(SavedNotificationsScreen())
+    }) {
+        BadgedBox(
+            badge = {
+                if (unreadCount.value > 0) {
+                    Badge {
+                        Text("${unreadCount.value}")
+                    }
+                }
+            }
+        ) {
+            Icon(
+                Icons.Default.Notifications,
+                contentDescription = "Notifications",
+                tint = tint
+            )
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,13 +107,7 @@ fun TallyScaffold(
                     )
                  }, actions = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { nav.push(SavedNotificationsScreen()) }) {
-                            Icon(
-                                Icons.Default.Notifications,
-                                contentDescription = "Notifications",
-                                tint = colors.onSurface
-                            )
-                        }
+                        NotificationIconButton(nav, colors.onSurface)
                         if (showAddBar) {
                             IconButton(onClick = { onAddClick() }) {
                                 Icon(
@@ -177,13 +205,7 @@ fun TallyReportScaffold(
                 },
                 actions = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { nav.push(SavedNotificationsScreen()) }) {
-                            Icon(
-                                Icons.Default.Notifications,
-                                contentDescription = "Notifications",
-                                tint = colors.onSurface
-                            )
-                        }
+                        NotificationIconButton(nav, colors.onSurface)
                         if (onFilterClick != null) {
                             IconButton(onClick = { onFilterClick() }) {
                                 Icon(Icons.Default.FilterList, "", tint = colors.onSurface)

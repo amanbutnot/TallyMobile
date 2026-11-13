@@ -6,11 +6,8 @@ import android.os.Build
 import androidx.core.content.ContextCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.subscribeUserToFcmTopic
 import org.prime.easykarobar.data.utils.SharedPrefs
-import org.prime.easykarobar.data.model.NotificationPayload
-import kotlinx.serialization.json.Json
 
 class MyFirebaseApplication : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
@@ -95,6 +92,8 @@ class MyFirebaseApplication : FirebaseMessagingService() {
             body,
             imageUrl.ifBlank { null }
         )
+
+        SharedPrefs.UnreadNotifications.increment()
 
         println("FCM: sendNotification() completed")
 
