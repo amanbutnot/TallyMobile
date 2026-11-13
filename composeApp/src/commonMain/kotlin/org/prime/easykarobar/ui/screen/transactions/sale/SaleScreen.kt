@@ -113,8 +113,19 @@ import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.ImageFormat
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.compressImage
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material3.CircularProgressIndicator
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import io.github.vinceglb.filekit.dialogs.FileKitCameraFacing
 import io.github.vinceglb.filekit.dialogs.FileKitCameraType
+import io.github.vinceglb.filekit.dialogs.FileKitMode
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.dialogs.openCameraPicker
 import io.github.vinceglb.filekit.path
 import io.github.vinceglb.filekit.readBytes
@@ -134,12 +145,17 @@ import org.prime.easykarobar.data.expect.createPdfFromHtml
 import org.prime.easykarobar.data.expect.formatToAmtDec
 import org.prime.easykarobar.data.expect.formatToQtyDec
 import org.prime.easykarobar.data.expect.rememberBarcodeScanner
-import org.prime.easykarobar.data.expect.sharePdf
 import org.prime.easykarobar.data.model.hasSalesmanPermission
 import org.prime.easykarobar.data.model.transactions.BillingItem
 import org.prime.easykarobar.data.model.transactions.InventoryVoucherRequest
 import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.model.transactions.TransportDetails
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import org.prime.easykarobar.data.utils.KtorClient
 import org.prime.easykarobar.data.utils.SaleOrderConfig
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.data.utils.showQtyToSalesman
@@ -211,6 +227,70 @@ data class ProductPricing(
 
 fun formatTwo(value: Double): String {
     return value.formatToAmtDec()
+}
+
+private fun parseAndAddInvoiceItems(responseText: String, itemsList: List<ProductsWithConfig>, onItemsAdded: (List<InvoiceItem>) -> Unit) {
+    try {
+        val jsonElement = Json.parseToJsonElement(responseText)
+        val dataObj = jsonElement.jsonObject["data"]?.jsonObject
+        val itemInfo = dataObj?.get("item_info")?.jsonArray
+        if (itemInfo != null && itemInfo.size > 1) {
+            val parsedInvoiceItems = mutableListOf<InvoiceItem>()
+            for (i in 1 until itemInfo.size) {
+                val row = itemInfo[i].jsonArray
+                if (row.size >= 13) {
+                    val description = row[1].jsonPrimitive.content
+                    val qty = row[3].jsonPrimitive.content.toDoubleOrNull() ?: 1.0
+                    val mrp = row[5].jsonPrimitive.content.toDoubleOrNull() ?: 0.0
+                    val price = row[6].jsonPrimitive.content.toDoubleOrNull() ?: 0.0
+                    val disc = row[7].jsonPrimitive.content.toDoubleOrNull() ?: 0.0
+                    val netAmt = row[12].jsonPrimitive.content.toDoubleOrNull() ?: (qty * price)
+
+                    val matchedProduct = itemsList.find { 
+                        it.Name?.equals(description, ignoreCase = true) == true || 
+                        (it.Name != null && description.contains(it.Name, ignoreCase = true)) ||
+                        (it.Name != null && it.Name.contains(description, ignoreCase = true))
+                    }
+
+                    val finalName = matchedProduct?.Name ?: description
+                    val finalGuid = matchedProduct?.GUID ?: ""
+                    val finalUnit = matchedProduct?.UnitName ?: ""
+                    val finalHsn = matchedProduct?.HSN ?: ""
+                    val finalMrp = matchedProduct?.MRP ?: mrp
+                    val finalPrice = if (price > 0.0) price else (matchedProduct?.SalesPrice ?: 0.0)
+                    val taxable = qty * finalPrice - disc
+
+                    val invoiceItem = InvoiceItem(
+                        name = finalName,
+                        price = finalPrice,
+                        listPrice = finalPrice,
+                        qty = qty,
+                        discountPercentage = disc,
+                        taxCategoryCode = matchedProduct?.TaxCategoryCode?.toInt() ?: 0,
+                        gstPercentage = 0.0,
+                        taxable = taxable,
+                        gstAmt = 0.0,
+                        net = netAmt,
+                        guid = finalGuid,
+                        selectedUnit = finalUnit,
+                        mrp = finalMrp,
+                        hsn = finalHsn,
+                        CD = if (disc != 0.0) disc.toString() else "",
+                        conFactor = matchedProduct?.ConFactor,
+                        conType = matchedProduct?.ConType,
+                        mainUnit = matchedProduct?.UnitName,
+                        altUnit = matchedProduct?.AltUnit
+                    )
+                    parsedInvoiceItems.add(invoiceItem)
+                }
+            }
+            if (parsedInvoiceItems.isNotEmpty()) {
+                onItemsAdded(parsedInvoiceItems)
+            }
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
 }
 
 @Serializable
@@ -2790,6 +2870,62 @@ data class SaleScreen(
                         var generatedPdfPath by remember { mutableStateOf<String?>(null) }
                         val cameraPermission = rememberPermissionState(Permission.Camera)
 
+                        val galleryLauncher = rememberFilePickerLauncher(
+                            type = FileKitType.Image,
+                            mode = FileKitMode.Multiple(),
+                            title = "Select Bill Images"
+                        ) { files: List<PlatformFile>? ->
+                            if (files != null && files.isNotEmpty()) {
+                                capturedImages.addAll(files)
+                            }
+                        }
+
+                        val pdfPickerLauncher = rememberFilePickerLauncher(
+                            type = FileKitType.File(extensions = listOf("pdf")),
+                            mode = FileKitMode.Single,
+                            title = "Select Bill PDF"
+                        ) { file ->
+                            if (file != null) {
+                                scope.launch(Dispatchers.IO) {
+                                    try {
+                                        isGeneratingPdf = true
+                                        val pdfBytes = file.readBytes()
+                                        val response = KtorClient.client.submitFormWithBinaryData(
+                                            url = "https://parse.easykarobar.in/parse-invoice",
+                                            formData = formData {
+                                                append("password", "")
+                                                append("buyer_gstin", "")
+                                                append("file", pdfBytes, Headers.build {
+                                                    append(HttpHeaders.ContentType, "application/pdf")
+                                                    append(HttpHeaders.ContentDisposition, "filename=\"invoice.pdf\"")
+                                                })
+                                            }
+                                        )
+                                        val responseText = response.bodyAsText()
+                                        println("=== PARSE INVOICE API RESPONSE (FROM PDF) ===")
+                                        println(responseText)
+                                        println("=============================================")
+
+                                        parseAndAddInvoiceItems(responseText, itemsList) { newItems ->
+                                            scope.launch(Dispatchers.Main) {
+                                                selectedItems = selectedItems + newItems
+                                            }
+                                        }
+
+                                        withContext(Dispatchers.Main) {
+                                            generatedPdfPath = file.path
+                                        }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    } finally {
+                                        withContext(Dispatchers.Main) {
+                                            isGeneratingPdf = false
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         @OptIn(ExperimentalEncodingApi::class)
                         if (isUser10154 && !isEdit) {
                             ElevatedCard(
@@ -2799,28 +2935,30 @@ data class SaleScreen(
                             ) {
                                 Column(
                                     modifier = Modifier.padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    verticalArrangement = Arrangement.spacedBy(14.dp)
                                 ) {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        Text(
+                                            text = "AI Bill Scanner",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = "Capture photos, select gallery images, or upload a PDF to auto-fill items",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+
+                                    // Action Buttons Row (Camera, Gallery, PDF) - UI/UX friendly & spacious
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = "AI Bill Scanner",
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Text(
-                                                text = "Capture bill images to compile into PDF for AI scan",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                        Button(
+                                        OutlinedButton(
                                             onClick = {
                                                 if (cameraPermission.status.isGranted) {
                                                     scope.launch {
@@ -2840,19 +2978,80 @@ data class SaleScreen(
                                                     cameraPermission.launchPermissionRequest()
                                                 }
                                             },
-                                            shape = RoundedCornerShape(8.dp)
+                                            modifier = Modifier.weight(1f).height(44.dp),
+                                            shape = RoundedCornerShape(8.dp),
+                                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.PhotoCamera,
                                                 contentDescription = null,
-                                                modifier = Modifier.size(18.dp)
+                                                modifier = Modifier.size(16.dp)
                                             )
                                             Spacer(modifier = Modifier.width(6.dp))
-                                            Text("Capture")
+                                            Text("Camera", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = { galleryLauncher.launch() },
+                                            modifier = Modifier.weight(1f).height(44.dp),
+                                            shape = RoundedCornerShape(8.dp),
+                                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Image,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("Gallery", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = { pdfPickerLauncher.launch() },
+                                            modifier = Modifier.weight(1f).height(44.dp),
+                                            shape = RoundedCornerShape(8.dp),
+                                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Description,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("PDF File", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                                         }
                                     }
 
-                                    if (capturedImages.isNotEmpty()) {
+                                    // Loading Indicator (Always visible when isGeneratingPdf is true)
+                                    if (isGeneratingPdf) {
+                                        Surface(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = MaterialTheme.colorScheme.surfaceContainerLow
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                                horizontalArrangement = Arrangement.Center,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(24.dp),
+                                                    strokeWidth = 2.5.dp,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                Text(
+                                                    text = "Processing AI Scan & Matching Items...",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // Captured Images List & Generate PDF Button
+                                    if (capturedImages.isNotEmpty() && !isGeneratingPdf) {
                                         HorizontalDivider(
                                             modifier = Modifier.padding(vertical = 4.dp),
                                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
@@ -2934,12 +3133,39 @@ data class SaleScreen(
                                                         htmlBuilder.append("</body></html>")
 
                                                         val pdfPath = createPdfFromHtml(htmlBuilder.toString(), "AIBillScan_")
+                                                        try {
+                                                            val pdfBytes = PlatformFile(pdfPath).readBytes()
+                                                            val response = KtorClient.client.submitFormWithBinaryData(
+                                                                url = "https://parse.easykarobar.in/parse-invoice",
+                                                                formData = formData {
+                                                                    append("password", "")
+                                                                    append("buyer_gstin", "")
+                                                                    append("file", pdfBytes, Headers.build {
+                                                                        append(HttpHeaders.ContentType, "application/pdf")
+                                                                        append(HttpHeaders.ContentDisposition, "filename=\"invoice.pdf\"")
+                                                                    })
+                                                                }
+                                                            )
+                                                            val responseText = response.bodyAsText()
+                                                            println("=== PARSE INVOICE API RESPONSE ===")
+                                                            println(responseText)
+                                                            println("==================================")
+
+                                                            parseAndAddInvoiceItems(responseText, itemsList) { newItems ->
+                                                                scope.launch(Dispatchers.Main) {
+                                                                    selectedItems = selectedItems + newItems
+                                                                }
+                                                            }
+                                                        } catch (apiEx: Exception) {
+                                                            apiEx.printStackTrace()
+                                                        }
+
                                                         withContext(Dispatchers.Main) {
                                                             generatedPdfPath = pdfPath
-                                                            isGeneratingPdf = false
                                                         }
                                                     } catch (e: Exception) {
                                                         e.printStackTrace()
+                                                    } finally {
                                                         withContext(Dispatchers.Main) {
                                                             isGeneratingPdf = false
                                                         }
@@ -2951,13 +3177,14 @@ data class SaleScreen(
                                             shape = RoundedCornerShape(8.dp)
                                         ) {
                                             Text(
-                                                if (isGeneratingPdf) "Generating PDF..." else "Generate PDF from (${capturedImages.size}) Images",
+                                                "Generate PDF & Run AI Scan",
                                                 fontWeight = FontWeight.SemiBold
                                             )
                                         }
                                     }
 
-                                    generatedPdfPath?.let { path ->
+                                    // Success / Ready State with Close (Cross) Button
+                                    if (generatedPdfPath != null) {
                                         Surface(
                                             modifier = Modifier.fillMaxWidth(),
                                             shape = RoundedCornerShape(8.dp),
@@ -2965,28 +3192,34 @@ data class SaleScreen(
                                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                                         ) {
                                             Row(
-                                                modifier = Modifier.fillMaxWidth().padding(10.dp),
+                                                modifier = Modifier.fillMaxWidth().padding(12.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Column(modifier = Modifier.weight(1f)) {
                                                     Text(
-                                                        text = "PDF Ready for AI Scan",
+                                                        text = "AI Bill Scanned & Items Added",
                                                         style = MaterialTheme.typography.bodyMedium,
                                                         color = MaterialTheme.colorScheme.primary,
                                                         fontWeight = FontWeight.SemiBold
                                                     )
                                                     Text(
-                                                        text = "Compiled successfully",
+                                                        text = "Invoice parsed and items matched successfully",
                                                         style = MaterialTheme.typography.bodySmall,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                                     )
                                                 }
-                                                OutlinedButton(
-                                                    onClick = { sharePdf(path) },
-                                                    shape = RoundedCornerShape(6.dp)
+                                                IconButton(
+                                                    onClick = {
+                                                        generatedPdfPath = null
+                                                        capturedImages.clear()
+                                                    }
                                                 ) {
-                                                    Text("View / Share")
+                                                    Icon(
+                                                        Icons.Default.Close,
+                                                        contentDescription = "Dismiss",
+                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
                                                 }
                                             }
                                         }
