@@ -62,7 +62,8 @@ data class TallyLedgerReportItemScreen(
     val vchNo: String,
     val date: String,
     val vchType: String,
-    val guid: String
+    val guid: String,
+    val showApproval: Boolean = false
 ) : Screen {
 
     @Composable

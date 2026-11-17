@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.Delete
@@ -74,7 +75,7 @@ object ListDistributorScreen : Screen {
         }
 
         TallyScaffold(
-            title = "Distributors",
+            title = "Staff Members Name",
             showBottomBar = false,
             bottomBarContent = {},
             content = { paddingValues ->
@@ -143,7 +144,8 @@ fun DistributorList(
     modifier: Modifier = Modifier,
     viewModel: DistributorViewModel
 ) {
-    var showInactiveDialog by remember { mutableStateOf(false) }
+    var showActionDialog by remember { mutableStateOf(false) }
+    var actionType by remember { mutableStateOf("inactive") }
     var showResultDialog by remember { mutableStateOf(false) }
     var pass by remember { mutableStateOf("") }
     var selectedDistributor by remember { mutableStateOf<DistributorRequest?>(null) }
@@ -158,7 +160,6 @@ fun DistributorList(
         List(buttons.size) { MutableInteractionSource() }
     }
 
-    // FIX: compute filtered list OUTSIDE LazyColumn
     val filteredList = remember(selected, distributors) {
         when (selected) {
             0 -> distributors
@@ -179,8 +180,6 @@ fun DistributorList(
             expandedRatio = ButtonGroupDefaults.ExpandedRatio
         ) {
             buttons.forEachIndexed { index, label ->
-
-
                 ToggleButton(
                     checked = selected == index,
                     onCheckedChange = { selected = index },
@@ -208,9 +207,11 @@ fun DistributorList(
                     onEdit = {
                         nav.push(CreateDistributorScreen(isEdit = true, distributor))
                     },
-                    onDelete = {
+                    onToggleStatus = {
                         selectedDistributor = distributor
-                        showInactiveDialog = true
+                        val isActive = distributor.status?.equals("active", ignoreCase = true) == true
+                        actionType = if (isActive) "inactive" else "active"
+                        showActionDialog = true
                     }
                 )
             }
@@ -225,50 +226,49 @@ fun DistributorList(
         TallyResultDialog(
             message = state.message ?: "Error",
             onDone = {
-                // CLOSE ONLY THIS DIALOG
-showResultDialog = false
+                showResultDialog = false
             },
             isSuccess = state.success,
             confirmText = "Okay"
         )
     }
 
-    if (showInactiveDialog) {
+    if (showActionDialog) {
+        val isDeactivating = actionType == "inactive"
         TallyAlertBox(
-            title = "Deactivate Distributor",
-            message = "Are you sure you want to deactivate this distributor?",
+            title = if (isDeactivating) "Deactivate Staff Member" else "Activate Staff Member",
+            message = if (isDeactivating) "Are you sure you want to deactivate this staff member?" else "Are you sure you want to activate this staff member?",
             confirmButtonText = "Yes",
             cancelButtonText = "No",
             onConfirm = {
                 val dist = selectedDistributor ?: return@TallyAlertBox
 
-                // BASIC CHECK
                 if (pass.isBlank()) return@TallyAlertBox
 
-                viewModel.updateDistributor(dist.copy(status = "inactive", password = pass)) {
-                    showInactiveDialog = false
-                    pass = "" // clear password
+                viewModel.updateDistributor(dist.copy(status = actionType, password = pass)) {
+                    showActionDialog = false
+                    pass = ""
                     showResultDialog = true
                 }
             },
             onCancel = {
-                showInactiveDialog = false
+                showActionDialog = false
                 pass = ""
             },
             onDismiss = {
-                showInactiveDialog = false
+                showActionDialog = false
                 pass = ""
             },
             content = {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Verify Password", style = MaterialTheme.typography.labelMedium)
-
                     TallyTextField(
                         value = pass,
                         onValueChange = { pass = it },
+                        placeholder = "Password",
                         isPassword = true,
-                        placeholder = "Enter your password",
-                        label = "Password", isNumber = false
+                        isNumber = false,
+                        label = "Password"
                     )
                 }
             }
@@ -280,7 +280,7 @@ showResultDialog = false
 fun DistributorCard(
     distributor: DistributorRequest,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onToggleStatus: () -> Unit
 ) {
     val isActive = distributor.status?.equals("active", ignoreCase = true) == true
 
@@ -370,51 +370,34 @@ fun DistributorCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Edit button
-                TextButton(
-                    onClick = onEdit,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
-                    ),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                ) {
+                TextButton(onClick = onEdit) {
                     Icon(
-                        imageVector = Icons.Outlined.Edit,
+                        Icons.Outlined.Edit,
                         contentDescription = "Edit",
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Edit",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Text(text = "Edit", color = MaterialTheme.colorScheme.primary)
                 }
 
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(8.dp))
 
-                // Delete button
-                TextButton(
-                    onClick = onDelete,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    ),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                ) {
+                TextButton(onClick = onToggleStatus) {
                     Icon(
-                        imageVector = Icons.Outlined.Delete,
-                        contentDescription = "Delete",
-                        modifier = Modifier.size(18.dp)
+                        if (isActive) Icons.Outlined.Delete else Icons.Default.Check,
+                        contentDescription = if (isActive) "Deactivate" else "Activate",
+                        modifier = Modifier.size(16.dp),
+                        tint = if (isActive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Delete",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Medium
+                        text = if (isActive) "Deactivate" else "Activate",
+                        color = if (isActive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -424,45 +407,35 @@ fun DistributorCard(
 
 @Composable
 fun StatusChip(isActive: Boolean) {
-    val backgroundColor = if (isActive) Color(0xFF10B981) else Color(0xFFEF4444)
-    val contentColor = Color.White
-
     Surface(
-        shape = RoundedCornerShape(6.dp),
-        color = backgroundColor,
-        modifier = Modifier.height(22.dp)
+        shape = RoundedCornerShape(50),
+        color = if (isActive)
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+        else
+            MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
     ) {
-        Box(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = if (isActive) "Active" else "Inactive",
-                color = contentColor,
-                fontSize = 11.sp,
+        Text(
+            text = if (isActive) "Active" else "Inactive",
+            style = MaterialTheme.typography.labelSmall.copy(
                 fontWeight = FontWeight.Medium
-            )
-        }
+            ),
+            color = if (isActive)
+                MaterialTheme.colorScheme.primary
+            else
+                MaterialTheme.colorScheme.error,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+        )
     }
 }
 
 @Composable
-fun InfoRowCompact(icon: ImageVector, value: String) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Normal
-        )
-    }
+fun InfoRowCompact(
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    modifierIcon: Modifier = Modifier,
+    modifierText: Modifier = Modifier,
+    validator: Boolean = true,
+    value: String
+) {
+    ListDistributorScreen.toString()
 }

@@ -6,7 +6,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.ui.shared.reportsShared.ReportFilterScreen
 
-data class RegisterFilterScreen(val name: String) : Screen {
+data class RegisterFilterScreen(val name: String, val showApproval: Boolean = false) : Screen {
     @Composable
     override fun Content() {
         val nav = LocalNavigator.currentOrThrow
@@ -18,7 +18,7 @@ data class RegisterFilterScreen(val name: String) : Screen {
             showAccountSelect = false,
             onGenerateClick = {
                 nav.push(
-                    RegisterReportScreen(name, it.startDate, it.endDate)
+                    RegisterReportScreen(name, it.startDate, it.endDate, showApproval = showApproval)
                 )
             },
         )

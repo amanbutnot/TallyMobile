@@ -31,7 +31,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +50,10 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.prime.easykarobar.BuildKonfig
 import org.prime.easykarobar.business.viewmodel.AuthViewModel
 import org.prime.easykarobar.business.viewmodel.distributor.CartViewModel
@@ -89,6 +95,26 @@ object Dashboard : Screen {
 
         val initialTab =
             if (userRole() == ROLE.DISTRIBUTOR || SharedPrefs.IsEasyMart.get()) DistributorHomeSubTab else HomeTab
+
+        val scope = rememberCoroutineScope()
+        LaunchedEffect(Unit) {
+            val userId = SharedPrefs.User.get()?.ID?.toString()
+            val role = SharedPrefs.User.get()?.role
+            if (userId == "10319" && (role == "staff-manager" || role == "office-staff")) {
+                if (SharedPrefs.CachedDistributors.get().isNullOrEmpty()) {
+                    scope.launch(Dispatchers.IO) {
+                        try {
+                            val res = org.prime.easykarobar.business.repository.DistributorRepository.listDistributor()
+                            if (res?.statuscode == 200 && res.data != null) {
+                                SharedPrefs.CachedDistributors.save(res.data)
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+        }
 
         TabNavigator(initialTab) { tabNavigator ->
             Scaffold(

@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.RequestQuote
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material.icons.filled.Warehouse
 import androidx.compose.material.icons.filled.WarningAmber
@@ -131,6 +132,12 @@ object ReportingTab : Tab {
                         Report.StockReport,
                         Report.GoDownWiseClosingStock,
                     )
+                )
+            )
+            add(
+                ReportGroup(
+                    "Approval Voucher",
+                    listOf(Report.ApprovalRegisters)
                 )
             )
             if (isBusy()) {
@@ -281,7 +288,8 @@ object ReportingTab : Tab {
                                     }
 
 
-                                    Report.Registers -> nav?.push(RegisterSelectScreen)
+                                    Report.Registers -> nav?.push(RegisterSelectScreen())
+                                    Report.ApprovalRegisters -> nav?.push(RegisterSelectScreen(showApproval = true))
                                     Report.StockReport -> {
                                         salesmanPermission(
                                             "D11",
@@ -527,6 +535,7 @@ sealed class Report(val title: String, val icon: ImageVector) {
     object Outstanding : Report("Outstanding", Icons.Default.WarningAmber)
     object TrialBalance : Report("Trial Balance", Icons.Default.Balance)
     object Registers : Report("Registers", Icons.AutoMirrored.Default.ListAlt)
+    object ApprovalRegisters : Report("Approval Vouchers", Icons.Default.Verified)
     object StockReport : Report("Stock Report", Icons.Default.Inventory2)
     object SerialNumberReport : Report("Serial Summary", Icons.Default.Numbers)
     object BatchNumberReport : Report("Batch Summary", Icons.Default.Layers)

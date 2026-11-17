@@ -34,7 +34,7 @@ import org.prime.easykarobar.ui.screen.home.tabs.ReportButton
 import org.prime.easykarobar.ui.shared.composables.PermissionDeniedDialog
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 
-object RegisterSelectScreen : Screen {
+data class RegisterSelectScreen(val showApproval: Boolean = false) : Screen {
     @Composable
     override fun Content() {
         val colors = MaterialTheme.colorScheme
@@ -45,7 +45,7 @@ object RegisterSelectScreen : Screen {
             PermissionDeniedDialog { showDeniedDialog = false }
         }
         TallyScaffold(
-            "Register Select",
+            if (showApproval) "Approval Registers" else "Register Select",
             onBack = { nav.pop() },
             showEditIcon = false,
             onEditClick = {}
@@ -55,7 +55,7 @@ object RegisterSelectScreen : Screen {
                     .padding(paddingValues)
             ) {
                 Text(
-                    text = "Registers",
+                    text = if (showApproval) "Approval Vouchers" else "Registers",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Medium,
                     color = colors.onBackground,
@@ -90,7 +90,7 @@ object RegisterSelectScreen : Screen {
                                         salesmanPermission(
                                             "D13",
                                             accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Sales.title)) }
+                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Sales.title, showApproval = showApproval)) }
                                         )
 
                                     }
@@ -99,7 +99,7 @@ object RegisterSelectScreen : Screen {
                                         salesmanPermission(
                                             "D14",
                                             accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Purchase.title)) }
+                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Purchase.title, showApproval = showApproval)) }
                                         )
 
                                     }
@@ -108,7 +108,7 @@ object RegisterSelectScreen : Screen {
                                         salesmanPermission(
                                             "D15",
                                             accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Receipt.title)) }
+                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Receipt.title, showApproval = showApproval)) }
                                         )
 
                                     }
@@ -117,16 +117,17 @@ object RegisterSelectScreen : Screen {
                                         salesmanPermission(
                                             "D16",
                                             accessDeniedBlock = { showDeniedDialog = true },
-                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Payment.title)) }
+                                            successBlock = { nav.push(RegisterFilterScreen(Registers.Payment.title, showApproval = showApproval)) }
                                         )
 
 
                                     }
 
-                                    Registers.SaleReturn -> nav.push(RegisterFilterScreen(Registers.SaleReturn.title))
+                                    Registers.SaleReturn -> nav.push(RegisterFilterScreen(Registers.SaleReturn.title, showApproval = showApproval))
                                     Registers.PurchaseReturn -> nav.push(
                                         RegisterFilterScreen(
-                                            Registers.PurchaseReturn.title
+                                            Registers.PurchaseReturn.title,
+                                            showApproval = showApproval
                                         )
                                     )
                                 }

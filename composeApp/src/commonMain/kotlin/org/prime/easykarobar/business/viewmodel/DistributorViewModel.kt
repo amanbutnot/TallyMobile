@@ -8,6 +8,7 @@ import kotlinx.coroutines.launch
 import org.prime.easykarobar.business.repository.DistributorRepository
 import org.prime.easykarobar.data.model.DistributorRequest
 import org.prime.easykarobar.data.model.DistributorResponse
+import org.prime.easykarobar.data.utils.SharedPrefs
 
 class DistributorViewModel : ViewModel() {
     private val _dataState = mutableStateOf(DataState<DistributorResponse>())
@@ -26,9 +27,13 @@ class DistributorViewModel : ViewModel() {
             val res = DistributorRepository.createDistributor(distributorRequest)
 
             if (res?.statuscode == 200) {
+                if (SharedPrefs.User.get()?.ID?.toString() == "10319") {
+                    SharedPrefs.CachedDistributors.clear()
+                }
                 _dataState.value = DataState(
                     success = true, message = res.message, isLoading = false
                 )
+                listDistributor()
                 onSuccess()
             } else {
                 _dataState.value = DataState(
@@ -48,9 +53,13 @@ class DistributorViewModel : ViewModel() {
             val res = DistributorRepository.updateDistributor(distributorRequest)
 
             if (res?.statuscode == 200) {
+                if (SharedPrefs.User.get()?.ID?.toString() == "10319") {
+                    SharedPrefs.CachedDistributors.clear()
+                }
                 _updateState.value = DataState(
                     success = true, message = res.message, isLoading = false
                 )
+                listDistributor()
                 onSuccess()
             } else {
                 _updateState.value = DataState(
@@ -65,10 +74,29 @@ class DistributorViewModel : ViewModel() {
     fun listDistributor() {
 
         viewModelScope.launch {
+            val userId = SharedPrefs.User.get()?.ID?.toString()
+            val role = SharedPrefs.User.get()?.role
+            val isStaffOrOffice = role == "staff-manager" || role == "office-staff"
+
+            if (userId == "10319" && isStaffOrOffice) {
+                val cached = SharedPrefs.CachedDistributors.get()
+                if (!cached.isNullOrEmpty()) {
+                    _listState.value = DataState(
+                        success = true,
+                        isLoading = false,
+                        data = cached
+                    )
+                    return@launch
+                }
+            }
+
             _listState.value = DataState(isLoading = true)
 
             val res = DistributorRepository.listDistributor()
             if (res?.statuscode == 200) {
+                if (userId == "10319" && isStaffOrOffice && res.data != null) {
+                    SharedPrefs.CachedDistributors.save(res.data)
+                }
 
                 _listState.value = DataState(
                     success = true,

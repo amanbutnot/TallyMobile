@@ -59,6 +59,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
+import kotlinx.serialization.Serializable
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
@@ -80,6 +81,7 @@ import io.github.vinceglb.filekit.dialogs.openCameraPicker
 import io.github.vinceglb.filekit.path
 import io.github.vinceglb.filekit.readBytes
 import kotlinx.coroutines.launch
+import org.prime.easykarobar.business.viewmodel.DistributorViewModel
 import org.prime.easykarobar.business.viewmodel.attendance.AttendanceViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.model.attendance.AttendanceRequest
@@ -105,6 +107,7 @@ import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
+@Serializable
 data class AttendanceScreen(
     val lat: Double, val lon: Double, val isAttendance: Boolean
 ) : Screen {
@@ -129,6 +132,17 @@ data class AttendanceScreen(
 
         val viewModel: AttendanceViewModel = viewModel { AttendanceViewModel() }
         val state by viewModel.dataState
+
+        val distributorViewModel: DistributorViewModel = viewModel { DistributorViewModel() }
+        val distributorState by distributorViewModel.listState
+
+        LaunchedEffect(Unit) {
+            if (SharedPrefs.User.get()?.ID.toString() == "10319") {
+                println("Pahunch gya mai")
+                distributorViewModel.listDistributor()
+            }
+        }
+
         var showAlert by remember { mutableStateOf(false) }
 
         val nav = LocalNavigator.currentOrThrow
@@ -151,9 +165,6 @@ data class AttendanceScreen(
         }
         var showBottomSheet by rememberSaveable { mutableStateOf(false) }
 
-        val db = DatabaseHolder.instance
-        val list = getLedgerMasters(db)
-
         val lastAttendanceDate = SharedPrefs.AttendanceDate.get()
         var lastCheckInOutDate by remember { mutableStateOf(SharedPrefs.CheckInOutDate.get()) }
 
@@ -168,7 +179,7 @@ data class AttendanceScreen(
 
         }
 
-        if (state.isLoading) {
+        if (state.isLoading || distributorState.isLoading) {
             TallyLoadingDialog("Please Wait")
         }
 
@@ -207,12 +218,19 @@ data class AttendanceScreen(
                                 )
                             )
                         }
-                        val bottomSheetList = if (userRole() == ROLE.OFFICE_STAFF) {
-                            list.filter { it.L5 == 1.0 }
-                                .map { Pair(it.Name ?: "", it.GUID ?: "") }
+                        val bottomSheetList = if (SharedPrefs.User.get()?.ID.toString() == "10319") {
+                            distributorState.data?.filter { it.status.equals("active", ignoreCase = true) }
+                                ?.map { Pair(it.distributor_name, it.ledger_guid ?: "") } ?: emptyList()
                         } else {
-                            list.filter { it.L1 == 1.0 || it.L2 == 1.0 || it.L3 == 1.0 }
-                                .map { Pair(it.Name ?: "", it.GUID ?: "") }
+                            val db = DatabaseHolder.instance
+                            val list = getLedgerMasters(db)
+                            if (userRole() == ROLE.OFFICE_STAFF) {
+                                list.filter { it.L5 == 1.0 }
+                                    .map { Pair(it.Name ?: "", it.GUID ?: "") }
+                            } else {
+                                list.filter { it.L1 == 1.0 || it.L2 == 1.0 || it.L3 == 1.0 }
+                                    .map { Pair(it.Name ?: "", it.GUID ?: "") }
+                            }
                         }
                         TransactionBottomSheet(
                             showBottomSheet = showBottomSheet,
@@ -553,21 +571,19 @@ data class AttendanceScreen(
                                                         C4 = address,
                                                         C5 = capturedFileInBytes
                                                     ), onSuccess = {
-                                                        if (userRole() != ROLE.OFFICE_STAFF) {
-                                                            if (isCheckIn(lastCheckInOutDate)) {
-                                                                SharedPrefs.CheckInOutDate.save(
-                                                                    CurrentDate()
-                                                                )
-                                                                lastCheckInOutDate = CurrentDate()
+                                                        if (isCheckIn(lastCheckInOutDate)) {
+                                                            SharedPrefs.CheckInOutDate.save(
+                                                                CurrentDate()
+                                                            )
+                                                            lastCheckInOutDate = CurrentDate()
 
-                                                                SharedPrefs.CheckInOutLedger.save(
-                                                                    selectedAccount
-                                                                )
-                                                            } else {
-                                                                SharedPrefs.CheckInOutDate.clear()
-                                                                lastCheckInOutDate = null
-                                                                SharedPrefs.CheckInOutLedger.clear()
-                                                            }
+                                                            SharedPrefs.CheckInOutLedger.save(
+                                                                selectedAccount
+                                                            )
+                                                        } else {
+                                                            SharedPrefs.CheckInOutDate.clear()
+                                                            lastCheckInOutDate = null
+                                                            SharedPrefs.CheckInOutLedger.clear()
                                                         }
                                                         showAlert = true
                                                     })

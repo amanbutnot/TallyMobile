@@ -51,6 +51,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.NoteAlt
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Payment
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -108,6 +109,8 @@ import org.prime.easykarobar.data.model.salesmanPermission
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.attendance.AttendanceListScreen
 import org.prime.easykarobar.ui.screen.attendance.AttendanceScreen
+import org.prime.easykarobar.ui.screen.distributor.CreateDistributorScreen
+import org.prime.easykarobar.ui.screen.distributor.ListDistributorScreen
 import org.prime.easykarobar.ui.screen.home.NotificationHistoryScreen
 import org.prime.easykarobar.ui.screen.home.ROLE
 import org.prime.easykarobar.ui.screen.home.SendNotificationScreen
@@ -261,63 +264,74 @@ object HomeTab : Tab {
             }
         if (userRole() == ROLE.STAFF_MANAGER) {
             StaffManagerMenu(
-                // onMastersClick = { nav?.push(MasterListScreen(MasterEnums.ACCOUNTS)) },
+                onCreateSalesmanClick = { nav?.push(CreateDistributorScreen()) },
+                onListDistributorClick = { nav?.push(ListDistributorScreen) },
                 onAttendanceClick = { nav?.push(AttendanceListScreen(true, "Check In Filter")) }
             )
         } else if (userRole() == ROLE.OFFICE_STAFF) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(8.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(8.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    ManagerActionCard(
+                        title = "Check In/Check Out",
+                        description = "Check in/out your location",
+                        Icons.Default.LocationCity,
+                        onClick = {
+                            scope.launch {
+                                showLoading = true
+                                try {
+                                    val geolocator =
+                                        Geolocator(Locator.mobile())
+
+                                    runCatching { geolocator.lastLocation() }
+
+                                    val result = withTimeoutOrNull(4000) {
+                                        geolocator.current(Priority.HighAccuracy)
+                                    }
+
+                                    when (result) {
+                                        is GeolocatorResult.Success -> {
+                                            val c = result.data.coordinates
+
+                                            nav?.push(
+                                                AttendanceScreen(
+                                                    c.latitude, c.longitude,
+
+                                                    isAttendance = false
+                                                )
+                                            )
+                                        }
+
+                                        else -> showLocationPopup = true
+                                    }
+
+                                } catch (e: Exception) {
+                                    showLocationPopup = true
+                                } finally {
+                                    showLoading = false
+                                }
+                            }
+                        })
+                }
 
                 if (showLoading) {
                     TallyLoadingDialog("Getting Location")
-                } else {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        ManagerActionCard(
-                            title = "Check In/Check Out",
-                            description = "Check in/out your location",
-                            Icons.Default.LocationCity,
-                            onClick = {
-                                scope.launch {
-                                    showLoading = true
-                                    try {
-                                        val geolocator =
-                                            Geolocator(Locator.mobile())
-
-                                        runCatching { geolocator.lastLocation() }
-
-                                        val result = withTimeoutOrNull(20000) {
-                                            geolocator.current(Priority.HighAccuracy)
-                                        }
-
-                                        when (result) {
-                                            is GeolocatorResult.Success -> {
-                                                val c = result.data.coordinates
-
-                                                nav?.push(
-                                                    AttendanceScreen(
-                                                        c.latitude, c.longitude,
-
-                                                        isAttendance = false
-                                                    )
-                                                )
-                                            }
-
-                                            else -> showLocationPopup = true
-                                        }
-
-                                    } catch (e: Exception) {
-                                        showLocationPopup = true
-                                    } finally {
-                                        showLoading = false
-                                    }
-                                }
-                            })
-                    }
                 }
 
+                if (showLocationPopup) {
+                    AlertDialog(
+                        onDismissRequest = { showLocationPopup = false },
+                        title = { Text("Turn your location on") },
+                        text = { Text("Please turn your location on") },
+                        confirmButton = {
+                            Button(onClick = { showLocationPopup = false }) {
+                                Text("OK")
+                            }
+                        })
+                }
             }
         } else {
             Column(
@@ -1392,41 +1406,37 @@ fun ModernSearchBar(
 
 @Composable
 fun StaffManagerMenu(
-    onMastersClick: (() -> Unit)? = null,
+    onCreateSalesmanClick: () -> Unit,
+    onListDistributorClick: () -> Unit,
     onAttendanceClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        ManagerActionCard(
+            title = "Create Staff",
+            description = "Add a new staff member",
+            icon = Icons.Default.Person,
+            onClick = onCreateSalesmanClick
+        )
 
-        if (onMastersClick != null) {
-            ManagerActionCard(
-                title = "Masters",
-                description = "Manage account masters and groups",
-                icon = Icons.Default.Business,
-                onClick = onMastersClick,
-                modifier = Modifier.weight(1f)
-            )
+        ManagerActionCard(
+            title = "List Staff Members Name",
+            description = "View and manage all staff members",
+            icon = Icons.Default.Business,
+            onClick = onListDistributorClick
+        )
 
-            ManagerActionCard(
-                title = "Check in/out List",
-                description = "View and manage staff attendance records",
-                icon = Icons.Default.LocationCity,
-                onClick = onAttendanceClick,
-                modifier = Modifier.weight(1f)
-            )
-        } else {
-            ManagerActionCard(
-                title = "Check in/out List",
-                description = "View and manage staff attendance records",
-                icon = Icons.Default.LocationCity,
-                onClick = onAttendanceClick,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+        ManagerActionCard(
+            title = "Check in/out List",
+            description = "View and manage staff attendance records",
+            icon = Icons.Default.LocationCity,
+            onClick = onAttendanceClick
+        )
     }
 }
 @Composable

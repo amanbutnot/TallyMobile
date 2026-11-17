@@ -8,15 +8,16 @@ data class LedgerReportItemScreen(
     val vchNo: String,
     val date: String,
     val vchType: String,
-    val guid: String
+    val guid: String,
+    val showApproval: Boolean = false
 ) : Screen {
 
     @Composable
     override fun Content() {
         if (isBusy()) {
-            BusyLedgerReportItemScreen(vchNo, date, vchType, guid).Content()
+            BusyLedgerReportItemScreen(vchNo, date, vchType, guid, showApproval).Content()
         } else {
-            TallyLedgerReportItemScreen(vchNo, date, vchType, guid).Content()
+            TallyLedgerReportItemScreen(vchNo, date, vchType, guid, showApproval).Content()
         }
     }
 }

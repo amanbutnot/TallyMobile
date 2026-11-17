@@ -44,6 +44,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.prime.easykarobar.business.viewmodel.DistributorViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.model.DistributorRequest
+import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.screen.transactions.SelectLedgerRow
 import org.prime.easykarobar.ui.screen.transactions.TransactionLedgerBottomSheet
 import org.prime.easykarobar.ui.shared.composables.GroupFilterBottomSheetWithGUID
@@ -66,6 +67,8 @@ data class CreateDistributorScreen(
     override fun Content() {
         val colors = MaterialTheme.colorScheme
         val type = MaterialTheme.typography
+
+        val isStore10319 = SharedPrefs.User.get()?.ID.toString() == "10319"
 
         var name by remember { mutableStateOf("") }
         var number by remember { mutableStateOf("") }
@@ -127,7 +130,7 @@ data class CreateDistributorScreen(
             )
         }
         TallyScaffold(
-            title = if (isEdit) "Edit Distributor" else "Create Distributor",
+            title = if (isStore10319) "Create Staff" else (if (isEdit) "Edit Distributor" else "Create Distributor"),
             onBack = { nav.pop() },
             showEditIcon = false,
         ) { paddingValues ->
@@ -164,7 +167,7 @@ data class CreateDistributorScreen(
                         Spacer(Modifier.height(12.dp))
 
                         Text(
-                            text = if (isEdit) "Edit Distributor" else "Create Distributor",
+                            text = if (isStore10319) "Create Staff" else (if (isEdit) "Edit Distributor" else "Create Distributor"),
                             style = type.headlineMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = colors.onSurface
@@ -172,15 +175,15 @@ data class CreateDistributorScreen(
                         )
                         Spacer(Modifier.height(12.dp))
 
-
-
-                        SelectLedgerRow(
-                            selectedAccount = selectedAccount,
-                            onShowBottomSheet = { showBottomSheet = true },
-                            title = "Select Ledger",
-                             enabled = true
-                        )
-                        Spacer(Modifier.height(16.dp))
+                        if (!isStore10319) {
+                            SelectLedgerRow(
+                                selectedAccount = selectedAccount,
+                                onShowBottomSheet = { showBottomSheet = true },
+                                title = "Select Ledger",
+                                 enabled = true
+                            )
+                            Spacer(Modifier.height(16.dp))
+                        }
 
                         TallyTextField(
                             value = name,
@@ -192,167 +195,197 @@ data class CreateDistributorScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
 
-                        Spacer(Modifier.height(12.dp))
+                        if (!isStore10319) {
+                            Spacer(Modifier.height(12.dp))
 
-                        TallyTextField(
-                            value = number,
-                            onValueChange = { number = it },
-                            placeholder = "Phone number",
-                            isPassword = false,
-                            isNumber = true,
-                            label = "Phone",
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-
-                        TransactionLedgerBottomSheet(
-                            showBottomSheet = showBottomSheet,
-                            list = list,
-                            onSelected = {
-                                it.let {
-                                    selectedAccount = it.Name.toString()
-                                    selectedGUID = it.GUID.toString()
-                                    selectedName = it.Name.toString()
-                                    selectedNumber = it.MobileNo.toString()
-                                    name = selectedName
-                                    number = selectedNumber
-                                }
-                            },
-                            onDismiss = { showBottomSheet = false },
-                            bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                            title = "Ledger Name",
-                        )
-                        Spacer(Modifier.height(16.dp))
-
-                        // Filter Item Group Checkbox
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Start
-                        ) {
-                            Checkbox(
-                                checked = filterItemGroup,
-                                onCheckedChange = {
-                                    filterItemGroup = it
-                                    if (it) showGroupFilterSheet = true
-                                }
+                            TallyTextField(
+                                value = number,
+                                onValueChange = { number = it },
+                                placeholder = "Phone number",
+                                isPassword = false,
+                                isNumber = true,
+                                label = "Phone",
+                                modifier = Modifier.fillMaxWidth()
                             )
-                            Text(
-                                text = "Filter Item Group",
-                                style = type.bodyLarge,
-                                color = colors.onSurface
+
+
+                            TransactionLedgerBottomSheet(
+                                showBottomSheet = showBottomSheet,
+                                list = list,
+                                onSelected = {
+                                    it.let {
+                                        selectedAccount = it.Name.toString()
+                                        selectedGUID = it.GUID.toString()
+                                        selectedName = it.Name.toString()
+                                        selectedNumber = it.MobileNo.toString()
+                                        name = selectedName
+                                        number = selectedNumber
+                                    }
+                                },
+                                onDismiss = { showBottomSheet = false },
+                                bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                                title = "Ledger Name",
                             )
-                            if (filterItemGroup) {
-                                Spacer(modifier = Modifier.weight(1f))
-                                TextButton(onClick = { showGroupFilterSheet = true }) {
-                                    Icon(
-                                        Icons.Default.FilterList,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.size(4.dp))
-                                    Text("Select Groups (${selectedGroups.size})")
+                            Spacer(Modifier.height(16.dp))
+
+                            // Filter Item Group Checkbox
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Start
+                            ) {
+                                Checkbox(
+                                    checked = filterItemGroup,
+                                    onCheckedChange = {
+                                        filterItemGroup = it
+                                        if (it) showGroupFilterSheet = true
+                                    }
+                                )
+                                Text(
+                                    text = "Filter Item Group",
+                                    style = type.bodyLarge,
+                                    color = colors.onSurface
+                                )
+                                if (filterItemGroup) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                    TextButton(onClick = { showGroupFilterSheet = true }) {
+                                        Icon(
+                                            Icons.Default.FilterList,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.size(4.dp))
+                                        Text("Select Groups (${selectedGroups.size})")
+                                    }
                                 }
                             }
+
+                            GroupFilterBottomSheetWithGUID(
+                                show = showGroupFilterSheet,
+
+                                items = groupList,
+
+                                selectedIds = selectedGroups,
+
+                                itemIdSelector = { it.GUID.toString() },
+
+                                itemNameSelector = { it.Name },
+
+                                onSelectedIdsChange = { selectedGroups = it },
+
+                                onDismiss = {
+                                    showGroupFilterSheet = false
+                                    if (selectedGroups.isEmpty()) filterItemGroup = false
+                                },
+
+                                bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                            )
+                            Spacer(Modifier.height(16.dp))
+
+                            TallyTextField(
+                                value = password,
+                                onValueChange = { password = it },
+                                placeholder = "Create password",
+                                isPassword = true,
+                                isNumber = false,
+                                label = "Password",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(Modifier.height(12.dp))
+
+                            TallyTextField(
+                                value = confirmPassword,
+                                onValueChange = { confirmPassword = it },
+                                placeholder = "Confirm password",
+                                isPassword = true,
+                                isNumber = false,
+                                label = "Confirm Password",
+                                imeAction = ImeAction.Done,
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
-
-                        GroupFilterBottomSheetWithGUID(
-                            show = showGroupFilterSheet,
-
-                            items = groupList,
-
-                            selectedIds = selectedGroups,
-
-                            itemIdSelector = { it.GUID.toString() },
-
-                            itemNameSelector = { it.Name },
-
-                            onSelectedIdsChange = { selectedGroups = it },
-
-                            onDismiss = {
-                                showGroupFilterSheet = false
-                                if (selectedGroups.isEmpty()) filterItemGroup = false
-                            },
-
-                            bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-                        )
-                        Spacer(Modifier.height(16.dp))
-
-                        TallyTextField(
-                            value = password,
-                            onValueChange = { password = it },
-                            placeholder = "Create password",
-                            isPassword = true,
-                            isNumber = false,
-                            label = "Password",
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Spacer(Modifier.height(12.dp))
-
-                        TallyTextField(
-                            value = confirmPassword,
-                            onValueChange = { confirmPassword = it },
-                            placeholder = "Confirm password",
-                            isPassword = true,
-                            isNumber = false,
-                            label = "Confirm Password",
-                            imeAction = ImeAction.Done,
-                            modifier = Modifier.fillMaxWidth()
-                        )
 
                         Spacer(Modifier.height(20.dp))
 
-                        val isFormValid = name.isNotEmpty() &&
-                                number.isNotEmpty() &&
-                                (if (isEdit) true else password.isNotEmpty() && confirmPassword.isNotEmpty() && password == confirmPassword) &&
-                                selectedAccount.isNotEmpty() &&
-                                selectedGUID.isNotEmpty()
+                        val isFormValid = if (isStore10319) {
+                            name.isNotEmpty()
+                        } else {
+                            name.isNotEmpty() &&
+                                    number.isNotEmpty() &&
+                                    (if (isEdit) true else password.isNotEmpty() && confirmPassword.isNotEmpty() && password == confirmPassword) &&
+                                    selectedAccount.isNotEmpty() &&
+                                    selectedGUID.isNotEmpty()
+                        }
 
                         TallyButton(
-                            label = if (isEdit) "Update Distributor" else "Create Distributor",
+                            label = if (isStore10319) "Create Staff" else (if (isEdit) "Update Distributor" else "Create Distributor"),
                             onClick = {
-                                if (isEdit) {
-                                    viewModel.updateDistributor(
-                                        DistributorRequest(
-                                            distributor_id = distributor?.distributor_id,
-                                            distributor_name = name,
-                                            mobile_no = number,
-                                            password = password.ifEmpty { null },
-                                            ledger_name = selectedAccount,
-                                            ledger_guid = selectedGUID,
-                                            status = selectedStatus,
-                                            FilterGroup = if (filterItemGroup) "Y" else "N",
-                                            ConfigGroup = selectedGroups.joinToString(",") { "'$it'"  },
-                                        )
-                                    ) {
-                                        nav.pop()
+                                if (isStore10319) {
+                                    val request = DistributorRequest(
+                                        distributor_id = distributor?.distributor_id,
+                                        distributor_name = name,
+                                        mobile_no = name,
+                                        password = name,
+                                        ledger_name = name,
+                                        ledger_guid = name,
+                                        status = "active",
+                                        FilterGroup = name,
+                                        ConfigGroup = name
+                                    )
+                                    if (isEdit) {
+                                        viewModel.updateDistributor(request) {
+                                            nav.pop()
+                                        }
+                                    } else {
+                                        viewModel.createDistributor(request) {
+                                            name = ""
+                                            showSuccessDialog = true
+                                        }
                                     }
                                 } else {
+                                    if (isEdit) {
+                                        viewModel.updateDistributor(
+                                            DistributorRequest(
+                                                distributor_id = distributor?.distributor_id,
+                                                distributor_name = name,
+                                                mobile_no = number,
+                                                password = password.ifEmpty { null },
+                                                ledger_name = selectedAccount,
+                                                ledger_guid = selectedGUID,
+                                                status = selectedStatus,
+                                                FilterGroup = if (filterItemGroup) "Y" else "N",
+                                                ConfigGroup = selectedGroups.joinToString(",") { "'$it'"  },
+                                            )
+                                        ) {
+                                            nav.pop()
+                                        }
+                                    } else {
 
-                                    viewModel.createDistributor(
-                                        DistributorRequest(
-                                            distributor_name = name,
-                                            mobile_no = number,
-                                            password = password,
-                                            ledger_name = selectedAccount,
-                                            ledger_guid = selectedGUID,
-                                            status = selectedStatus,
-                                            FilterGroup = if (filterItemGroup) "Y" else "N",
-                                            ConfigGroup = selectedGroups.joinToString(",") { it },
-                                        )
-                                    ) {
-                                        name = ""
-                                        number = ""
-                                        password = ""
-                                        confirmPassword = ""
-                                        selectedAccount = ""
-                                        selectedGUID = ""
-                                        selectedGroups = emptyList()
-                                        filterItemGroup = false
-                                        showSuccessDialog = true
+                                        viewModel.createDistributor(
+                                            DistributorRequest(
+                                                distributor_name = name,
+                                                mobile_no = number,
+                                                password = password,
+                                                ledger_name = selectedAccount,
+                                                ledger_guid = selectedGUID,
+                                                status = selectedStatus,
+                                                FilterGroup = if (filterItemGroup) "Y" else "N",
+                                                ConfigGroup = selectedGroups.joinToString(",") { it },
+                                            )
+                                        ) {
+                                            name = ""
+                                            number = ""
+                                            password = ""
+                                            confirmPassword = ""
+                                            selectedAccount = ""
+                                            selectedGUID = ""
+                                            selectedGroups = emptyList()
+                                            filterItemGroup = false
+                                            showSuccessDialog = true
+                                        }
                                     }
                                 }
                                 // Handle sign up

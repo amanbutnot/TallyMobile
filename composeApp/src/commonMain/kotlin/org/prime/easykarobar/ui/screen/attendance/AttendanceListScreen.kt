@@ -77,6 +77,8 @@ import dev.jordond.compass.geolocation.Locator
 import dev.jordond.compass.geolocation.mobile.mobile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.Serializable
+import org.prime.easykarobar.business.viewmodel.DistributorViewModel
 import org.prime.easykarobar.business.viewmodel.attendance.AttendanceViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
 import org.prime.easykarobar.data.expect.shareText
@@ -107,6 +109,7 @@ import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 
+@Serializable
 data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -124,16 +127,24 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
 
             var reportType by rememberSaveable { mutableStateOf("ALL") }
 
+            val isStore10319 = SharedPrefs.User.get()?.ID.toString() == "10319"
+            val distributorViewModel: DistributorViewModel = viewModel { DistributorViewModel() }
+            val distributorState by distributorViewModel.listState
+
             val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
             val viewModel: AttendanceViewModel = viewModel { AttendanceViewModel() }
-            val isAdmin = SharedPrefs.User.get()?.role == "admin"
+            val isAdmin = SharedPrefs.User.get()?.role == "admin" || isStore10319
             val scope = rememberCoroutineScope()
 
             val vState by viewModel.salesmanList
             val nameList = vState.data ?: emptyList()
+            val distributorList = distributorState.data ?: emptyList()
             LaunchedEffect(Unit) {
-                viewModel.getSalesmanList()
-                println(vState.data)
+                if (isStore10319) {
+                    distributorViewModel.listDistributor()
+                } else {
+                    viewModel.getSalesmanList()
+                }
             }
 
             Column(
@@ -507,12 +518,16 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
                 )
             }
 
+            val bottomSheetList = if (isStore10319) {
+                distributorList.map { Pair(it.distributor_name, it.mobile_no) }
+            } else {
+                nameList.map { Pair("${it.salesman_name} (${it.salesman_mobile})", it.salesman_mobile) }
+            }
+
             // Bottom Sheet
             TransactionBottomSheet(
                 showBottomSheet = showBottomSheet,
-                list = nameList.map {
-                    Pair("${it.salesman_name} (${it.salesman_mobile})", it.salesman_mobile)
-                },
+                list = bottomSheetList,
                 onSelected = {
                     it.let {
                         selectedAccount = it.first
@@ -543,6 +558,7 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
     }
 }
 
+@Serializable
 data class AttendanceScreenUi(
     val startDate: String,
     val endDate: String,
@@ -645,7 +661,7 @@ data class AttendanceScreenUi(
                     )
                 }
             },
-            menuItems = menuItems,
+         //   menuItems = menuItems,
             showSearchAction = true,
             onSearchClick = { showSearchBar = !showSearchBar },
             showBottomBar = false,

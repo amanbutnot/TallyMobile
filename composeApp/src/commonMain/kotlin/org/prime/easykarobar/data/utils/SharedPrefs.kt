@@ -14,6 +14,7 @@ import org.prime.easykarobar.data.expect.getDeviceIdString
 import org.prime.easykarobar.data.expect.removeFirebaseToken
 import org.prime.easykarobar.data.model.CompanyList
 import org.prime.easykarobar.data.model.Distributor
+import org.prime.easykarobar.data.model.DistributorRequest
 import org.prime.easykarobar.data.model.LoginResponse
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -265,6 +266,24 @@ object SharedPrefs {
         fun get(): Distributor? {
             val stored = settings.getStringOrNull(KEY) ?: return null
             return runCatching { Json.decodeFromString<Distributor>(stored) }.getOrNull()
+        }
+
+        fun clear() {
+            settings.remove(KEY)
+        }
+    }
+
+    object CachedDistributors {
+        private const val KEY = "cached_distributors"
+
+        fun save(list: List<DistributorRequest>) {
+            val json = Json.encodeToString(list)
+            settings.putString(KEY, json)
+        }
+
+        fun get(): List<DistributorRequest>? {
+            val stored = settings.getStringOrNull(KEY) ?: return null
+            return runCatching { Json.decodeFromString<List<DistributorRequest>>(stored) }.getOrNull()
         }
 
         fun clear() {

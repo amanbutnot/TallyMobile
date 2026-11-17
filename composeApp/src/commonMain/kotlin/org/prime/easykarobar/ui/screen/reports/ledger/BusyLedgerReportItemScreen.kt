@@ -9,16 +9,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,6 +60,8 @@ import org.prime.easykarobar.ui.shared.composables.MenuItemData
 import org.prime.easykarobar.ui.shared.composables.TallyCircularLoader
 import org.prime.easykarobar.ui.shared.composables.TallyLoadingDialog
 import org.prime.easykarobar.ui.shared.composables.TallyReportScaffold
+import org.prime.easykarobar.ui.shared.composables.TallyResultDialog
+import org.prime.easykarobar.ui.shared.composables.TallyTextField
 import org.prime.easykarobar.ui.shared.globalShared.Tdate
 import org.prime.easykarobar.ui.shared.reportsShared.PdfAction
 import org.prime.easykarobar.ui.shared.reportsShared.ReportColumn
@@ -58,11 +70,18 @@ import org.prime.easykarobar.ui.shared.reportsShared.TallyReportBottomBar
 import org.prime.easykarobar.ui.shared.reportsShared.handlePdfAction
 import kotlin.math.absoluteValue
 
+data class BusyVoucherApprovalRequest(
+    val vchGuid: String,
+    val status: String, // "Accept" or "Reject"
+    val remarks: String
+)
+
 data class BusyLedgerReportItemScreen(
     val vchNo: String,
     val date: String,
     val vchType: String,
-    val guid: String
+    val guid: String,
+    val showApproval: Boolean = false
 ) : Screen {
 
     @Composable
@@ -78,6 +97,9 @@ data class BusyLedgerReportItemScreen(
         println(vouchers)
         var isLoading by remember { mutableStateOf(false) }
         var shareLoading by remember { mutableStateOf(false) }
+        var approvalStatus by remember { mutableStateOf("Accept") }
+        var approvalRemarks by remember { mutableStateOf("") }
+        var submittedApproval by remember { mutableStateOf<BusyVoucherApprovalRequest?>(null) }
         val scope = rememberCoroutineScope()
 
         LaunchedEffect(Unit) {
@@ -612,9 +634,137 @@ data class BusyLedgerReportItemScreen(
                                     }
                                 )
                             )
+
+                            if (showApproval) {
+                                Spacer(Modifier.height(16.dp))
+                                Card(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surface
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Verified,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                "Voucher Approval",
+                                                style = MaterialTheme.typography.titleMedium.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                            )
+                                        }
+                                        Spacer(Modifier.height(12.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            Button(
+                                                onClick = { approvalStatus = "Accept" },
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = if (approvalStatus == "Accept") Color(0xFF10B981) else MaterialTheme.colorScheme.surfaceVariant,
+                                                    contentColor = if (approvalStatus == "Accept") Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                                ),
+                                                shape = RoundedCornerShape(12.dp),
+                                                modifier = Modifier.weight(1f).height(48.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.CheckCircle,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.padding(end = 6.dp)
+                                                )
+                                                Text(
+                                                    "Accept",
+                                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
+                                                )
+                                            }
+                                            Button(
+                                                onClick = { approvalStatus = "Reject" },
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = if (approvalStatus == "Reject") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant,
+                                                    contentColor = if (approvalStatus == "Reject") Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                                ),
+                                                shape = RoundedCornerShape(12.dp),
+                                                modifier = Modifier.weight(1f).height(48.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Cancel,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.padding(end = 6.dp)
+                                                )
+                                                Text(
+                                                    "Reject",
+                                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
+                                                )
+                                            }
+                                        }
+                                        Spacer(Modifier.height(12.dp))
+                                        TallyTextField(
+                                            value = approvalRemarks,
+                                            onValueChange = { approvalRemarks = it },
+                                            placeholder = "Enter approval or rejection remarks...",
+                                            isPassword = false,
+                                            isNumber = false,
+                                            label = "Remarks",
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                        Spacer(Modifier.height(16.dp))
+                                        Button(
+                                            onClick = {
+                                                val request = BusyVoucherApprovalRequest(
+                                                    vchGuid = guid,
+                                                    status = approvalStatus,
+                                                    remarks = approvalRemarks
+                                                )
+                                                println("BusyVoucherApprovalRequest created: $request")
+                                                submittedApproval = request
+                                            },
+                                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = if (approvalStatus == "Accept") Color(0xFF10B981) else MaterialTheme.colorScheme.error
+                                            ),
+                                            shape = RoundedCornerShape(12.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Send,
+                                                contentDescription = null,
+                                                modifier = Modifier.padding(end = 8.dp)
+                                            )
+                                            Text(
+                                                "Submit $approvalStatus Approval",
+                                                style = MaterialTheme.typography.titleSmall.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             })
+
+        if (showApproval && submittedApproval != null) {
+            TallyResultDialog(
+                message = "Voucher ${submittedApproval!!.status}ed successfully!\nGUID: ${submittedApproval!!.vchGuid}\nRemarks: ${submittedApproval!!.remarks}",
+                onDone = {
+                    submittedApproval = null
+                },
+                isSuccess = true,
+                confirmText = "OK"
+            )
+        }
     }
 }

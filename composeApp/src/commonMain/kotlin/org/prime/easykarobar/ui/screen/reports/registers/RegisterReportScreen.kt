@@ -54,7 +54,8 @@ data class RegisterReportScreen(
     val name: String,
     val startDate: String,
     val endDate: String,
-    val account: String? = null
+    val account: String? = null,
+    val showApproval: Boolean = false
 ) :
     Screen {
     @Composable
@@ -294,7 +295,8 @@ data class RegisterReportScreen(
                                         date = item.DATE.toString(),
                                         vchType = item.VchName.toString(),
                                         guid = item.VCH_GUID.toString(),
-                                        vchNo = item.VOUCHERNUMBER.toString()
+                                        vchNo = item.VOUCHERNUMBER.toString(),
+                                        showApproval = showApproval
                                     )
                                 )
 
