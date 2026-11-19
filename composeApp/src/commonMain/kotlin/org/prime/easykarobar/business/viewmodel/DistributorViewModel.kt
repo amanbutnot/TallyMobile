@@ -78,7 +78,7 @@ class DistributorViewModel : ViewModel() {
             val role = SharedPrefs.User.get()?.role
             val isStaffOrOffice = role == "staff-manager" || role == "office-staff"
 
-            if (userId == "10319" && isStaffOrOffice) {
+            if (userId == "10319" && !isStaffOrOffice) {
                 val cached = SharedPrefs.CachedDistributors.get()
                 if (!cached.isNullOrEmpty()) {
                     _listState.value = DataState(
@@ -94,7 +94,7 @@ class DistributorViewModel : ViewModel() {
 
             val res = DistributorRepository.listDistributor()
             if (res?.statuscode == 200) {
-                if (userId == "10319" && isStaffOrOffice && res.data != null) {
+                if (userId == "10319" && !isStaffOrOffice && res.data != null) {
                     SharedPrefs.CachedDistributors.save(res.data)
                 }
 

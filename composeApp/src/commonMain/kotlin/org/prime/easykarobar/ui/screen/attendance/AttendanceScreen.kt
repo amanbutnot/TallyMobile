@@ -59,7 +59,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
-import kotlinx.serialization.Serializable
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
@@ -81,6 +80,7 @@ import io.github.vinceglb.filekit.dialogs.openCameraPicker
 import io.github.vinceglb.filekit.path
 import io.github.vinceglb.filekit.readBytes
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import org.prime.easykarobar.business.viewmodel.DistributorViewModel
 import org.prime.easykarobar.business.viewmodel.attendance.AttendanceViewModel
 import org.prime.easykarobar.data.expect.DatabaseHolder
@@ -137,7 +137,9 @@ data class AttendanceScreen(
         val distributorState by distributorViewModel.listState
 
         LaunchedEffect(Unit) {
-            if (SharedPrefs.User.get()?.ID.toString() == "10319") {
+            val role = SharedPrefs.User.get()?.role
+            val isStaffOrOffice = role == "staff-manager" || role == "office-staff"
+            if (SharedPrefs.User.get()?.ID.toString() == "10319" || isStaffOrOffice) {
                 println("Pahunch gya mai")
                 distributorViewModel.listDistributor()
             }

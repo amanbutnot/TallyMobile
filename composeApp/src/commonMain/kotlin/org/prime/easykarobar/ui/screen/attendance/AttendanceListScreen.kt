@@ -127,7 +127,9 @@ data class AttendanceListScreen(val isCheckIn: Boolean, val name: String) : Scre
 
             var reportType by rememberSaveable { mutableStateOf("ALL") }
 
-            val isStore10319 = SharedPrefs.User.get()?.ID.toString() == "10319"
+            val role = SharedPrefs.User.get()?.role
+            val isStaffOrOffice = role == "staff-manager" || role == "office-staff"
+            val isStore10319 = SharedPrefs.User.get()?.ID.toString() == "10319" || isStaffOrOffice
             val distributorViewModel: DistributorViewModel = viewModel { DistributorViewModel() }
             val distributorState by distributorViewModel.listState
 
