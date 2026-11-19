@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -44,8 +45,10 @@ import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RemoveCircleOutline
@@ -54,6 +57,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -113,14 +117,6 @@ import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.ImageFormat
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.compressImage
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material3.CircularProgressIndicator
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import io.github.vinceglb.filekit.dialogs.FileKitCameraFacing
 import io.github.vinceglb.filekit.dialogs.FileKitCameraType
 import io.github.vinceglb.filekit.dialogs.FileKitMode
@@ -129,6 +125,11 @@ import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.dialogs.openCameraPicker
 import io.github.vinceglb.filekit.path
 import io.github.vinceglb.filekit.readBytes
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.async
@@ -136,6 +137,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.compose.resources.painterResource
 import org.prime.easykarobar.business.viewmodel.transactions.InventoryVoucherViewModel
 import org.prime.easykarobar.data.expect.BarcodeScanResult
@@ -150,11 +155,6 @@ import org.prime.easykarobar.data.model.transactions.BillingItem
 import org.prime.easykarobar.data.model.transactions.InventoryVoucherRequest
 import org.prime.easykarobar.data.model.transactions.SundryItem
 import org.prime.easykarobar.data.model.transactions.TransportDetails
-import io.ktor.client.request.forms.formData
-import io.ktor.client.request.forms.submitFormWithBinaryData
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.Headers
-import io.ktor.http.HttpHeaders
 import org.prime.easykarobar.data.utils.KtorClient
 import org.prime.easykarobar.data.utils.SaleOrderConfig
 import org.prime.easykarobar.data.utils.SharedPrefs
@@ -709,7 +709,10 @@ data class SaleScreen(
                         )
                         val discount =
                             if (isSale) product.SaleDisc ?: 0.0 else product.PurcDisc ?: 0.0
-                        val price = calculateItemPrice(vchType, listPrice, discount)
+                        val prodForMrp = itemsList.find { it.Name == product.Name || it.GUID == product.GUID }
+                        val productMrp = prodForMrp?.MRP ?: product.MRP ?: 0.0
+                        val sdtVal = product.SDT ?: 0.0
+                        val price = calculateItemPrice(vchType, listPrice, discount, mrp = productMrp, sdt = sdtVal)
                         val qty = barcodeQty.toDoubleOrNull() ?: 1.0
 
                         val gstPercentage = try {
@@ -1451,7 +1454,11 @@ data class SaleScreen(
                                             } else if (pendingItem.discountPercentage > 0.0) {
                                                 pendingItem.discountPercentage.formatToAmtDec()
                                             } else if (pendingItem.listPrice > 0.0 && pendingItem.price < pendingItem.listPrice) {
-                                                val pct = ((pendingItem.listPrice - pendingItem.price) / pendingItem.listPrice) * 100.0
+                                                val productMrp = product?.MRP ?: pendingItem.mrp
+                                                val sdtVal = product?.SDT ?: 0.0
+                                                val discountAmount = pendingItem.listPrice - pendingItem.price
+                                                val baseForPct = if ((sdtVal == 502.0 || sdtVal.toInt() == 502) && productMrp > 0.0) productMrp else pendingItem.listPrice
+                                                val pct = if (baseForPct > 0.0) (discountAmount / baseForPct) * 100.0 else 0.0
                                                 (kotlin.math.round(pct * 100.0) / 100.0).formatToAmtDec()
                                             } else {
                                                 pendingItem.CD.ifBlank { pendingItem.discountPercentage.toString() }
@@ -1473,6 +1480,8 @@ data class SaleScreen(
                                             defaultListPrice = effMain,
                                             initialQuantity = pendingItem.qty,
                                             initialDiscount = initialDiscountVal,
+                                            mrp = product?.MRP ?: pendingItem.mrp,
+                                            sdt = product?.SDT ?: 0.0,
                                             taxType = taxType,
                                             existingItem = pendingItem,
                                             initialSerialNumbers = pendingItem.item_serial.map {
@@ -2163,7 +2172,7 @@ data class SaleScreen(
                             val discount = autoPricing.Disc ?: 0.0
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
-                                price = calculateItemPrice(vchType, listPrice, discount),
+                                price = calculateItemPrice(vchType, listPrice, discount, mrp = prod?.MRP ?: 0.0, sdt = prod?.SDT ?: 0.0),
                                 qty = 1.0,
                                 discountPercentage = discount,
                                 listPrice = listPrice,
@@ -2202,7 +2211,7 @@ data class SaleScreen(
                                 if (isSale) prod?.SaleDisc ?: 0.0 else prod?.PurcDisc ?: 0.0
                             editingItem = InvoiceItem(
                                 name = itemName.Name.toString(),
-                                price = calculateItemPrice(vchType, listPrice, discount),
+                                price = calculateItemPrice(vchType, listPrice, discount, mrp = prod?.MRP ?: 0.0, sdt = prod?.SDT ?: 0.0),
                                 qty = 1.0,
                                 discountPercentage = discount,
                                 listPrice = listPrice,
@@ -2289,7 +2298,9 @@ data class SaleScreen(
                                     listPrice,
                                     discount,
                                     pricing.CompoundDiscount.contains("+"),
-                                    pricing.CompoundDiscount
+                                    pricing.CompoundDiscount,
+                                    mrp = prod?.MRP ?: 0.0,
+                                    sdt = prod?.SDT ?: 0.0
                                 ),
                                 qty = 1.0,
                                 discountPercentage = discount,
@@ -4217,6 +4228,8 @@ fun ExpandedItemEditor1(
     purcPriceAlt: Double? = null,
     discountAlt: Double? = null,
     isSale: Boolean = true,
+    mrp: Double = 0.0,
+    sdt: Double = 0.0,
     onAdd: (
         qty: Double,
         unitPrice: Double,
@@ -4365,7 +4378,9 @@ fun ExpandedItemEditor1(
                     lp,
                     discountN.trim().toDoubleOrNull() ?: 0.0,
                     isCompoundDiscount,
-                    discountN
+                    discountN,
+                    mrp,
+                    sdt
                 )
             }
 
@@ -4781,13 +4796,20 @@ fun calculateItemPrice(
     listPrice: Double,
     discount: Double,
     isCompound: Boolean = false,
-    compoundDiscountStr: String? = null
+    compoundDiscountStr: String? = null,
+    mrp: Double = 0.0,
+    sdt: Double = 0.0
 ): Double {
     return if (SaleOrderConfig.discountAsPer(vchType)) {
         if (isCompound && !compoundDiscountStr.isNullOrBlank()) {
             applyCompoundDiscount(listPrice, compoundDiscountStr)
         } else {
-            listPrice - (listPrice * discount / 100.0)
+            val discAmount = if ((sdt == 502.0 || sdt.toInt() == 502) && mrp > 0.0) {
+                mrp * discount / 100.0
+            } else {
+                listPrice * discount / 100.0
+            }
+            listPrice - discAmount
         }
     } else {
         listPrice - discount

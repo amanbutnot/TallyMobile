@@ -356,7 +356,8 @@ actual class DriverFactory {
                     "Desc1" to "TEXT",
                     "Desc2" to "TEXT",
                     "Desc3" to "TEXT",
-                    "Desc4" to "TEXT"
+                    "Desc4" to "TEXT",
+                    "SDT" to "REAL"
                 )
             )
 

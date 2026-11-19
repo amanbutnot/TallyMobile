@@ -43,7 +43,8 @@ CREATE TABLE Products (
     Desc1 TEXT,
     Desc2 TEXT,
     Desc3 TEXT,
-    Desc4 TEXT
+    Desc4 TEXT,
+    SDT REAL
 );
 
 CREATE TABLE IF NOT EXISTS ProductMultyPricing (
@@ -515,7 +516,8 @@ SELECT
     Products.Desc1,
     Products.Desc2,
     Products.Desc3,
-    Products.Desc4
+    Products.Desc4,
+    Products.SDT
 FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
@@ -565,7 +567,8 @@ SELECT
     Products.Desc1,
     Products.Desc2,
     Products.Desc3,
-    Products.Desc4
+    Products.Desc4,
+    Products.SDT
 FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
@@ -614,7 +617,8 @@ SELECT
     Products.Desc1,
     Products.Desc2,
     Products.Desc3,
-    Products.Desc4
+    Products.Desc4,
+    Products.SDT
 FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter
@@ -663,7 +667,8 @@ SELECT
     Products.Desc1,
     Products.Desc2,
     Products.Desc3,
-    Products.Desc4
+    Products.Desc4,
+    Products.SDT
 FROM Products
 LEFT JOIN ProductStock PS
     ON PS.MasterCode1 = Products.GUID AND  PS.MasterCode2=:compConfigFilter

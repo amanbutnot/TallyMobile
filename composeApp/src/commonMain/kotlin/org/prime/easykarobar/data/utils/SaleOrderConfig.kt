@@ -11,7 +11,7 @@ object SaleOrderConfig {
     }
 
     fun discountAsPer(vchType: Int): Boolean {
-        if (!isTargetUser()) return false
+        if (!isTargetUser()) return true
         return (config.saleOrderConfig("9999_$vchType").executeAsOneOrNull()?.D1 != 1.0)
     }
 
