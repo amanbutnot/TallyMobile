@@ -27,5 +27,6 @@ data class NotificationPayload(
     val onClickAction: String,
     val entityGuid: String?,
     val entityName: String?,
-    val timestamp: Long
+    val timestamp: Long,
+    val expiry: String? = null
 )

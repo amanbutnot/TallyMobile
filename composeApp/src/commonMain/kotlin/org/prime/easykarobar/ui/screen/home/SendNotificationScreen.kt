@@ -77,6 +77,8 @@ import org.prime.easykarobar.data.utils.KtorClient
 import org.prime.easykarobar.data.utils.SharedPrefs
 import org.prime.easykarobar.ui.shared.composables.TallyScaffold
 import org.prime.easykarobar.ui.shared.globalShared.getNotificationImage
+import org.prime.easykarobar.ui.shared.reportsShared.CurrentDate
+import org.prime.easykarobar.ui.shared.reportsShared.TallyDatePickerRow
 import org.tally.GetProductsForDis
 import kotlin.time.Clock
 
@@ -92,6 +94,7 @@ class SendNotificationScreen : Screen {
         val scope = rememberCoroutineScope()
 
         var title by remember { mutableStateOf("") }
+        var expiryDate by remember { mutableStateOf(CurrentDate()) }
         var contentType by remember { mutableStateOf("desc") } // "desc" or "image"
         var description by remember { mutableStateOf("") }
         var imageBytes by remember { mutableStateOf<ByteArray?>(null) }
@@ -148,6 +151,13 @@ class SendNotificationScreen : Screen {
                         label = { Text("Notification Title") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
+                    )
+
+                    TallyDatePickerRow(
+                        label = "Expiry Date",
+                        selectedDate = expiryDate,
+                        onDateSelected = { expiryDate = it },
+                        defaultDate = CurrentDate()
                     )
 
                     // Content Type Selection: Desc vs Image
@@ -453,7 +463,8 @@ class SendNotificationScreen : Screen {
                                         onClickAction = onClickAction.value,
                                         entityGuid = if (onClickAction != OnClickAction.NOTHING) selectedEntityGuid else null,
                                         entityName = if (onClickAction != OnClickAction.NOTHING) selectedEntityName else null,
-                                        timestamp = Clock.System.now().toEpochMilliseconds()
+                                        timestamp = Clock.System.now().toEpochMilliseconds(),
+                                        expiry = expiryDate
                                     )
                                     val jsonString =
                                         Json { prettyPrint = true }.encodeToString(payload)
